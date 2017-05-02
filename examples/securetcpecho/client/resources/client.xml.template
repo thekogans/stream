@@ -1,0 +1,23 @@
+<OpenInfo Type = "ClientSecureTCPSocket">
+  <Address Family = "inet"
+           Port = "8659"
+           Addr = "localhost"/>
+  <TLSContext ProtocolVersion = "1.2">
+    <CACertificate>
+__CACertificate__
+    </CACertificate>
+    <CertificateChain>
+__CertificateChain__
+    </CertificateChain>
+    <PrivateKey>
+__PrivateKey__
+    </PrivateKey>
+    <CipherList>
+__Ciphers__
+    </CipherList>
+    <MaxServerCertificateChainDepth>4</MaxServerCertificateChainDepth>
+  </TLSContext>
+  <SessionInfo ServerName = "localhost"
+               RenegotiationFrequency = "4294967295"
+               BidirectionalShutdown = "true"/>
+</OpenInfo>

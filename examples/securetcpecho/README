@@ -1,0 +1,21 @@
+This example exercises the SecureTCPSocket and friends.
+
+Use ./mkcerts-rsa (or ./mkcerts-dsa) to create certificates for both client and server.
+NOTE: If you're running on Windows and don't have localhost in your
+hosts file, edit client/bin/client.xml and replace localhost with 127.0.0.1.
+
+To run the server, open a command prompt, navigate to server/bin and type:
+
+Windows:
+thekogans_securetcpecho_server-Windows-x86_64-cl-Release-Static.0.2.0.exe -c -l:Debug server.xml
+
+Linux/OS X:
+./thekogans_securetcpecho_server-[Linux | OSX]-x86_64-[gcc | clang]-Release-Static.0.2.0 -c -l:Debug server.xml
+
+To run the client, open a command prompt, navigate to client/bin and type:
+
+Windows:
+thekogans_securetcpecho_client-Windows-x86_64-cl-Release-Static.0.2.0.exe -l:Debug client.xml
+
+Linux/OS X:
+./thekogans_securetcpecho_client-[Linux | OSX]-x86_64-[gcc | clang]-Release-Static.0.2.0 -l:Debug client.xml

@@ -1,0 +1,26 @@
+<OpenInfo Type = "ServerSecureTCPSocket">
+  <Address Family = "inet"
+           Port = "8659"
+           Addr = "any"/>
+  <MaxPendingConnections>5</MaxPendingConnections>
+  <DTLSContext ProtocolVersion = "1.2">
+    <CACertificate>
+__CACertificate__
+    </CACertificate>
+    <CertificateChainRSA>
+__CertificateChainRSA__
+    </CertificateChainRSA>
+    <PrivateKeyRSA>
+__PrivateKeyRSA__
+    </PrivateKeyRSA>
+    <CipherList>
+__Ciphers__
+    </CipherList>
+    <RequireClientCertificate>true</RequireClientCertificate>
+    <MaxClientCertificateChainDepth>4</MaxClientCertificateChainDepth>
+    <CachedSessionTTL>300</CachedSessionTTL>
+  </DTLSContext>
+  <SessionInfo ServerName = "securetcpecho"
+               RenegotiationFrequency = "4294967295"
+               BidirectionalShutdown = "true"/>
+</OpenInfo>

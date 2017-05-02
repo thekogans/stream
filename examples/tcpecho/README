@@ -1,0 +1,19 @@
+This example exercises the TCPSocket and friends.
+
+To run the server, open a command prompt, navigate to server/bin and type:
+
+Windows:
+thekogans_tcpecho_server-Windows-x86_64-cl-Release-Static.0.1.0.exe -c -l:Debug
+
+Linux/OS X:
+./thekogans_tcpecho_server-Windows-x86_64-cl-Release-Static.0.1.0 -c -l:Debug
+
+To run the client, open a command prompt, navigate to client/bin and type:
+
+Windows:
+ipconfig
+thekogans_tcpecho_client-Windows-x86_64-cl-Release-Static.0.1.0.exe -l:Debug -a:'address from ipconfig'
+
+Linux/OS X:
+ifconfig
+./thekogans_tcpecho_client-Windows-x86_64-cl-Release-Static.0.1.0 -l:Debug -a:'address from ifconfig'

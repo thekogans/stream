@@ -1,0 +1,26 @@
+<thekogans_make organization = "thekogans"
+                project = "secureudpecho_client"
+                project_type = "program"
+                major_version = "0"
+                minor_version = "2"
+                patch_version = "0"
+                guid = "a602b8dc18c9b36fb39e699cd6141b6d"
+                schema_version = "2">
+  <dependencies>
+    <project organization = "thekogans"
+             name = "util"/>
+    <project organization = "thekogans"
+             name = "stream"/>
+    <toolchain organization = "thekogans"
+               name = "pugixml"/>
+  </dependencies>
+  <cpp_headers prefix = "include">
+    <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
+  </cpp_headers>
+  <cpp_sources prefix = "src">
+    <cpp_source>Options.cpp</cpp_source>
+    <cpp_source>Version.cpp</cpp_source>
+    <cpp_source>main.cpp</cpp_source>
+  </cpp_sources>
+</thekogans_make>

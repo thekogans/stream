@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Copyright 2011 Boris Kogan (boris@thekogans.net)
+#
+# This file is part of libthekogans_stream.
+#
+# libthekogans_stream is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# libthekogans_stream is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
+
+# This script will create DSA certificates for server and client.
+# VERY IMPORTANT: These are meant to be nothing more than examples.
+# I use a self signed root ca certificate.
+
+# Create the environment.
+. setenvironment
+
+thekogans_openssl="$(get_toolchain_program -o:thekogans -p:openssl)"
+
+# ca cert
+"$thekogans_openssl" ecparam -name secp521r1 -out cakey.pem -genkey
+"$thekogans_openssl" req -new -x509 -days 365 -key cakey.pem -out cacert.pem -config ca.cnf
+
+# server cert
+"$thekogans_openssl" ecparam -name secp521r1 -out serverkey.pem -genkey
+"$thekogans_openssl" req -new -key serverkey.pem -out serverreq.pem -config server/resources/server.cnf -reqexts req_extensions
+"$thekogans_openssl" x509 -req -days 365 -in serverreq.pem -CA cacert.pem -CAkey cakey.pem -set_serial 01 -out servercert.pem -extensions certificate_extensions -extfile client/resources/client.cnf
+
+# client cert
+"$thekogans_openssl" ecparam -name secp521r1 -out clientkey.pem -genkey
+"$thekogans_openssl" req -new -key clientkey.pem -out clientreq.pem -config client/resources/client.cnf -reqexts req_extensions
+"$thekogans_openssl" x509 -req -days 365 -in clientreq.pem -CA cacert.pem -CAkey cakey.pem -set_serial 02 -out clientcert.pem -extensions certificate_extensions -extfile server/resources/server.cnf
+
+caCert=`cat cacert.pem`
+ciphers=ECDHE-ECDSA-AES256-GCM-SHA384
+
+# create server/bin/server.xml
+serverXML=server/bin/server.xml
+if [ -f $serverXML ]; then
+    rm $serverXML
+fi
+while IFS== read line; do
+    if [[ $line == "__CACertificate__" ]]; then
+        echo "$caCert" >>$serverXML
+    elif [[ $line == "__CertificateChainDSA__" ]]; then
+        serverCert=$'      <Certificate>\n'
+        serverCert+=`cat servercert.pem`
+        serverCert+=$'\n      </Certificate>\n'
+        serverCert+=$'      <Certificate>\n'
+        serverCert+="$caCert"
+        serverCert+=$'\n      </Certificate>'
+        echo "$serverCert" >>$serverXML
+    elif [[ $line == "__PrivateKeyDSA__" ]]; then
+        serverKey=`cat serverkey.pem`
+        echo "$serverKey" >>$serverXML
+    elif [[ $line == "__Ciphers__" ]]; then
+        echo "$ciphers" >>$serverXML
+    else
+        echo "$line" >>$serverXML
+    fi
+done < server/resources/server-dsa.xml.template
+
+# create client/bin/clinet.xml
+clientXML=client/bin/client.xml
+if [ -f $clientXML ]; then
+    rm $clientXML
+fi
+while IFS== read line; do
+    if [[ $line == "__CACertificate__" ]]; then
+        echo "$caCert" >>$clientXML
+    elif [[ $line == "__CertificateChain__" ]]; then
+        clientCert=$'      <Certificate>\n'
+        clientCert+=`cat clientcert.pem`
+        clientCert+=$'\n      </Certificate>\n'
+        clientCert+=$'      <Certificate>\n'
+        clientCert+="$caCert"
+        clientCert+=$'\n      </Certificate>'
+        echo "$clientCert" >>$clientXML
+    elif [[ $line == "__PrivateKey__" ]]; then
+        clientKey=`cat clientkey.pem`
+        echo "$clientKey" >>$clientXML
+    elif [[ $line == "__Ciphers__" ]]; then
+        echo "$ciphers" >>$clientXML
+    else
+        echo "$line" >>$clientXML
+    fi
+done < client/resources/client.xml.template
+
+# cleanup
+rm *.pem
