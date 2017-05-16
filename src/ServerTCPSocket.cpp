@@ -30,6 +30,7 @@ namespace thekogans {
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const ServerTCPSocket::OpenInfo::VALUE_SERVER_TCP_SOCKET = "ServerTCPSocket";
+        const char * const ServerTCPSocket::OpenInfo::TAG_REUSE_ADDRESS = "ReuseAddress";
         const char * const ServerTCPSocket::OpenInfo::TAG_MAX_PENDING_CONNECTIONS = "MaxPendingConnections";
 
         void ServerTCPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
@@ -40,6 +41,9 @@ namespace thekogans {
                     std::string childName = child.name ();
                     if (childName == Address::TAG_ADDRESS) {
                         address.Parse (child);
+                    }
+                    else if (childName == TAG_REUSE_ADDRESS) {
+                        reuseAddress = std::string (child.text ().get ()) == util::XML_TRUE;
                     }
                     else if (childName == TAG_MAX_PENDING_CONNECTIONS) {
                         maxPendingConnections = util::stringToui32 (child.text ().get ());
@@ -56,6 +60,9 @@ namespace thekogans {
             stream <<
                 Stream::OpenInfo::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
+                    util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
+                        util::boolTostring (reuseAddress) <<
+                    util::CloseTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
                     util::OpenTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
                         util::i32Tostring (maxPendingConnections) <<
                     util::CloseTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
@@ -65,14 +72,27 @@ namespace thekogans {
 
         Stream::Ptr ServerTCPSocket::OpenInfo::CreateStream () const {
             return Stream::Ptr (
-                new ServerTCPSocket (address, maxPendingConnections));
+                new ServerTCPSocket (address, reuseAddress, maxPendingConnections));
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         ServerTCPSocket::ServerTCPSocket (
                 const Address &address,
+                bool reuseAddress,
                 util::ui32 maxPendingConnections) :
                 TCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP) {
+            if (reuseAddress) {
+            #if !defined (TOOLCHAIN_OS_Windows)
+                if (address.GetFamily () == AF_LOCAL) {
+                    unlink (address.GetPath ().c_str ());
+                }
+                else {
+            #endif // !define (TOOLCHAIN_OS_Windows)
+                    SetReuseAddress (true);
+            #if !defined (TOOLCHAIN_OS_Windows)
+                }
+            #endif // !defined (TOOLCHAIN_OS_Windows)
+            }
             Bind (address);
             Listen (maxPendingConnections);
         }

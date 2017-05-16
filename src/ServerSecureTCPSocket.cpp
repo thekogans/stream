@@ -284,6 +284,8 @@ namespace thekogans {
 
         const char * const ServerSecureTCPSocket::OpenInfo::VALUE_SERVER_SECURE_TCP_SOCKET =
             "ServerSecureTCPSocket";
+        const char * const ServerSecureTCPSocket::OpenInfo::TAG_REUSE_ADDRESS =
+            "ReuseAddress";
         const char * const ServerSecureTCPSocket::OpenInfo::TAG_MAX_PENDING_CONNECTIONS =
             "MaxPendingConnections";
 
@@ -295,6 +297,9 @@ namespace thekogans {
                     std::string childName = child.name ();
                     if (childName == Address::TAG_ADDRESS) {
                         address.Parse (child);
+                    }
+                    else if (childName == TAG_REUSE_ADDRESS) {
+                        reuseAddress = std::string (child.text ().get ()) == util::XML_TRUE;
                     }
                     else if (childName == TAG_MAX_PENDING_CONNECTIONS) {
                         maxPendingConnections = util::stringToui32 (child.text ().get ());
@@ -319,6 +324,9 @@ namespace thekogans {
             stream <<
                 Stream::OpenInfo::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
+                    util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
+                        util::boolTostring (reuseAddress) <<
+                    util::CloseTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
                     util::OpenTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
                         util::i32Tostring (maxPendingConnections) <<
                     util::CloseTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
@@ -332,6 +340,7 @@ namespace thekogans {
             return Stream::Ptr (
                 new ServerSecureTCPSocket (
                     address,
+                    reuseAddress,
                     maxPendingConnections,
                     context.GetSSL_CTX (),
                     sessionInfo));
@@ -340,6 +349,7 @@ namespace thekogans {
 
         ServerSecureTCPSocket::ServerSecureTCPSocket (
                 const Address &address,
+                bool reuseAddress,
                 util::ui32 maxPendingConnections,
                 SSL_CTX *ctx_,
                 const SessionInfo &sessionInfo_) :
@@ -348,6 +358,18 @@ namespace thekogans {
                 sessionInfo (sessionInfo_) {
             if (ctx.get () != 0) {
                 CRYPTO_add (&ctx->references, 1, CRYPTO_LOCK_SSL_CTX);
+                if (reuseAddress) {
+                #if !defined (TOOLCHAIN_OS_Windows)
+                    if (address.GetFamily () == AF_LOCAL) {
+                        unlink (address.GetPath ().c_str ());
+                    }
+                    else {
+                #endif // !define (TOOLCHAIN_OS_Windows)
+                        SetReuseAddress (true);
+                #if !defined (TOOLCHAIN_OS_Windows)
+                    }
+                #endif // !defined (TOOLCHAIN_OS_Windows)
+                }
                 Bind (address);
                 Listen (maxPendingConnections);
             }

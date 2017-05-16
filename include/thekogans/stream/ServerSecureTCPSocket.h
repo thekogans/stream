@@ -59,9 +59,8 @@ namespace thekogans {
             ///     <Address Family = "inet | inet6"
             ///              Port = ""
             ///              Addr = "an inet or inet6 formated address, or host name"/>
-            ///     <MaxPendingConnections>
-            ///         Max pending connection requests.
-            ///     </MaxPendingConnections>
+            ///     <ReuseAddress>If true call SetReuseAddress.</ReuseAddress>
+            ///     <MaxPendingConnections>Max pending connection requests.</MaxPendingConnections>
             ///     <TLSContext ProtocolVersion = "1.0, 1.1, 1.2">
             ///         <CACertificate>
             ///             CA certificate.
@@ -124,12 +123,18 @@ namespace thekogans {
                 /// "ServerSecureTCPSocket"
                 static const char * const VALUE_SERVER_SECURE_TCP_SOCKET;
                 /// \brief
+                /// "ReuseAddress"
+                static const char * const TAG_REUSE_ADDRESS;
+                /// \brief
                 /// "MaxPendingConnections"
                 static const char * const TAG_MAX_PENDING_CONNECTIONS;
 
                 /// \brief
                 /// Listening address.
                 Address address;
+                /// \brief
+                /// If true, call \see{Socket::SetReuseAddress} before calling \see{Socket::Bind}.
+                bool reuseAddress;
                 /// \brief
                 /// Max pending connection requests.
                 util::i32 maxPendingConnections;
@@ -328,6 +333,7 @@ namespace thekogans {
                 explicit OpenInfo (const pugi::xml_node &node) :
                         Stream::OpenInfo (VALUE_SERVER_SECURE_TCP_SOCKET),
                         address (Address::Empty),
+                        reuseAddress (false),
                         maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS),
                         context (TLSContext::Empty),
                         sessionInfo (SessionInfo::Empty) {
@@ -385,12 +391,14 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] address Address to listen on.
+            /// \param[in] reuseAddress Call \see{Socket::SetReuseAddress} with this parameter.
             /// \param[in] maxPendingConnections Max pending connection requests.
             /// \param[in] ctx_ SSL_CTX to imbue incoming connections with.
             /// \param[in] sessionInfo_ \see{SecureTCPSocket::SessionInfo}
             /// to imbue incoming connections with.
             ServerSecureTCPSocket (
                 const Address &address,
+                bool reuseAddress,
                 util::ui32 maxPendingConnections,
                 SSL_CTX *ctx_,
                 const SessionInfo &sessionInfo_);

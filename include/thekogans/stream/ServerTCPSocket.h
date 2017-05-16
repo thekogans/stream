@@ -56,6 +56,7 @@ namespace thekogans {
             ///     or
             ///     <Address Family = "local"
             ///              Path = ""/>
+            ///     <ReuseAddress>if true call SetReuseAddress</ReuseAddress>
             ///     <MaxPendingConnections>max pending connection requests</MaxPendingConnections>
             /// </tagName>
             /// to: Stream::GetOpenInfo (const pugi::xml_node &node), and it
@@ -73,12 +74,18 @@ namespace thekogans {
                 /// "ServerTCPSocket"
                 static const char * const VALUE_SERVER_TCP_SOCKET;
                 /// \brief
+                /// "ReuseAddress"
+                static const char * const TAG_REUSE_ADDRESS;
+                /// \brief
                 /// "MaxPendingConnections"
                 static const char * const TAG_MAX_PENDING_CONNECTIONS;
 
                 /// \brief
                 /// Listening address.
                 Address address;
+                /// \brief
+                /// If true, call \see{Socket::SetReuseAddress} before calling \see{Socket::Bind}.
+                bool reuseAddress;
                 /// \brief
                 /// Max pending connection requests.
                 util::i32 maxPendingConnections;
@@ -91,18 +98,23 @@ namespace thekogans {
                 explicit OpenInfo (const pugi::xml_node &node) :
                         Stream::OpenInfo (VALUE_SERVER_TCP_SOCKET),
                         address (Address::Empty),
+                        reuseAddress (false),
                         maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS) {
                     Parse (node);
                 }
                 /// \brief
                 /// ctor.
                 /// \param[in] address Listening address.
+                /// \param[in] reuseAddress If true, call \see{Socket::SetReuseAddress}
+                /// before calling \see{Socket::Bind}.
                 /// \param[in] maxPendingConnections Max pending connection requests.
                 OpenInfo (
                     const Address &address_,
+                    bool reuseAddress_,
                     util::i32 maxPendingConnections_) :
                     Stream::OpenInfo (VALUE_SERVER_TCP_SOCKET),
                     address (address_),
+                    reuseAddress (reuseAddress_),
                     maxPendingConnections (maxPendingConnections_) {}
 
                 /// \brief
@@ -149,9 +161,11 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] address Address to listen on.
+            /// \param[in] reuseAddress Call \see{Socket::SetReuseAddress} with this parameter.
             /// \param[in] maxPendingConnections Max pending connection requests.
             ServerTCPSocket (
                 const Address &address,
+                bool reuseAddress = false,
                 util::ui32 maxPendingConnections = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS);
 
             /// \brief
