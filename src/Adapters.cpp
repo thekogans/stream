@@ -599,12 +599,15 @@ namespace thekogans {
                             kSCCompAnyRegex,
                             kSCEntNetIPv6));
                     if (ipv4.get () != 0 && ipv6.get () != 0) {
-                        CFStringRef patterns[2] = {
+                        CFStringRef patterns[] = {
                             ipv4.get (),
                             ipv6.get ()
                         };
                         CFArrayRefPtr patternList (
-                            CFArrayCreate (0, (const void **)patterns, 2, &kCFTypeArrayCallBacks));
+                            CFArrayCreate (0,
+                                (const void **)patterns,
+                                THEKOGANS_UTIL_ARRAY_SIZE (patterns),
+                                &kCFTypeArrayCallBacks));
                         if (patternList.get () != 0) {
                             SCDynamicStoreSetNotificationKeys (dynamicStore.get (), 0, patternList.get ());
                             CFRunLoopSourceRefPtr runLoopSource (

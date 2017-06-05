@@ -141,7 +141,6 @@ namespace thekogans {
             /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Stream>.
             typedef util::ThreadSafeRefCounted::Ptr<Stream> Ptr;
 
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \struct Stream::OpenInfo Stream.h thekogans/stream/Stream.h
             ///
             /// \brief
@@ -156,6 +155,10 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<OpenInfo>.
                 typedef std::unique_ptr<OpenInfo> UniquePtr;
 
+                /// \brief
+                /// ctor.
+                OpenInfo () {}
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "OpenInfo"
                 static const char * const TAG_OPEN_INFO;
@@ -172,10 +175,12 @@ namespace thekogans {
                 /// param[in] type_ Type this OpenInfo represents.
                 explicit OpenInfo (const std::string type_) :
                     type (type_) {}
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// dtor.
                 virtual ~OpenInfo () {}
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the OpenInfo parameters from the given node.
                 /// \param[in] node Node that represents the OpenInfo.
@@ -191,13 +196,13 @@ namespace thekogans {
                 virtual std::string ToString (
                     util::ui32 /*indentationLevel*/ = 0,
                     const char * /*tagName*/ = TAG_OPEN_INFO) const = 0;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a stream from the OpenInfo parameters.
                 /// \return The newly created stream.
                 virtual Stream::Ptr CreateStream () const = 0;
             };
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         protected:
         #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)

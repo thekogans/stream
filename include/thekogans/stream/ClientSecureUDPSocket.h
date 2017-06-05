@@ -43,7 +43,6 @@ namespace thekogans {
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ClientSecureUDPSocket)
 
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \struct ClientSecureUDPSocket::OpenInfo ClientSecureUDPSocket.h
             /// thekogans/stream/ClientSecureUDPSocket.h
             ///
@@ -57,7 +56,15 @@ namespace thekogans {
             ///              Port = ""
             ///              Addr = "an inet or inet6 formated address, or host name"/>
             ///     <DTLSContext ProtocolVersion = "1.0, 1.2...">
-            ///         <CACertificate>CA certificate</CACertificate>
+            ///         <LoadSystemCACertificates>
+            ///             true = Load system CA certificates.
+            ///         </LoadSystemCACertificates>
+            ///         <CACertificates>
+            ///             <Certificate>
+            ///                 CA certificate.
+            ///             </Certificate>
+            ///             ...
+            ///         </CACertificates>
             ///         <CertificateChain>
             ///             <Certificate>
             ///                 Chain certificate.
@@ -68,6 +75,9 @@ namespace thekogans {
             ///             Private key associated with this certificate.
             ///         </PrivateKey>
             ///         <CipherList>':' separated cipher list.</CipherList>
+            ///         <VerifyServer>
+            ///             true = Verify server certificate.
+            ///         </VerifyServer>
             ///         <MaxServerCertificateChainDepth>
             ///             Max depth of server certificate chain to verify.
             ///         </MaxServerCertificateChainDepth>
@@ -89,9 +99,11 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<OpenInfo>.
                 typedef std::unique_ptr<OpenInfo> UniquePtr;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ClientSecureUDPSocket".
                 static const char * const VALUE_CLIENT_SECURE_UDP_SOCKET;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Address to connect to.
@@ -102,6 +114,7 @@ namespace thekogans {
                 /// \brief
                 /// DTLSContext aggregates parameters necessary to create a client side SSL_CTX.
                 struct _LIB_THEKOGANS_STREAM_DECL DTLSContext {
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// "DTLSContext"
                     static const char * const TAG_DTLS_CONTEXT;
@@ -109,8 +122,11 @@ namespace thekogans {
                     /// "ProtocolVersion"
                     static const char * const ATTR_PROTOCOL_VERSION;
                     /// \brief
-                    /// "CACertificate"
-                    static const char * const TAG_CA_CERTIFICATE;
+                    /// "LoadSystemCACertificates"
+                    static const char * const TAG_LOAD_SYSTEM_CA_CERTIFICATES;
+                    /// \brief
+                    /// "CACertificates"
+                    static const char * const TAG_CA_CERTIFICATES;
                     /// \brief
                     /// "CertificateChain"
                     static const char * const TAG_CERTIFICATE_CHAIN;
@@ -124,8 +140,12 @@ namespace thekogans {
                     /// "CipherList"
                     static const char * const TAG_CIPHER_LIST;
                     /// \brief
+                    /// "VerifyServer"
+                    static const char * const TAG_VERIFY_SERVER;
+                    /// \brief
                     /// "MaxServerCertificateChainDepth"
                     static const char * const TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH;
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     enum {
                         /// \brief
@@ -137,9 +157,11 @@ namespace thekogans {
                     /// DTLS protocol version.
                     std::string protocolVersion;
                     /// \brief
-                    /// CA certificate file used to validate
-                    /// client and server certificates.
-                    std::string caCertificate;
+                    /// true = Load system CA certificates.
+                    bool loadSystemCACertificates;
+                    /// \brief
+                    /// CA certificates used to validate client certificates.
+                    std::list<std::string> caCertificates;
                     /// \brief
                     /// Server certificate chain file.
                     std::list<std::string> certificateChain;
@@ -149,6 +171,9 @@ namespace thekogans {
                     /// \brief
                     /// Cipher list the server supports.
                     std::string cipherList;
+                    /// \brief
+                    /// true = Verify server certificate.
+                    bool verifyServer;
                     /// \brief
                     /// Max depth of server certificate chain to verify.
                     util::ui32 maxServerCertificateChainDepth;
@@ -163,22 +188,57 @@ namespace thekogans {
                     /// \brief
                     /// Default ctor.
                     DTLSContext () :
+                        loadSystemCACertificates (true),
+                        verifyServer (true),
                         maxServerCertificateChainDepth (
                             DEFAULT_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) {}
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// ctor.
                     /// Parse the node representing a ClientSecureUDPSocket::OpenInfo.
                     /// \param[in] node pugi::xml_node representing
                     /// a ClientSecureUDPSocket::OpenInfo.
                     explicit DTLSContext (const pugi::xml_node &node) :
+                            loadSystemCACertificates (true),
+                            verifyServer (true),
                             maxServerCertificateChainDepth (
                                 DEFAULT_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) {
                         Parse (node);
                     }
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Copy ctor.
                     /// \param[in] connect DTLSContext to copy.
                     DTLSContext (const DTLSContext &context);
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] protocolVersion_ TLS protocol version.
+                    /// \param[in] loadSystemCACertificates_ true = load system CA certificates.
+                    /// \param[in] caCertificates_ CA certificates used to validate client certificates.
+                    /// \param[in] certificateChain_ Client certificate chain.
+                    /// \param[in] privateKey_ Client private key.
+                    /// \param[in] cipherList_ Cipher list the client supports.
+                    /// \param[in] verifyServer_ true = Verify server certificate.
+                    /// \param[in] maxServerCertificateChainDepth_ Max depth of server certificate chain to verify.
+                    DTLSContext (
+                            const std::string &protocolVersion_,
+                            bool loadSystemCACertificates_,
+                            const std::list<std::string> &caCertificates_,
+                            const std::list<std::string> &certificateChain_,
+                            const std::string &privateKey_,
+                            const std::string &cipherList_,
+                            bool verifyServer_ = true,
+                            util::ui32 maxServerCertificateChainDepth_ = DEFAULT_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) :
+                            protocolVersion (protocolVersion_),
+                            loadSystemCACertificates (loadSystemCACertificates_),
+                            caCertificates (caCertificates_),
+                            certificateChain (certificateChain_),
+                            privateKey (privateKey_),
+                            cipherList (cipherList_),
+                            verifyServer (verifyServer_),
+                            maxServerCertificateChainDepth (maxServerCertificateChainDepth_) {
+                        PrepareSSL_CTX ();
+                    }
 
                     /// \brief
                     /// Assignment operator.
@@ -186,6 +246,7 @@ namespace thekogans {
                     /// \return *this.
                     DTLSContext &operator = (const DTLSContext &context);
 
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Parse the node representing a ClientSecureUDPSocket::OpenInfo.
                     /// \param[in] node pugi::xml_node representing
@@ -202,27 +263,41 @@ namespace thekogans {
                     std::string ToString (
                         util::ui32 indentationLevel = 0,
                         const char *tagName = TAG_OPEN_INFO) const;
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+
+                    /// \brief
+                    /// Construct an SSL_CTX from the values provided.
+                    void PrepareSSL_CTX ();
 
                     /// \brief
                     /// Create an OpenSSL SSL_CTX from the values in DTLSContext.
                     /// \return SSL_CTX based on the values in DTLSContext.
                     SSL_CTX *GetSSL_CTX () const;
 
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 private:
                     /// \brief
                     /// Parse a list node representing the certificate chain.
                     /// \param[in] node List node representing the certificate chain.
-                    void ParseCertificateChain (const pugi::xml_node &node);
+                    /// \param[out] certificates List of parsed certificates.
+                    void ParseCertificates (
+                        const pugi::xml_node &node,
+                        std::list<std::string> &certificates);
                     /// \brief
                     /// Format an XML string containing the certificate chain.
                     /// \param[in] indentationLevel Pretty print parameter.
+                    /// \param[in] certificates List of certificates to format.
                     /// \return An XML string containing the certificate chain.
-                    std::string FormatCertificateChain (util::ui32 indentationLevel) const;
+                    std::string FormatCertificates (
+                        util::ui32 indentationLevel,
+                        const std::list<std::string> &certificates) const;
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
                 /// \brief
                 /// Extended session info.
                 SessionInfo sessionInfo;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// Parse the node representing a ClientSecureUDPSocket::OpenInfo.
@@ -252,13 +327,13 @@ namespace thekogans {
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
                     const char *tagName = TAG_OPEN_INFO) const;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ClientSecureUDPSocket.
                 /// \return ClientSecureUDPSocket.
                 virtual Stream::Ptr CreateStream () const;
             };
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
             /// \brief
             /// Wrap an OS handle.

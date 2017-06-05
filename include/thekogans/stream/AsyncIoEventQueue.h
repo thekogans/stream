@@ -353,6 +353,7 @@ namespace thekogans {
             /// \param[in] maxEventsBatch Maximum events to batch
             /// process at a time.
             /// \param[in] timeSpec How long to wait for events.
+            /// IMPORTANT: timeSpec is a relative value.
             void WaitForEvents (
                 util::ui32 maxEventsBatch = DEFAULT_MAX_EVENTS_BATCH,
                 util::TimeSpec timeSpec = util::TimeSpec::Infinite);

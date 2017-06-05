@@ -152,8 +152,8 @@ namespace thekogans {
                 util::ui32 seconds;
                 /// \brief
                 /// ctor.
-                /// \param[in] on true == linger, false = don't linger.
-                /// \param[in] seconds If on == true, how long to linger.
+                /// \param[in] on_ true == linger, false = don't linger.
+                /// \param[in] seconds_ If on == true, how long to linger.
                 Linger (
                     bool on_ = false,
                     util::ui32 seconds_ = 0) :
@@ -368,7 +368,7 @@ namespace thekogans {
             /// \brief
             /// Used by \see{AsyncIoEventQueue::WaitForEvents} to notify the
             /// stream of pending io events.
-            /// \param[in] events \see{AsyncIoEventQueue} events enum.
+            /// \param[in] event \see{AsyncIoEventQueue} events enum.
             virtual void HandleAsyncEvent (util::ui32 event) throw ();
         #endif // defined (TOOLCHAIN_OS_Windows)
 

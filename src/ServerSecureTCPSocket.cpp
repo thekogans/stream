@@ -19,9 +19,13 @@
 
 #include <cassert>
 #include <algorithm>
-#include <sstream>
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include <sstream>
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/XMLUtils.h"
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include "thekogans/util/XMLUtils.h"
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
@@ -37,8 +41,10 @@ namespace thekogans {
             "TLSContext";
         const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::ATTR_PROTOCOL_VERSION =
             "ProtocolVersion";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CA_CERTIFICATE =
-            "CACertificate";
+        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
+            "LoadSystemCACertificates";
+        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CA_CERTIFICATES =
+            "CACertificates";
         const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CERTIFICATE_CHAIN_RSA =
             "CertificateChainRSA";
         const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CERTIFICATE_CHAIN_DSA =
@@ -63,12 +69,14 @@ namespace thekogans {
             "Type";
         const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CACHED_SESSION_TTL =
             "CachedSessionTTL";
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         ServerSecureTCPSocket::OpenInfo::TLSContext ServerSecureTCPSocket::OpenInfo::TLSContext::Empty;
 
         ServerSecureTCPSocket::OpenInfo::TLSContext::TLSContext (const TLSContext &context) :
                 protocolVersion (context.protocolVersion),
-                caCertificate (context.caCertificate),
+                loadSystemCACertificates (context.loadSystemCACertificates),
+                caCertificates (context.caCertificates),
                 certificateChainRSA (context.certificateChainRSA),
                 privateKeyRSA (context.privateKeyRSA),
                 certificateChainDSA (context.certificateChainDSA),
@@ -90,7 +98,8 @@ namespace thekogans {
                 const TLSContext &context) {
             if (&context != this) {
                 protocolVersion = context.protocolVersion;
-                caCertificate = context.caCertificate;
+                loadSystemCACertificates = context.loadSystemCACertificates;
+                caCertificates = context.caCertificates;
                 certificateChainRSA = context.certificateChainRSA;
                 privateKeyRSA = context.privateKeyRSA;
                 certificateChainDSA = context.certificateChainDSA;
@@ -110,23 +119,28 @@ namespace thekogans {
             return *this;
         }
 
+    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void ServerSecureTCPSocket::OpenInfo::TLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
-                    if (childName == TAG_CA_CERTIFICATE) {
-                        caCertificate = util::Decodestring (child.text ().get ());
+                    if (childName == TAG_LOAD_SYSTEM_CA_CERTIFICATES) {
+                        loadSystemCACertificates =
+                            util::Decodestring (child.text ().get ()) == util::XML_TRUE;
+                    }
+                    else if (childName == TAG_CA_CERTIFICATES) {
+                        ParseCertificates (child, caCertificates);
                     }
                     else if (childName == TAG_CERTIFICATE_CHAIN_RSA) {
-                        ParseCertificateChain (child, certificateChainRSA);
+                        ParseCertificates (child, certificateChainRSA);
                     }
                     else if (childName == TAG_PRIVATE_KEY_RSA) {
                         privateKeyRSA = util::Decodestring (child.text ().get ());
                     }
                     else if (childName == TAG_CERTIFICATE_CHAIN_DSA) {
-                        ParseCertificateChain (child, certificateChainDSA);
+                        ParseCertificates (child, certificateChainDSA);
                     }
                     else if (childName == TAG_PRIVATE_KEY_DSA) {
                         privateKeyDSA = util::Decodestring (child.text ().get ());
@@ -153,9 +167,76 @@ namespace thekogans {
                     }
                 }
             }
+            PrepareSSL_CTX ();
+        }
+
+        std::string ServerSecureTCPSocket::OpenInfo::TLSContext::ToString (
+                util::ui32 indentationLevel,
+                const char *tagName) const {
+            assert (tagName != 0);
+            util::Attributes attributes;
+            attributes.push_back (
+                util::Attribute (
+                    ATTR_PROTOCOL_VERSION,
+                    util::Encodestring (protocolVersion)));
+            util::Attributes ecdhParamsAttributes;
+            ecdhParamsAttributes.push_back (
+                util::Attribute (
+                    ATTR_ECDH_PARAMS_TYPE,
+                    ecdhParamsType));
+            std::ostringstream stream;
+            stream <<
+                util::OpenTag (indentationLevel, tagName, attributes) <<
+                    util::OpenTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                        (loadSystemCACertificates ? util::XML_TRUE : util::XML_FALSE) <<
+                    util::CloseTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                    util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
+                        FormatCertificates (indentationLevel + 2, caCertificates) <<
+                    util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
+                    util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
+                        FormatCertificates (indentationLevel + 2, certificateChainRSA) <<
+                    util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
+                    util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
+                        util::Encodestring (privateKeyRSA) <<
+                    util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
+                    util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
+                        FormatCertificates (indentationLevel + 2, certificateChainDSA) <<
+                    util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
+                    util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
+                        util::Encodestring (privateKeyDSA) <<
+                    util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
+                    util::OpenTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
+                        util::Encodestring (cipherList) <<
+                    util::CloseTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
+                    util::OpenTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
+                        (requireClientCertificate ? util::XML_TRUE : util::XML_FALSE) <<
+                    util::CloseTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
+                    util::OpenTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
+                        util::ui32Tostring (maxClientCertificateChainDepth) <<
+                    util::CloseTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
+                    util::OpenTag (indentationLevel + 1, TAG_DH_PARAMS) <<
+                        util::Encodestring (dhParams) <<
+                    util::CloseTag (indentationLevel + 1, TAG_DH_PARAMS) <<
+                    util::OpenTag (indentationLevel + 1, TAG_ECDH_PARAMS, ecdhParamsAttributes) <<
+                        util::Encodestring (ecdhParams) <<
+                    util::CloseTag (indentationLevel + 1, TAG_ECDH_PARAMS) <<
+                    util::OpenTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
+                        util::ui32Tostring (cachedSessionTTL) <<
+                    util::CloseTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
+                util::CloseTag (indentationLevel, tagName);
+            return stream.str ();
+        }
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+
+        void ServerSecureTCPSocket::OpenInfo::TLSContext::PrepareSSL_CTX () {
             ctx.reset (SSL_CTX_new (GetTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
-                LoadCACertificate (ctx.get (), caCertificate);
+                if (loadSystemCACertificates) {
+                    LoadSystemCACertificates (ctx.get ());
+                }
+                if (!caCertificates.empty ()) {
+                    LoadCACertificates (ctx.get (), caCertificates);
+                }
                 if (!certificateChainRSA.empty ()) {
                     LoadCertificateChain (ctx.get (), certificateChainRSA);
                     LoadPrivateKey (ctx.get (), privateKeyRSA);
@@ -193,67 +274,14 @@ namespace thekogans {
             }
         }
 
-        std::string ServerSecureTCPSocket::OpenInfo::TLSContext::ToString (
-                util::ui32 indentationLevel,
-                const char *tagName) const {
-            assert (tagName != 0);
-            util::Attributes attributes;
-            attributes.push_back (
-                util::Attribute (
-                    ATTR_PROTOCOL_VERSION,
-                    util::Encodestring (protocolVersion)));
-            util::Attributes ecdhParamsAttributes;
-            ecdhParamsAttributes.push_back (
-                util::Attribute (
-                    ATTR_ECDH_PARAMS_TYPE,
-                    ecdhParamsType));
-            std::ostringstream stream;
-            stream <<
-                util::OpenTag (indentationLevel, tagName, attributes) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATE) <<
-                        util::Encodestring (caCertificate) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATE) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
-                        FormatCertificateChain (indentationLevel + 2, certificateChainRSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
-                        util::Encodestring (privateKeyRSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
-                        FormatCertificateChain (indentationLevel + 2, certificateChainDSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
-                        util::Encodestring (privateKeyDSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
-                        util::Encodestring (cipherList) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
-                    util::OpenTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
-                        (requireClientCertificate ? util::XML_TRUE : util::XML_FALSE) <<
-                    util::CloseTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
-                    util::OpenTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
-                        util::ui32Tostring (maxClientCertificateChainDepth) <<
-                    util::CloseTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
-                    util::OpenTag (indentationLevel + 1, TAG_DH_PARAMS) <<
-                        util::Encodestring (dhParams) <<
-                    util::CloseTag (indentationLevel + 1, TAG_DH_PARAMS) <<
-                    util::OpenTag (indentationLevel + 1, TAG_ECDH_PARAMS, ecdhParamsAttributes) <<
-                        util::Encodestring (ecdhParams) <<
-                    util::CloseTag (indentationLevel + 1, TAG_ECDH_PARAMS) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
-                        util::ui32Tostring (cachedSessionTTL) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
-        }
-
         SSL_CTX *ServerSecureTCPSocket::OpenInfo::TLSContext::GetSSL_CTX () const {
             return ctx.get ();
         }
 
-        void ServerSecureTCPSocket::OpenInfo::TLSContext::ParseCertificateChain (
+    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+        void ServerSecureTCPSocket::OpenInfo::TLSContext::ParseCertificates (
                 const pugi::xml_node &node,
-                std::list<std::string> &certificateChain) {
+                std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -261,19 +289,20 @@ namespace thekogans {
                     if (childName == TAG_CERTIFICATE) {
                         std::string certificate = util::Decodestring (child.text ().get ());
                         if (!certificate.empty ()) {
-                            certificateChain.push_back (certificate);
+                            certificates.push_back (certificate);
                         }
                     }
                 }
             }
         }
 
-        std::string ServerSecureTCPSocket::OpenInfo::TLSContext::FormatCertificateChain (
+        std::string ServerSecureTCPSocket::OpenInfo::TLSContext::FormatCertificates (
                 util::ui32 indentationLevel,
-                const std::list<std::string> &certificateChain) const {
+                const std::list<std::string> &certificates) const {
             std::ostringstream stream;
-            for (std::list<std::string>::const_iterator it = certificateChain.begin (),
-                    end = certificateChain.end (); it != end; ++it) {
+            for (std::list<std::string>::const_iterator
+                    it = certificates.begin (),
+                    end = certificates.end (); it != end; ++it) {
                 stream <<
                     util::OpenTag (indentationLevel, TAG_CERTIFICATE) <<
                         util::Encodestring (*it) <<
@@ -335,6 +364,7 @@ namespace thekogans {
                 util::CloseTag (indentationLevel, tagName);
             return stream.str ();
         }
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         Stream::Ptr ServerSecureTCPSocket::OpenInfo::CreateStream () const {
             return Stream::Ptr (
@@ -345,7 +375,6 @@ namespace thekogans {
                     context.GetSSL_CTX (),
                     sessionInfo));
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         ServerSecureTCPSocket::ServerSecureTCPSocket (
                 const Address &address,

@@ -223,11 +223,14 @@ namespace thekogans {
             /// ctor.
             /// Initialize the Open SSL library.
             /// \param[in] multiThreaded true = initialize thread support.
-            /// \param[in] entropyNeeded Number of entropy bytes to use
-            /// to seed the PRNG.
+            /// \param[in] entropyNeeded Number of entropy bytes to use to seed the PRNG.
+            /// \param[in] loadSystemCACertificates Load system CA certificates.
+            /// \param[in] loadSystemRootCACertificatesOnly Load system root (self signed) CA certificates only.
             OpenSSLInit (
                 bool multiThreaded = true,
-                util::ui32 entropyNeeded = DEFAULT_ENTROPY_NEEDED);
+                util::ui32 entropyNeeded = DEFAULT_ENTROPY_NEEDED,
+                bool loadSystemCACertificates = true,
+                bool loadSystemRootCACertificatesOnly = true);
             /// \brief
             /// \dtor.
             ~OpenSSLInit ();
@@ -428,15 +431,25 @@ namespace thekogans {
                 SSL *ssl,
                 const std::string &serverName);
         /// \brief
-        /// Load a PEM encoded CA certificate from a string.
+        /// Cache system CA certificates.
+        /// \param[in] loadSystemRootCACertificatesOnly Load system root (self signed) CA certificates only.
+        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
+            CacheSystemCACertificates (bool loadSystemRootCACertificatesOnly = true);
+        /// \brief
+        /// Load system CA certificates.
+        /// \param[in] ctx SSL_CTX to load the certificates in to.
+        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
+            LoadSystemCACertificates (SSL_CTX *ctx);
+        /// \brief
+        /// Load a PEM encoded CA certificate list.
         /// \param[in] ctx SSL_CTX to load the certificate in to.
-        /// \param[in] caCertificate String representing a CA certificate.
+        /// \param[in] caCertificates PEM encoded CA certificates.
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
-            LoadCACertificate (
+            LoadCACertificates (
                 SSL_CTX *ctx,
-                const std::string &caCertificate,
+                const std::list<std::string> &caCertificates,
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
         /// \brief
@@ -501,6 +514,15 @@ namespace thekogans {
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
         /// \brief
+        /// Parse a DER encoded certificate.
+        /// \param[in] buffer Buffer containing the DER encoded certificate.
+        /// \param[in] length Length of buffer.
+        /// \return Parsed certificate.
+        _LIB_THEKOGANS_STREAM_DECL X509Ptr _LIB_THEKOGANS_STREAM_API
+            ParseDERCertificate (
+                const void *buffer,
+                std::size_t length);
+        /// \brief
         /// Parse a PEM encoded certificate.
         /// \param[in] buffer Buffer containing the PEM encoded certificate.
         /// \param[in] length Length of buffer.
@@ -508,7 +530,7 @@ namespace thekogans {
         /// \param[in] userData User data for passwordCallback.
         /// \return Parsed certificate.
         _LIB_THEKOGANS_STREAM_DECL X509Ptr _LIB_THEKOGANS_STREAM_API
-            ParseCertificate (
+            ParsePEMCertificate (
                 const void *buffer,
                 std::size_t length,
                 pem_password_cb *passwordCallback = 0,

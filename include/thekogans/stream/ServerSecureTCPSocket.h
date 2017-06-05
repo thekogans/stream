@@ -46,7 +46,6 @@ namespace thekogans {
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ServerSecureTCPSocket)
 
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \struct ServerSecureTCPSocket::OpenInfo ServerSecureTCPSocket.h
             /// thekogans/stream/ServerSecureTCPSocket.h
             ///
@@ -62,9 +61,15 @@ namespace thekogans {
             ///     <ReuseAddress>If true call SetReuseAddress.</ReuseAddress>
             ///     <MaxPendingConnections>Max pending connection requests.</MaxPendingConnections>
             ///     <TLSContext ProtocolVersion = "1.0, 1.1, 1.2">
-            ///         <CACertificate>
-            ///             CA certificate.
-            ///         </CACertificate>
+            ///         <LoadSystemCACertificates>
+            ///             true = Load system CA certificates.
+            ///         </LoadSystemCACertificates>
+            ///         <CACertificates>
+            ///             <Certificate>
+            ///                 CA certificate.
+            ///             </Certificate>
+            ///             ...
+            ///         </CACertificates>
             ///         <CertificateChainRSA>
             ///             <Certificate>
             ///                 Chain certificate.
@@ -119,6 +124,7 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<OpenInfo>.
                 typedef std::unique_ptr<OpenInfo> UniquePtr;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ServerSecureTCPSocket"
                 static const char * const VALUE_SERVER_SECURE_TCP_SOCKET;
@@ -128,6 +134,7 @@ namespace thekogans {
                 /// \brief
                 /// "MaxPendingConnections"
                 static const char * const TAG_MAX_PENDING_CONNECTIONS;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Listening address.
@@ -144,6 +151,7 @@ namespace thekogans {
                 /// \brief
                 /// TLSContext aggregates parameters necessary to create a server side SSL_CTX.
                 struct _LIB_THEKOGANS_STREAM_DECL TLSContext {
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// "TLSContext"
                     static const char * const TAG_TLS_CONTEXT;
@@ -151,8 +159,11 @@ namespace thekogans {
                     /// "ProtocolVersion"
                     static const char * const ATTR_PROTOCOL_VERSION;
                     /// \brief
-                    /// "CACertificate"
-                    static const char * const TAG_CA_CERTIFICATE;
+                    /// "LoadSystemCACertificates"
+                    static const char * const TAG_LOAD_SYSTEM_CA_CERTIFICATES;
+                    /// \brief
+                    /// "CACertificates"
+                    static const char * const TAG_CA_CERTIFICATES;
                     /// \brief
                     /// "CertificateChainRSA"
                     static const char * const TAG_CERTIFICATE_CHAIN_RSA;
@@ -189,6 +200,7 @@ namespace thekogans {
                     /// \brief
                     /// "CachedSessionTTL"
                     static const char * const TAG_CACHED_SESSION_TTL;
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     enum {
                         /// \brief
@@ -203,9 +215,11 @@ namespace thekogans {
                     /// TLS protocol version.
                     std::string protocolVersion;
                     /// \brief
-                    /// CA certificate used to validate
-                    /// client and server certificates.
-                    std::string caCertificate;
+                    /// true = Load system CA certificates.
+                    bool loadSystemCACertificates;
+                    /// \brief
+                    /// CA certificates used to validate client certificates.
+                    std::list<std::string> caCertificates;
                     /// \brief
                     /// Server RSA certificate chain.
                     std::list<std::string> certificateChainRSA;
@@ -222,23 +236,20 @@ namespace thekogans {
                     /// Cipher list the server supports.
                     std::string cipherList;
                     /// \brief
-                    /// If true, abort the connection if client did
+                    /// true = abort the connection if client did
                     /// not present a valid certificate.
                     bool requireClientCertificate;
                     /// \brief
                     /// Max depth of client certificate chain to verify.
                     util::ui32 maxClientCertificateChainDepth;
                     /// \brief
-                    /// Diffie-Hellman params for ephemeral
-                    /// key exchange.
+                    /// Diffie-Hellman params for ephemeral key exchange.
                     std::string dhParams;
                     /// \brief
-                    /// Elliptic curve Diffie-Hellman params
-                    /// type (auto | curve | pem).
+                    /// Elliptic curve Diffie-Hellman params type (auto | curve | pem).
                     std::string ecdhParamsType;
                     /// \brief
-                    /// Elliptic curve Diffie-Hellman params
-                    /// for ephemeral key exchange.
+                    /// Elliptic curve Diffie-Hellman params for ephemeral key exchange.
                     std::string ecdhParams;
                     /// \brief
                     /// How long to cache the session for resumption
@@ -255,26 +266,77 @@ namespace thekogans {
                     /// \brief
                     /// Default ctor.
                     TLSContext () :
+                        loadSystemCACertificates (true),
                         requireClientCertificate (true),
                         maxClientCertificateChainDepth (
                             DEFAULT_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH),
                         cachedSessionTTL (DEFAULT_CACHED_SESSION_TTL) {}
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// ctor. Parse the node representing a
                     /// ServerSecureTCPSocket::OpenInfo::TlSContext.
                     /// \param[in] node pugi::xml_node representing
                     /// a ServerSecureTCPSocket::OpenInfo::TLSContext.
                     explicit TLSContext (const pugi::xml_node &node) :
+                            loadSystemCACertificates (true),
                             requireClientCertificate (true),
                             maxClientCertificateChainDepth (
                                 DEFAULT_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH),
                             cachedSessionTTL (DEFAULT_CACHED_SESSION_TTL) {
                         Parse (node);
                     }
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Copy ctor.
                     /// \param[in] connect TLSContext to copy.
                     TLSContext (const TLSContext &context);
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] protocolVersion_ TLS protocol version.
+                    /// \param[in] loadSystemCACertificates_ true = load system CA certificates.
+                    /// \param[in] caCertificate_ CA certificate used to validate client certificates.
+                    /// \param[in] certificateChainRSA_ Server RSA certificate chain.
+                    /// \param[in] privateKeyRSA_ Server RSA private key.
+                    /// \param[in] certificateChainDSA_ Server DSA certificate chain.
+                    /// \param[in] privateKeyDSA_ Server DSA private key.
+                    /// \param[in] cipherList_ Cipher list the server supports.
+                    /// \param[in] requireClientCertificate_ true = abort the connection if client did
+                    /// not present a valid certificate.
+                    /// \param[in] maxClientCertificateChainDepth_ Max depth of client certificate chain to verify.
+                    /// \param[in] dhParams_ Diffie-Hellman params for ephemeral key exchange.
+                    /// \param[in] ecdhParamsType_ Elliptic curve Diffie-Hellman params type (auto | curve | pem).
+                    /// \param[in] ecdhParams_ Elliptic curve Diffie-Hellman params for ephemeral key exchange.
+                    /// \param[in] cachedSessionTTL_ How long to cache the session for resumption
+                    /// before declaring it invalid.
+                    TLSContext (
+                        const std::string &protocolVersion_,
+                        bool loadSystemCACertificates_,
+                        const std::list<std::string> &caCertificates_,
+                        const std::list<std::string> &certificateChainRSA_,
+                        const std::string &privateKeyRSA_,
+                        const std::list<std::string> &certificateChainDSA_,
+                        const std::string &privateKeyDSA_,
+                        const std::string &cipherList_,
+                        bool requireClientCertificate_,
+                        util::ui32 maxClientCertificateChainDepth_,
+                        const std::string &dhParams_,
+                        const std::string &ecdhParamsType_,
+                        const std::string &ecdhParams_,
+                        util::ui32 cachedSessionTTL_) :
+                        protocolVersion (protocolVersion_),
+                        loadSystemCACertificates (loadSystemCACertificates_),
+                        caCertificates (caCertificates_),
+                        certificateChainRSA (certificateChainRSA_),
+                        privateKeyRSA (privateKeyRSA_),
+                        certificateChainDSA (certificateChainDSA_),
+                        privateKeyDSA (privateKeyDSA_),
+                        cipherList (cipherList_),
+                        requireClientCertificate (requireClientCertificate_),
+                        maxClientCertificateChainDepth (maxClientCertificateChainDepth_),
+                        dhParams (dhParams_),
+                        ecdhParamsType (ecdhParamsType_),
+                        ecdhParams (ecdhParams_),
+                        cachedSessionTTL (cachedSessionTTL_) {}
 
                     /// \brief
                     /// Assignment operator.
@@ -282,6 +344,7 @@ namespace thekogans {
                     /// \return *this.
                     TLSContext &operator = (const TLSContext &context);
 
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Parse the node representing a
                     /// ServerSecureTCPSocket::OpenInfo::TLSContext.
@@ -299,32 +362,56 @@ namespace thekogans {
                     virtual std::string ToString (
                         util::ui32 indentationLevel = 0,
                         const char *tagName = TAG_OPEN_INFO) const;
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+
+                    void PrepareSSL_CTX ();
 
                     /// \brief
                     /// Create an OpenSSL SSL_CTX from the values in TLSContext.
                     /// \return SSL_CTX based on the values in TLSContext.
                     SSL_CTX *GetSSL_CTX () const;
 
+                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 private:
                     /// \brief
-                    /// Helper used to parse the certificate chain.
-                    /// \param[in] node Parent of Certificate children representing the chain.
-                    void ParseCertificateChain (
+                    /// Helper used to parse the certificate list.
+                    /// \param[in] node Parent of Certificate children representing the list.
+                    /// \param[out] certificates List of parsed certificates.
+                    void ParseCertificates (
                         const pugi::xml_node &node,
-                        std::list<std::string> &certificateChain);
+                        std::list<std::string> &certificates);
                     /// \brief
                     /// Helper used to format a list of certificates to form a chain.
                     /// \param[in] indentationLevel Pretty print parameter.
                     /// indents the tag with 4 * indentationLevel spaces.
+                    /// \param[in] certificates List of certificates to format.
                     /// \return A string representing an XML structure of a certificate chain.
-                    std::string FormatCertificateChain (
+                    std::string FormatCertificates (
                         util::ui32 indentationLevel,
-                        const std::list<std::string> &certificateChain) const;
+                        const std::list<std::string> &certificates) const;
+                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
                 /// \brief
                 /// Extended session info.
                 SessionInfo sessionInfo;
 
+                /// \brief
+                /// ctor. Parse the node representing a
+                /// ServerSecureTCPSocket::OpenInfo.
+                /// \param[in] node pugi::xml_node representing
+                /// a ServerSecureTCPSocket::OpenInfo.
+                OpenInfo (
+                    const Address &address_ = Address::Empty,
+                    bool reuseAddress_ = false,
+                    util::ui32 maxPendingConnections_ = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
+                    const TLSContext &context_ = TLSContext::Empty,
+                    const SessionInfo &sessionInfo_ = SessionInfo::Empty) :
+                    address (address_),
+                    reuseAddress (reuseAddress_),
+                    maxPendingConnections (maxPendingConnections_),
+                    context (context_),
+                    sessionInfo (sessionInfo_) {}
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
                 /// ServerSecureTCPSocket::OpenInfo.
@@ -357,13 +444,13 @@ namespace thekogans {
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
                     const char *tagName = TAG_OPEN_INFO) const;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ServerSecureTCPSocket.
                 /// \return ServerSecureTCPSocket.
                 virtual Stream::Ptr CreateStream () const;
             };
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
             /// \brief
             /// TLS context used to setup incoming connections.

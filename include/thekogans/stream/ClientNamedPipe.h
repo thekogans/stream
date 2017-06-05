@@ -50,7 +50,6 @@ namespace thekogans {
             };
 
         private:
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \struct ClientNamedPipe::OpenInfo ClientNamedPipe.h thekogans/stream/ClientNamedPipe.h
             ///
             /// \brief
@@ -72,6 +71,7 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<OpenInfo>.
                 typedef std::unique_ptr<OpenInfo> UniquePtr;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ClientNamedPipe"
                 static const char * const VALUE_CLIENT_NAMED_PIPE;
@@ -87,6 +87,7 @@ namespace thekogans {
                 /// \brief
                 /// "Timeout"
                 static const char * const TAG_TIMEOUT;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Address of ServerNamedPipe to connect to.
@@ -98,6 +99,7 @@ namespace thekogans {
                 /// Connection timeout.
                 DWORD timeout;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
                 /// ClientNamedPipe::OpenInfo.
@@ -110,6 +112,7 @@ namespace thekogans {
                         timeout (ClientNamedPipe::DEFAULT_TIMEOUT) {
                     Parse (node);
                 }
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] address_ Address of ServerNamedPipe to connect to.
@@ -119,11 +122,11 @@ namespace thekogans {
                     const Address &address_,
                     PipeType pipeType_,
                     DWORD timeout_) :
-                    Stream::OpenInfo (VALUE_CLIENT_NAMED_PIPE),
                     address (address_),
                     pipeType (pipeType_),
                     timeout (timeout_) {}
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a
                 /// ClientNamedPipe::OpenInfo.
@@ -141,6 +144,7 @@ namespace thekogans {
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
                     const char *tagName = TAG_OPEN_INFO) const;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ClientNamedPipe based on the OpenInfo parameters.
@@ -150,7 +154,6 @@ namespace thekogans {
                         new ClientNamedPipe (address, pipeType, timeout));
                 }
             };
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         public:
             /// \brief

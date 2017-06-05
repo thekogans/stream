@@ -2,8 +2,8 @@
                 project = "stream"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "8"
-                patch_version = "9"
+                minor_version = "9"
+                patch_version = "1"
                 guid = "5e33fdb222451ad9697ca87aec9de144"
                 schema_version = "2">
   <features>
@@ -29,12 +29,18 @@
     </if>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
-        <system>Ws2_32.lib</system>
-        <system>Iphlpapi.lib</system>
+        <library>Ws2_32.lib</library>
+        <library>Iphlpapi.lib</library>
+        <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
+          <library>Crypt32.lib</library>
+        </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <system>-framework CoreFoundation</system>
-        <system>-framework SystemConfiguration</system>
+        <framework>CoreFoundation</framework>
+        <framework>SystemConfiguration</framework>
+        <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
+          <framework>Security</framework>
+        </if>
       </when>
     </choose>
   </dependencies>

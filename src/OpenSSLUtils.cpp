@@ -27,11 +27,15 @@
         #endif // !defined (NOMINMAX)
     #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
+    #include <wincrypt.h>
     #include <windows.h>
+#elif defined (TOOLCHAIN_OS_OSX)
+    #include <CoreFoundation/CoreFoundation.h>
+    #include <Security/Security.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include <sstream>
 #include <openssl/rand.h>
 #include <openssl/hmac.h>
-#include <sstream>
 #include "thekogans/util/OwnerVector.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
@@ -168,6 +172,263 @@ namespace thekogans {
                 CRYPTO_THREADID_set_numeric (&threadId, (unsigned long)(unsigned long long)thread);
                 ERR_remove_thread_state (&threadId);
             }
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            std::string GetCertName (PCERT_NAME_BLOB certName) {
+                DWORD size = CertNameToStr (
+                    X509_ASN_ENCODING,
+                    certName,
+                    CERT_SIMPLE_NAME_STR,
+                    0, 0);
+                if (size != 0) {
+                    std::vector<char> buffer (size);
+                    CertNameToStr (
+                        X509_ASN_ENCODING,
+                        certName,
+                        CERT_SIMPLE_NAME_STR,
+                        &buffer[0],
+                        (DWORD)buffer.size ());
+                    return std::string (&buffer[0]);
+                }
+                return std::string ();
+            }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            struct CFArrayRefDeleter {
+                void operator () (CFArrayRef arrayRef) {
+                    if (arrayRef != 0) {
+                        CFRelease (arrayRef);
+                    }
+                }
+            };
+            typedef std::unique_ptr<const __CFArray, CFArrayRefDeleter> CFArrayRefPtr;
+
+            struct CFDictionaryRefDeleter {
+                void operator () (CFDictionaryRef dictionaryRef) {
+                    if (dictionaryRef != 0) {
+                        CFRelease (dictionaryRef);
+                    }
+                }
+            };
+            typedef std::unique_ptr<const __CFDictionary, CFDictionaryRefDeleter> CFDictionaryRefPtr;
+
+            struct CFErrorRefDeleter {
+                void operator () (CFErrorRef errorRef) {
+                    if (errorRef != 0) {
+                        CFRelease (errorRef);
+                    }
+                }
+            };
+            typedef std::unique_ptr<__CFError, CFErrorRefDeleter> CFErrorRefPtr;
+
+            struct CFDataRefDeleter {
+                void operator () (CFDataRef dataRef) {
+                    if (dataRef != 0) {
+                        CFRelease (dataRef);
+                    }
+                }
+            };
+            typedef std::unique_ptr<const __CFData, CFDataRefDeleter> CFDataRefPtr;
+
+            struct CFDateRefDeleter {
+                void operator () (CFDateRef dateRef) {
+                    if (dateRef != 0) {
+                        CFRelease (dateRef);
+                    }
+                }
+            };
+            typedef std::unique_ptr<const __CFDate, CFDateRefDeleter> CFDateRefPtr;
+
+            bool CheckDateRange (
+                    CFNumberRef notBefore,
+                    CFNumberRef notAfter) {
+                CFDateRefPtr now (CFDateCreate (0, CFAbsoluteTimeGetCurrent ()));
+                if (now.get () != 0) {
+                    CFAbsoluteTime validityNotBefore;
+                    CFAbsoluteTime validityNotAfter;
+                    if (CFNumberGetValue (notBefore, kCFNumberDoubleType, &validityNotBefore) &&
+                            CFNumberGetValue (notAfter, kCFNumberDoubleType, &validityNotAfter)) {
+                        CFDateRefPtr notBeforeDate (CFDateCreate (0, validityNotBefore));
+                        CFDateRefPtr notAfterDate (CFDateCreate (0, validityNotAfter));
+                        return notBeforeDate.get () != 0 && notAfterDate.get () != 0 &&
+                            CFDateCompare (notBeforeDate.get (), now.get (), 0) == kCFCompareLessThan &&
+                            CFDateCompare (now.get (), notAfterDate.get (), 0) == kCFCompareLessThan;
+                    }
+                }
+                return false;
+            }
+        #endif // defined (TOOLCHAIN_OS_OSX)
+
+            struct SystemCACertificates : public util::Singleton<SystemCACertificates, util::SpinLock> {
+                std::list<X509Ptr> certificates;
+                util::SpinLock spinLock;
+
+                void Load (bool loadSystemRootCACertificatesOnly = true) {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    certificates.clear ();
+                #if defined (TOOLCHAIN_OS_Windows)
+                    struct SystemStore {
+                        HCERTSTORE certStore;
+                        explicit SystemStore (const char *storeName) :
+                                certStore (CertOpenSystemStore (0, storeName)) {
+                            if (certStore == 0) {
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                    THEKOGANS_UTIL_OS_ERROR_CODE);
+                            }
+                        }
+                        ~SystemStore () {
+                            CertCloseStore (certStore, 0);
+                        }
+                    };
+                    SystemStore rootStore ("ROOT");
+                    SystemStore caStore ("CA");
+                    SystemStore myStore ("MY");
+                    SystemStore *stores[] = {
+                        &rootStore,
+                        &caStore,
+                        &myStore
+                    };
+                    for (int i = 0, numStores = THEKOGANS_UTIL_ARRAY_SIZE (stores); i < numStores; ++i) {
+                        PCCERT_CONTEXT certContext = 0;
+                        while ((certContext = CertEnumCertificatesInStore (stores[i]->certStore, certContext)) != 0) {
+                            // Skip expired certificates.
+                            if (CertVerifyTimeValidity (0, certContext->pCertInfo) == 0) {
+                                if (loadSystemRootCACertificatesOnly) {
+                                    // We only want to add Root CAs, so make sure Subject and Issuer names match.
+                                    std::string subject = GetCertName (&certContext->pCertInfo->Subject);
+                                    std::string issuer = GetCertName (&certContext->pCertInfo->Issuer);
+                                    if (subject.empty () || issuer.empty () || subject != issuer) {
+                                        continue;
+                                    }
+                                }
+                                // M$ certificates are DER encoded.
+                                X509Ptr certificate = ParseDERCertificate (certContext->pbCertEncoded, certContext->cbCertEncoded);
+                                if (certificate.get () != 0) {
+                                    certificates.push_back (std::move (certificate));
+                                }
+                                else {
+                                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                                }
+                            }
+                        }
+                    }
+                #elif defined (TOOLCHAIN_OS_Linux)
+                    // FIXME: implement
+                    assert (0);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    // This code was adapted from: https://github.com/raggi/openssl-osx-ca
+                    // Get certificates from all domains, not just System, this lets
+                    // the user add CAs to their "login" keychain, and Admins to add
+                    // to the "System" keychain
+                    SecTrustSettingsDomain domains[] = {
+                        kSecTrustSettingsDomainSystem,
+                        kSecTrustSettingsDomainAdmin,
+                        kSecTrustSettingsDomainUser
+                    };
+                    CFStringRef x509OID[] = {
+                        kSecOIDX509V1ValidityNotBefore,
+                        kSecOIDX509V1ValidityNotAfter,
+                        kSecOIDX509V1SubjectName,
+                        kSecOIDX509V1IssuerName
+                    };
+                    CFArrayRefPtr x509Keys (
+                        CFArrayCreate (0,
+                            (const void **)x509OID,
+                            THEKOGANS_UTIL_ARRAY_SIZE (x509OID),
+                            &kCFTypeArrayCallBacks));
+                    for (int i = 0, numDomains = THEKOGANS_UTIL_ARRAY_SIZE (domains); i < numDomains; ++i) {
+                        CFArrayRef certs = 0;
+                        OSStatus errorCode = SecTrustSettingsCopyCertificates (domains[i], &certs);
+                        if (certs != 0) {
+                            CFArrayRefPtr certsPtr (certs);
+                            for (int j = 0, numCerts = CFArrayGetCount (certs); j < numCerts; ++j) {
+                                SecCertificateRef cert = (SecCertificateRef)CFArrayGetValueAtIndex (certs, j);
+                                if (cert != 0) {
+                                    CFErrorRef error = 0;
+                                    CFDictionaryRefPtr names (SecCertificateCopyValues (cert, x509Keys.get (), &error));
+                                    if (names != 0) {
+                                        // Check if the certificate expired.
+                                        CFNumberRef notBefore =
+                                            (CFNumberRef)CFDictionaryGetValue (
+                                                (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1ValidityNotBefore),
+                                                kSecPropertyKeyValue);
+                                        CFNumberRef notAfter =
+                                            (CFNumberRef)CFDictionaryGetValue (
+                                                (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1ValidityNotAfter),
+                                                kSecPropertyKeyValue);
+                                        if (notBefore != 0 && notAfter != 0 && CheckDateRange (notBefore, notAfter)) {
+                                            if (loadSystemRootCACertificatesOnly) {
+                                                // We only want to add Root CAs, so make sure Subject and Issuer names match.
+                                                CFStringRef issuer =
+                                                    (CFStringRef)CFDictionaryGetValue (
+                                                        (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1IssuerName),
+                                                        kSecPropertyKeyValue);
+                                                CFStringRef subject =
+                                                    (CFStringRef)CFDictionaryGetValue(
+                                                        (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1SubjectName),
+                                                        kSecPropertyKeyValue);
+                                                if (issuer == 0 || subject == 0 || !CFEqual (subject, issuer)) {
+                                                    continue;
+                                                }
+                                            }
+                                            CFDataRef data = 0;
+                                            errorCode = SecItemExport (cert, kSecFormatX509Cert, kSecItemPemArmour, 0, &data);
+                                            if (errorCode == noErr) {
+                                                CFDataRefPtr dataPtr (data);
+                                                // Apple certificates are PEM encoded.
+                                                X509Ptr certificate = ParsePEMCertificate (CFDataGetBytePtr (data), CFDataGetLength (data));
+                                                if (certificate.get () != 0) {
+                                                    certificates.push_back (std::move (certificate));
+                                                }
+                                                else {
+                                                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                                                }
+                                            }
+                                            else {
+                                                THEKOGANS_UTIL_THROW_OSSTATUS_ERROR_CODE_EXCEPTION (errorCode);
+                                            }
+                                        }
+                                    }
+                                    else if (error != 0) {
+                                        CFErrorRefPtr errorPtr (error);
+                                        THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION (error);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+
+                void Use (SSL_CTX *ctx) {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    X509_STOREPtr newStore;
+                    X509_STORE *store = SSL_CTX_get_cert_store (ctx);
+                    if (store == 0) {
+                        newStore.reset (X509_STORE_new ());
+                        if (newStore.get () != 0) {
+                            store = newStore.get ();
+                        }
+                        else {
+                            THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        }
+                    }
+                    for (std::list<X509Ptr>::const_iterator
+                            it = certificates.begin (),
+                            end = certificates.end (); it != end; ++it) {
+                        if (X509_STORE_add_cert (store, (*it).get ()) != 1) {
+                            THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        }
+                    }
+                    if (newStore.get () != 0) {
+                        SSL_CTX_set_cert_store (ctx, newStore.release ());
+                    }
+                }
+
+                void Flush () {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    certificates.clear ();
+                }
+            };
         }
 
         int OpenSSLInit::SSLSecureSocketIndex = -1;
@@ -176,7 +437,9 @@ namespace thekogans {
         // This is enough entropy to cover 512 bit keys.
         OpenSSLInit::OpenSSLInit (
                 bool multiThreaded,
-                util::ui32 entropyNeeded) {
+                util::ui32 entropyNeeded,
+                bool loadSystemRootCACertificates,
+                bool loadSystemRootCACertificatesOnly) {
             if (multiThreaded) {
                 int lockCount = CRYPTO_num_locks ();
                 if (lockCount > 0) {
@@ -219,6 +482,10 @@ namespace thekogans {
             if (SSL_SESSIONSessionInfoIndex == -1) {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
+            if (loadSystemRootCACertificates) {
+                SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);
+            }
+            // FIXME: load a CRL.
             util::Thread::AddExitFunc (ExitFunc);
         }
 
@@ -231,6 +498,7 @@ namespace thekogans {
             staticLocks.deleteAndClear ();
             ERR_free_strings ();
             EVP_cleanup ();
+            SystemCACertificates::Instance ().Flush ();
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (SessionInfo, util::SpinLock)
@@ -347,11 +615,12 @@ namespace thekogans {
                 int ok,
                 X509_STORE_CTX *store) {
             if (!ok) {
-                X509 *cert = X509_STORE_CTX_get_current_cert (store);
                 int depth = X509_STORE_CTX_get_error_depth (store);
                 int error = X509_STORE_CTX_get_error (store);
-                char issuer[256] = {0};
-                char subject[256] = {0};
+                const int MAX_NAME_LENGTH = 256;
+                char issuer[MAX_NAME_LENGTH] = {0};
+                char subject[MAX_NAME_LENGTH] = {0};
+                X509 *cert = X509_STORE_CTX_get_current_cert (store);
                 if (cert != 0) {
                     X509_NAME_oneline (X509_get_issuer_name (cert), issuer, sizeof (issuer));
                     X509_NAME_oneline (X509_get_subject_name (cert), subject, sizeof (subject));
@@ -433,6 +702,7 @@ namespace thekogans {
             }
         }
 
+        // FIXME: check wildcard certificates.
         _LIB_THEKOGANS_STREAM_DECL int _LIB_THEKOGANS_STREAM_API
         PostConnectionCheck (
                 SSL *ssl,
@@ -445,12 +715,28 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
-        LoadCACertificate (
+        CacheSystemCACertificates (bool loadSystemRootCACertificatesOnly) {
+            SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
+        LoadSystemCACertificates (SSL_CTX *ctx) {
+            if (ctx != 0) {
+                SystemCACertificates::Instance ().Use (ctx);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
+        LoadCACertificates (
                 SSL_CTX *ctx,
-                const std::string &caCertificate,
+                const std::list<std::string> &caCertificates,
                 pem_password_cb *passwordCallback,
                 void *userData) {
-            if (ctx != 0 && !caCertificate.empty ()) {
+            if (ctx != 0 && !caCertificates.empty ()) {
                 X509_STOREPtr newStore;
                 X509_STORE *store = SSL_CTX_get_cert_store (ctx);
                 if (store == 0) {
@@ -462,10 +748,14 @@ namespace thekogans {
                         THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                     }
                 }
-                if (X509_STORE_add_cert (store,
-                        ParseCertificate (&caCertificate[0], caCertificate.size (),
-                            passwordCallback, userData).get ()) != 1) {
-                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                for (std::list<std::string>::const_iterator
+                        it = caCertificates.begin (),
+                        end = caCertificates.end (); it != end; ++it) {
+                    if (X509_STORE_add_cert (store,
+                            ParsePEMCertificate ((*it).c_str (), (*it).size (),
+                                passwordCallback, userData).get ()) != 1) {
+                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    }
                 }
                 if (newStore.get () != 0) {
                     SSL_CTX_set_cert_store (ctx, newStore.release ());
@@ -487,14 +777,14 @@ namespace thekogans {
                 std::list<std::string>::const_iterator it = certificateChain.begin ();
                 const std::string &certificate = *it++;
                 if (SSL_CTX_use_certificate (ctx,
-                        ParseCertificate (&certificate[0], certificate.size (),
+                        ParsePEMCertificate (&certificate[0], certificate.size (),
                             passwordCallback, userData).get ()) == 1) {
                     SSL_CTX_clear_chain_certs (ctx);
                     for (std::list<std::string>::const_iterator
                             end = certificateChain.end (); it != end; ++it) {
                         const std::string &certificate = *it;
                         if (SSL_CTX_add1_chain_cert (ctx,
-                                ParseCertificate (&certificate[0], certificate.size (),
+                                ParsePEMCertificate (&certificate[0], certificate.size (),
                                     passwordCallback, userData).get ()) != 1) {
                             THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                         }
@@ -608,12 +898,30 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_STREAM_DECL X509Ptr _LIB_THEKOGANS_STREAM_API
-        ParseCertificate (
+        ParseDERCertificate (
+                const void *buffer,
+                std::size_t length) {
+            if (buffer != 0 && length > 0) {
+                X509Ptr certificate (d2i_X509 (0, (const unsigned char **)&buffer, length));
+                if (certificate.get () != 0) {
+                    return certificate;
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL X509Ptr _LIB_THEKOGANS_STREAM_API
+        ParsePEMCertificate (
                 const void *buffer,
                 std::size_t length,
                 pem_password_cb *passwordCallback,
                 void *userData) {
-            X509Ptr cert;
             if (buffer != 0 && length > 0) {
                 // NOTE: I hate casting away constness, but thankfully,
                 // in this case it's harmless. Even though BIO_new_mem_buf
@@ -621,17 +929,22 @@ namespace thekogans {
                 // and therefore will not alter the buffer.
                 BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
                 if (bio.get () != 0) {
-                    cert.reset (PEM_read_bio_X509 (bio.get (), 0, passwordCallback, userData));
-                    if (cert.get () == 0) {
+                    X509Ptr certificate (PEM_read_bio_X509 (bio.get (), 0, passwordCallback, userData));
+                    if (certificate.get () != 0) {
+                        return certificate;
+                    }
+                    else {
                         THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                     }
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return cert;
         }
 
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
@@ -640,7 +953,6 @@ namespace thekogans {
                 std::size_t length,
                 pem_password_cb *passwordCallback,
                 void *userData) {
-            EVP_PKEYPtr key;
             if (buffer != 0 && length > 0) {
                 // NOTE: I hate casting away constness, but thankfully,
                 // in this case it's harmless. Even though BIO_new_mem_buf
@@ -648,8 +960,11 @@ namespace thekogans {
                 // and therefore will not alter the buffer.
                 BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
                 if (bio.get () != 0) {
-                    key.reset (PEM_read_bio_PUBKEY (bio.get (), 0, passwordCallback, userData));
-                    if (key.get () == 0) {
+                    EVP_PKEYPtr key (PEM_read_bio_PUBKEY (bio.get (), 0, passwordCallback, userData));
+                    if (key.get () != 0) {
+                        return key;
+                    }
+                    else {
                         THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                     }
                 }
@@ -661,7 +976,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return key;
         }
 
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
@@ -670,7 +984,6 @@ namespace thekogans {
                 std::size_t length,
                 pem_password_cb *passwordCallback,
                 void *userData) {
-            EVP_PKEYPtr key;
             if (buffer != 0 && length > 0) {
                 // NOTE: I hate casting away constness, but thankfully,
                 // in this case it's harmless. Even though BIO_new_mem_buf
@@ -678,8 +991,11 @@ namespace thekogans {
                 // and therefore will not alter the buffer.
                 BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
                 if (bio.get () != 0) {
-                    key.reset (PEM_read_bio_PrivateKey (bio.get (), 0, passwordCallback, userData));
-                    if (key.get () == 0) {
+                    EVP_PKEYPtr key (PEM_read_bio_PrivateKey (bio.get (), 0, passwordCallback, userData));
+                    if (key.get () != 0) {
+                        return key;
+                    }
+                    else {
                         THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                     }
                 }
@@ -691,7 +1007,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return key;
         }
 
         _LIB_THEKOGANS_STREAM_DECL DHPtr _LIB_THEKOGANS_STREAM_API
@@ -700,7 +1015,6 @@ namespace thekogans {
                 std::size_t length,
                 pem_password_cb *passwordCallback,
                 void *userData) {
-            DHPtr dh;
             if (buffer != 0 && length > 0) {
                 // NOTE: I hate casting away constness, but thankfully,
                 // in this case it's harmless. Even though BIO_new_mem_buf
@@ -708,8 +1022,11 @@ namespace thekogans {
                 // and therefore will not alter the buffer.
                 BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
                 if (bio.get () != 0) {
-                    dh.reset (PEM_read_bio_DHparams (bio.get (), 0, passwordCallback, userData));
-                    if (dh.get () == 0) {
+                    DHPtr dh (PEM_read_bio_DHparams (bio.get (), 0, passwordCallback, userData));
+                    if (dh.get () != 0) {
+                        return dh;
+                    }
+                    else {
                         THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                     }
                 }
@@ -721,7 +1038,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return dh;
         }
 
         _LIB_THEKOGANS_STREAM_DECL DSAPtr _LIB_THEKOGANS_STREAM_API
@@ -730,7 +1046,6 @@ namespace thekogans {
                 std::size_t length,
                 pem_password_cb *passwordCallback,
                 void *userData) {
-            DSAPtr dsa;
             if (buffer != 0 && length > 0) {
                 // NOTE: I hate casting away constness, but thankfully,
                 // in this case it's harmless. Even though BIO_new_mem_buf
@@ -738,8 +1053,11 @@ namespace thekogans {
                 // and therefore will not alter the buffer.
                 BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
                 if (bio.get () != 0) {
-                    dsa.reset (PEM_read_bio_DSAparams (bio.get (), 0, passwordCallback, userData));
-                    if (dsa.get () == 0) {
+                    DSAPtr dsa (PEM_read_bio_DSAparams (bio.get (), 0, passwordCallback, userData));
+                    if (dsa.get () != 0) {
+                        return dsa;
+                    }
+                    else {
                         THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                     }
                 }
@@ -751,7 +1069,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return dsa;
         }
 
         _LIB_THEKOGANS_STREAM_DECL util::Exception _LIB_THEKOGANS_STREAM_API

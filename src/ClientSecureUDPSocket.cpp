@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML) && defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+#if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
 #include <cassert>
 #include <sstream>
@@ -29,12 +29,15 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientSecureUDPSocket)
 
+    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_DTLS_CONTEXT =
             "DTLSContext";
         const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::ATTR_PROTOCOL_VERSION =
             "ProtocolVersion";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CA_CERTIFICATE =
-            "CACertificate";
+        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
+            "LoadSystemCACertificates";
+        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CA_CERTIFICATES =
+            "CACertificates";
         const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CERTIFICATE_CHAIN =
             "CertificateChain";
         const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CERTIFICATE =
@@ -43,17 +46,22 @@ namespace thekogans {
             "PrivateKey";
         const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CIPHER_LIST =
             "CipherList";
+        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_VERIFY_SERVER =
+            "VerifyServer";
         const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH =
             "MaxServerCertificateChainDepth";
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         ClientSecureUDPSocket::OpenInfo::DTLSContext ClientSecureUDPSocket::OpenInfo::DTLSContext::Empty;
 
         ClientSecureUDPSocket::OpenInfo::DTLSContext::DTLSContext (const DTLSContext &context) :
                 protocolVersion (context.protocolVersion),
-                caCertificate (context.caCertificate),
+                loadSystemCACertificates (context.loadSystemCACertificates),
+                caCertificates (context.caCertificates),
                 certificateChain (context.certificateChain),
                 privateKey (context.privateKey),
                 cipherList (context.cipherList),
+                verifyServer (context.verifyServer),
                 maxServerCertificateChainDepth (context.maxServerCertificateChainDepth),
                 ctx (context.ctx.get ()) {
             if (ctx.get () != 0) {
@@ -65,10 +73,12 @@ namespace thekogans {
                 const DTLSContext &context) {
             if (&context != this) {
                 protocolVersion = context.protocolVersion;
-                caCertificate = context.caCertificate;
+                loadSystemCACertificates = context.loadSystemCACertificates;
+                caCertificates = context.caCertificates;
                 certificateChain = context.certificateChain;
                 privateKey = context.privateKey;
                 cipherList = context.cipherList;
+                verifyServer = context.verifyServer;
                 maxServerCertificateChainDepth = context.maxServerCertificateChainDepth;
                 ctx.reset (context.ctx.get ());
                 if (ctx.get () != 0) {
@@ -78,17 +88,22 @@ namespace thekogans {
             return *this;
         }
 
+    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void ClientSecureUDPSocket::OpenInfo::DTLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
-                    if (childName == TAG_CA_CERTIFICATE) {
-                        caCertificate = util::Decodestring (child.text ().get ());
+                    if (childName == TAG_LOAD_SYSTEM_CA_CERTIFICATES) {
+                        loadSystemCACertificates =
+                            util::Decodestring (child.text ().get ()) == util::XML_TRUE;
+                    }
+                    else if (childName == TAG_CA_CERTIFICATES) {
+                        ParseCertificates (child, caCertificates);
                     }
                     else if (childName == TAG_CERTIFICATE_CHAIN) {
-                        ParseCertificateChain (child);
+                        ParseCertificates (child, certificateChain);
                     }
                     else if (childName == TAG_PRIVATE_KEY) {
                         privateKey = util::Decodestring (child.text ().get ());
@@ -96,25 +111,15 @@ namespace thekogans {
                     else if (childName == TAG_CIPHER_LIST) {
                         cipherList = util::Decodestring (child.text ().get ());
                     }
+                    else if (childName == TAG_VERIFY_SERVER) {
+                        verifyServer = std::string (child.text ().get ()) == util::XML_TRUE;
+                    }
                     else if (childName == TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) {
                         maxServerCertificateChainDepth = util::stringToui32 (child.text ().get ());
                     }
                 }
             }
-            ctx.reset (SSL_CTX_new (GetDTLSMethod (protocolVersion)));
-            if (ctx.get () != 0) {
-                LoadCACertificate (ctx.get (), caCertificate);
-                LoadCertificateChain (ctx.get (), certificateChain);
-                LoadPrivateKey (ctx.get (), privateKey);
-                SSL_CTX_set_verify (ctx.get (), SSL_VERIFY_PEER, VerifyCallback);
-                SSL_CTX_set_verify_depth (ctx.get (), maxServerCertificateChainDepth);
-                LoadCipherList (ctx.get (), cipherList);
-                SSL_CTX_set_mode (ctx.get (), SSL_MODE_AUTO_RETRY);
-                SSL_CTX_set_read_ahead (ctx.get (), 1);
-            }
-            else {
-                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
-            }
+            PrepareSSL_CTX ();
         }
 
         std::string ClientSecureUDPSocket::OpenInfo::DTLSContext::ToString (
@@ -129,11 +134,14 @@ namespace thekogans {
             std::ostringstream stream;
             stream <<
                 util::OpenTag (indentationLevel, tagName, attributes) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATE) <<
-                        FormatCertificateChain (indentationLevel + 2) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATE) <<
+                    util::OpenTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                        (loadSystemCACertificates ? util::XML_TRUE : util::XML_FALSE) <<
+                    util::CloseTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                    util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
+                        FormatCertificates (indentationLevel + 2, caCertificates) <<
+                    util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
                     util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN) <<
-                        FormatCertificateChain (indentationLevel + 2) <<
+                        FormatCertificates (indentationLevel + 2, certificateChain) <<
                     util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN) <<
                     util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY) <<
                         util::Encodestring (privateKey) <<
@@ -141,19 +149,55 @@ namespace thekogans {
                     util::OpenTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
                         util::Encodestring (cipherList) <<
                     util::CloseTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
+                    util::OpenTag (indentationLevel + 1, TAG_VERIFY_SERVER) <<
+                        (verifyServer ? util::XML_TRUE : util::XML_FALSE) <<
+                    util::CloseTag (indentationLevel + 1, TAG_VERIFY_SERVER) <<
                     util::OpenTag (indentationLevel + 1, TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) <<
                         util::ui32Tostring (maxServerCertificateChainDepth) <<
                     util::CloseTag (indentationLevel + 1, TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) <<
                 util::CloseTag (indentationLevel, tagName);
             return stream.str ();
         }
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+
+        void ClientSecureUDPSocket::OpenInfo::DTLSContext::PrepareSSL_CTX () {
+            ctx.reset (SSL_CTX_new (GetDTLSMethod (protocolVersion)));
+            if (ctx.get () != 0) {
+                if (loadSystemCACertificates) {
+                    LoadSystemCACertificates (ctx.get ());
+                }
+                if (!caCertificates.empty ()) {
+                    LoadCACertificates (ctx.get (), caCertificates);
+                }
+                if (!certificateChain.empty ()) {
+                    LoadCertificateChain (ctx.get (), certificateChain);
+                }
+                if (!privateKey.empty ()) {
+                    LoadPrivateKey (ctx.get (), privateKey);
+                }
+                if (!cipherList.empty ()) {
+                    LoadCipherList (ctx.get (), cipherList);
+                }
+                if (verifyServer) {
+                    SSL_CTX_set_verify (ctx.get (), SSL_VERIFY_PEER, VerifyCallback);
+                    SSL_CTX_set_verify_depth (ctx.get (), maxServerCertificateChainDepth);
+                }
+                SSL_CTX_set_mode (ctx.get (), SSL_MODE_AUTO_RETRY);
+                SSL_CTX_set_read_ahead (ctx.get (), 1);
+            }
+            else {
+                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+            }
+        }
 
         SSL_CTX *ClientSecureUDPSocket::OpenInfo::DTLSContext::GetSSL_CTX () const {
             return ctx.get ();
         }
 
-        void ClientSecureUDPSocket::OpenInfo::DTLSContext::ParseCertificateChain (
-                const pugi::xml_node &node) {
+    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+        void ClientSecureUDPSocket::OpenInfo::DTLSContext::ParseCertificates (
+                const pugi::xml_node &node,
+                std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -161,18 +205,20 @@ namespace thekogans {
                     if (childName == TAG_CERTIFICATE) {
                         std::string certificate = util::Decodestring (child.text ().get ());
                         if (!certificate.empty ()) {
-                            certificateChain.push_back (certificate);
+                            certificates.push_back (certificate);
                         }
                     }
                 }
             }
         }
 
-        std::string ClientSecureUDPSocket::OpenInfo::DTLSContext::FormatCertificateChain (
-                util::ui32 indentationLevel) const {
+        std::string ClientSecureUDPSocket::OpenInfo::DTLSContext::FormatCertificates (
+                util::ui32 indentationLevel,
+                const std::list<std::string> &certificates) const {
             std::ostringstream stream;
-            for (std::list<std::string>::const_iterator it = certificateChain.begin (),
-                    end = certificateChain.end (); it != end; ++it) {
+            for (std::list<std::string>::const_iterator
+                    it = certificates.begin (),
+                    end = certificates.end (); it != end; ++it) {
                 stream <<
                     util::OpenTag (indentationLevel, TAG_CERTIFICATE) <<
                         util::Encodestring (*it) <<
@@ -180,7 +226,6 @@ namespace thekogans {
             }
             return stream.str ();
         }
-
 
         const char * const ClientSecureUDPSocket::OpenInfo::VALUE_CLIENT_SECURE_UDP_SOCKET =
             "ClientSecureUDPSocket";
@@ -217,6 +262,7 @@ namespace thekogans {
                 util::CloseTag (indentationLevel, tagName);
             return stream.str ();
         }
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         Stream::Ptr ClientSecureUDPSocket::OpenInfo::CreateStream () const {
             return Stream::Ptr (
@@ -226,4 +272,4 @@ namespace thekogans {
     } // namespace stream
 } // namespace thekogans
 
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML) && defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+#endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)

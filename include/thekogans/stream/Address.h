@@ -334,7 +334,7 @@ namespace thekogans {
             std::string GetAdapterName () const;
             /// \brief
             /// Set dl.sdl_data.
-            /// \param[in] index Link adapter index.
+            /// \param[in] name Link adapter name.
             void SetAdapterName (const std::string &name);
 
             /// \brief

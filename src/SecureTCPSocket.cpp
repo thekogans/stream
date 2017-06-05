@@ -548,8 +548,7 @@ namespace thekogans {
             }
             else {
                 if (!sessionInfo.serverName.empty ()) {
-                    int result = PostConnectionCheck (
-                        ssl.get (), sessionInfo.serverName);
+                    int result = PostConnectionCheck (ssl.get (), sessionInfo.serverName);
                     if (result != X509_V_OK) {
                         THEKOGANS_STREAM_THROW_OPENSSL_AND_MESSAGE_EXCEPTION (
                             " (%s)", X509_verify_cert_error_string (result));
