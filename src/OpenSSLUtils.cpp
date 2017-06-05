@@ -34,6 +34,7 @@
     #include <Security/Security.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <sstream>
+#include <regex>
 #include <openssl/rand.h>
 #include <openssl/hmac.h>
 #include "thekogans/util/OwnerVector.h"
@@ -651,6 +652,21 @@ namespace thekogans {
                         OBJ_obj2nid (X509_EXTENSION_get_object (extension))));
             }
 
+            bool CompareServerName (
+                    const std::string &serverName,
+                    const std::string &certificateName) {
+                std::size_t wildcard = certificateName.find_first_of ('*');
+                if (wildcard != std::string::npos) {
+                    // This is a wildcard certificate. Do a regex match.
+                    std::string patern = certificateName.substr (0, wildcard++);
+                    patern += ".*";
+                    patern += certificateName.substr (wildcard);
+                    std::regex certificateNamePatern (patern);
+                    return std::regex_match (serverName, certificateNamePatern);
+                }
+                return strcasecmp (serverName.c_str (), certificateName.c_str ()) == 0;
+            }
+
             bool CheckSubjectAltName (
                     X509 *cert,
                     const std::string &serverName) {
@@ -678,7 +694,7 @@ namespace thekogans {
                         for (int j = 0, count = sk_CONF_VALUE_num (nameValues); j < count; ++j) {
                             CONF_VALUE *nameValue = sk_CONF_VALUE_value (nameValues, j);
                             if (std::string ("DNS") == nameValue->name &&
-                                    serverName == nameValue->value) {
+                                    CompareServerName (serverName, nameValue->value)) {
                                 return true;
                             }
                         }
@@ -702,7 +718,6 @@ namespace thekogans {
             }
         }
 
-        // FIXME: check wildcard certificates.
         _LIB_THEKOGANS_STREAM_DECL int _LIB_THEKOGANS_STREAM_API
         PostConnectionCheck (
                 SSL *ssl,
@@ -711,7 +726,7 @@ namespace thekogans {
             return cert.get () != 0 &&
                 (CheckSubjectAltName (cert.get (), serverName) ||
                     CheckSubjectName (cert.get (), serverName)) ?
-                SSL_get_verify_result (ssl) : X509_V_ERR_APPLICATION_VERIFICATION;
+                X509_V_OK : X509_V_ERR_APPLICATION_VERIFICATION;
         }
 
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
