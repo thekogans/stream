@@ -655,14 +655,21 @@ namespace thekogans {
             bool CompareServerName (
                     const std::string &serverName,
                     const std::string &certificateName) {
-                std::size_t wildcard = certificateName.find_first_of ('*');
-                if (wildcard != std::string::npos) {
+                if (certificateName.find_first_of ('*') != std::string::npos) {
                     // This is a wildcard certificate. Do a regex match.
-                    std::string patern = certificateName.substr (0, wildcard++);
-                    patern += ".*";
-                    patern += certificateName.substr (wildcard);
-                    std::regex certificateNamePatern (patern);
-                    return std::regex_match (serverName, certificateNamePatern);
+                    std::string patern;
+                    for (std::size_t i = 0, count = certificateName.size (); i < count; ++i) {
+                        if (certificateName[i] == '*') {
+                            patern += ".*";
+                        }
+                        else if (certificateName[i] == '.') {
+                            patern += "\\.";
+                        }
+                        else {
+                            patern += certificateName[i];
+                        }
+                    }
+                    return std::regex_match (serverName, std::regex (patern));
                 }
                 return strcasecmp (serverName.c_str (), certificateName.c_str ()) == 0;
             }
