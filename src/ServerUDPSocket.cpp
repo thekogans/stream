@@ -15,11 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include <cassert>
 #include <algorithm>
-#include <sstream>
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include <sstream>
+    #include "thekogans/util/XMLUtils.h"
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerUDPSocket.h"
@@ -54,16 +55,21 @@ namespace thekogans {
         std::string ServerUDPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            assert (tagName != 0);
-            std::ostringstream stream;
-            stream <<
-                Stream::Context::ToString (indentationLevel, tagName) <<
-                    address.ToString (indentationLevel + 1) <<
-                    util::OpenTag (indentationLevel + 1, TAG_MAX_MESSAGE_LENGTH) <<
-                        util::i32Tostring (maxMessageLength) <<
-                    util::CloseTag (indentationLevel + 1, TAG_MAX_MESSAGE_LENGTH) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                std::ostringstream stream;
+                stream <<
+                    Stream::Context::ToString (indentationLevel, tagName) <<
+                        address.ToString (indentationLevel + 1) <<
+                        util::OpenTag (indentationLevel + 1, TAG_MAX_MESSAGE_LENGTH) <<
+                            util::i32Tostring (maxMessageLength) <<
+                        util::CloseTag (indentationLevel + 1, TAG_MAX_MESSAGE_LENGTH) <<
+                    util::CloseTag (indentationLevel, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Stream::Ptr ServerUDPSocket::Context::CreateStream () const {

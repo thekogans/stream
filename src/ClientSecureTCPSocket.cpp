@@ -17,14 +17,11 @@
 
 #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
-#include <cassert>
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include <sstream>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-#include "thekogans/util/Exception.h"
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "thekogans/util/Exception.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 #include "thekogans/stream/ClientSecureTCPSocket.h"
 
@@ -129,38 +126,43 @@ namespace thekogans {
         std::string ClientSecureTCPSocket::Context::TLSContext::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            assert (tagName != 0);
-            util::Attributes attributes;
-            attributes.push_back (
-                util::Attribute (
-                    ATTR_PROTOCOL_VERSION,
-                    util::Encodestring (protocolVersion)));
-            std::ostringstream stream;
-            stream <<
-                util::OpenTag (indentationLevel, tagName, attributes) <<
-                    util::OpenTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
-                        (loadSystemCACertificates ? util::XML_TRUE : util::XML_FALSE) <<
-                    util::CloseTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
-                        FormatCertificates (indentationLevel + 2, caCertificates) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN) <<
-                        FormatCertificates (indentationLevel + 2, certificateChain) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN) <<
-                    util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY) <<
-                        util::Encodestring (privateKey) <<
-                    util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
-                        util::Encodestring (cipherList) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
-                    util::OpenTag (indentationLevel + 1, TAG_VERIFY_SERVER) <<
-                        (verifyServer ? util::XML_TRUE : util::XML_FALSE) <<
-                    util::CloseTag (indentationLevel + 1, TAG_VERIFY_SERVER) <<
-                    util::OpenTag (indentationLevel + 1, TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) <<
-                        util::ui32Tostring (maxServerCertificateChainDepth) <<
-                    util::CloseTag (indentationLevel + 1, TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                util::Attributes attributes;
+                attributes.push_back (
+                    util::Attribute (
+                        ATTR_PROTOCOL_VERSION,
+                        util::Encodestring (protocolVersion)));
+                std::ostringstream stream;
+                stream <<
+                    util::OpenTag (indentationLevel, tagName, attributes) <<
+                        util::OpenTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                            (loadSystemCACertificates ? util::XML_TRUE : util::XML_FALSE) <<
+                        util::CloseTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
+                            FormatCertificates (indentationLevel + 2, caCertificates) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN) <<
+                            FormatCertificates (indentationLevel + 2, certificateChain) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN) <<
+                        util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY) <<
+                            util::Encodestring (privateKey) <<
+                        util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
+                            util::Encodestring (cipherList) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
+                        util::OpenTag (indentationLevel + 1, TAG_VERIFY_SERVER) <<
+                            (verifyServer ? util::XML_TRUE : util::XML_FALSE) <<
+                        util::CloseTag (indentationLevel + 1, TAG_VERIFY_SERVER) <<
+                        util::OpenTag (indentationLevel + 1, TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) <<
+                            util::ui32Tostring (maxServerCertificateChainDepth) <<
+                        util::CloseTag (indentationLevel + 1, TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH) <<
+                    util::CloseTag (indentationLevel, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -255,15 +257,20 @@ namespace thekogans {
         std::string ClientSecureTCPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            assert (tagName != 0);
-            std::ostringstream stream;
-            stream <<
-                Stream::Context::ToString (indentationLevel, tagName) <<
-                    address.ToString (indentationLevel + 1) <<
-                    context.ToString (indentationLevel + 1) <<
-                    sessionInfo.ToString (indentationLevel + 1) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                std::ostringstream stream;
+                stream <<
+                    Stream::Context::ToString (indentationLevel, tagName) <<
+                        address.ToString (indentationLevel + 1) <<
+                        context.ToString (indentationLevel + 1) <<
+                        sessionInfo.ToString (indentationLevel + 1) <<
+                    util::CloseTag (indentationLevel, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 

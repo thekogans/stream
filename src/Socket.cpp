@@ -34,7 +34,6 @@
         #include <stropts.h>
     #endif // defined (TOOLCHAIN_OS_Linux)
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include <cassert>
 #include <cstdio>
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Exception.h"

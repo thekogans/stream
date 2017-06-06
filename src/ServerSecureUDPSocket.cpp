@@ -19,9 +19,11 @@
 
 #include <cassert>
 #include <algorithm>
-#include <sstream>
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include <sstream>
+    #include "thekogans/util/XMLUtils.h"
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
@@ -217,58 +219,63 @@ namespace thekogans {
         std::string ServerSecureUDPSocket::Context::DTLSContext::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            assert (tagName != 0);
-            util::Attributes attributes;
-            attributes.push_back (
-                util::Attribute (
-                    ATTR_PROTOCOL_VERSION,
-                    util::Encodestring (protocolVersion)));
-            util::Attributes ecdhParamsAttributes;
-            ecdhParamsAttributes.push_back (
-                util::Attribute (
-                    ATTR_ECDH_PARAMS_TYPE,
-                    ecdhParamsType));
-            std::ostringstream stream;
-            stream <<
-                util::OpenTag (indentationLevel, tagName, attributes) <<
-                    util::OpenTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
-                        (loadSystemCACertificates ? util::XML_TRUE : util::XML_FALSE) <<
-                    util::CloseTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
-                        FormatCertificates (indentationLevel + 2, caCertificates) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
-                        FormatCertificates (indentationLevel + 2, certificateChainRSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
-                        util::Encodestring (privateKeyRSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
-                        FormatCertificates (indentationLevel + 2, certificateChainDSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
-                        util::Encodestring (privateKeyDSA) <<
-                    util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
-                        util::Encodestring (cipherList) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
-                    util::OpenTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
-                        (requireClientCertificate ? util::XML_TRUE : util::XML_FALSE) <<
-                    util::CloseTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
-                    util::OpenTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
-                        util::ui32Tostring (maxClientCertificateChainDepth) <<
-                    util::CloseTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
-                    util::OpenTag (indentationLevel + 1, TAG_DH_PARAMS) <<
-                        util::Encodestring (dhParams) <<
-                    util::CloseTag (indentationLevel + 1, TAG_DH_PARAMS) <<
-                    util::OpenTag (indentationLevel + 1, TAG_ECDH_PARAMS, ecdhParamsAttributes) <<
-                        util::Encodestring (ecdhParams) <<
-                    util::CloseTag (indentationLevel + 1, TAG_ECDH_PARAMS) <<
-                    util::OpenTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
-                        util::ui32Tostring (cachedSessionTTL) <<
-                    util::CloseTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                util::Attributes attributes;
+                attributes.push_back (
+                    util::Attribute (
+                        ATTR_PROTOCOL_VERSION,
+                        util::Encodestring (protocolVersion)));
+                util::Attributes ecdhParamsAttributes;
+                ecdhParamsAttributes.push_back (
+                    util::Attribute (
+                        ATTR_ECDH_PARAMS_TYPE,
+                        ecdhParamsType));
+                std::ostringstream stream;
+                stream <<
+                    util::OpenTag (indentationLevel, tagName, attributes) <<
+                        util::OpenTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                            (loadSystemCACertificates ? util::XML_TRUE : util::XML_FALSE) <<
+                        util::CloseTag (indentationLevel + 1, TAG_LOAD_SYSTEM_CA_CERTIFICATES) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
+                            FormatCertificates (indentationLevel + 2, caCertificates) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CA_CERTIFICATES) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
+                            FormatCertificates (indentationLevel + 2, certificateChainRSA) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_RSA) <<
+                        util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
+                            util::Encodestring (privateKeyRSA) <<
+                        util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_RSA) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
+                            FormatCertificates (indentationLevel + 2, certificateChainDSA) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CERTIFICATE_CHAIN_DSA) <<
+                        util::OpenTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
+                            util::Encodestring (privateKeyDSA) <<
+                        util::CloseTag (indentationLevel + 1, TAG_PRIVATE_KEY_DSA) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
+                            util::Encodestring (cipherList) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CIPHER_LIST) <<
+                        util::OpenTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
+                            (requireClientCertificate ? util::XML_TRUE : util::XML_FALSE) <<
+                        util::CloseTag (indentationLevel + 1, TAG_REQUIRE_CLIENT_CERTIFICATE) <<
+                        util::OpenTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
+                            util::ui32Tostring (maxClientCertificateChainDepth) <<
+                        util::CloseTag (indentationLevel + 1, TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH) <<
+                        util::OpenTag (indentationLevel + 1, TAG_DH_PARAMS) <<
+                            util::Encodestring (dhParams) <<
+                        util::CloseTag (indentationLevel + 1, TAG_DH_PARAMS) <<
+                        util::OpenTag (indentationLevel + 1, TAG_ECDH_PARAMS, ecdhParamsAttributes) <<
+                            util::Encodestring (ecdhParams) <<
+                        util::CloseTag (indentationLevel + 1, TAG_ECDH_PARAMS) <<
+                        util::OpenTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
+                            util::ui32Tostring (cachedSessionTTL) <<
+                        util::CloseTag (indentationLevel + 1, TAG_CACHED_SESSION_TTL) <<
+                    util::CloseTag (indentationLevel, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -381,15 +388,20 @@ namespace thekogans {
         std::string ServerSecureUDPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            assert (tagName != 0);
-            std::ostringstream stream;
-            stream <<
-                Stream::Context::ToString (indentationLevel, tagName) <<
-                    address.ToString (indentationLevel + 1) <<
-                    context.ToString (indentationLevel + 1) <<
-                    sessionInfo.ToString (indentationLevel + 1) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                std::ostringstream stream;
+                stream <<
+                    Stream::Context::ToString (indentationLevel, tagName) <<
+                        address.ToString (indentationLevel + 1) <<
+                        context.ToString (indentationLevel + 1) <<
+                        sessionInfo.ToString (indentationLevel + 1) <<
+                    util::CloseTag (indentationLevel, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 

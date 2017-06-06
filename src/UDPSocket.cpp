@@ -37,10 +37,8 @@
     #endif // defined (TOOLCHAIN_OS_OSX)
     #include <netinet/in.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include <sstream>
 #include <cassert>
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/MsgHdr.h"

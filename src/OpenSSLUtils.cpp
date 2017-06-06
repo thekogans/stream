@@ -44,7 +44,9 @@
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/XMLUtils.h"
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include "thekogans/util/XMLUtils.h"
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/internal.h"
 #include "thekogans/stream/SecureTCPSocket.h"
 #include "thekogans/stream/OpenSSLUtils.h"
@@ -556,24 +558,30 @@ namespace thekogans {
         std::string SessionInfo::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            util::Attributes attributes;
-            attributes.push_back (
-                util::Attribute (
-                    ATTR_SERVER_NAME,
-                    util::Encodestring (serverName)));
-            attributes.push_back (
-                util::Attribute (
-                    ATTR_RENEGOTIATION_FREQUENCY,
-                    util::ui32Tostring (renegotiationFrequency)));
-            attributes.push_back (
-                util::Attribute (
-                    ATTR_BIDIRECTIONAL_SHUTDOWN,
-                    bidirectionalShutdown ? util::XML_TRUE : util::XML_FALSE));
-            attributes.push_back (
-                util::Attribute (
-                    ATTR_COUNT_TRANSFERED,
-                    util::ui32Tostring (countTransfered)));
-            return util::OpenTag (indentationLevel, tagName, attributes, true, true);
+            if (tagName != 0) {
+                util::Attributes attributes;
+                attributes.push_back (
+                    util::Attribute (
+                        ATTR_SERVER_NAME,
+                        util::Encodestring (serverName)));
+                attributes.push_back (
+                    util::Attribute (
+                        ATTR_RENEGOTIATION_FREQUENCY,
+                        util::ui32Tostring (renegotiationFrequency)));
+                attributes.push_back (
+                    util::Attribute (
+                        ATTR_BIDIRECTIONAL_SHUTDOWN,
+                        bidirectionalShutdown ? util::XML_TRUE : util::XML_FALSE));
+                attributes.push_back (
+                    util::Attribute (
+                        ATTR_COUNT_TRANSFERED,
+                        util::ui32Tostring (countTransfered)));
+                return util::OpenTag (indentationLevel, tagName, attributes, true, true);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 

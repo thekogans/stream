@@ -115,7 +115,6 @@ namespace thekogans {
                     const Address &address_,
                     bool reuseAddress_,
                     util::i32 maxPendingConnections_) :
-                    Stream::Context (VALUE_SERVER_TCP_SOCKET),
                     address (address_),
                     reuseAddress (reuseAddress_),
                     maxPendingConnections (maxPendingConnections_) {}

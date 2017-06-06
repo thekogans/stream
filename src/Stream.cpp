@@ -24,11 +24,14 @@
 #endif // defined (TOOLCHAIN_OS_Linux)
 #include <cstdio>
 #include <cstdarg>
+#include <cassert>
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include "thekogans/util/XMLUtils.h"
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/internal.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
@@ -65,9 +68,15 @@ namespace thekogans {
         std::string Stream::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            util::Attributes attributes;
-            attributes.push_back (util::Attribute (ATTR_TYPE, type));
-            return util::OpenTag (indentationLevel, tagName, attributes, false, true);
+            if (tagName != 0) {
+                util::Attributes attributes;
+                attributes.push_back (util::Attribute (ATTR_TYPE, type));
+                return util::OpenTag (indentationLevel, tagName, attributes, false, true);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Stream::Map &Stream::GetMap () {
@@ -111,20 +120,14 @@ namespace thekogans {
             volatile ClientNamedPipe clientNamedPipe;
             volatile ServerNamedPipe serverNamedPipe;
         #endif // defined (TOOLCHAIN_OS_Windows)
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             volatile ClientTCPSocket clientTCPSocket;
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             volatile ServerTCPSocket serverTCPSocket;
             volatile ClientUDPSocket clinetudpSocket;
             volatile ServerUDPSocket serverUDPSocket;
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             volatile ClientSecureTCPSocket clientSecureTCPSocket;
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             volatile ServerSecureTCPSocket serverSecureTCPSocket;
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             volatile ClientSecureUDPSocket clientSecureUDPSocket;
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             volatile ServerSecureUDPSocket serverSecureUDPSocket;
         #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
         }

@@ -31,6 +31,7 @@
     #include <sys/types.h>
     #include <sys/event.h>
     #include <sys/time.h>
+    #include <cassert>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <vector>
 #include "thekogans/util/Flags.h"

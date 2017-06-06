@@ -15,10 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include <cassert>
-#include <sstream>
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include <sstream>
+    #include "thekogans/util/XMLUtils.h"
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerTCPSocket.h"
@@ -55,19 +56,24 @@ namespace thekogans {
         std::string ServerTCPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            assert (tagName != 0);
-            std::ostringstream stream;
-            stream <<
-                Stream::Context::ToString (indentationLevel, tagName) <<
-                    address.ToString (indentationLevel + 1) <<
-                    util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
-                        util::boolTostring (reuseAddress) <<
-                    util::CloseTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
-                    util::OpenTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
-                        util::i32Tostring (maxPendingConnections) <<
-                    util::CloseTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                std::ostringstream stream;
+                stream <<
+                    Stream::Context::ToString (indentationLevel, tagName) <<
+                        address.ToString (indentationLevel + 1) <<
+                        util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
+                            util::boolTostring (reuseAddress) <<
+                        util::CloseTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
+                        util::OpenTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
+                            util::i32Tostring (maxPendingConnections) <<
+                        util::CloseTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
+                    util::CloseTag (indentationLevel, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         Stream::Ptr ServerTCPSocket::Context::CreateStream () const {

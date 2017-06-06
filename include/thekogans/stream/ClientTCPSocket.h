@@ -95,7 +95,6 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] address_ \see{Address} to connect to.
                 explicit Context (const Address &address_) :
-                    Stream::Context (VALUE_CLIENT_TCP_SOCKET),
                     address (address_) {}
 
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)

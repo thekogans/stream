@@ -17,9 +17,11 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include <sstream>
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include <sstream>
+    #include "thekogans/util/XMLUtils.h"
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerNamedPipe.h"
 
@@ -58,24 +60,35 @@ namespace thekogans {
                     }
                 }
             }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unexpected context type: %s (%s)",
+                    type.c_str (),
+                    VALUE_CLIENT_NAMED_PIPE);
+            }
         }
 
         std::string ServerNamedPipe::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            assert (tagName != 0);
-            std::ostringstream stream;
-            stream <<
-                Stream::Context::ToString (indentationLevel, tagName) <<
-                    address.ToString (indentationLevel + 1) <<
-                    util::OpenTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
-                        (pipeType == NamedPipe::Byte ? VALUE_BYTE : VALUE_MESSAGE) <<
-                    util::CloseTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
-                    util::OpenTag (indentationLevel + 1, TAG_BUFFER_SIZE) <<
-                        util::ui32Tostring (bufferSize) <<
-                    util::CloseTag (indentationLevel + 1, TAG_BUFFER_SIZE) <<
-                util::CloseTag (indentationLevel, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                std::ostringstream stream;
+                stream <<
+                    Stream::Context::ToString (indentationLevel, tagName) <<
+                        address.ToString (indentationLevel + 1) <<
+                        util::OpenTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
+                            (pipeType == NamedPipe::Byte ? VALUE_BYTE : VALUE_MESSAGE) <<
+                        util::CloseTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
+                        util::OpenTag (indentationLevel + 1, TAG_BUFFER_SIZE) <<
+                            util::ui32Tostring (bufferSize) <<
+                        util::CloseTag (indentationLevel + 1, TAG_BUFFER_SIZE) <<
+                    util::CloseTag (indentationLevel, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 

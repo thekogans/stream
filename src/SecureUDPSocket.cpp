@@ -17,10 +17,10 @@
 
 #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
+#include <cassert>
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/XMLUtils.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/SecureUDPSocket.h"

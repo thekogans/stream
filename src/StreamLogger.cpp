@@ -49,20 +49,26 @@ namespace thekogans {
         }
 
         std::string StreamLogger::Entry::ToString (const char *tagName) const {
-            util::Attributes attributes;
-            attributes.push_back (util::Attribute (ATTR_SUBSYSTEM, subsystem));
-            attributes.push_back (util::Attribute (ATTR_LEVEL, util::ui32Tostring (level)));
-            std::ostringstream stream;
-            stream <<
-                util::OpenTag (0, tagName, attributes, false, true) <<
-                    util::OpenTag (1, TAG_HEADER) <<
-                        util::Encodestring (header) <<
-                    util::CloseTag (1, TAG_HEADER) <<
-                    util::OpenTag (1, TAG_MESSAGE) <<
-                        util::Encodestring (message) <<
-                    util::CloseTag (1, TAG_MESSAGE) <<
-                util::CloseTag (0, tagName);
-            return stream.str ();
+            if (tagName != 0) {
+                util::Attributes attributes;
+                attributes.push_back (util::Attribute (ATTR_SUBSYSTEM, subsystem));
+                attributes.push_back (util::Attribute (ATTR_LEVEL, util::ui32Tostring (level)));
+                std::ostringstream stream;
+                stream <<
+                    util::OpenTag (0, tagName, attributes, false, true) <<
+                        util::OpenTag (1, TAG_HEADER) <<
+                            util::Encodestring (header) <<
+                        util::CloseTag (1, TAG_HEADER) <<
+                        util::OpenTag (1, TAG_MESSAGE) <<
+                            util::Encodestring (message) <<
+                        util::CloseTag (1, TAG_MESSAGE) <<
+                    util::CloseTag (0, tagName);
+                return stream.str ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         void StreamLogger::Log (

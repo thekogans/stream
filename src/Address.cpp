@@ -717,57 +717,63 @@ namespace thekogans {
         std::string Address::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
-            util::Attributes attributes;
-            util::ui16 family = GetFamily ();
-            if (family == AF_INET) {
-                attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET));
-                attributes.push_back (util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
-                attributes.push_back (
-                    util::Attribute (ATTR_ADDR,
-                        ntohl (in.sin_addr.s_addr) == INADDR_ANY ?
-                            VALUE_ADDR_ANY :
-                            ntohl (in.sin_addr.s_addr) == INADDR_LOOPBACK ?
-                                VALUE_ADDR_LOOPBACK :
-                                util::Encodestring (AddrToString ())));
+            if (tagName != 0) {
+                util::Attributes attributes;
+                util::ui16 family = GetFamily ();
+                if (family == AF_INET) {
+                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET));
+                    attributes.push_back (util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_ADDR,
+                            ntohl (in.sin_addr.s_addr) == INADDR_ANY ?
+                                VALUE_ADDR_ANY :
+                                ntohl (in.sin_addr.s_addr) == INADDR_LOOPBACK ?
+                                    VALUE_ADDR_LOOPBACK :
+                                    util::Encodestring (AddrToString ())));
+                }
+                else if (family == AF_INET6) {
+                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET6));
+                    attributes.push_back (util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_ADDR,
+                            memcmp (&in6.sin6_addr, &in6addr_any, sizeof (in6addr_any)) == 0 ?
+                                VALUE_ADDR_ANY :
+                                memcmp (&in6.sin6_addr, &in6addr_loopback, sizeof (in6addr_loopback)) == 0 ?
+                                    VALUE_ADDR_LOOPBACK :
+                                    util::Encodestring (AddrToString ())));
+                }
+                else if (family == AF_LOCAL) {
+                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LOCAL));
+                    attributes.push_back (util::Attribute (ATTR_PATH, util::Encodestring (GetPath ())));
+                }
+            #if defined (TOOLCHAIN_OS_Linux)
+                else if (family == AF_NETLINK) {
+                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_NETLINK));
+                    attributes.push_back (util::Attribute (ATTR_GROUPS, util::ui32Tostring (GetGroups ())));
+                }
+                else if (family == AF_PACKET) {
+                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_PACKET));
+                    attributes.push_back (util::Attribute (ATTR_PROTOCOL, util::ui32Tostring (GetProtocol ())));
+                    attributes.push_back (util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
+                    attributes.push_back (util::Attribute (ATTR_ADDR, util::HexEncodeBuffer (ll.sll_addr, ll.sll_halen)));
+                }
+            #elif defined (TOOLCHAIN_OS_OSX)
+                else if (family == AF_LINK) {
+                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LINK));
+                    attributes.push_back (util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
+                    attributes.push_back (util::Attribute (ATTR_ADAPTER_NAME, GetAdapterName ()));
+                    attributes.push_back (util::Attribute (ATTR_ADDR, util::HexEncodeBuffer (dl.sdl_data + dl.sdl_nlen, dl.sdl_alen)));
+                }
+            #endif // defined (TOOLCHAIN_OS_Linux)
+                else {
+                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_UNSPEC));
+                }
+                return util::OpenTag (indentationLevel, tagName, attributes, true, true);
             }
-            else if (family == AF_INET6) {
-                attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET6));
-                attributes.push_back (util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
-                attributes.push_back (
-                    util::Attribute (ATTR_ADDR,
-                        memcmp (&in6.sin6_addr, &in6addr_any, sizeof (in6addr_any)) == 0 ?
-                            VALUE_ADDR_ANY :
-                            memcmp (&in6.sin6_addr, &in6addr_loopback, sizeof (in6addr_loopback)) == 0 ?
-                                VALUE_ADDR_LOOPBACK :
-                                util::Encodestring (AddrToString ())));
-            }
-            else if (family == AF_LOCAL) {
-                attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LOCAL));
-                attributes.push_back (util::Attribute (ATTR_PATH, util::Encodestring (GetPath ())));
-            }
-        #if defined (TOOLCHAIN_OS_Linux)
-            else if (family == AF_NETLINK) {
-                attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_NETLINK));
-                attributes.push_back (util::Attribute (ATTR_GROUPS, util::ui32Tostring (GetGroups ())));
-            }
-            else if (family == AF_PACKET) {
-                attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_PACKET));
-                attributes.push_back (util::Attribute (ATTR_PROTOCOL, util::ui32Tostring (GetProtocol ())));
-                attributes.push_back (util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
-                attributes.push_back (util::Attribute (ATTR_ADDR, util::HexEncodeBuffer (ll.sll_addr, ll.sll_halen)));
-            }
-        #elif defined (TOOLCHAIN_OS_OSX)
-            else if (family == AF_LINK) {
-                attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LINK));
-                attributes.push_back (util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
-                attributes.push_back (util::Attribute (ATTR_ADAPTER_NAME, GetAdapterName ()));
-                attributes.push_back (util::Attribute (ATTR_ADDR, util::HexEncodeBuffer (dl.sdl_data + dl.sdl_nlen, dl.sdl_alen)));
-            }
-        #endif // defined (TOOLCHAIN_OS_Linux)
             else {
-                attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_UNSPEC));
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return util::OpenTag (indentationLevel, tagName, attributes, true, true);
         }
 
         _LIB_THEKOGANS_STREAM_DECL bool _LIB_THEKOGANS_STREAM_API operator == (
