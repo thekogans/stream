@@ -64,7 +64,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Unexpected context type: %s (%s)",
                     type.c_str (),
-                    VALUE_CLIENT_NAMED_PIPE);
+                    VALUE_SERVER_NAMED_PIPE);
             }
         }
 
