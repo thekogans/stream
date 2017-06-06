@@ -38,11 +38,11 @@ namespace thekogans {
         /// SecureTCPSocket has two modes of operation. 1) thekogans preferred.
         /// This mode tries to use the best practices (as of 2015) to provide
         /// a simple file driven TLS configuration. \see{ClientSecureTCPSocket}
-        /// and \see{ServerSecureTCPSocket} to see how OpenInfo is used to
+        /// and \see{ServerSecureTCPSocket} to see how Context is used to
         /// configure both client and server sides of a secure connection. In
         /// this mode of operation, you don't instantiate a SecureTCPSocket
-        /// directly but, in fact, use either \see{ClientSecureTCPSocket::OpenInfo}
-        /// or \see{ServerSecureTCPSocket::OpenInfo}. examples/securetcpecho provides
+        /// directly but, in fact, use either \see{ClientSecureTCPSocket::Context}
+        /// or \see{ServerSecureTCPSocket::Context}. examples/securetcpecho provides
         /// a good example of this usage mode. 2) Direct SecureTCPSocket
         /// usage mode. If your needs tend to the exotic (callbacks?), use
         /// SecureTCPSocket directly. SessionConnect (client) and SessionAccept

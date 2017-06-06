@@ -55,14 +55,14 @@ namespace thekogans {
     namespace stream {
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const Stream::OpenInfo::TAG_OPEN_INFO = "OpenInfo";
-        const char * const Stream::OpenInfo::ATTR_TYPE = "Type";
+        const char * const Stream::Context::TAG_CONTEXT = "Context";
+        const char * const Stream::Context::ATTR_TYPE = "Type";
 
-        void Stream::OpenInfo::Parse (const pugi::xml_node &node) {
+        void Stream::Context::Parse (const pugi::xml_node &node) {
             type = util::Decodestring (node.attribute (ATTR_TYPE).value ());
         }
 
-        std::string Stream::OpenInfo::ToString (
+        std::string Stream::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             util::Attributes attributes;
@@ -77,9 +77,9 @@ namespace thekogans {
 
         Stream::MapInitializer::MapInitializer (
                 const std::string &type,
-                OpenInfoFactory openInfoFactory) {
+                ContextFactory contextFactory) {
             std::pair<Map::iterator, bool> result =
-                GetMap ().insert (Map::value_type (type, openInfoFactory));
+                GetMap ().insert (Map::value_type (type, contextFactory));
             assert (result.second);
             if (!result.second) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -96,11 +96,11 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        Stream::OpenInfo::UniquePtr Stream::GetOpenInfo (const pugi::xml_node &node) {
+        Stream::Context::UniquePtr Stream::GetContext (const pugi::xml_node &node) {
             Map::iterator it = GetMap ().find (
-                util::Decodestring (node.attribute (OpenInfo::ATTR_TYPE).value ()));
+                util::Decodestring (node.attribute (Context::ATTR_TYPE).value ()));
             return it != GetMap ().end () ?
-                it->second (node) : Stream::OpenInfo::UniquePtr ();
+                it->second (node) : Stream::Context::UniquePtr ();
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 

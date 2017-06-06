@@ -18,11 +18,13 @@
 #if !defined (__thekogans_stream_ClientSecureUDPSocket_h)
 #define __thekogans_stream_ClientSecureUDPSocket_h
 
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML) && defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+#if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
 #include <string>
 #include <list>
-#include <pugixml.hpp>
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+    #include <pugixml.hpp>
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/SecureUDPSocket.h"
@@ -34,7 +36,7 @@ namespace thekogans {
         /// \struct ClientSecureUDPSocket ClientSecureUDPSocket.h thekogans/stream/ClientSecureUDPSocket.h
         ///
         /// \brief
-        /// ClientSecureUDPSocket's sole reason for being is to expose ClientSecureUDPSocket::OpenInfo.
+        /// ClientSecureUDPSocket's sole reason for being is to expose ClientSecureUDPSocket::Context.
         /// All the heavy lifting is done by \see{SecureUDPSocket}.
 
         struct _LIB_THEKOGANS_STREAM_DECL ClientSecureUDPSocket : public SecureUDPSocket {
@@ -43,11 +45,11 @@ namespace thekogans {
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ClientSecureUDPSocket)
 
-            /// \struct ClientSecureUDPSocket::OpenInfo ClientSecureUDPSocket.h
+            /// \struct ClientSecureUDPSocket::Context ClientSecureUDPSocket.h
             /// thekogans/stream/ClientSecureUDPSocket.h
             ///
             /// \brief
-            /// ClientSecureUDPSocket::OpenInfo represents the state
+            /// ClientSecureUDPSocket::Context represents the state
             /// of a ClientSecureUDPSocket at rest. At any time you want
             /// to reconstitute a ClientSecureUDPSocket from rest,
             /// feed a parsed (pugi::xml_node) one of:
@@ -88,16 +90,16 @@ namespace thekogans {
             ///                  BidirectionalShutdown = "If true, perform bidirectional shutdown."
             ///                  CountTransfered = "Count of bytes transfered (read and write)."/>
             /// </tagName>
-            /// to: Stream::GetOpenInfo (const pugi::xml_node &node), and it
+            /// to: Stream::GetContext (const pugi::xml_node &node), and it
             /// will return back to you a properly constructed and initialized
-            /// ClientSecureUDPSocket::OpenInfo. Call OpenInfo::CreateStream () to
+            /// ClientSecureUDPSocket::Context. Call Context::CreateStream () to
             /// recreate a ClientSecureUDPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo : Stream::OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
@@ -108,7 +110,7 @@ namespace thekogans {
                 /// \brief
                 /// Address to connect to.
                 Address address;
-                /// \struct ClientSecureUDPSocket::OpenInfo::DTLSContext ClientSecureUDPSocket.h
+                /// \struct ClientSecureUDPSocket::Context::DTLSContext ClientSecureUDPSocket.h
                 /// thekogans/stream/ClientSecureUDPSocket.h
                 ///
                 /// \brief
@@ -195,9 +197,9 @@ namespace thekogans {
                 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// ctor.
-                    /// Parse the node representing a ClientSecureUDPSocket::OpenInfo.
+                    /// Parse the node representing a ClientSecureUDPSocket::Context.
                     /// \param[in] node pugi::xml_node representing
-                    /// a ClientSecureUDPSocket::OpenInfo.
+                    /// a ClientSecureUDPSocket::Context.
                     explicit DTLSContext (const pugi::xml_node &node) :
                             loadSystemCACertificates (true),
                             verifyServer (true),
@@ -248,21 +250,21 @@ namespace thekogans {
 
                 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
-                    /// Parse the node representing a ClientSecureUDPSocket::OpenInfo.
+                    /// Parse the node representing a ClientSecureUDPSocket::Context.
                     /// \param[in] node pugi::xml_node representing
-                    /// a ClientSecureUDPSocket::OpenInfo.
+                    /// a ClientSecureUDPSocket::Context.
                     void Parse (const pugi::xml_node &node);
                     /// \brief
                     /// Return an XML string representing the rest
                     /// state of the ClientSecureUDPSocket.
                     /// \param[in] indentationLevel Pretty print parameter.
                     /// indents the tag with 4 * indentationLevel spaces.
-                    /// \param[in] tagName Tag name (default to "OpenInfo").
+                    /// \param[in] tagName Tag name (default to "Context").
                     /// \return XML string representing the rest state of the
                     /// ClientSecureUDPSocket.
                     std::string ToString (
                         util::ui32 indentationLevel = 0,
-                        const char *tagName = TAG_OPEN_INFO) const;
+                        const char *tagName = TAG_CONTEXT) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     /// \brief
@@ -300,11 +302,11 @@ namespace thekogans {
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
-                /// Parse the node representing a ClientSecureUDPSocket::OpenInfo.
+                /// Parse the node representing a ClientSecureUDPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientSecureUDPSocket::OpenInfo.
-                explicit OpenInfo (const pugi::xml_node &node) :
-                        Stream::OpenInfo (VALUE_CLIENT_SECURE_UDP_SOCKET),
+                /// a ClientSecureUDPSocket::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Stream::Context (VALUE_CLIENT_SECURE_UDP_SOCKET),
                         address (Address::Empty),
                         context (DTLSContext::Empty),
                         sessionInfo (SessionInfo::Empty) {
@@ -312,21 +314,21 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Parse the node representing a ClientSecureUDPSocket::OpenInfo.
+                /// Parse the node representing a ClientSecureUDPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientSecureUDPSocket::OpenInfo.
+                /// a ClientSecureUDPSocket::Context.
                 virtual void Parse (const pugi::xml_node &node);
                 /// \brief
                 /// Return a string representing the rest
                 /// state of the ClientSecureUDPSocket.
                 /// \param[in] indentationLevel Pretty print parameter.
                 /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "OpenInfo").
+                /// \param[in] tagName Tag name (default to "Context").
                 /// \return String representing the rest state of the
                 /// ClientSecureUDPSocket.
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
-                    const char *tagName = TAG_OPEN_INFO) const;
+                    const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
@@ -359,6 +361,6 @@ namespace thekogans {
     } // namespace stream
 } // namespace thekogans
 
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML) && defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+#endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
 #endif // !defined (__thekogans_stream_ClientSecureUDPSocket_h)

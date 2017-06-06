@@ -48,8 +48,9 @@ namespace thekogans {
 
                     void Start (
                         const std::list<stream::Address> &addresses,
+                        bool reuseAddress = false,
                         util::ui32 maxPendingConnections =
-                        stream::ServerTCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
+                            stream::ServerTCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
                         util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
                     void Stop ();
 

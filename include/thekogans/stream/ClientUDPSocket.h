@@ -32,7 +32,7 @@ namespace thekogans {
         /// \struct ClientUDPSocket ClientUDPSocket.h thekogans/stream/ClientUDPSocket.h
         ///
         /// \brief
-        /// ClientUDPSocket exposes an OpenInfo you can use to create client
+        /// ClientUDPSocket exposes an Context you can use to create client
         /// side UDPSocket from rest. Use it to instantiate a UDPSocket from
         /// a configuration file. Other than that, ClientUDPSocket defers to
         /// UDPSocket.
@@ -43,11 +43,10 @@ namespace thekogans {
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ClientUDPSocket)
 
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-            /// \struct ClientUDPSocket::OpenInfo ClientUDPSocket.h thekogans/stream/ClientUDPSocket.h
+            /// \struct ClientUDPSocket::Context ClientUDPSocket.h thekogans/stream/ClientUDPSocket.h
             ///
             /// \brief
-            /// ClientUDPSocket::OpenInfo represents the state
+            /// ClientUDPSocket::Context represents the state
             /// of a ClientUDPSocket at rest. At any time you want
             /// to reconstitute a ClientUDPSocket from rest,
             /// feed a parsed (pugi::xml_node) one of:
@@ -59,57 +58,63 @@ namespace thekogans {
             ///     <Address Family = "local"
             ///              Path = ""/>
             /// </tagName>
-            /// to: Stream::GetOpenInfo (const pugi::xml_node &node), and it
+            /// to: Stream::GetContext (const pugi::xml_node &node), and it
             /// will return back to you a properly constructed and initialized
-            /// ClientUDPSocket::OpenInfo. Call OpenInfo::CreateStream () to
+            /// ClientUDPSocket::Context. Call Context::CreateStream () to
             /// recreate a ClientUDPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo : Stream::OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ClientUDPSocket".
                 static const char * const VALUE_CLIENT_UDP_SOCKET;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// \see{Address} to connect to.
                 Address address;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
-                /// ctor. Parse the node representing a ClientUDPSocket::OpenInfo.
+                /// ctor. Parse the node representing a ClientUDPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientUDPSocket::OpenInfo.
-                explicit OpenInfo (const pugi::xml_node &node) :
-                        Stream::OpenInfo (VALUE_CLIENT_UDP_SOCKET),
+                /// a ClientUDPSocket::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Stream::Context (VALUE_CLIENT_UDP_SOCKET),
                         address (Address::Empty) {
                     Parse (node);
                 }
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] address_ \see{Address} to connect to.
-                explicit OpenInfo (const Address &address_) :
-                    Stream::OpenInfo (VALUE_CLIENT_UDP_SOCKET),
+                explicit Context (const Address &address_) :
+                    Stream::Context (VALUE_CLIENT_UDP_SOCKET),
                     address (address_) {}
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
-                /// Parse the node representing a ClientUDPSocket::OpenInfo.
+                /// Parse the node representing a ClientUDPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientUDPSocket::OpenInfo.
+                /// a ClientUDPSocket::Context.
                 virtual void Parse (const pugi::xml_node &node);
                 /// \brief
                 /// Return a string representing the rest
                 /// state of the ClientUDPSocket.
                 /// \param[in] indentationLevel Pretty print parameter.
                 /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "OpenInfo").
+                /// \param[in] tagName Tag name (default to "Context").
                 /// \return String representing the rest state of the
                 /// ClientUDPSocket.
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
-                    const char *tagName = TAG_OPEN_INFO) const;
+                    const char *tagName = TAG_CONTEXT) const;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a \see{UDPSocket} based on address.GetFamily ().
@@ -119,7 +124,6 @@ namespace thekogans {
                 /// \return \see{UDPSocket} based on address.GetFamily ().
                 virtual Stream::Ptr CreateStream () const;
             };
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
             /// \brief
             /// ctor.

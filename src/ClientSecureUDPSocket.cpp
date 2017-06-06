@@ -30,31 +30,31 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientSecureUDPSocket)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_DTLS_CONTEXT =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_DTLS_CONTEXT =
             "DTLSContext";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::ATTR_PROTOCOL_VERSION =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::ATTR_PROTOCOL_VERSION =
             "ProtocolVersion";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
             "LoadSystemCACertificates";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CA_CERTIFICATES =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_CA_CERTIFICATES =
             "CACertificates";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CERTIFICATE_CHAIN =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_CERTIFICATE_CHAIN =
             "CertificateChain";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CERTIFICATE =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_CERTIFICATE =
             "Certificate";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_PRIVATE_KEY =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_PRIVATE_KEY =
             "PrivateKey";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_CIPHER_LIST =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_CIPHER_LIST =
             "CipherList";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_VERIFY_SERVER =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_VERIFY_SERVER =
             "VerifyServer";
-        const char * const ClientSecureUDPSocket::OpenInfo::DTLSContext::TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH =
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH =
             "MaxServerCertificateChainDepth";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        ClientSecureUDPSocket::OpenInfo::DTLSContext ClientSecureUDPSocket::OpenInfo::DTLSContext::Empty;
+        ClientSecureUDPSocket::Context::DTLSContext ClientSecureUDPSocket::Context::DTLSContext::Empty;
 
-        ClientSecureUDPSocket::OpenInfo::DTLSContext::DTLSContext (const DTLSContext &context) :
+        ClientSecureUDPSocket::Context::DTLSContext::DTLSContext (const DTLSContext &context) :
                 protocolVersion (context.protocolVersion),
                 loadSystemCACertificates (context.loadSystemCACertificates),
                 caCertificates (context.caCertificates),
@@ -69,7 +69,7 @@ namespace thekogans {
             }
         }
 
-        ClientSecureUDPSocket::OpenInfo::DTLSContext &ClientSecureUDPSocket::OpenInfo::DTLSContext::operator = (
+        ClientSecureUDPSocket::Context::DTLSContext &ClientSecureUDPSocket::Context::DTLSContext::operator = (
                 const DTLSContext &context) {
             if (&context != this) {
                 protocolVersion = context.protocolVersion;
@@ -89,7 +89,7 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ClientSecureUDPSocket::OpenInfo::DTLSContext::Parse (const pugi::xml_node &node) {
+        void ClientSecureUDPSocket::Context::DTLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
@@ -122,7 +122,7 @@ namespace thekogans {
             PrepareSSL_CTX ();
         }
 
-        std::string ClientSecureUDPSocket::OpenInfo::DTLSContext::ToString (
+        std::string ClientSecureUDPSocket::Context::DTLSContext::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
@@ -160,7 +160,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        void ClientSecureUDPSocket::OpenInfo::DTLSContext::PrepareSSL_CTX () {
+        void ClientSecureUDPSocket::Context::DTLSContext::PrepareSSL_CTX () {
             ctx.reset (SSL_CTX_new (GetDTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
                 if (loadSystemCACertificates) {
@@ -190,12 +190,12 @@ namespace thekogans {
             }
         }
 
-        SSL_CTX *ClientSecureUDPSocket::OpenInfo::DTLSContext::GetSSL_CTX () const {
+        SSL_CTX *ClientSecureUDPSocket::Context::DTLSContext::GetSSL_CTX () const {
             return ctx.get ();
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ClientSecureUDPSocket::OpenInfo::DTLSContext::ParseCertificates (
+        void ClientSecureUDPSocket::Context::DTLSContext::ParseCertificates (
                 const pugi::xml_node &node,
                 std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
@@ -212,7 +212,7 @@ namespace thekogans {
             }
         }
 
-        std::string ClientSecureUDPSocket::OpenInfo::DTLSContext::FormatCertificates (
+        std::string ClientSecureUDPSocket::Context::DTLSContext::FormatCertificates (
                 util::ui32 indentationLevel,
                 const std::list<std::string> &certificates) const {
             std::ostringstream stream;
@@ -227,11 +227,11 @@ namespace thekogans {
             return stream.str ();
         }
 
-        const char * const ClientSecureUDPSocket::OpenInfo::VALUE_CLIENT_SECURE_UDP_SOCKET =
+        const char * const ClientSecureUDPSocket::Context::VALUE_CLIENT_SECURE_UDP_SOCKET =
             "ClientSecureUDPSocket";
 
-        void ClientSecureUDPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ClientSecureUDPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -239,7 +239,7 @@ namespace thekogans {
                     if (childName == Address::TAG_ADDRESS) {
                         address.Parse (child);
                     }
-                    else if (childName == OpenInfo::DTLSContext::TAG_DTLS_CONTEXT) {
+                    else if (childName == Context::DTLSContext::TAG_DTLS_CONTEXT) {
                         context.Parse (child);
                     }
                     else if (childName == SessionInfo::TAG_SESSION_INFO) {
@@ -249,13 +249,13 @@ namespace thekogans {
             }
         }
 
-        std::string ClientSecureUDPSocket::OpenInfo::ToString (
+        std::string ClientSecureUDPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                     context.ToString (indentationLevel + 1) <<
                     sessionInfo.ToString (indentationLevel + 1) <<
@@ -264,7 +264,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        Stream::Ptr ClientSecureUDPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ClientSecureUDPSocket::Context::CreateStream () const {
             return Stream::Ptr (
                 new SecureUDPSocket (address.GetFamily (), SOCK_DGRAM, IPPROTO_UDP));
         }

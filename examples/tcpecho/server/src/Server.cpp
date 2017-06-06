@@ -28,6 +28,7 @@ namespace thekogans {
 
                 void Server::Start (
                         const std::list<stream::Address> &addresses,
+                        bool reuseAddress,
                         util::ui32 maxPendingConnections,
                         util::i32 priority) {
                     if (done) {
@@ -38,7 +39,8 @@ namespace thekogans {
                                     end = addresses.end (); it != end; ++it) {
                                 eventQueue->AddStream (
                                     *stream::ServerTCPSocket::Ptr (
-                                        new stream::ServerTCPSocket (*it, maxPendingConnections)),
+                                        new stream::ServerTCPSocket (
+                                            *it, reuseAddress, maxPendingConnections)),
                                     *this);
                                 THEKOGANS_UTIL_LOG_DEBUG ("Listening on: %s:%u\n",
                                     (*it).AddrToString ().c_str (), (*it).GetPort ());

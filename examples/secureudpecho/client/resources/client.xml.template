@@ -1,11 +1,11 @@
-<OpenInfo Type = "ClientSecureUDPSocket">
+<Context Type = "ClientSecureUDPSocket">
   <Address Family = "inet"
            Port = "8659"
            Addr = "localhost"/>
   <DTLSContext ProtocolVersion = "1.2">
-    <CACertificate>
-__CACertificate__
-    </CACertificate>
+    <CACertificates>
+__CACertificates__
+    </CACertificates>
     <CertificateChain>
 __CertificateChain__
     </CertificateChain>
@@ -18,4 +18,4 @@ __PrivateKey__
   <SessionInfo ServerName = "localhost"
                RenegotiationFrequency = "4294967295"
                BidirectionalShutdown = "true"/>
-</OpenInfo>
+</Context>

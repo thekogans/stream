@@ -38,11 +38,11 @@ namespace thekogans {
         /// SecureUDPSocket has two modes of operation. 1) thekogans preferred.
         /// This mode tries to use the best practices (as of 2015) to provide
         /// a simple file driven DTLS configuration. \see{ClientSecureUDPSocket}
-        /// and \see{ServerSecureUDPSocket} to see how OpenInfo is used to
+        /// and \see{ServerSecureUDPSocket} to see how Context is used to
         /// configure both client and server sides of a secure connection. In
         /// this mode of operation, you don't instantiate a SecureUDPSocket
-        /// directly but, in fact, use either \see{ClientSecureUDPSocket::OpenInfo}
-        /// or \see{ServerSecureUDPSocket::OpenInfo}. 2) Direct SecureUDPSocket
+        /// directly but, in fact, use either \see{ClientSecureUDPSocket::Context}
+        /// or \see{ServerSecureUDPSocket::Context}. 2) Direct SecureUDPSocket
         /// usage mode. If your needs tend to the exotic (callbacks?), use
         /// SecureUDPSocket directly. SessionConnect (client) and SessionAccept
         /// (server) take a SSL_CTX that you can fill with whatever values that

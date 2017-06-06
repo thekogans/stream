@@ -32,11 +32,11 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerUDPSocket)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const ServerUDPSocket::OpenInfo::VALUE_SERVER_UDP_SOCKET = "ServerUDPSocket";
-        const char * const ServerUDPSocket::OpenInfo::TAG_MAX_MESSAGE_LENGTH = "MaxMessageLength";
+        const char * const ServerUDPSocket::Context::VALUE_SERVER_UDP_SOCKET = "ServerUDPSocket";
+        const char * const ServerUDPSocket::Context::TAG_MAX_MESSAGE_LENGTH = "MaxMessageLength";
 
-        void ServerUDPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ServerUDPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -51,13 +51,13 @@ namespace thekogans {
             }
         }
 
-        std::string ServerUDPSocket::OpenInfo::ToString (
+        std::string ServerUDPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                     util::OpenTag (indentationLevel + 1, TAG_MAX_MESSAGE_LENGTH) <<
                         util::i32Tostring (maxMessageLength) <<
@@ -66,7 +66,7 @@ namespace thekogans {
             return stream.str ();
         }
 
-        Stream::Ptr ServerUDPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ServerUDPSocket::Context::CreateStream () const {
             return Stream::Ptr (new ServerUDPSocket (address, maxMessageLength));
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)

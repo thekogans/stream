@@ -34,31 +34,31 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientSecureTCPSocket)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_TLS_CONTEXT =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_TLS_CONTEXT =
             "TLSContext";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::ATTR_PROTOCOL_VERSION =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::ATTR_PROTOCOL_VERSION =
             "ProtocolVersion";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
             "LoadSystemCACertificates";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_CA_CERTIFICATES =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_CA_CERTIFICATES =
             "CACertificates";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_CERTIFICATE_CHAIN =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_CERTIFICATE_CHAIN =
             "CertificateChain";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_CERTIFICATE =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_CERTIFICATE =
             "Certificate";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_PRIVATE_KEY =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_PRIVATE_KEY =
             "PrivateKey";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_CIPHER_LIST =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_CIPHER_LIST =
             "CipherList";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_VERIFY_SERVER =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_VERIFY_SERVER =
             "VerifyServer";
-        const char * const ClientSecureTCPSocket::OpenInfo::TLSContext::TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH =
+        const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH =
             "MaxServerCertificateChainDepth";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        ClientSecureTCPSocket::OpenInfo::TLSContext ClientSecureTCPSocket::OpenInfo::TLSContext::Empty;
+        ClientSecureTCPSocket::Context::TLSContext ClientSecureTCPSocket::Context::TLSContext::Empty;
 
-        ClientSecureTCPSocket::OpenInfo::TLSContext::TLSContext (const TLSContext &context) :
+        ClientSecureTCPSocket::Context::TLSContext::TLSContext (const TLSContext &context) :
                 protocolVersion (context.protocolVersion),
                 loadSystemCACertificates (context.loadSystemCACertificates),
                 caCertificates (context.caCertificates),
@@ -73,7 +73,7 @@ namespace thekogans {
             }
         }
 
-        ClientSecureTCPSocket::OpenInfo::TLSContext &ClientSecureTCPSocket::OpenInfo::TLSContext::operator = (
+        ClientSecureTCPSocket::Context::TLSContext &ClientSecureTCPSocket::Context::TLSContext::operator = (
                 const TLSContext &context) {
             if (&context != this) {
                 protocolVersion = context.protocolVersion;
@@ -93,7 +93,7 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ClientSecureTCPSocket::OpenInfo::TLSContext::Parse (const pugi::xml_node &node) {
+        void ClientSecureTCPSocket::Context::TLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
@@ -126,7 +126,7 @@ namespace thekogans {
             PrepareSSL_CTX ();
         }
 
-        std::string ClientSecureTCPSocket::OpenInfo::TLSContext::ToString (
+        std::string ClientSecureTCPSocket::Context::TLSContext::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
@@ -164,7 +164,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        void ClientSecureTCPSocket::OpenInfo::TLSContext::PrepareSSL_CTX () {
+        void ClientSecureTCPSocket::Context::TLSContext::PrepareSSL_CTX () {
             ctx.reset (SSL_CTX_new (GetTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
                 if (loadSystemCACertificates) {
@@ -193,12 +193,12 @@ namespace thekogans {
             }
         }
 
-        SSL_CTX *ClientSecureTCPSocket::OpenInfo::TLSContext::GetSSL_CTX () const {
+        SSL_CTX *ClientSecureTCPSocket::Context::TLSContext::GetSSL_CTX () const {
             return ctx.get ();
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ClientSecureTCPSocket::OpenInfo::TLSContext::ParseCertificates (
+        void ClientSecureTCPSocket::Context::TLSContext::ParseCertificates (
                 const pugi::xml_node &node,
                 std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
@@ -215,7 +215,7 @@ namespace thekogans {
             }
         }
 
-        std::string ClientSecureTCPSocket::OpenInfo::TLSContext::FormatCertificates (
+        std::string ClientSecureTCPSocket::Context::TLSContext::FormatCertificates (
                 util::ui32 indentationLevel,
                 const std::list<std::string> &certificates) const {
             std::ostringstream stream;
@@ -230,11 +230,11 @@ namespace thekogans {
             return stream.str ();
         }
 
-        const char * const ClientSecureTCPSocket::OpenInfo::VALUE_CLIENT_SECURE_TCP_SOCKET =
+        const char * const ClientSecureTCPSocket::Context::VALUE_CLIENT_SECURE_TCP_SOCKET =
             "ClientSecureTCPSocket";
 
-        void ClientSecureTCPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ClientSecureTCPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -242,7 +242,7 @@ namespace thekogans {
                     if (childName == Address::TAG_ADDRESS) {
                         address.Parse (child);
                     }
-                    else if (childName == OpenInfo::TLSContext::TAG_TLS_CONTEXT) {
+                    else if (childName == Context::TLSContext::TAG_TLS_CONTEXT) {
                         context.Parse (child);
                     }
                     else if (childName == SessionInfo::TAG_SESSION_INFO) {
@@ -252,13 +252,13 @@ namespace thekogans {
             }
         }
 
-        std::string ClientSecureTCPSocket::OpenInfo::ToString (
+        std::string ClientSecureTCPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                     context.ToString (indentationLevel + 1) <<
                     sessionInfo.ToString (indentationLevel + 1) <<
@@ -267,7 +267,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        Stream::Ptr ClientSecureTCPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ClientSecureTCPSocket::Context::CreateStream () const {
             return Stream::Ptr (
                 new SecureTCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
         }

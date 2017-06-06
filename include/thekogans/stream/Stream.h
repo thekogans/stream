@@ -43,7 +43,7 @@ namespace thekogans {
         ///
         /// \brief
         /// Stream is an abstract base for all other stream types.
-        /// It's main purpose is to house OpenInfo/AsyncInfo as well
+        /// It's main purpose is to house Context/AsyncInfo as well
         /// as expose the api a generic stream will have. Streams are
         /// reference counted. This makes it very easy to deal with
         /// lifetimes of async streams (especially on Windows).
@@ -141,27 +141,24 @@ namespace thekogans {
             /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Stream>.
             typedef util::ThreadSafeRefCounted::Ptr<Stream> Ptr;
 
-            /// \struct Stream::OpenInfo Stream.h thekogans/stream/Stream.h
+            /// \struct Stream::Context Stream.h thekogans/stream/Stream.h
             ///
             /// \brief
-            /// OpenInfo implements a memento pattern. It records all
+            /// Context implements a memento pattern. It records all
             /// the details necessary to reconstitute a stream from rest.
-            /// Use OpenInfo::ToString to create an XML representation
-            /// suitable for storage. Later you can use Stream::GetOpenInfo
-            /// to recreate it. From there, you can call OpenInfo::CreateStream
+            /// Use Context::ToString to create an XML representation
+            /// suitable for storage. Later you can use Stream::GetContext
+            /// to recreate it. From there, you can call Context::CreateStream
             /// to create a fully initialized stream from the parameters.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
-                /// \brief
-                /// ctor.
-                OpenInfo () {}
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
-                /// "OpenInfo"
-                static const char * const TAG_OPEN_INFO;
+                /// "Context"
+                static const char * const TAG_CONTEXT;
                 /// \brief
                 /// "Type"
                 static const char * const ATTR_TYPE;
@@ -169,37 +166,42 @@ namespace thekogans {
                 /// \brief
                 /// Stream type (it's class name).
                 std::string type;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// ctor.
-                /// param[in] type_ Type this OpenInfo represents.
-                explicit OpenInfo (const std::string type_) :
+                Context () {}
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+                /// \brief
+                /// ctor.
+                /// param[in] type_ Type this Context represents.
+                explicit Context (const std::string type_) :
                     type (type_) {}
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// dtor.
-                virtual ~OpenInfo () {}
+                virtual ~Context () {}
 
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
-                /// Parse the OpenInfo parameters from the given node.
-                /// \param[in] node Node that represents the OpenInfo.
+                /// Parse the Context parameters from the given node.
+                /// \param[in] node Node that represents the Context.
                 virtual void Parse (const pugi::xml_node & /*node*/) = 0;
                 /// \brief
-                /// Serialize the OpenInfo parameters in to an XML string.
+                /// Serialize the Context parameters in to an XML string.
                 /// \param[in] indentationLevel Pretty print parameter. If
                 /// the resulting tag is to be included in a larger structure
                 /// you might want to provide a value that will indent it in
                 /// the structure.
                 /// \param[in] tagName Name of the containing tag.
-                /// \return The XML reprentation of the OpenInfo.
+                /// \return The XML reprentation of the Context.
                 virtual std::string ToString (
                     util::ui32 /*indentationLevel*/ = 0,
-                    const char * /*tagName*/ = TAG_OPEN_INFO) const = 0;
+                    const char * /*tagName*/ = TAG_CONTEXT) const = 0;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
-                /// Create a stream from the OpenInfo parameters.
+                /// Create a stream from the Context parameters.
                 /// \return The newly created stream.
                 virtual Stream::Ptr CreateStream () const = 0;
             };
@@ -207,16 +209,16 @@ namespace thekogans {
         protected:
         #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \brief
-            /// Typedef for OpenInfo factory method. A method of this type will
-            /// create a correct OpenInfo from the values found in the XML node.
-            /// \param[in] node XML node that will contain the OpenInfo.
-            typedef OpenInfo::UniquePtr (*OpenInfoFactory) (
+            /// Typedef for Context factory method. A method of this type will
+            /// create a correct Context from the values found in the XML node.
+            /// \param[in] node XML node that will contain the Context.
+            typedef Context::UniquePtr (*ContextFactory) (
                 const pugi::xml_node &node);
             /// \brief
-            /// Typedef for an OpenInfo/Stream factories map. This map
+            /// Typedef for an Context/Stream factories map. This map
             /// is populated at initialization time by the MapInitializer
             /// below, and is used at run time to create dynamic streams.
-            typedef std::map<std::string, OpenInfoFactory> Map;
+            typedef std::map<std::string, ContextFactory> Map;
             /// \brief
             /// Return a reference to a properly constructed map.
             /// This accessor is here to make sure that std::map
@@ -237,12 +239,12 @@ namespace thekogans {
             struct _LIB_THEKOGANS_STREAM_DECL MapInitializer {
                 /// \brief
                 /// ctor. Add stream of type and factory for creating it's
-                /// OpenInfo to the Stream::map.
+                /// Context to the Stream::map.
                 /// \param[in] type Stream type (it's class name).
-                /// \param[in] openInfoFactory OpenInfo creation factory.
+                /// \param[in] contextFactory Context creation factory.
                 MapInitializer (
                     const std::string &type,
-                    OpenInfoFactory openInfoFactory);
+                    ContextFactory contextFactory);
             };
         #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -263,12 +265,12 @@ namespace thekogans {
 
         #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \brief
-            /// Given an XML node representing an OpenInfo, return
-            /// a fully parsed and populated OpenInfo of that specific
+            /// Given an XML node representing an Context, return
+            /// a fully parsed and populated Context of that specific
             /// type.
-            /// \param[in] node XML node representing an OpenInfo of a particular type.
-            /// \return A fully parsed and populated OpenInfo of that type.
-            static OpenInfo::UniquePtr GetOpenInfo (const pugi::xml_node &node);
+            /// \param[in] node XML node representing an Context of a particular type.
+            /// \return A fully parsed and populated Context of that type.
+            static Context::UniquePtr GetContext (const pugi::xml_node &node);
         #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         #if defined (TOOLCHAIN_TYPE_Static)
             /// \brief
@@ -1113,10 +1115,10 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
         public:\
             static thekogans::stream::Stream::MapInitializer mapInitializer;\
-            static thekogans::stream::Stream::OpenInfo::UniquePtr CreateOpenInfo (\
+            static thekogans::stream::Stream::Context::UniquePtr CreateContext (\
                     const pugi::xml_node &node) {\
-                return thekogans::stream::Stream::OpenInfo::UniquePtr (\
-                    new type::OpenInfo (node));\
+                return thekogans::stream::Stream::Context::UniquePtr (\
+                    new type::Context (node));\
             }
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
@@ -1127,7 +1129,7 @@ namespace thekogans {
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
         thekogans::stream::Stream::MapInitializer type::mapInitializer (\
-            #type, type::CreateOpenInfo);
+            #type, type::CreateContext);
     #else // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
         /// This macro is used in a stream declaration file (.h).

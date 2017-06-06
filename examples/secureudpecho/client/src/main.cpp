@@ -70,20 +70,20 @@ namespace {
         pugi::xml_parse_result result =
             document.load_file (path.c_str ());
         if (result) {
-            stream::ClientSecureUDPSocket::OpenInfo openInfo (
+            stream::ClientSecureUDPSocket::Context context (
                 document.document_element ());
             for (util::ui32 i = 0; i < rounds; ++i) {
                 THEKOGANS_UTIL_TRY {
                     util::ui64 start = util::HRTimer::Click ();
                     {
                         stream::SecureUDPSocket socket (
-                            openInfo.address.GetFamily (), SOCK_DGRAM, IPPROTO_UDP);
+                            context.address.GetFamily (), SOCK_DGRAM, IPPROTO_UDP);
                         if (timeSpec != util::TimeSpec::Zero) {
                             socket.SetReadTimeout (timeSpec);
                             socket.SetWriteTimeout (timeSpec);
                         }
-                        socket.Connect (openInfo.address);
-                        socket.SessionConnect (openInfo.context.ctx.get (), openInfo.sessionInfo);
+                        socket.Connect (context.address);
+                        socket.SessionConnect (context.context.ctx.get (), context.sessionInfo);
                         std::vector<util::ui8> buffer (seed);
                         socket.WriteFullBuffer (&buffer[0], seed);
                         socket.ReadFullBuffer (&buffer[0], seed);
@@ -91,7 +91,7 @@ namespace {
                             socket.RenegotiateSession ();
                         }
                         socket.ShutdownSession ();
-                        openInfo.sessionInfo = socket.GetSessionInfo ();
+                        context.sessionInfo = socket.GetSessionInfo ();
                     }
                     time += util::HRTimer::Click () - start;
                     bytes += seed + seed;

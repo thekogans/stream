@@ -29,12 +29,12 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerTCPSocket)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const ServerTCPSocket::OpenInfo::VALUE_SERVER_TCP_SOCKET = "ServerTCPSocket";
-        const char * const ServerTCPSocket::OpenInfo::TAG_REUSE_ADDRESS = "ReuseAddress";
-        const char * const ServerTCPSocket::OpenInfo::TAG_MAX_PENDING_CONNECTIONS = "MaxPendingConnections";
+        const char * const ServerTCPSocket::Context::VALUE_SERVER_TCP_SOCKET = "ServerTCPSocket";
+        const char * const ServerTCPSocket::Context::TAG_REUSE_ADDRESS = "ReuseAddress";
+        const char * const ServerTCPSocket::Context::TAG_MAX_PENDING_CONNECTIONS = "MaxPendingConnections";
 
-        void ServerTCPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ServerTCPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -52,13 +52,13 @@ namespace thekogans {
             }
         }
 
-        std::string ServerTCPSocket::OpenInfo::ToString (
+        std::string ServerTCPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                     util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
                         util::boolTostring (reuseAddress) <<
@@ -70,7 +70,7 @@ namespace thekogans {
             return stream.str ();
         }
 
-        Stream::Ptr ServerTCPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ServerTCPSocket::Context::CreateStream () const {
             return Stream::Ptr (
                 new ServerTCPSocket (address, reuseAddress, maxPendingConnections));
         }

@@ -49,8 +49,11 @@ if [ -f $serverXML ]; then
     rm $serverXML
 fi
 while IFS== read line; do
-    if [[ $line == "__CACertificate__" ]]; then
-        echo "$caCert" >>$serverXML
+    if [[ $line == "__CACertificates__" ]]; then
+        serverCert=$'      <Certificate>\n'
+        serverCert+="$caCert"
+        serverCert+=$'\n      </Certificate>'
+        echo "$serverCert" >>$serverXML
     elif [[ $line == "__CertificateChainDSA__" ]]; then
         serverCert=$'      <Certificate>\n'
         serverCert+=`cat servercert.pem`
@@ -75,8 +78,11 @@ if [ -f $clientXML ]; then
     rm $clientXML
 fi
 while IFS== read line; do
-    if [[ $line == "__CACertificate__" ]]; then
-        echo "$caCert" >>$clientXML
+    if [[ $line == "__CACertificates__" ]]; then
+        serverCert=$'      <Certificate>\n'
+        serverCert+="$caCert"
+        serverCert+=$'\n      </Certificate>'
+        echo "$serverCert" >>$clientXML
     elif [[ $line == "__CertificateChain__" ]]; then
         clientCert=$'      <Certificate>\n'
         clientCert+=`cat clientcert.pem`

@@ -26,11 +26,11 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientTCPSocket)
 
-        const char * const ClientTCPSocket::OpenInfo::VALUE_CLIENT_TCP_SOCKET =
+        const char * const ClientTCPSocket::Context::VALUE_CLIENT_TCP_SOCKET =
             "ClientTCPSocket";
 
-        void ClientTCPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ClientTCPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -42,19 +42,19 @@ namespace thekogans {
             }
         }
 
-        std::string ClientTCPSocket::OpenInfo::ToString (
+        std::string ClientTCPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                 util::CloseTag (indentationLevel, tagName);
             return stream.str ();
         }
 
-        Stream::Ptr ClientTCPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ClientTCPSocket::Context::CreateStream () const {
             return Stream::Ptr (
                 new TCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
         }

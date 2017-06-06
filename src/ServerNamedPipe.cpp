@@ -29,15 +29,15 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerNamedPipe)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const ServerNamedPipe::OpenInfo::VALUE_SERVER_NAMED_PIPE =
+        const char * const ServerNamedPipe::Context::VALUE_SERVER_NAMED_PIPE =
             "ServerNamedPipe";
-        const char * const ServerNamedPipe::OpenInfo::TAG_PIPE_TYPE = "PipeType";
-        const char * const ServerNamedPipe::OpenInfo::VALUE_BYTE = "byte";
-        const char * const ServerNamedPipe::OpenInfo::VALUE_MESSAGE = "message";
-        const char * const ServerNamedPipe::OpenInfo::TAG_BUFFER_SIZE = "BufferSize";
+        const char * const ServerNamedPipe::Context::TAG_PIPE_TYPE = "PipeType";
+        const char * const ServerNamedPipe::Context::VALUE_BYTE = "byte";
+        const char * const ServerNamedPipe::Context::VALUE_MESSAGE = "message";
+        const char * const ServerNamedPipe::Context::TAG_BUFFER_SIZE = "BufferSize";
 
-        void ServerNamedPipe::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ServerNamedPipe::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             assert (type == VALUE_SERVER_NAMED_PIPE);
             if (type == VALUE_SERVER_NAMED_PIPE) {
                 for (pugi::xml_node child = node.first_child ();
@@ -60,13 +60,13 @@ namespace thekogans {
             }
         }
 
-        std::string ServerNamedPipe::OpenInfo::ToString (
+        std::string ServerNamedPipe::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                     util::OpenTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
                         (pipeType == NamedPipe::Byte ? VALUE_BYTE : VALUE_MESSAGE) <<

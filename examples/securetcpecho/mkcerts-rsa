@@ -69,7 +69,7 @@ caCert=`cat cacert.pem`
 ciphers=AES256-GCM-SHA384
 
 # create "$server_root"/bin/server.xml
-server_naming_convention=`"$(get_toolchain_program -o:thekogans -p:make)" -a:get_project_naming_convention "$server_root"/thekogans_make.xml`
+server_naming_convention=`"$(get_toolchain_program -o:thekogans -p:make)" -a:get_naming_convention "$server_root"/thekogans_make.xml`
 if [ "$server_naming_convention" == "Flat" ]; then
     serverXML="$server_root"/bin/server.xml
 else
@@ -79,8 +79,11 @@ if [ -f $serverXML ]; then
     rm $serverXML
 fi
 while IFS== read line; do
-    if [[ $line == "__CACertificate__" ]]; then
-        echo "$caCert" >>$serverXML
+    if [[ $line == "__CACertificates__" ]]; then
+        serverCert=$'      <Certificate>\n'
+        serverCert+="$caCert"
+        serverCert+=$'\n      </Certificate>'
+        echo "$serverCert" >>$serverXML
     elif [[ $line == "__CertificateChainRSA__" ]]; then
         serverCert=$'      <Certificate>\n'
         serverCert+=`cat servercert.pem`
@@ -101,7 +104,7 @@ done < "$server_root"/resources/server-rsa.xml.template
 echo "Wrote $serverXML"
 
 # create "$client_root"/bin/clinet.xml
-client_naming_convention=`"$(get_toolchain_program -o:thekogans -p:make)" -a:get_project_naming_convention "$client_root"/thekogans_make.xml`
+client_naming_convention=`"$(get_toolchain_program -o:thekogans -p:make)" -a:get_naming_convention "$client_root"/thekogans_make.xml`
 if [ "$client_naming_convention" == "Flat" ]; then
     clientXML="$client_root"/bin/client.xml
 else
@@ -111,8 +114,11 @@ if [ -f $clientXML ]; then
     rm $clientXML
 fi
 while IFS== read line; do
-    if [[ $line == "__CACertificate__" ]]; then
-        echo "$caCert" >>$clientXML
+    if [[ $line == "__CACertificates__" ]]; then
+        serverCert=$'      <Certificate>\n'
+        serverCert+="$caCert"
+        serverCert+=$'\n      </Certificate>'
+        echo "$serverCert" >>$clientXML
     elif [[ $line == "__CertificateChain__" ]]; then
         clientCert=$'      <Certificate>\n'
         clientCert+=`cat clientcert.pem`

@@ -72,11 +72,10 @@ namespace thekogans {
             };
 
         private:
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-            /// \struct ServerNamedPipe::OpenInfo ServerNamedPipe.h thekogans/stream/ServerNamedPipe.h
+            /// \struct ServerNamedPipe::Context ServerNamedPipe.h thekogans/stream/ServerNamedPipe.h
             ///
             /// \brief
-            /// ServerNamedPipe::OpenInfo represents the state
+            /// ServerNamedPipe::Context represents the state
             /// of a ServerNamedPipe at rest. At any time you want
             /// to reconstitute a ServerNamedPipe from rest,
             /// feed a parsed (pugi::xml_node) one of:
@@ -86,17 +85,18 @@ namespace thekogans {
             ///     <PipeType>Byte/Message</PipeType>
             ///     <BufferSize>Size of receive buffer</BufferSize>
             /// </tagName>
-            /// to: Stream::GetOpenInfo (const pugi::xml_node &node), and it
+            /// to: Stream::GetContext (const pugi::xml_node &node), and it
             /// will return back to you a properly constructed and initialized
-            /// ServerNamedPipe::OpenInfo. Call OpenInfo::CreateStream () to
+            /// ServerNamedPipe::Context. Call Context::CreateStream () to
             /// recreate a ServerNamedPipe from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo : Stream::OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ServerNamedPipe"
                 static const char * const VALUE_SERVER_NAMED_PIPE;
@@ -112,6 +112,7 @@ namespace thekogans {
                 /// \brief
                 /// "BufferSize"
                 static const char * const TAG_BUFFER_SIZE;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Address to listen on.
@@ -123,61 +124,65 @@ namespace thekogans {
                 /// Size of receive buffer.
                 DWORD bufferSize;
 
-                /// \brief
-                /// ctor.
-                /// \param[in] address_ Address to listen on.
-                /// \param[in] pipeType_ Pipe type (Byte/Message).
-                /// \param[in] bufferSize_ Size of receive buffer.
-                OpenInfo (
-                    const Address &address_,
-                    NamedPipe::PipeType pipeType_,
-                    DWORD bufferSize_) :
-                    Stream::OpenInfo (VALUE_SERVER_NAMED_PIPE),
-                    address (address_),
-                    pipeType (pipeType_),
-                    bufferSize (bufferSize_) {}
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
-                /// ServerNamedPipe::OpenInfo.
+                /// ServerNamedPipe::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ServerNamedPipe::OpenInfo.
-                explicit OpenInfo (const pugi::xml_node &node) :
-                        Stream::OpenInfo (VALUE_SERVER_NAMED_PIPE),
+                /// a ServerNamedPipe::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Stream::Context (VALUE_SERVER_NAMED_PIPE),
                         address (Address::Empty),
                         pipeType (NamedPipe::Byte),
                         bufferSize (ServerNamedPipe::DEFAULT_BUFFER_SIZE) {
                     Parse (node);
                 }
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+                /// \brief
+                /// ctor.
+                /// \param[in] address_ Address to listen on.
+                /// \param[in] pipeType_ Pipe type (Byte/Message).
+                /// \param[in] bufferSize_ Size of receive buffer.
+                Context (
+                    const Address &address_,
+                    NamedPipe::PipeType pipeType_,
+                    DWORD bufferSize_) :
+                    Stream::Context (VALUE_SERVER_NAMED_PIPE),
+                    address (address_),
+                    pipeType (pipeType_),
+                    bufferSize (bufferSize_) {}
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a
-                /// ServerNamedPipe::OpenInfo.
+                /// ServerNamedPipe::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ServerNamedPipe::OpenInfo.
+                /// a ServerNamedPipe::Context.
                 virtual void Parse (const pugi::xml_node &node);
                 /// \brief
                 /// Return a string representing the rest
                 /// state of the ServerNamedPipe.
                 /// \param[in] indentationLevel Pretty print parameter.
                 /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "OpenInfo").
+                /// \param[in] tagName Tag name (default to "Context").
                 /// \return String representing the rest state of the
                 /// ServerNamedPipe.
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
-                    const char *tagName = TAG_OPEN_INFO) const;
+                    const char *tagName = TAG_CONTEXT) const;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ServerNamedPipe based on the
-                /// OpenInfo parameters.
+                /// Context parameters.
                 /// \return ServerNamedPipe based on the
-                /// OpenInfo parametersaddress.
+                /// Context parametersaddress.
                 virtual Stream::Ptr CreateStream () const {
                     return Stream::Ptr (
                         new ServerNamedPipe (address, pipeType, bufferSize));
                 }
             };
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+
             /// \brief
             /// Address to listen on.
             Address address;
@@ -229,7 +234,7 @@ namespace thekogans {
             void Connect ();
 
             /// \brief
-            /// Clone this ServerNamedPipe using the values from OpenInfo.
+            /// Clone this ServerNamedPipe using the values from Context.
             /// \return Cloned ServerNamedPipe.
             ServerNamedPipe::Ptr Clone () const;
 

@@ -38,7 +38,7 @@ namespace thekogans {
                             if (result) {
                                 eventQueue.reset (new stream::AsyncIoEventQueue ());
                                 eventQueue->AddStream (
-                                    *stream::ServerSecureTCPSocket::OpenInfo (
+                                    *stream::ServerSecureTCPSocket::Context (
                                         document.document_element ()).CreateStream (),
                                     *this);
                                 done = false;

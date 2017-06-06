@@ -36,7 +36,7 @@ namespace thekogans {
         /// \struct ClientSecureTCPSocket ClientSecureTCPSocket.h thekogans/stream/ClientSecureTCPSocket.h
         ///
         /// \brief
-        /// ClientSecureTCPSocket's sole reason for being is to expose ClientSecureTCPSocket::OpenInfo.
+        /// ClientSecureTCPSocket's sole reason for being is to expose ClientSecureTCPSocket::Context.
         /// All the heavy lifting is done by \see{SecureTCPSocket}.
 
         struct _LIB_THEKOGANS_STREAM_DECL ClientSecureTCPSocket : public SecureTCPSocket {
@@ -45,11 +45,11 @@ namespace thekogans {
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ClientSecureTCPSocket)
 
-            /// \struct ClientSecureTCPSocket::OpenInfo ClientSecureTCPSocket.h
+            /// \struct ClientSecureTCPSocket::Context ClientSecureTCPSocket.h
             /// thekogans/stream/ClientSecureTCPSocket.h
             ///
             /// \brief
-            /// ClientSecureTCPSocket::OpenInfo represents the state
+            /// ClientSecureTCPSocket::Context represents the state
             /// of a ClientSecureTCPSocket at rest. At any time you want
             /// to reconstitute a ClientSecureTCPSocket from rest,
             /// feed a parsed (pugi::xml_node) one of:
@@ -90,16 +90,16 @@ namespace thekogans {
             ///                  BidirectionalShutdown = "If true, perform bidirectional shutdown."
             ///                  CountTransfered = "Count of bytes transfered (read and write)."/>
             /// </tagName>
-            /// to: Stream::GetOpenInfo (const pugi::xml_node &node), and it
+            /// to: Stream::GetContext (const pugi::xml_node &node), and it
             /// will return back to you a properly constructed and initialized
-            /// ClientSecureTCPSocket::OpenInfo. Call OpenInfo::CreateStream () to
+            /// ClientSecureTCPSocket::Context. Call Context::CreateStream () to
             /// recreate a ClientSecureTCPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo : Stream::OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
@@ -110,7 +110,7 @@ namespace thekogans {
                 /// \brief
                 /// Address to connect to.
                 Address address;
-                /// \struct ClientSecureTCPSocket::OpenInfo::TLSContext ClientSecureTCPSocket.h
+                /// \struct ClientSecureTCPSocket::Context::TLSContext ClientSecureTCPSocket.h
                 /// thekogans/stream/ClientSecureTCPSocket.h
                 ///
                 /// \brief
@@ -197,9 +197,9 @@ namespace thekogans {
                 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// ctor.
-                    /// Parse the node representing a ClientSecureTCPSocket::OpenInfo.
+                    /// Parse the node representing a ClientSecureTCPSocket::Context.
                     /// \param[in] node pugi::xml_node representing
-                    /// a ClientSecureTCPSocket::OpenInfo.
+                    /// a ClientSecureTCPSocket::Context.
                     explicit TLSContext (const pugi::xml_node &node) :
                             loadSystemCACertificates (true),
                             verifyServer (true),
@@ -250,21 +250,21 @@ namespace thekogans {
 
                 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
-                    /// Parse the node representing a ClientSecureTCPSocket::OpenInfo.
+                    /// Parse the node representing a ClientSecureTCPSocket::Context.
                     /// \param[in] node pugi::xml_node representing
-                    /// a ClientSecureTCPSocket::OpenInfo.
+                    /// a ClientSecureTCPSocket::Context.
                     void Parse (const pugi::xml_node &node);
                     /// \brief
                     /// Return an XML string representing the rest
                     /// state of the ClientSecureTCPSocket.
                     /// \param[in] indentationLevel Pretty print parameter.
                     /// indents the tag with 4 * indentationLevel spaces.
-                    /// \param[in] tagName Tag name (default to "OpenInfo").
+                    /// \param[in] tagName Tag name (default to "Context").
                     /// \return XML string representing the rest state of the
                     /// ClientSecureTCPSocket.
                     std::string ToString (
                         util::ui32 indentationLevel = 0,
-                        const char *tagName = TAG_OPEN_INFO) const;
+                        const char *tagName = TAG_CONTEXT) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     /// \brief
@@ -304,7 +304,7 @@ namespace thekogans {
                 /// \param[in] address_ Address to connect to.
                 /// \param[in] context_ TLSContext to copy.
                 /// \param[in] sessionInfo_ Extended session info.
-                OpenInfo (
+                Context (
                     const Address &address_ = Address::Empty,
                     const TLSContext &context_ = TLSContext::Empty,
                     const SessionInfo &sessionInfo_ = SessionInfo::Empty) :
@@ -314,11 +314,11 @@ namespace thekogans {
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
-                /// Parse the node representing a ClientSecureTCPSocket::OpenInfo.
+                /// Parse the node representing a ClientSecureTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientSecureTCPSocket::OpenInfo.
-                explicit OpenInfo (const pugi::xml_node &node) :
-                        Stream::OpenInfo (VALUE_CLIENT_SECURE_TCP_SOCKET),
+                /// a ClientSecureTCPSocket::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Stream::Context (VALUE_CLIENT_SECURE_TCP_SOCKET),
                         address (Address::Empty),
                         context (TLSContext::Empty),
                         sessionInfo (SessionInfo::Empty) {
@@ -326,21 +326,21 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Parse the node representing a ClientSecureTCPSocket::OpenInfo.
+                /// Parse the node representing a ClientSecureTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientSecureTCPSocket::OpenInfo.
+                /// a ClientSecureTCPSocket::Context.
                 virtual void Parse (const pugi::xml_node &node);
                 /// \brief
                 /// Return a string representing the rest
                 /// state of the ClientSecureTCPSocket.
                 /// \param[in] indentationLevel Pretty print parameter.
                 /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "OpenInfo").
+                /// \param[in] tagName Tag name (default to "Context").
                 /// \return String representing the rest state of the
                 /// ClientSecureTCPSocket.
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
-                    const char *tagName = TAG_OPEN_INFO) const;
+                    const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief

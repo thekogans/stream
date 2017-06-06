@@ -41,11 +41,10 @@ namespace thekogans {
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ServerTCPSocket)
 
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-            /// \struct ServerTCPSocket::OpenInfo ServerTCPSocket.h thekogans/stream/ServerTCPSocket.h
+            /// \struct ServerTCPSocket::Context ServerTCPSocket.h thekogans/stream/ServerTCPSocket.h
             ///
             /// \brief
-            /// ServerTCPSocket::OpenInfo represents the state
+            /// ServerTCPSocket::Context represents the state
             /// of a ServerTCPSocket at rest. At any time you want
             /// to reconstitute a ServerTCPSocket from rest,
             /// feed a parsed (pugi::xml_node) one of:
@@ -59,17 +58,18 @@ namespace thekogans {
             ///     <ReuseAddress>if true call SetReuseAddress</ReuseAddress>
             ///     <MaxPendingConnections>max pending connection requests</MaxPendingConnections>
             /// </tagName>
-            /// to: Stream::GetOpenInfo (const pugi::xml_node &node), and it
+            /// to: Stream::GetContext (const pugi::xml_node &node), and it
             /// will return back to you a properly constructed and initialized
-            /// ServerTCPSocket::OpenInfo. Call OpenInfo::CreateStream () to
+            /// ServerTCPSocket::Context. Call Context::CreateStream () to
             /// recreate a ServerTCPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo : Stream::OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ServerTCPSocket"
                 static const char * const VALUE_SERVER_TCP_SOCKET;
@@ -79,6 +79,7 @@ namespace thekogans {
                 /// \brief
                 /// "MaxPendingConnections"
                 static const char * const TAG_MAX_PENDING_CONNECTIONS;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Listening address.
@@ -90,57 +91,60 @@ namespace thekogans {
                 /// Max pending connection requests.
                 util::i32 maxPendingConnections;
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
-                /// ServerTCPSocket::OpenInfo.
+                /// ServerTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ServerTCPSocket::OpenInfo.
-                explicit OpenInfo (const pugi::xml_node &node) :
-                        Stream::OpenInfo (VALUE_SERVER_TCP_SOCKET),
+                /// a ServerTCPSocket::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Stream::Context (VALUE_SERVER_TCP_SOCKET),
                         address (Address::Empty),
                         reuseAddress (false),
                         maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS) {
                     Parse (node);
                 }
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] address Listening address.
                 /// \param[in] reuseAddress If true, call \see{Socket::SetReuseAddress}
                 /// before calling \see{Socket::Bind}.
                 /// \param[in] maxPendingConnections Max pending connection requests.
-                OpenInfo (
+                Context (
                     const Address &address_,
                     bool reuseAddress_,
                     util::i32 maxPendingConnections_) :
-                    Stream::OpenInfo (VALUE_SERVER_TCP_SOCKET),
+                    Stream::Context (VALUE_SERVER_TCP_SOCKET),
                     address (address_),
                     reuseAddress (reuseAddress_),
                     maxPendingConnections (maxPendingConnections_) {}
 
+            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a
-                /// ServerTCPSocket::OpenInfo.
+                /// ServerTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ServerTCPSocket::OpenInfo.
+                /// a ServerTCPSocket::Context.
                 virtual void Parse (const pugi::xml_node &node);
                 /// \brief
                 /// Return a string representing the rest
                 /// state of the ServerTCPSocket.
                 /// \param[in] indentationLevel Pretty print parameter.
                 /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "OpenInfo").
+                /// \param[in] tagName Tag name (default to "Context").
                 /// \return String representing the rest state of the
                 /// ServerTCPSocket.
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
-                    const char *tagName = TAG_OPEN_INFO) const;
+                    const char *tagName = TAG_CONTEXT) const;
+            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ServerTCPSocket based on the address and maxPendingConnections.
                 /// \return ServerTCPSocket based on the address and maxPendingConnections.
                 virtual Stream::Ptr CreateStream () const;
             };
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
             /// \brief
             /// ctor.

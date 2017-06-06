@@ -25,12 +25,11 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientUDPSocket)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-
-        const char * const ClientUDPSocket::OpenInfo::VALUE_CLIENT_UDP_SOCKET =
+        const char * const ClientUDPSocket::Context::VALUE_CLIENT_UDP_SOCKET =
             "ClientUDPSocket";
 
-        void ClientUDPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ClientUDPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -42,23 +41,22 @@ namespace thekogans {
             }
         }
 
-        std::string ClientUDPSocket::OpenInfo::ToString (
+        std::string ClientUDPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                 util::CloseTag (indentationLevel, tagName);
             return stream.str ();
         }
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        Stream::Ptr ClientUDPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ClientUDPSocket::Context::CreateStream () const {
             return Stream::Ptr (new UDPSocket (address));
         }
-
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
     } // namespace stream
 } // namespace thekogans

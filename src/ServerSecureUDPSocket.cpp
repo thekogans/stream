@@ -33,43 +33,43 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerSecureUDPSocket)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_DTLS_CONTEXT =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_DTLS_CONTEXT =
             "DTLSContext";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::ATTR_PROTOCOL_VERSION =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::ATTR_PROTOCOL_VERSION =
             "ProtocolVersion";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
             "LoadSystemCACertificates";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_CA_CERTIFICATES =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_CA_CERTIFICATES =
             "CACertificates";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_CERTIFICATE_CHAIN_RSA =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_CERTIFICATE_CHAIN_RSA =
             "CertificateChainRSA";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_CERTIFICATE_CHAIN_DSA =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_CERTIFICATE_CHAIN_DSA =
             "CertificateChainDSA";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_CERTIFICATE =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_CERTIFICATE =
             "Certificate";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_PRIVATE_KEY_RSA =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_PRIVATE_KEY_RSA =
             "PrivateKeyRSA";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_PRIVATE_KEY_DSA =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_PRIVATE_KEY_DSA =
             "PrivateKeyDSA";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_CIPHER_LIST =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_CIPHER_LIST =
             "CipherList";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_REQUIRE_CLIENT_CERTIFICATE =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_REQUIRE_CLIENT_CERTIFICATE =
             "RequireClientCertificate";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH =
             "MaxClientCertificateChainDepth";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_DH_PARAMS =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_DH_PARAMS =
             "DHParams";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_ECDH_PARAMS =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_ECDH_PARAMS =
             "ECDHParams";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::ATTR_ECDH_PARAMS_TYPE =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::ATTR_ECDH_PARAMS_TYPE =
             "Type";
-        const char * const ServerSecureUDPSocket::OpenInfo::DTLSContext::TAG_CACHED_SESSION_TTL =
+        const char * const ServerSecureUDPSocket::Context::DTLSContext::TAG_CACHED_SESSION_TTL =
             "CachedSessionTTL";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        ServerSecureUDPSocket::OpenInfo::DTLSContext ServerSecureUDPSocket::OpenInfo::DTLSContext::Empty;
+        ServerSecureUDPSocket::Context::DTLSContext ServerSecureUDPSocket::Context::DTLSContext::Empty;
 
-        ServerSecureUDPSocket::OpenInfo::DTLSContext::DTLSContext (const DTLSContext &context) :
+        ServerSecureUDPSocket::Context::DTLSContext::DTLSContext (const DTLSContext &context) :
                 protocolVersion (context.protocolVersion),
                 loadSystemCACertificates (context.loadSystemCACertificates),
                 caCertificates (context.caCertificates),
@@ -90,7 +90,7 @@ namespace thekogans {
             }
         }
 
-        ServerSecureUDPSocket::OpenInfo::DTLSContext &ServerSecureUDPSocket::OpenInfo::DTLSContext::operator = (
+        ServerSecureUDPSocket::Context::DTLSContext &ServerSecureUDPSocket::Context::DTLSContext::operator = (
                 const DTLSContext &context) {
             if (&context != this) {
                 protocolVersion = context.protocolVersion;
@@ -164,7 +164,7 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ServerSecureUDPSocket::OpenInfo::DTLSContext::Parse (const pugi::xml_node &node) {
+        void ServerSecureUDPSocket::Context::DTLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
@@ -214,7 +214,7 @@ namespace thekogans {
             PrepareSSL_CTX ();
         }
 
-        std::string ServerSecureUDPSocket::OpenInfo::DTLSContext::ToString (
+        std::string ServerSecureUDPSocket::Context::DTLSContext::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
@@ -272,7 +272,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        void ServerSecureUDPSocket::OpenInfo::DTLSContext::PrepareSSL_CTX () {
+        void ServerSecureUDPSocket::Context::DTLSContext::PrepareSSL_CTX () {
             ctx.reset (SSL_CTX_new (GetDTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
                 if (!caCertificates.empty ()) {
@@ -318,12 +318,12 @@ namespace thekogans {
             }
         }
 
-        SSL_CTX *ServerSecureUDPSocket::OpenInfo::DTLSContext::GetSSL_CTX () const {
+        SSL_CTX *ServerSecureUDPSocket::Context::DTLSContext::GetSSL_CTX () const {
             return ctx.get ();
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ServerSecureUDPSocket::OpenInfo::DTLSContext::ParseCertificates (
+        void ServerSecureUDPSocket::Context::DTLSContext::ParseCertificates (
                 const pugi::xml_node &node,
                 std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
@@ -340,7 +340,7 @@ namespace thekogans {
             }
         }
 
-        std::string ServerSecureUDPSocket::OpenInfo::DTLSContext::FormatCertificates (
+        std::string ServerSecureUDPSocket::Context::DTLSContext::FormatCertificates (
                 util::ui32 indentationLevel,
                 const std::list<std::string> &certificateChain) const {
             std::ostringstream stream;
@@ -354,11 +354,11 @@ namespace thekogans {
             return stream.str ();
         }
 
-        const char * const ServerSecureUDPSocket::OpenInfo::VALUE_SERVER_SECURE_UDP_SOCKET =
+        const char * const ServerSecureUDPSocket::Context::VALUE_SERVER_SECURE_UDP_SOCKET =
             "ServerSecureUDPSocket";
 
-        void ServerSecureUDPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ServerSecureUDPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -374,17 +374,17 @@ namespace thekogans {
                     }
                 }
             }
-            // Sanity check. Make sure that OpenInfo contained a "DTLSContext" tag.
+            // Sanity check. Make sure that Context contained a "DTLSContext" tag.
             assert (context.GetSSL_CTX () != 0);
         }
 
-        std::string ServerSecureUDPSocket::OpenInfo::ToString (
+        std::string ServerSecureUDPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                     context.ToString (indentationLevel + 1) <<
                     sessionInfo.ToString (indentationLevel + 1) <<
@@ -393,7 +393,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        Stream::Ptr ServerSecureUDPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ServerSecureUDPSocket::Context::CreateStream () const {
             return Stream::Ptr (
                 new ServerSecureUDPSocket (
                     address,

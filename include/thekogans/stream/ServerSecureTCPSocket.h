@@ -46,11 +46,11 @@ namespace thekogans {
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ServerSecureTCPSocket)
 
-            /// \struct ServerSecureTCPSocket::OpenInfo ServerSecureTCPSocket.h
+            /// \struct ServerSecureTCPSocket::Context ServerSecureTCPSocket.h
             /// thekogans/stream/ServerSecureTCPSocket.h
             ///
             /// \brief
-            /// ServerSecureTCPSocket::OpenInfo represents the state of
+            /// ServerSecureTCPSocket::Context represents the state of
             /// a ServerSecureTCPSocket at rest. At any time you want to
             /// reconstitute a ServerSecureTCPSocket from rest, feed a
             /// parsed (pugi::xml_node) one of:
@@ -113,16 +113,16 @@ namespace thekogans {
             ///                  BidirectionalShutdown = "If true, perform bidirectional shutdown."
             ///                  CountTransfered = "Count of bytes transfered (readm and write)."/>
             /// </tagName>
-            /// to: Stream::GetOpenInfo (const pugi::xml_node &node), and it
+            /// to: Stream::GetContext (const pugi::xml_node &node), and it
             /// will return back to you a properly constructed and initialized
-            /// ServerSecureTCPSocket::OpenInfo. Call OpenInfo::CreateStream () to
+            /// ServerSecureTCPSocket::Context. Call Context::CreateStream () to
             /// recreate a ServerSecureTCPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo : Stream::OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
@@ -145,7 +145,7 @@ namespace thekogans {
                 /// \brief
                 /// Max pending connection requests.
                 util::i32 maxPendingConnections;
-                /// \struct ServerSecureTCPSocket::OpenInfo::TLSContext ServerSecureTCPSocket.h
+                /// \struct ServerSecureTCPSocket::Context::TLSContext ServerSecureTCPSocket.h
                 /// thekogans/stream/ServerSecureTCPSocket.h
                 ///
                 /// \brief
@@ -274,9 +274,9 @@ namespace thekogans {
                 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// ctor. Parse the node representing a
-                    /// ServerSecureTCPSocket::OpenInfo::TlSContext.
+                    /// ServerSecureTCPSocket::Context::TlSContext.
                     /// \param[in] node pugi::xml_node representing
-                    /// a ServerSecureTCPSocket::OpenInfo::TLSContext.
+                    /// a ServerSecureTCPSocket::Context::TLSContext.
                     explicit TLSContext (const pugi::xml_node &node) :
                             loadSystemCACertificates (true),
                             requireClientCertificate (true),
@@ -347,21 +347,21 @@ namespace thekogans {
                 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Parse the node representing a
-                    /// ServerSecureTCPSocket::OpenInfo::TLSContext.
+                    /// ServerSecureTCPSocket::Context::TLSContext.
                     /// \param[in] node pugi::xml_node representing
-                    /// a ServerSecureTCPSocket::OpenInfo::TLSContext.
+                    /// a ServerSecureTCPSocket::Context::TLSContext.
                     virtual void Parse (const pugi::xml_node &node);
                     /// \brief
                     /// Return a string representing the rest
-                    /// state of the ServerSecureTCPSocket::OpenInfo::TLSContext.
+                    /// state of the ServerSecureTCPSocket::Context::TLSContext.
                     /// \param[in] indentationLevel Pretty print parameter.
                     /// indents the tag with 4 * indentationLevel spaces.
                     /// \param[in] tagName Tag name (default to "TLSContext").
                     /// \return String representing the rest state of the
-                    /// ServerSecureTCPSocket::OpenInfo::TLSContext.
+                    /// ServerSecureTCPSocket::Context::TLSContext.
                     virtual std::string ToString (
                         util::ui32 indentationLevel = 0,
-                        const char *tagName = TAG_OPEN_INFO) const;
+                        const char *tagName = TAG_CONTEXT) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     void PrepareSSL_CTX ();
@@ -397,10 +397,10 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor. Parse the node representing a
-                /// ServerSecureTCPSocket::OpenInfo.
+                /// ServerSecureTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ServerSecureTCPSocket::OpenInfo.
-                OpenInfo (
+                /// a ServerSecureTCPSocket::Context.
+                Context (
                     const Address &address_ = Address::Empty,
                     bool reuseAddress_ = false,
                     util::ui32 maxPendingConnections_ = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
@@ -414,11 +414,11 @@ namespace thekogans {
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
-                /// ServerSecureTCPSocket::OpenInfo.
+                /// ServerSecureTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ServerSecureTCPSocket::OpenInfo.
-                explicit OpenInfo (const pugi::xml_node &node) :
-                        Stream::OpenInfo (VALUE_SERVER_SECURE_TCP_SOCKET),
+                /// a ServerSecureTCPSocket::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Stream::Context (VALUE_SERVER_SECURE_TCP_SOCKET),
                         address (Address::Empty),
                         reuseAddress (false),
                         maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS),
@@ -429,21 +429,21 @@ namespace thekogans {
 
                 /// \brief
                 /// Parse the node representing a
-                /// ServerSecureTCPSocket::OpenInfo.
+                /// ServerSecureTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ServerSecureTCPSocket::OpenInfo.
+                /// a ServerSecureTCPSocket::Context.
                 virtual void Parse (const pugi::xml_node &node);
                 /// \brief
                 /// Return a string representing the rest
                 /// state of the ServerSecureTCPSocket.
                 /// \param[in] indentationLevel Pretty print parameter.
                 /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "OpenInfo").
+                /// \param[in] tagName Tag name (default to "Context").
                 /// \return String representing the rest state of the
                 /// ServerSecureTCPSocket.
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
-                    const char *tagName = TAG_OPEN_INFO) const;
+                    const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief

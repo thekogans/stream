@@ -50,10 +50,10 @@ namespace thekogans {
             };
 
         private:
-            /// \struct ClientNamedPipe::OpenInfo ClientNamedPipe.h thekogans/stream/ClientNamedPipe.h
+            /// \struct ClientNamedPipe::Context ClientNamedPipe.h thekogans/stream/ClientNamedPipe.h
             ///
             /// \brief
-            /// ClientNamedPipe::OpenInfo represents the state
+            /// ClientNamedPipe::Context represents the state
             /// of a ClientNamedPipe at rest. At any time you want
             /// to reconstitute a ClientNamedPipe from rest,
             /// feed a parsed (pugi::xml_node) one of:
@@ -63,13 +63,13 @@ namespace thekogans {
             ///     <PipeType>byte or message</PipeType>
             ///     <Timeout>How long to wait for connection (default: 30 seconds)</Timeout>
             /// </tagName>
-            /// to: thekogans::stream::Stream::GetOpenInfo (), and it will
+            /// to: thekogans::stream::Stream::GetContext (), and it will
             /// return back to you a properly constructed, initialized and
             /// connected ClientNamedPipe.
-            struct _LIB_THEKOGANS_STREAM_DECL OpenInfo : Stream::OpenInfo {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<OpenInfo>.
-                typedef std::unique_ptr<OpenInfo> UniquePtr;
+                /// Convenient typedef for std::unique_ptr<Context>.
+                typedef std::unique_ptr<Context> UniquePtr;
 
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
@@ -102,11 +102,11 @@ namespace thekogans {
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
-                /// ClientNamedPipe::OpenInfo.
+                /// ClientNamedPipe::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientNamedPipe::OpenInfo.
-                explicit OpenInfo (const pugi::xml_node &node) :
-                        Stream::OpenInfo (VALUE_CLIENT_NAMED_PIPE),
+                /// a ClientNamedPipe::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Stream::Context (VALUE_CLIENT_NAMED_PIPE),
                         address (Address::Empty),
                         pipeType (NamedPipe::Byte),
                         timeout (ClientNamedPipe::DEFAULT_TIMEOUT) {
@@ -118,7 +118,7 @@ namespace thekogans {
                 /// \param[in] address_ Address of ServerNamedPipe to connect to.
                 /// \param[in] pipeType_ Pipe type (Byte or Message).
                 /// \param[in] timeout_ Connection timeout.
-                OpenInfo (
+                Context (
                     const Address &address_,
                     PipeType pipeType_,
                     DWORD timeout_) :
@@ -129,26 +129,26 @@ namespace thekogans {
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a
-                /// ClientNamedPipe::OpenInfo.
+                /// ClientNamedPipe::Context.
                 /// \param[in] node pugi::xml_node representing
-                /// a ClientNamedPipe::OpenInfo.
+                /// a ClientNamedPipe::Context.
                 virtual void Parse (const pugi::xml_node &node);
                 /// \brief
                 /// Return a string representing the rest
                 /// state of the ClientNamedPipe.
                 /// \param[in] indentationLevel Pretty print parameter.
                 /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "OpenInfo").
+                /// \param[in] tagName Tag name (default to "Context").
                 /// \return String representing the rest state of the
                 /// ClientNamedPipe.
                 virtual std::string ToString (
                     util::ui32 indentationLevel = 0,
-                    const char *tagName = TAG_OPEN_INFO) const;
+                    const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
-                /// Create a ClientNamedPipe based on the OpenInfo parameters.
-                /// \return ClientNamedPipe based on the OpenInfo parameters.
+                /// Create a ClientNamedPipe based on the Context parameters.
+                /// \return ClientNamedPipe based on the Context parameters.
                 virtual Stream::Ptr CreateStream () const {
                     return Stream::Ptr (
                         new ClientNamedPipe (address, pipeType, timeout));

@@ -37,43 +37,43 @@ namespace thekogans {
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerSecureTCPSocket)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_TLS_CONTEXT =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_TLS_CONTEXT =
             "TLSContext";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::ATTR_PROTOCOL_VERSION =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::ATTR_PROTOCOL_VERSION =
             "ProtocolVersion";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_LOAD_SYSTEM_CA_CERTIFICATES =
             "LoadSystemCACertificates";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CA_CERTIFICATES =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_CA_CERTIFICATES =
             "CACertificates";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CERTIFICATE_CHAIN_RSA =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_CERTIFICATE_CHAIN_RSA =
             "CertificateChainRSA";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CERTIFICATE_CHAIN_DSA =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_CERTIFICATE_CHAIN_DSA =
             "CertificateChainDSA";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CERTIFICATE =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_CERTIFICATE =
             "Certificate";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_PRIVATE_KEY_RSA =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_PRIVATE_KEY_RSA =
             "PrivateKeyRSA";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_PRIVATE_KEY_DSA =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_PRIVATE_KEY_DSA =
             "PrivateKeyDSA";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CIPHER_LIST =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_CIPHER_LIST =
             "CipherList";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_REQUIRE_CLIENT_CERTIFICATE =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_REQUIRE_CLIENT_CERTIFICATE =
             "RequireClientCertificate";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH =
             "MaxClientCertificateChainDepth";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_DH_PARAMS =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_DH_PARAMS =
             "DHParams";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_ECDH_PARAMS =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_ECDH_PARAMS =
             "ECDHParams";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::ATTR_ECDH_PARAMS_TYPE =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::ATTR_ECDH_PARAMS_TYPE =
             "Type";
-        const char * const ServerSecureTCPSocket::OpenInfo::TLSContext::TAG_CACHED_SESSION_TTL =
+        const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_CACHED_SESSION_TTL =
             "CachedSessionTTL";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        ServerSecureTCPSocket::OpenInfo::TLSContext ServerSecureTCPSocket::OpenInfo::TLSContext::Empty;
+        ServerSecureTCPSocket::Context::TLSContext ServerSecureTCPSocket::Context::TLSContext::Empty;
 
-        ServerSecureTCPSocket::OpenInfo::TLSContext::TLSContext (const TLSContext &context) :
+        ServerSecureTCPSocket::Context::TLSContext::TLSContext (const TLSContext &context) :
                 protocolVersion (context.protocolVersion),
                 loadSystemCACertificates (context.loadSystemCACertificates),
                 caCertificates (context.caCertificates),
@@ -94,7 +94,7 @@ namespace thekogans {
             }
         }
 
-        ServerSecureTCPSocket::OpenInfo::TLSContext &ServerSecureTCPSocket::OpenInfo::TLSContext::operator = (
+        ServerSecureTCPSocket::Context::TLSContext &ServerSecureTCPSocket::Context::TLSContext::operator = (
                 const TLSContext &context) {
             if (&context != this) {
                 protocolVersion = context.protocolVersion;
@@ -120,7 +120,7 @@ namespace thekogans {
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ServerSecureTCPSocket::OpenInfo::TLSContext::Parse (const pugi::xml_node &node) {
+        void ServerSecureTCPSocket::Context::TLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
@@ -170,7 +170,7 @@ namespace thekogans {
             PrepareSSL_CTX ();
         }
 
-        std::string ServerSecureTCPSocket::OpenInfo::TLSContext::ToString (
+        std::string ServerSecureTCPSocket::Context::TLSContext::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
@@ -228,7 +228,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        void ServerSecureTCPSocket::OpenInfo::TLSContext::PrepareSSL_CTX () {
+        void ServerSecureTCPSocket::Context::TLSContext::PrepareSSL_CTX () {
             ctx.reset (SSL_CTX_new (GetTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
                 if (loadSystemCACertificates) {
@@ -274,12 +274,12 @@ namespace thekogans {
             }
         }
 
-        SSL_CTX *ServerSecureTCPSocket::OpenInfo::TLSContext::GetSSL_CTX () const {
+        SSL_CTX *ServerSecureTCPSocket::Context::TLSContext::GetSSL_CTX () const {
             return ctx.get ();
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        void ServerSecureTCPSocket::OpenInfo::TLSContext::ParseCertificates (
+        void ServerSecureTCPSocket::Context::TLSContext::ParseCertificates (
                 const pugi::xml_node &node,
                 std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
@@ -296,7 +296,7 @@ namespace thekogans {
             }
         }
 
-        std::string ServerSecureTCPSocket::OpenInfo::TLSContext::FormatCertificates (
+        std::string ServerSecureTCPSocket::Context::TLSContext::FormatCertificates (
                 util::ui32 indentationLevel,
                 const std::list<std::string> &certificates) const {
             std::ostringstream stream;
@@ -311,15 +311,15 @@ namespace thekogans {
             return stream.str ();
         }
 
-        const char * const ServerSecureTCPSocket::OpenInfo::VALUE_SERVER_SECURE_TCP_SOCKET =
+        const char * const ServerSecureTCPSocket::Context::VALUE_SERVER_SECURE_TCP_SOCKET =
             "ServerSecureTCPSocket";
-        const char * const ServerSecureTCPSocket::OpenInfo::TAG_REUSE_ADDRESS =
+        const char * const ServerSecureTCPSocket::Context::TAG_REUSE_ADDRESS =
             "ReuseAddress";
-        const char * const ServerSecureTCPSocket::OpenInfo::TAG_MAX_PENDING_CONNECTIONS =
+        const char * const ServerSecureTCPSocket::Context::TAG_MAX_PENDING_CONNECTIONS =
             "MaxPendingConnections";
 
-        void ServerSecureTCPSocket::OpenInfo::Parse (const pugi::xml_node &node) {
-            Stream::OpenInfo::Parse (node);
+        void ServerSecureTCPSocket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -341,17 +341,17 @@ namespace thekogans {
                     }
                 }
             }
-            // Sanity check. Make sure that OpenInfo contained a "TLSContext" tag.
+            // Sanity check. Make sure that Context contained a "TLSContext" tag.
             assert (context.GetSSL_CTX () != 0);
         }
 
-        std::string ServerSecureTCPSocket::OpenInfo::ToString (
+        std::string ServerSecureTCPSocket::Context::ToString (
                 util::ui32 indentationLevel,
                 const char *tagName) const {
             assert (tagName != 0);
             std::ostringstream stream;
             stream <<
-                Stream::OpenInfo::ToString (indentationLevel, tagName) <<
+                Stream::Context::ToString (indentationLevel, tagName) <<
                     address.ToString (indentationLevel + 1) <<
                     util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
                         util::boolTostring (reuseAddress) <<
@@ -366,7 +366,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        Stream::Ptr ServerSecureTCPSocket::OpenInfo::CreateStream () const {
+        Stream::Ptr ServerSecureTCPSocket::Context::CreateStream () const {
             return Stream::Ptr (
                 new ServerSecureTCPSocket (
                     address,
