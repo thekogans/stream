@@ -654,12 +654,6 @@ namespace thekogans {
         }
 
         namespace {
-            inline std::string GetExtensionName (X509_EXTENSION *extension) {
-                return std::string (
-                    (const char *)OBJ_nid2sn (
-                        OBJ_obj2nid (X509_EXTENSION_get_object (extension))));
-            }
-
             bool CompareServerName (
                     const std::string &serverName,
                     const std::string &certificateName) {
@@ -682,42 +676,6 @@ namespace thekogans {
                 return strcasecmp (serverName.c_str (), certificateName.c_str ()) == 0;
             }
 
-            bool CheckSubjectAltName (
-                    X509 *cert,
-                    const std::string &serverName) {
-                for (int i = 0, count = X509_get_ext_count (cert); i < count; ++i) {
-                    X509_EXTENSION *extension = X509_get_ext (cert, i);
-                    if (GetExtensionName (extension) == "subjectAltName") {
-                        const X509V3_EXT_METHOD *method = X509V3_EXT_get (extension);
-                        if (method == 0) {
-                            break;
-                        }
-                        void *extensionData = 0;
-                        const void *data = extension->value->data;
-                        if (method->it != 0) {
-                            extensionData = ASN1_item_d2i (0,
-                                (const util::ui8 **)&data,
-                                extension->value->length, ASN1_ITEM_ptr (method->it));
-                        }
-                        else {
-                            extensionData = method->d2i (0,
-                                (const util::ui8 **)&data,
-                                extension->value->length);
-                        }
-                        STACK_OF (CONF_VALUE) *nameValues =
-                            method->i2v (method, extensionData, 0);
-                        for (int j = 0, count = sk_CONF_VALUE_num (nameValues); j < count; ++j) {
-                            CONF_VALUE *nameValue = sk_CONF_VALUE_value (nameValues, j);
-                            if (std::string ("DNS") == nameValue->name &&
-                                    CompareServerName (serverName, nameValue->value)) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-                return false;
-            }
-
             bool CheckSubjectName (
                     X509 *cert,
                     const std::string &serverName) {
@@ -729,7 +687,48 @@ namespace thekogans {
                             subjectName, NID_commonName, commonName, sizeof (commonName));
                     }
                 }
-                return strcasecmp (commonName, serverName.c_str ()) == 0;
+                return CompareServerName (serverName, commonName);
+            }
+
+            inline std::string GetExtensionName (X509_EXTENSION *extension) {
+                return std::string (
+                    (const char *)OBJ_nid2sn (
+                        OBJ_obj2nid (X509_EXTENSION_get_object (extension))));
+            }
+
+            bool CheckSubjectAltName (
+                    X509 *cert,
+                    const std::string &serverName) {
+                for (int i = 0, count = X509_get_ext_count (cert); i < count; ++i) {
+                    X509_EXTENSION *extension = X509_get_ext (cert, i);
+                    if (GetExtensionName (extension) == "subjectAltName") {
+                        const X509V3_EXT_METHOD *method = X509V3_EXT_get (extension);
+                        if (method != 0) {
+                            void *extensionData = 0;
+                            const void *data = extension->value->data;
+                            if (method->it != 0) {
+                                extensionData = ASN1_item_d2i (0,
+                                    (const util::ui8 **)&data,
+                                    extension->value->length, ASN1_ITEM_ptr (method->it));
+                            }
+                            else {
+                                extensionData = method->d2i (0,
+                                    (const util::ui8 **)&data,
+                                    extension->value->length);
+                            }
+                            STACK_OF (CONF_VALUE) *nameValues =
+                                method->i2v (method, extensionData, 0);
+                            for (int j = 0, count = sk_CONF_VALUE_num (nameValues); j < count; ++j) {
+                                CONF_VALUE *nameValue = sk_CONF_VALUE_value (nameValues, j);
+                                if (std::string ("DNS") == nameValue->name &&
+                                        CompareServerName (serverName, nameValue->value)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
             }
         }
 
@@ -739,8 +738,8 @@ namespace thekogans {
                 const std::string &serverName) {
             X509Ptr cert (SSL_get_peer_certificate (ssl));
             return cert.get () != 0 &&
-                (CheckSubjectAltName (cert.get (), serverName) ||
-                    CheckSubjectName (cert.get (), serverName)) ?
+                (CheckSubjectName (cert.get (), serverName) ||
+                    CheckSubjectAltName (cert.get (), serverName)) ?
                 X509_V_OK : X509_V_ERR_APPLICATION_VERIFICATION;
         }
 
