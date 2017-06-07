@@ -57,13 +57,15 @@ thekogans_openssl="$(get_toolchain_program -o:thekogans -p:openssl)"
 
 # server cert
 server_root=`cd server; pwd`
+server_cnf=`cygpath -aw $server_root/resources/server.cnf`
 "$thekogans_openssl" req -newkey rsa:2048 -sha384 -keyout serverkey.pem -out serverreq.pem -config "$server_root"/resources/server.cnf -reqexts req_extensions
-"$thekogans_openssl" x509 -req -in serverreq.pem -sha384 -extfile "$server_root"/resources/server.cnf -extensions certificate_extensions -CA cacert.pem -CAkey cakey.pem -CAcreateserial -out servercert.pem
+"$thekogans_openssl" x509 -req -in serverreq.pem -sha384 -extfile "$server_cnf" -extensions certificate_extensions -CA cacert.pem -CAkey cakey.pem -CAcreateserial -out servercert.pem
 
 # client cert
 client_root=`cd client; pwd`
+client_cnf=`cygpath -aw $client_root/resources/client.cnf`
 "$thekogans_openssl" req -newkey rsa:2048 -sha384 -keyout clientkey.pem -out clientreq.pem -config "$client_root"/resources/client.cnf -reqexts req_extensions
-"$thekogans_openssl" x509 -req -in clientreq.pem -sha384 -extfile "$client_root"/resources/client.cnf -extensions certificate_extensions -CA cacert.pem -CAkey cakey.pem -CAcreateserial -out clientcert.pem
+"$thekogans_openssl" x509 -req -in clientreq.pem -sha384 -extfile "$client_cnf" -extensions certificate_extensions -CA cacert.pem -CAkey cakey.pem -CAcreateserial -out clientcert.pem
 
 caCert=`cat cacert.pem`
 ciphers=AES256-GCM-SHA384

@@ -271,7 +271,7 @@ namespace thekogans {
             // util::Thread
             /// \brief
             /// Used on Linux and OS X to listen for network changes.
-            virtual void Run ();
+            virtual void Run () throw ();
         #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 
             /// \brief

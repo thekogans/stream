@@ -75,7 +75,7 @@ namespace thekogans {
                     }
                 }
 
-                void Server::Run () {
+                void Server::Run () throw () {
                     while (!done) {
                         THEKOGANS_UTIL_TRY {
                             eventQueue->WaitForEvents ();

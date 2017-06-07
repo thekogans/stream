@@ -985,22 +985,23 @@ namespace thekogans {
                 util::ui32 concurrentThreads,
                 util::i32 priority,
                 util::ui32 affinity) :
-                AsyncIoEventQueue (concurrentThreads) {
+                AsyncIoEventQueue (concurrentThreads),
     #elif defined (TOOLCHAIN_OS_Linux)
         GlobalAsyncIoEventQueue::GlobalAsyncIoEventQueue (
                 util::ui32 maxSize,
                 util::i32 priority,
                 util::ui32 affinity) :
-                AsyncIoEventQueue (maxSize) {
+                AsyncIoEventQueue (maxSize),
     #elif defined (TOOLCHAIN_OS_OSX)
         GlobalAsyncIoEventQueue::GlobalAsyncIoEventQueue (
                 util::i32 priority,
-                util::ui32 affinity) {
+                util::ui32 affinity) :
     #endif // defined (TOOLCHAIN_OS_Windows)
+                Thread ("GlobalAsyncIoEventQueue") {
             Create (priority, affinity);
         }
 
-        void GlobalAsyncIoEventQueue::Run () {
+        void GlobalAsyncIoEventQueue::Run () throw () {
             while (1) {
                 THEKOGANS_UTIL_TRY {
                     WaitForEvents ();
