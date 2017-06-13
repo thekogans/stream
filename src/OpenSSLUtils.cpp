@@ -375,7 +375,7 @@ namespace thekogans {
                                             }
                                             CFDataRef data = 0;
                                             errorCode = SecItemExport (cert, kSecFormatX509Cert, kSecItemPemArmour, 0, &data);
-                                            if (errorCode == noErr) {
+                                            if (data != 0) {
                                                 CFDataRefPtr dataPtr (data);
                                                 // Apple certificates are PEM encoded.
                                                 X509Ptr certificate = ParsePEMCertificate (CFDataGetBytePtr (data), CFDataGetLength (data));
@@ -386,7 +386,7 @@ namespace thekogans {
                                                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                                                 }
                                             }
-                                            else {
+                                            else if (errorCode != noErr) {
                                                 THEKOGANS_UTIL_THROW_OSSTATUS_ERROR_CODE_EXCEPTION (errorCode);
                                             }
                                         }
