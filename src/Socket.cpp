@@ -187,7 +187,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
-            return util::TimeSpec::Fromtimeval (timeVal);
+            return util::TimeSpec (timeVal);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -236,7 +236,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
-            return util::TimeSpec::Fromtimeval (timeVal);
+            return util::TimeSpec (timeVal);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

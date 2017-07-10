@@ -158,6 +158,8 @@ namespace thekogans {
             const util::ui32 maxMessageLength;
 
             enum {
+                /// \brief
+                /// Default maximum message length.
                 DEFAULT_MAX_MESSAGE_LENGTH = 16384
             };
 

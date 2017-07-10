@@ -295,14 +295,14 @@ namespace thekogans {
 
             util::Buffer::UniquePtr BIGNUMToBuffer (const BIGNUM &bn) {
                 util::Buffer::UniquePtr buffer (
-                    new util::Buffer (util::HostEndian, BN_num_bytes (&bn)));
-                buffer->AdvanceWriteOffset ((std::size_t)BN_bn2bin (&bn, buffer->GetWritePtr ()));
+                    new util::Buffer (util::HostEndian, (util::ui32)BN_bn2mpi (&bn, 0)));
+                buffer->AdvanceWriteOffset ((util::ui32)BN_bn2mpi (&bn, buffer->GetWritePtr ()));
                 return buffer;
             }
 
             BIGNUMPtr BufferToBIGNUM (const util::Buffer &buffer) {
                 BIGNUMPtr bn (BN_new ());
-                BN_bin2bn (buffer.GetReadPtr (), (int)buffer.GetDataAvailableForReading (), bn.get ());
+                BN_mpi2bn (buffer.GetReadPtr (), (int)buffer.GetDataAvailableForReading (), bn.get ());
                 return bn;
             }
         }
@@ -567,13 +567,15 @@ namespace thekogans {
                 ENGINE *engine) {
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_RSA, engine));
-            if (ctx.get () == 0 ||
-                    EVP_PKEY_keygen_init (ctx.get ()) != 1 ||
-                    EVP_PKEY_CTX_set_rsa_keygen_bits (ctx.get (), (int)bits) != 1 ||
-                    EVP_PKEY_keygen (ctx.get (), &key) != 1) {
+            if (ctx.get () != 0 &&
+                    EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
+                    EVP_PKEY_CTX_set_rsa_keygen_bits (ctx.get (), (int)bits) == 1 &&
+                    EVP_PKEY_keygen (ctx.get (), &key) == 1) {
+                return EVP_PKEYPtr (key);
+            }
+            else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return EVP_PKEYPtr (key);
         }
 
         namespace {
@@ -582,13 +584,15 @@ namespace thekogans {
                     ENGINE *engine) {
                 EVP_PKEY *params = 0;
                 EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_DSA, engine));
-                if (ctx.get () == 0 ||
-                        EVP_PKEY_paramgen_init (ctx.get ()) != 1 ||
-                        EVP_PKEY_CTX_set_dsa_paramgen_bits (ctx.get (), (int)bits) != 1 ||
-                        EVP_PKEY_paramgen (ctx.get (), &params)) {
+                if (ctx.get () != 0 &&
+                        EVP_PKEY_paramgen_init (ctx.get ()) == 1 &&
+                        EVP_PKEY_CTX_set_dsa_paramgen_bits (ctx.get (), (int)bits) == 1 &&
+                        EVP_PKEY_paramgen (ctx.get (), &params) == 1) {
+                    return EVP_PKEYPtr (params);
+                }
+                else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return EVP_PKEYPtr (params);
             }
         }
 
@@ -599,12 +603,14 @@ namespace thekogans {
             EVP_PKEYPtr params = GenerateDSAParams (bits, engine);
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new (params.get (), engine));
-            if (ctx.get () == 0 ||
-                    EVP_PKEY_keygen_init (ctx.get ()) != 1 ||
-                    EVP_PKEY_keygen (ctx.get (), &key) != 1) {
+            if (ctx.get () != 0 &&
+                    EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
+                    EVP_PKEY_keygen (ctx.get (), &key) == 1) {
+                return EVP_PKEYPtr (key);
+            }
+            else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return EVP_PKEYPtr (key);
         }
 
         namespace {
@@ -613,13 +619,15 @@ namespace thekogans {
                     ENGINE *engine) {
                 EVP_PKEY *params = 0;
                 EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_DH, engine));
-                if (ctx.get () == 0 ||
-                        EVP_PKEY_paramgen_init (ctx.get ()) != 1 ||
-                        EVP_PKEY_CTX_set_dh_paramgen_prime_len (ctx.get (), (int)bits) != 1 ||
-                        EVP_PKEY_paramgen (ctx.get (), &params)) {
+                if (ctx.get () != 0 &&
+                        EVP_PKEY_paramgen_init (ctx.get ()) == 1 &&
+                        EVP_PKEY_CTX_set_dh_paramgen_prime_len (ctx.get (), (int)bits) == 1 &&
+                        EVP_PKEY_paramgen (ctx.get (), &params) == 1) {
+                    return EVP_PKEYPtr (params);
+                }
+                else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return EVP_PKEYPtr (params);
             }
         }
 
@@ -630,12 +638,14 @@ namespace thekogans {
             EVP_PKEYPtr params = GenerateDHParams (bits, engine);
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new (params.get (), engine));
-            if (ctx.get () == 0 ||
-                    EVP_PKEY_keygen_init (ctx.get ()) != 1 ||
-                    EVP_PKEY_keygen (ctx.get (), &key) != 1) {
+            if (ctx.get () != 0 &&
+                    EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
+                    EVP_PKEY_keygen (ctx.get (), &key) == 1) {
+                return EVP_PKEYPtr (key);
+            }
+            else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return EVP_PKEYPtr (key);
         }
 
         namespace {
@@ -644,13 +654,15 @@ namespace thekogans {
                     ENGINE *engine) {
                 EVP_PKEY *params = 0;
                 EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_EC, engine));
-                if (ctx.get () == 0 ||
-                        EVP_PKEY_paramgen_init (ctx.get ()) != 1 ||
-                        EVP_PKEY_CTX_set_ec_paramgen_curve_nid (ctx.get (), nid) != 1 ||
-                        EVP_PKEY_paramgen (ctx.get (), &params)) {
+                if (ctx.get () != 0 &&
+                        EVP_PKEY_paramgen_init (ctx.get ()) == 1 &&
+                        EVP_PKEY_CTX_set_ec_paramgen_curve_nid (ctx.get (), nid) == 1 &&
+                        EVP_PKEY_paramgen (ctx.get (), &params) == 1) {
+                    return EVP_PKEYPtr (params);
+                }
+                else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return EVP_PKEYPtr (params);
             }
         }
 
@@ -661,12 +673,14 @@ namespace thekogans {
             EVP_PKEYPtr params = GenerateECParams (nid, engine);
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new (params.get (), engine));
-            if (ctx.get () == 0 ||
-                    EVP_PKEY_keygen_init (ctx.get ()) != 1 ||
-                    EVP_PKEY_keygen (ctx.get (), &key) != 1) {
+            if (ctx.get () != 0 &&
+                    EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
+                    EVP_PKEY_keygen (ctx.get (), &key) == 1) {
+                return EVP_PKEYPtr (key);
+            }
+            else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return EVP_PKEYPtr (key);
         }
 
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
@@ -676,14 +690,16 @@ namespace thekogans {
                 ENGINE *engine) {
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_HMAC, engine));
-            if (ctx.get () == 0 ||
-                    EVP_PKEY_keygen_init (ctx.get ()) != 1 ||
+            if (ctx.get () != 0 &&
+                    EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
                     EVP_PKEY_CTX_ctrl (ctx.get (), -1, EVP_PKEY_OP_KEYGEN,
-                        EVP_PKEY_CTRL_SET_MAC_KEY, (int)secretLength, (void *)secret) != 1 ||
-                    EVP_PKEY_keygen (ctx.get (), &key) != 1) {
+                        EVP_PKEY_CTRL_SET_MAC_KEY, (int)secretLength, (void *)secret) == 1 &&
+                    EVP_PKEY_keygen (ctx.get (), &key) == 1) {
+                return EVP_PKEYPtr (key);
+            }
+            else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return EVP_PKEYPtr (key);
         }
 
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
@@ -694,16 +710,18 @@ namespace thekogans {
                 ENGINE *engine) {
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_CMAC, engine));
-            if (ctx.get () == 0 ||
-                    EVP_PKEY_keygen_init (ctx.get ()) != 1 ||
+            if (ctx.get () != 0 &&
+                    EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
                     EVP_PKEY_CTX_ctrl (ctx.get (), -1, EVP_PKEY_OP_KEYGEN,
-                        EVP_PKEY_CTRL_CIPHER, 0, (void *)(cipher == 0 ? EVP_aes_256_cbc () : cipher)) != 1 ||
+                        EVP_PKEY_CTRL_CIPHER, 0, (void *)(cipher == 0 ? EVP_aes_256_cbc () : cipher)) == 1 &&
                     EVP_PKEY_CTX_ctrl (ctx.get (), -1, EVP_PKEY_OP_KEYGEN,
-                        EVP_PKEY_CTRL_SET_MAC_KEY, (int)secretLength, (void *)secret) != 1 ||
-                    EVP_PKEY_keygen (ctx.get (), &key) != 1) {
+                        EVP_PKEY_CTRL_SET_MAC_KEY, (int)secretLength, (void *)secret) == 1 &&
+                    EVP_PKEY_keygen (ctx.get (), &key) == 1) {
+                return EVP_PKEYPtr (key);
+            }
+            else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return EVP_PKEYPtr (key);
         }
 
         namespace {

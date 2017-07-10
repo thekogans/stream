@@ -439,9 +439,15 @@ namespace thekogans {
         SecureUDPSocket::Ptr ServerSecureUDPSocket::Accept () {
             SecureUDPSocket::Ptr connection;
             {
-                util::Buffer::UniquePtr buffer =
-                    asyncInfo->eventSink.GetBuffer (
+                util::Buffer::UniquePtr buffer;
+                if (IsAsync ()) {
+                    buffer = asyncInfo->eventSink.GetBuffer (
                         *this, util::HostEndian, TLS_MAX_RECORD_LENGTH);
+                }
+                else {
+                    buffer.reset (
+                        new util::Buffer (util::HostEndian, TLS_MAX_RECORD_LENGTH));
+                }
                 Address from;
                 Address to;
                 if (buffer->AdvanceWriteOffset (

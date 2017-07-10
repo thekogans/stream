@@ -93,9 +93,15 @@ namespace thekogans {
         ServerUDPSocket::Connection::UniquePtr ServerUDPSocket::Accept () {
             Connection::UniquePtr connection;
             {
-                util::Buffer::UniquePtr buffer =
-                    asyncInfo->eventSink.GetBuffer (
+                util::Buffer::UniquePtr buffer;
+                if (IsAsync ()) {
+                    buffer = asyncInfo->eventSink.GetBuffer (
                         *this, util::HostEndian, maxMessageLength);
+                }
+                else {
+                    buffer.reset (
+                        new util::Buffer (util::HostEndian, maxMessageLength));
+                }
                 Address from;
                 Address to;
                 if (buffer->AdvanceWriteOffset (

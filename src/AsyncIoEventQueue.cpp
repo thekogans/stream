@@ -443,9 +443,10 @@ namespace thekogans {
                     }
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
+                timespec timespec = timeSpec.Totimespec ();
                 std::vector<keventStruct> kqueueEvents (maxEventsBatch);
                 int count = keventFunc (handle, 0, 0, &kqueueEvents[0], maxEventsBatch,
-                    timeSpec == util::TimeSpec::Infinite ? 0 : &timeSpec);
+                    timeSpec == util::TimeSpec::Infinite ? 0 : &timespec);
                 if (count < 0) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     // EINTR means a signal interrupted our wait. Quietly

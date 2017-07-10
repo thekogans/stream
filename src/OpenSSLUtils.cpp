@@ -296,15 +296,21 @@ namespace thekogans {
                             // Skip expired certificates.
                             if (CertVerifyTimeValidity (0, certContext->pCertInfo) == 0) {
                                 if (loadSystemRootCACertificatesOnly) {
-                                    // We only want to add Root CAs, so make sure Subject and Issuer names match.
-                                    std::string subject = GetCertName (&certContext->pCertInfo->Subject);
-                                    std::string issuer = GetCertName (&certContext->pCertInfo->Issuer);
+                                    // We only want to add Root CAs, so make
+                                    // sure Subject and Issuer names match.
+                                    std::string subject =
+                                        GetCertName (&certContext->pCertInfo->Subject);
+                                    std::string issuer =
+                                        GetCertName (&certContext->pCertInfo->Issuer);
                                     if (subject.empty () || issuer.empty () || subject != issuer) {
                                         continue;
                                     }
                                 }
                                 // M$ certificates are DER encoded.
-                                X509Ptr certificate = ParseDERCertificate (certContext->pbCertEncoded, certContext->cbCertEncoded);
+                                X509Ptr certificate =
+                                    ParseDERCertificate (
+                                        certContext->pbCertEncoded,
+                                        certContext->cbCertEncoded);
                                 if (certificate.get () != 0) {
                                     certificates.push_back (std::move (certificate));
                                 }
@@ -347,38 +353,52 @@ namespace thekogans {
                                 SecCertificateRef cert = (SecCertificateRef)CFArrayGetValueAtIndex (certs, j);
                                 if (cert != 0) {
                                     CFErrorRef error = 0;
-                                    CFDictionaryRefPtr names (SecCertificateCopyValues (cert, x509Keys.get (), &error));
+                                    CFDictionaryRefPtr names (
+                                        SecCertificateCopyValues (cert, x509Keys.get (), &error));
                                     if (names != 0) {
                                         // Check if the certificate expired.
                                         CFNumberRef notBefore =
                                             (CFNumberRef)CFDictionaryGetValue (
-                                                (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1ValidityNotBefore),
+                                                (CFDictionaryRef)CFDictionaryGetValue (
+                                                    names.get (),
+                                                    kSecOIDX509V1ValidityNotBefore),
                                                 kSecPropertyKeyValue);
                                         CFNumberRef notAfter =
                                             (CFNumberRef)CFDictionaryGetValue (
-                                                (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1ValidityNotAfter),
+                                                (CFDictionaryRef)CFDictionaryGetValue (
+                                                    names.get (),
+                                                    kSecOIDX509V1ValidityNotAfter),
                                                 kSecPropertyKeyValue);
                                         if (notBefore != 0 && notAfter != 0 && CheckDateRange (notBefore, notAfter)) {
                                             if (loadSystemRootCACertificatesOnly) {
-                                                // We only want to add Root CAs, so make sure Subject and Issuer names match.
+                                                // We only want to add Root CAs, so make
+                                                // sure Subject and Issuer names match.
                                                 CFStringRef issuer =
                                                     (CFStringRef)CFDictionaryGetValue (
-                                                        (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1IssuerName),
+                                                        (CFDictionaryRef)CFDictionaryGetValue (
+                                                            names.get (),
+                                                            kSecOIDX509V1IssuerName),
                                                         kSecPropertyKeyValue);
                                                 CFStringRef subject =
                                                     (CFStringRef)CFDictionaryGetValue(
-                                                        (CFDictionaryRef)CFDictionaryGetValue (names.get (), kSecOIDX509V1SubjectName),
+                                                        (CFDictionaryRef)CFDictionaryGetValue (
+                                                            names.get (),
+                                                            kSecOIDX509V1SubjectName),
                                                         kSecPropertyKeyValue);
                                                 if (issuer == 0 || subject == 0 || !CFEqual (subject, issuer)) {
                                                     continue;
                                                 }
                                             }
                                             CFDataRef data = 0;
-                                            errorCode = SecItemExport (cert, kSecFormatX509Cert, kSecItemPemArmour, 0, &data);
+                                            errorCode =
+                                                SecItemExport (cert, kSecFormatX509Cert, kSecItemPemArmour, 0, &data);
                                             if (data != 0) {
                                                 CFDataRefPtr dataPtr (data);
                                                 // Apple certificates are PEM encoded.
-                                                X509Ptr certificate = ParsePEMCertificate (CFDataGetBytePtr (data), CFDataGetLength (data));
+                                                X509Ptr certificate =
+                                                    ParsePEMCertificate (
+                                                        CFDataGetBytePtr (data),
+                                                        CFDataGetLength (data));
                                                 if (certificate.get () != 0) {
                                                     certificates.push_back (std::move (certificate));
                                                 }
@@ -931,7 +951,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t length) {
             if (buffer != 0 && length > 0) {
-                X509Ptr certificate (d2i_X509 (0, (const unsigned char **)&buffer, length));
+                X509Ptr certificate (d2i_X509 (0, (const unsigned char **)&buffer, (long)length));
                 if (certificate.get () != 0) {
                     return certificate;
                 }

@@ -351,12 +351,14 @@ namespace thekogans {
                     util::ui32 bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer::UniquePtr buffer =
-                            asyncInfo->eventSink.GetBuffer (*this, util::HostEndian, bufferLength);
+                            asyncInfo->eventSink.GetBuffer (
+                                *this, util::HostEndian, bufferLength);
                         if (buffer->AdvanceWriteOffset (
                                 Read (
                                     buffer->GetWritePtr (),
                                     bufferLength)) > 0) {
-                            asyncInfo->eventSink.HandleStreamRead (*this, std::move (buffer));
+                            asyncInfo->eventSink.HandleStreamRead (
+                                *this, std::move (buffer));
                         }
                     }
                     else {

@@ -593,7 +593,8 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                if (keventFunc (handle, 0, 0, &kevent, 1, &timeSpec) == 1 &&
+                timespec timespec = timeSpec.Totimespec ();
+                if (keventFunc (handle, 0, 0, &kevent, 1, &timespec) == 1 &&
                         (((kevent.filter == EVFILT_READ) && event == Stream::AsyncInfo::EventRead) ||
                         ((kevent.filter == EVFILT_WRITE) && event == Stream::AsyncInfo::EventWrite))) {
                     return true;
