@@ -570,6 +570,62 @@ namespace thekogans {
             return bn;
         }
 
+        _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
+        GetPublicKey (EVP_PKEY &key) {
+            util::ui8 *publicKey = 0;
+            int publicKeyLength = i2d_PUBKEY (&key, &publicKey);
+            return util::Buffer::UniquePtr (
+                new util::Buffer (
+                    util::NetworkEndian,
+                    publicKey,
+                    publicKeyLength,
+                    0,
+                    publicKeyLength,
+                    &OpenSSLAllocator::Global));
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
+        GetPrivateKey (EVP_PKEY &key) {
+            util::ui8 *privateKey = 0;
+            int privateKeyLength = i2d_PrivateKey (&key, &privateKey);
+            return util::Buffer::UniquePtr (
+                new util::Buffer (
+                    util::NetworkEndian,
+                    privateKey,
+                    privateKeyLength,
+                    0,
+                    privateKeyLength,
+                    &OpenSSLAllocator::Global));
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+        CreatePublicKey (
+                const void *publicKey,
+                std::size_t publicKeyLength) {
+            if (publicKey != 0 && publicKeyLength > 0) {
+                const util::ui8 *pp = (const util::ui8 *)publicKey;
+                return EVP_PKEYPtr (d2i_PUBKEY (0, &pp, publicKeyLength));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+        CreatePrivateKey (
+                const void *privateKey,
+                std::size_t privateKeyLength) {
+            if (privateKey != 0 && privateKeyLength > 0) {
+                const util::ui8 *pp = (const util::ui8 *)privateKey;
+                return EVP_PKEYPtr (d2i_AutoPrivateKey (0, &pp, privateKeyLength));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
         CreateRSAKey (
                 std::size_t bits,
