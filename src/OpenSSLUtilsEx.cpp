@@ -351,11 +351,11 @@ namespace thekogans {
             int advance = DH_compute_key (sharedSecret->GetWritePtr (), publicKey.get (), dh.get ());
             if (advance != -1) {
                 sharedSecret->AdvanceWriteOffset ((std::size_t)advance);
+                return sharedSecret;
             }
             else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return sharedSecret;
         }
 
         namespace {
@@ -380,10 +380,12 @@ namespace thekogans {
                     const util::Buffer &buffer) {
                 EC_POINTPtr point (EC_POINT_new (&group));
                 if (EC_POINT_oct2point (&group, point.get (), buffer.GetReadPtr (),
-                        buffer.GetDataAvailableForReading (), 0) != 1) {
+                        buffer.GetDataAvailableForReading (), 0) == 1) {
+                    return point;
+                }
+                else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return point;
             }
         }
 
@@ -419,11 +421,11 @@ namespace thekogans {
                 key.get (), 0);
             if (advance != -1) {
                 sharedSecret->AdvanceWriteOffset ((std::size_t)advance);
+                return sharedSecret;
             }
             else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return sharedSecret;
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (SymmetricKey, util::SpinLock)
@@ -499,11 +501,11 @@ namespace thekogans {
             if (EVP_EncryptFinal_ex (ctx.get (),
                     ciphertext->GetWritePtr (), &ciphertextLength) == 1) {
                 ciphertext->AdvanceWriteOffset (ciphertextLength);
+                return std::move (ciphertext);
             }
             else {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            return std::move (ciphertext);
         }
 
         Decryptor::Decryptor () :
@@ -561,15 +563,24 @@ namespace thekogans {
             return std::move (plaintext);
         }
 
+        _LIB_THEKOGANS_STREAM_DECL BIGNUMPtr _LIB_THEKOGANS_STREAM_API
+        BIGNUMFromui32 (util::ui32 value) {
+            BIGNUMPtr bn (BN_new ());
+            BN_set_word (bn.get (), value);
+            return bn;
+        }
+
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
         CreateRSAKey (
                 std::size_t bits,
+                BIGNUMPtr publicExponent,
                 ENGINE *engine) {
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_RSA, engine));
             if (ctx.get () != 0 &&
                     EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
                     EVP_PKEY_CTX_set_rsa_keygen_bits (ctx.get (), (int)bits) == 1 &&
+                    EVP_PKEY_CTX_set_rsa_keygen_pubexp (ctx.get (), publicExponent.release ()) == 1 &&
                     EVP_PKEY_keygen (ctx.get (), &key) == 1) {
                 return EVP_PKEYPtr (key);
             }
@@ -615,13 +626,15 @@ namespace thekogans {
 
         namespace {
             EVP_PKEYPtr GenerateDHParams (
-                    std::size_t bits,
+                    std::size_t primeLength,
+                    std::size_t generator,
                     ENGINE *engine) {
                 EVP_PKEY *params = 0;
                 EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_DH, engine));
                 if (ctx.get () != 0 &&
                         EVP_PKEY_paramgen_init (ctx.get ()) == 1 &&
-                        EVP_PKEY_CTX_set_dh_paramgen_prime_len (ctx.get (), (int)bits) == 1 &&
+                        EVP_PKEY_CTX_set_dh_paramgen_prime_len (ctx.get (), (int)primeLength) == 1 &&
+                        EVP_PKEY_CTX_set_dh_paramgen_generator (ctx.get (), (int)generator) == 1 &&
                         EVP_PKEY_paramgen (ctx.get (), &params) == 1) {
                     return EVP_PKEYPtr (params);
                 }
@@ -633,9 +646,10 @@ namespace thekogans {
 
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
         CreateDHKey (
-                std::size_t bits,
+                std::size_t primeLength,
+                std::size_t generator,
                 ENGINE *engine) {
-            EVP_PKEYPtr params = GenerateDHParams (bits, engine);
+            EVP_PKEYPtr params = GenerateDHParams (primeLength, generator, engine);
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new (params.get (), engine));
             if (ctx.get () != 0 &&
@@ -651,12 +665,14 @@ namespace thekogans {
         namespace {
             EVP_PKEYPtr GenerateECParams (
                     int nid,
+                    int parameterEncoding,
                     ENGINE *engine) {
                 EVP_PKEY *params = 0;
                 EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_EC, engine));
                 if (ctx.get () != 0 &&
                         EVP_PKEY_paramgen_init (ctx.get ()) == 1 &&
                         EVP_PKEY_CTX_set_ec_paramgen_curve_nid (ctx.get (), nid) == 1 &&
+                        EVP_PKEY_CTX_set_ec_param_enc (ctx.get (), parameterEncoding) == 1 &&
                         EVP_PKEY_paramgen (ctx.get (), &params) == 1) {
                     return EVP_PKEYPtr (params);
                 }
@@ -669,8 +685,9 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
         CreateECKey (
                 int nid,
+                int parameterEncoding,
                 ENGINE *engine) {
-            EVP_PKEYPtr params = GenerateECParams (nid, engine);
+            EVP_PKEYPtr params = GenerateECParams (nid, parameterEncoding, engine);
             EVP_PKEY *key = 0;
             EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new (params.get (), engine));
             if (ctx.get () != 0 &&
@@ -728,24 +745,24 @@ namespace thekogans {
             util::Buffer::UniquePtr MACSignBuffer (
                     const void *buffer,
                     std::size_t length,
-                    EVP_PKEY &key,
+                    EVP_PKEY &privateKey,
                     const EVP_MD *md,
                     util::Endianness endianness,
                     ENGINE *engine) {
-                util::Buffer::UniquePtr signature;
                 EVP_MD_CTXPtr ctx (EVP_MD_CTX_create ());
                 if (ctx.get () != 0 &&
                         EVP_DigestInit_ex (ctx.get (), md, engine) == 1 &&
-                        EVP_DigestSignInit (ctx.get (), 0, md, engine, &key) == 1 &&
+                        EVP_DigestSignInit (ctx.get (), 0, md, engine, &privateKey) == 1 &&
                         EVP_DigestSignUpdate (ctx.get (), buffer, length) == 1) {
                     size_t signatureLength = 0;
                     if (EVP_DigestSignFinal (ctx.get (), 0,
                             &signatureLength) == 1 && signatureLength > 0) {
-                        signature.reset (
+                        util::Buffer::UniquePtr signature (
                             new util::Buffer (endianness, (util::ui32)signatureLength));
                         if (EVP_DigestSignFinal (ctx.get (),
                                 signature->GetWritePtr (), &signatureLength) == 1) {
                             signature->AdvanceWriteOffset ((util::ui32)signatureLength);
+                            return signature;
                         }
                         else {
                             THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
@@ -758,29 +775,28 @@ namespace thekogans {
                 else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return signature;
             }
 
             util::Buffer::UniquePtr PKSignBuffer (
                     const void *buffer,
                     std::size_t length,
-                    EVP_PKEY &key,
+                    EVP_PKEY &privateKey,
                     const EVP_MD *md,
                     util::Endianness endianness,
                     ENGINE *engine) {
-                util::Buffer::UniquePtr signature;
                 EVP_MD_CTXPtr ctx (EVP_MD_CTX_create ());
                 if (ctx.get () != 0 &&
-                        EVP_DigestSignInit (ctx.get (), 0, md, engine, &key) == 1 &&
+                        EVP_DigestSignInit (ctx.get (), 0, md, engine, &privateKey) == 1 &&
                         EVP_DigestSignUpdate (ctx.get (), buffer, length) == 1) {
                     size_t signatureLength = 0;
                     if (EVP_DigestSignFinal (ctx.get (), 0,
                             &signatureLength) == 1 && signatureLength > 0) {
-                        signature.reset (
+                        util::Buffer::UniquePtr signature (
                             new util::Buffer (endianness, (util::ui32)signatureLength));
                         if (EVP_DigestSignFinal (ctx.get (),
                                 signature->GetWritePtr (), &signatureLength) == 1) {
                             signature->AdvanceWriteOffset ((util::ui32)signatureLength);
+                            return signature;
                         }
                         else {
                             THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
@@ -793,7 +809,6 @@ namespace thekogans {
                 else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return signature;
             }
         }
 
@@ -801,24 +816,22 @@ namespace thekogans {
         SignBuffer (
                 const void *buffer,
                 std::size_t length,
-                EVP_PKEY &signatureKey,
+                EVP_PKEY &privateKey,
                 const EVP_MD *md,
                 util::Endianness endianness,
                 ENGINE *engine) {
-            util::Buffer::UniquePtr signature;
             if (buffer != 0 && length > 0) {
                 if (md == 0) {
                     md = EVP_sha256 ();
                 }
-                signature = signatureKey.type == EVP_PKEY_HMAC || signatureKey.type == EVP_PKEY_CMAC ?
-                    MACSignBuffer (buffer, length, signatureKey, md, endianness, engine) :
-                    PKSignBuffer (buffer, length, signatureKey, md, endianness, engine);
+                return privateKey.type == EVP_PKEY_HMAC || privateKey.type == EVP_PKEY_CMAC ?
+                    MACSignBuffer (buffer, length, privateKey, md, endianness, engine) :
+                    PKSignBuffer (buffer, length, privateKey, md, endianness, engine);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return signature;
         }
 
         _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
@@ -860,18 +873,31 @@ namespace thekogans {
                 engine);
         }
 
+        _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
+        DecryptBuffer (
+                const void *buffer,
+                std::size_t length,
+                const SymmetricKey &decryptionKey,
+                util::Endianness endianness,
+                ENGINE *engine) {
+            Decryptor decryptor;
+            decryptor.Init (decryptionKey, endianness, engine);
+            decryptor.Update (buffer, length);
+            return decryptor.Final ();
+        }
+
         namespace {
             bool MACVerifyBufferSignature (
                     const void *buffer,
                     std::size_t bufferLength,
                     const void *signature,
                     std::size_t signatureLength,
-                    EVP_PKEY &key,
+                    EVP_PKEY &publicKey,
                     const EVP_MD *md,
                     ENGINE *engine) {
                 EVP_MD_CTXPtr ctx (EVP_MD_CTX_create ());
                 if (EVP_DigestInit_ex (ctx.get (), md, engine) == 1 &&
-                        EVP_DigestSignInit (ctx.get (), 0, md, engine, &key) == 1 &&
+                        EVP_DigestSignInit (ctx.get (), 0, md, engine, &publicKey) == 1 &&
                         EVP_DigestSignUpdate (ctx.get (), buffer, bufferLength) == 1) {
                     util::ui8 computedSignature[EVP_MAX_MD_SIZE];
                     std::size_t computedSignatureLength = sizeof (computedSignature);
@@ -887,7 +913,6 @@ namespace thekogans {
                 else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return false;
             }
 
             bool PKVerifyBufferSignature (
@@ -895,12 +920,12 @@ namespace thekogans {
                     std::size_t bufferLength,
                     const void *signature,
                     std::size_t signatureLength,
-                    EVP_PKEY &key,
+                    EVP_PKEY &publicKey,
                     const EVP_MD *md,
                     ENGINE *engine) {
                 EVP_MD_CTXPtr ctx (EVP_MD_CTX_create ());
                 if (ctx.get () != 0 &&
-                        EVP_DigestVerifyInit (ctx.get (), 0, md, engine, &key) == 1 &&
+                        EVP_DigestVerifyInit (ctx.get (), 0, md, engine, &publicKey) == 1 &&
                         EVP_DigestVerifyUpdate (ctx.get (), buffer, bufferLength) == 1) {
                     return EVP_DigestVerifyFinal (ctx.get (),
                         (const util::ui8 *)signature, signatureLength) == 1;
@@ -908,21 +933,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
-                return false;
             }
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
-        DecryptBuffer (
-                const void *buffer,
-                std::size_t length,
-                const SymmetricKey &decryptionKey,
-                util::Endianness endianness,
-                ENGINE *engine) {
-            Decryptor decryptor;
-            decryptor.Init (decryptionKey, endianness, engine);
-            decryptor.Update (buffer, length);
-            return decryptor.Final ();
         }
 
         _LIB_THEKOGANS_STREAM_DECL bool _LIB_THEKOGANS_STREAM_API
@@ -931,7 +942,7 @@ namespace thekogans {
                 std::size_t bufferLength,
                 const void *signature,
                 std::size_t signatureLength,
-                EVP_PKEY &signatureKey,
+                EVP_PKEY &publicKey,
                 const EVP_MD *md,
                 ENGINE *engine) {
             if (buffer != 0 && bufferLength > 0 &&
@@ -939,17 +950,16 @@ namespace thekogans {
                 if (md == 0) {
                     md = EVP_sha256 ();
                 }
-                return signatureKey.type == EVP_PKEY_HMAC || signatureKey.type == EVP_PKEY_CMAC ?
+                return publicKey.type == EVP_PKEY_HMAC || publicKey.type == EVP_PKEY_CMAC ?
                     MACVerifyBufferSignature (
-                        buffer, bufferLength, signature, signatureLength, signatureKey, md, engine) :
+                        buffer, bufferLength, signature, signatureLength, publicKey, md, engine) :
                     PKVerifyBufferSignature (
-                        buffer, bufferLength, signature, signatureLength, signatureKey, md, engine);
+                        buffer, bufferLength, signature, signatureLength, publicKey, md, engine);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return false;
         }
 
         _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API

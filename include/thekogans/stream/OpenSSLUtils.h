@@ -195,6 +195,41 @@ namespace thekogans {
         /// Convenient typedef for std::unique_ptr<DSA, DSADeleter>.
         typedef std::unique_ptr<DSA, DSADeleter> DSAPtr;
 
+        /// \struct OpenSSLAllocator OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
+        ///
+        /// \brief
+        /// Wraps OPENSSL_malloc/free to allow openssl allocated objects
+        /// to be used with thekogans.net allocator machinery.
+        struct _LIB_THEKOGANS_STREAM_DECL OpenSSLAllocator : public util::Allocator {
+            /// \brief
+            /// Global OpenSSLAllocator.
+            static OpenSSLAllocator Global;
+
+            /// \brief
+            /// ctor.
+            OpenSSLAllocator () {}
+
+            /// \brief
+            /// Allocate a block.
+            /// NOTE: Allocator policy is to return (void *)0 if size == 0.
+            /// if size > 0 and an error occurs, Allocator will throw an exception.
+            /// \param[in] size Size of block to allocate.
+            /// \return Pointer to the allocated block ((void *)0 if size == 0).
+            virtual void *Alloc (std::size_t size);
+            /// \brief
+            /// Free a previously Alloc(ated) block.
+            /// NOTE: Allocator policy is to do nothing if ptr == 0.
+            /// \param[in] ptr Pointer to the block returned by Alloc.
+            /// \param[in] size Same size parameter previously passed in to Alloc.
+            virtual void Free (
+                void *ptr,
+                std::size_t /*size*/);
+
+            /// \brief
+            /// OpenSSLAllocator is neither copy constructable, nor assignable.
+            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (OpenSSLAllocator)
+        };
+
         /// \struct OpenSSLInit OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
         ///
         /// \brief

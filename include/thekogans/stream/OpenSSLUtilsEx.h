@@ -404,13 +404,22 @@ namespace thekogans {
         };
 
         /// \brief
+        /// Create a BIGNUMPtr and initialize it to a given value.
+        /// \param[in] value Value to initialize the BIGNUM to.
+        /// \return BIGNUMPtr initialized to a given value.
+        _LIB_THEKOGANS_STREAM_DECL BIGNUMPtr _LIB_THEKOGANS_STREAM_API
+            BIGNUMFromui32 (util::ui32 value);
+
+        /// \brief
         /// Create an RSA key.
         /// \param[in] bits The length of the key.
+        /// \param[in] publicExponent RSA key public exponent.
         /// \param[in] engine OpenSSL engine object.
         /// \return A new RSA key.
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
             CreateRSAKey (
                 std::size_t bits,
+                BIGNUMPtr publicExponent = BIGNUMFromui32 (65537),
                 ENGINE *engine = 0);
         /// \brief
         /// Create an DSA key.
@@ -423,21 +432,26 @@ namespace thekogans {
                 ENGINE *engine = 0);
         /// \brief
         /// Create an DH key.
-        /// \param[in] bits The length of the prime.
+        /// \param[in] primeLength The length of the prime (in bits).
+        /// \param[in] generator DH key generator.
         /// \param[in] engine OpenSSL engine object.
         /// \return A new DH key.
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
             CreateDHKey (
-                std::size_t bits,
+                std::size_t primeLength,
+                std::size_t generator = 2,
                 ENGINE *engine = 0);
         /// \brief
         /// Create an EC key.
         /// \param[in] nid Elliptic curve object id.
+        /// \param[in] parameterEncoding How to encode curve parameters
+        /// (OPENSSL_EC_EXPLICIT_CURVE | OPENSSL_EC_NAMED_CURVE).
         /// \param[in] engine OpenSSL engine object.
         /// \return A new EC key.
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
             CreateECKey (
                 int nid = NID_X9_62_prime256v1,
+                int parameterEncoding = 0,
                 ENGINE *engine = 0);
         /// \brief
         /// Create an HMAC key.
@@ -472,7 +486,7 @@ namespace thekogans {
         /// Create a buffer signature. Key can be any supported OpenSSL key type.
         /// \param[in] buffer Buffer whose signature to create.
         /// \param[in] length Buffer length.
-        /// \param[in] signatureKey Private key used to sign the digest.
+        /// \param[in] privateKey Private key used to sign the digest.
         /// \param[in] md Message digest.
         /// \param[in] endianness Signature buffer endianness.
         /// \param[in] engine OpenSSL engine object.
@@ -481,7 +495,7 @@ namespace thekogans {
             SignBuffer (
                 const void *buffer,
                 std::size_t length,
-                EVP_PKEY &signatureKey,
+                EVP_PKEY &privateKey,
                 const EVP_MD *md = 0 /*EVP_sha256 ()*/,
                 util::Endianness endianness = util::NetworkEndian,
                 ENGINE *engine = 0);
@@ -540,7 +554,7 @@ namespace thekogans {
         /// \param[in] bufferLength Buffer length.
         /// \param[in] signature Signature to verify.
         /// \param[in] signatureLength Signature length.
-        /// \param[in] signatureKey Public key used to verify the digest signature.
+        /// \param[in] publicKey Public key used to verify the digest signature.
         /// \param[in] md Message digest.
         /// \param[in] engine OpenSSL engine object.
         /// \return true == valid, false == invalid.
@@ -550,7 +564,7 @@ namespace thekogans {
                 std::size_t bufferLength,
                 const void *signature,
                 std::size_t signatureLength,
-                EVP_PKEY &signatureKey,
+                EVP_PKEY &publicKey,
                 const EVP_MD *md = 0 /*EVP_sha256 ()*/,
                 ENGINE *engine = 0);
         /// \brief

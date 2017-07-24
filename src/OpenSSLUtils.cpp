@@ -114,6 +114,20 @@ namespace thekogans {
             }
         }
 
+        OpenSSLAllocator OpenSSLAllocator::Global;
+
+        void *OpenSSLAllocator::Alloc (std::size_t size) {
+            return size > 0 ? OPENSSL_malloc (size) : 0;
+        }
+
+        void OpenSSLAllocator::Free (
+                void *ptr,
+                std::size_t /*size*/) {
+            if (ptr != 0) {
+                OPENSSL_free (ptr);
+            }
+        }
+
         namespace {
             util::OwnerVector<util::SpinLock> staticLocks;
 
@@ -729,7 +743,8 @@ namespace thekogans {
                             if (method->it != 0) {
                                 extensionData = ASN1_item_d2i (0,
                                     (const util::ui8 **)&data,
-                                    extension->value->length, ASN1_ITEM_ptr (method->it));
+                                    extension->value->length,
+                                    ASN1_ITEM_ptr (method->it));
                             }
                             else {
                                 extensionData = method->d2i (0,
@@ -766,6 +781,37 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         CacheSystemCACertificates (bool loadSystemRootCACertificatesOnly) {
             SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
+        GetCRLDistributionPoints (
+                X509 *cert,
+                std::vector<std::string> &crlDistributionPoints) {
+            STACK_OF (DIST_POINT) *distributionPoints =
+                (STACK_OF (DIST_POINT) *)X509_get_ext_d2i (cert, NID_crl_distribution_points, 0, 0);
+            for (int i = 0, count = sk_DIST_POINT_num (distributionPoints); i < count; ++i) {
+                DIST_POINT_NAME *distributionPoint = sk_DIST_POINT_value (distributionPoints, i)->distpoint;
+                if (distributionPoint->type == 0) {
+                    for (int j = 0, count = sk_GENERAL_NAME_num (distributionPoint->name.fullname); j < count; ++j) {
+                        ASN1_IA5STRING *url =
+                            sk_GENERAL_NAME_value (distributionPoint->name.fullname, j)->d.uniformResourceIdentifier;
+                        crlDistributionPoints.push_back (
+                            std::string (
+                                (const char *)ASN1_STRING_data (url),
+                                ASN1_STRING_length (url)));
+                    }
+                }
+                else if (distributionPoint->type == 1) {
+                    STACK_OF (X509_NAME_ENTRY) *relativeNames = distributionPoint->name.relativename;
+                    for (int j = 0, count = sk_X509_NAME_ENTRY_num (relativeNames); j < count; ++j) {
+                        ASN1_STRING *url = X509_NAME_ENTRY_get_data (sk_X509_NAME_ENTRY_value (relativeNames, j));
+                        crlDistributionPoints.push_back (
+                            std::string(
+                                (const char *)ASN1_STRING_data (url),
+                                ASN1_STRING_length (url)));
+                    }
+                }
+            }
         }
 
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
@@ -1113,6 +1159,30 @@ namespace thekogans {
                 else {
                     THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        //EVP_PKEY *publicKey = X509_get_pubkey (issuer);
+        //if (publicKey != 0 && X509_CRL_verify (crl, publicKey)) {
+        _LIB_THEKOGANS_STREAM_DECL bool _LIB_THEKOGANS_STREAM_API
+        CheckCRL (
+                X509 *cert,
+                X509_CRL *crl) {
+            if (cert != 0 && crl != 0) {
+                ASN1_INTEGER *serial = X509_get_serialNumber (cert);
+                STACK_OF (X509_REVOKED) *revoked = crl->crl->revoked;
+                for (int i = 0, count = sk_X509_REVOKED_num (revoked); i < count; ++i) {
+                    X509_REVOKED *entry = sk_X509_REVOKED_value (revoked, i);
+                    if (entry->serialNumber->length == serial->length &&
+                            memcmp (entry->serialNumber->data, serial->data, serial->length) == 0) {
+                        return true;
+                    }
+                }
+                return false;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

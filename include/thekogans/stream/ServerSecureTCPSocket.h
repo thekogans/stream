@@ -94,8 +94,11 @@ namespace thekogans {
             ///             not present a valid certificate.
             ///         </RequireClientCertificate>
             ///         <MaxClientCertificateChainDepth>
-            ///            Max depth of client certificate chain to verify.
+            ///             Max depth of client certificate chain to verify.
             ///         </MaxClientCertificateChainDepth>
+            ///         <CRL>
+            ///             Path to certificate revocation list.
+            ///         </CRL>
             ///         <DHParams>
             ///             Optional DH params.
             ///         </DHParams>
@@ -189,6 +192,9 @@ namespace thekogans {
                     /// "MaxClientCertificateChainDepth"
                     static const char * const TAG_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH;
                     /// \brief
+                    /// "CRL"
+                    static const char * const TAG_CRL;
+                    /// \brief
                     /// "DHParams"
                     static const char * const TAG_DH_PARAMS;
                     /// \brief
@@ -242,6 +248,9 @@ namespace thekogans {
                     /// \brief
                     /// Max depth of client certificate chain to verify.
                     util::ui32 maxClientCertificateChainDepth;
+                    /// \brief
+                    /// Path to certificate revocation list.
+                    std::string crl;
                     /// \brief
                     /// Diffie-Hellman params for ephemeral key exchange.
                     std::string dhParams;
@@ -303,6 +312,7 @@ namespace thekogans {
                     /// \param[in] requireClientCertificate_ true = abort the connection if client did
                     /// not present a valid certificate.
                     /// \param[in] maxClientCertificateChainDepth_ Max depth of client certificate chain to verify.
+                    /// \param[in] crl_ Path to certificate revocation list.
                     /// \param[in] dhParams_ Diffie-Hellman params for ephemeral key exchange.
                     /// \param[in] ecdhParamsType_ Elliptic curve Diffie-Hellman params type (auto | curve | pem).
                     /// \param[in] ecdhParams_ Elliptic curve Diffie-Hellman params for ephemeral key exchange.
@@ -319,6 +329,7 @@ namespace thekogans {
                         const std::string &cipherList_,
                         bool requireClientCertificate_,
                         util::ui32 maxClientCertificateChainDepth_,
+                        const std::string &crl_,
                         const std::string &dhParams_,
                         const std::string &ecdhParamsType_,
                         const std::string &ecdhParams_,
@@ -333,6 +344,7 @@ namespace thekogans {
                         cipherList (cipherList_),
                         requireClientCertificate (requireClientCertificate_),
                         maxClientCertificateChainDepth (maxClientCertificateChainDepth_),
+                        crl (crl_),
                         dhParams (dhParams_),
                         ecdhParamsType (ecdhParamsType_),
                         ecdhParams (ecdhParams_),
