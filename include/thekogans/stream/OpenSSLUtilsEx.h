@@ -411,6 +411,36 @@ namespace thekogans {
             BIGNUMFromui32 (util::ui32 value);
 
         /// \brief
+        /// Return a DER encoded public key portion of the given public/private key.
+        /// \param[in] key Public/private key whose public key to return.
+        /// \return A DER encoded public key portion of the given public/private key.
+        _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
+            GetPublicKey (EVP_PKEY &key);
+        /// \brief
+        /// Return a DER encoded private key.
+        /// \param[in] key Private key to encode.
+        /// \return A DER encoded private key.
+        _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
+            GetPrivateKey (EVP_PKEY &key);
+        /// \brief
+        /// Convert a DER encoding in to a public key.
+        /// \param[in] publicKey DER encoded public key.
+        /// \param[in] publicKeyLength Public key length.
+        /// \return Decoded public key.
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+            CreatePublicKey (
+                const void *publicKey,
+                std::size_t publicKeyLength);
+        /// \brief
+        /// Convert a DER encoding in to a private key.
+        /// \param[in] privateKey DER encoded private key.
+        /// \param[in] privateKeyLength Private key length.
+        /// \return Decoded private key.
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+            CreatePrivateKey (
+                const void *privateKey,
+                std::size_t privateKeyLength);
+        /// \brief
         /// Create an RSA key.
         /// \param[in] bits The length of the key.
         /// \param[in] publicExponent RSA key public exponent.

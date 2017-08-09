@@ -90,6 +90,12 @@ namespace thekogans {
             }
         }
 
+        void X509_CRLDeleter::operator () (X509_CRL *crl) {
+            if (crl != 0) {
+                X509_CRL_free (crl);
+            }
+        }
+
         void DHDeleter::operator () (DH *dh) {
             if (dh != 0) {
                 DH_free (dh);
@@ -779,11 +785,6 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
-        CacheSystemCACertificates (bool loadSystemRootCACertificatesOnly) {
-            SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         GetCRLDistributionPoints (
                 X509 *cert,
                 std::vector<std::string> &crlDistributionPoints) {
@@ -812,6 +813,40 @@ namespace thekogans {
                     }
                 }
             }
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL X509_CRLPtr _LIB_THEKOGANS_STREAM_API
+        LoadCRL (
+                const std::string &path,
+                util::ui32 format,
+                pem_password_cb *passwordCallback,
+                void *userData) {
+            if (!path.empty () && (format == FORMAT_DER || format == FORMAT_PEM)) {
+                BIOPtr bio (BIO_new_file (path.c_str (), "r"));
+                if (bio.get () != 0) {
+                    X509_CRLPtr crl (format == FORMAT_DER ?
+                        d2i_X509_CRL_bio (bio.get (), 0) :
+                        PEM_read_bio_X509_CRL (bio.get (), 0, passwordCallback, userData));
+                    if (crl.get () != 0) {
+                        return crl;
+                    }
+                    else {
+                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    }
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
+        CacheSystemCACertificates (bool loadSystemRootCACertificatesOnly) {
+            SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);
         }
 
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API

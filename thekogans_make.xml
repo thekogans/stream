@@ -55,6 +55,7 @@
     <cpp_header>$(organization)/$(project_directory)/Address.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/AsyncIoEventQueue.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/AsyncIoEventSink.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/ClientTCPSocket.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ClientUDPSocket.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Config.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MsgHdr.h</cpp_header>
@@ -73,7 +74,6 @@
       <cpp_header>$(organization)/$(project_directory)/ServerNamedPipe.h</cpp_header>
     </if>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
-      <cpp_header>$(organization)/$(project_directory)/ClientTCPSocket.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/StreamLogger.h</cpp_header>
     </if>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
@@ -92,6 +92,7 @@
     <cpp_source>Address.cpp</cpp_source>
     <cpp_source>AsyncIoEventQueue.cpp</cpp_source>
     <cpp_source>AsyncIoEventSink.cpp</cpp_source>
+    <cpp_source>ClientTCPSocket.cpp</cpp_source>
     <cpp_source>ClientUDPSocket.cpp</cpp_source>
     <cpp_source>MsgHdr.cpp</cpp_source>
     <cpp_source>Pipe.cpp</cpp_source>
@@ -109,7 +110,6 @@
       <cpp_source>ServerNamedPipe.cpp</cpp_source>
     </if>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
-      <cpp_source>ClientTCPSocket.cpp</cpp_source>
       <cpp_source>StreamLogger.cpp</cpp_source>
     </if>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">

@@ -128,7 +128,7 @@ namespace thekogans {
         /// \struct X509_STOREDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
         ///
         /// \brief
-        /// Custom deleter for X509.
+        /// Custom deleter for X509_STORE.
         struct _LIB_THEKOGANS_STREAM_DECL X509_STOREDeleter {
             /// \brief
             /// Called by unique_ptr::~unique_ptr.
@@ -138,6 +138,20 @@ namespace thekogans {
         /// \brief
         /// Convenient typedef for std::unique_ptr<X509_STORE, X509_STOREDeleter>.
         typedef std::unique_ptr<X509_STORE, X509_STOREDeleter> X509_STOREPtr;
+
+        /// \struct X509_CRLDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
+        ///
+        /// \brief
+        /// Custom deleter for X509_CRL.
+        struct _LIB_THEKOGANS_STREAM_DECL X509_CRLDeleter {
+            /// \brief
+            /// Called by unique_ptr::~unique_ptr.
+            /// \param[in] crl X509_CRL to delete.
+            void operator () (X509_CRL *crl);
+        };
+        /// \brief
+        /// Convenient typedef for std::unique_ptr<X509_CRL, X509_CRLDeleter>.
+        typedef std::unique_ptr<X509_CRL, X509_CRLDeleter> X509_CRLPtr;
 
         /// \struct DHDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
         ///
@@ -465,6 +479,21 @@ namespace thekogans {
             PostConnectionCheck (
                 SSL *ssl,
                 const std::string &serverName);
+
+        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
+        GetCRLDistributionPoints (
+            X509 *cert,
+            std::vector<std::string> &crlDistributionPoints);
+        enum {
+            FORMAT_DER,
+            FORMAT_PEM
+        };
+        _LIB_THEKOGANS_STREAM_DECL X509_CRLPtr _LIB_THEKOGANS_STREAM_API
+        LoadCRL (
+            const std::string &path,
+            util::ui32 format,
+            pem_password_cb *passwordCallback,
+            void *userData);
         /// \brief
         /// Cache system CA certificates.
         /// \param[in] loadSystemRootCACertificatesOnly Load system root (self signed) CA certificates only.
