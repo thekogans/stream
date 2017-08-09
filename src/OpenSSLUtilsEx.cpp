@@ -604,7 +604,7 @@ namespace thekogans {
                 std::size_t publicKeyLength) {
             if (publicKey != 0 && publicKeyLength > 0) {
                 const util::ui8 *pp = (const util::ui8 *)publicKey;
-                return EVP_PKEYPtr (d2i_PUBKEY (0, &pp, publicKeyLength));
+                return EVP_PKEYPtr (d2i_PUBKEY (0, &pp, (long)publicKeyLength));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -618,7 +618,7 @@ namespace thekogans {
                 std::size_t privateKeyLength) {
             if (privateKey != 0 && privateKeyLength > 0) {
                 const util::ui8 *pp = (const util::ui8 *)privateKey;
-                return EVP_PKEYPtr (d2i_AutoPrivateKey (0, &pp, privateKeyLength));
+                return EVP_PKEYPtr (d2i_AutoPrivateKey (0, &pp, (long)privateKeyLength));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
