@@ -13,6 +13,9 @@
              name = "stream"/>
     <toolchain organization = "thekogans"
                name = "pugixml"/>
+    <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
+      <framework>Foundation</framework>
+    </if>
   </dependencies>
   <cpp_headers prefix = "include">
     <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>

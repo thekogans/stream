@@ -94,9 +94,10 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ().Parse (argc, argv, "hvlapt");
-    THEKOGANS_UTIL_LOG_INIT (argv[0]);
-    THEKOGANS_UTIL_LOG_RESET (client::Options::Instance ().logLevel);
+    client::Options::Instance ().Parse (argc, argv, "hvlapmrst");
+    THEKOGANS_UTIL_LOG_INIT (
+        client::Options::Instance ().logLevel,
+        util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (
         util::Logger::Ptr (new util::ConsoleLogger));
     if (client::Options::Instance ().help) {
@@ -107,6 +108,9 @@ int main (
             "l - Set logging level.\n"
             "a - Address the server is listening on.\n"
             "p - Port the server is listening on (default is 8854).\n"
+            "m - Max packet size (default is 64K).\n"
+            "r - Rounds (default is 10).\n"
+            "s - Seed (default is 64).\n"
             "t - Socket send/receive timeout (default is 3 seconds).\n",
             argv[0],
             GetLogLevelList (" | ").c_str ());
@@ -133,7 +137,10 @@ int main (
                 stream::Address (
                     client::Options::Instance ().port,
                     client::Options::Instance ().addr),
-                DEFAULT_MAX_PACKET_SIZE, 10, 64, 2.0f, 0.0f,
+                client::Options::Instance ().maxPacketSize,
+                client::Options::Instance ().rounds,
+                client::Options::Instance ().seed,
+                2.0f, 0.0f,
                 util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
             THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
         }

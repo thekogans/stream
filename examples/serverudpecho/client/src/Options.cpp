@@ -41,6 +41,15 @@ namespace thekogans {
                         case 'p':
                             port = util::stringToui16 (value.c_str ());
                             break;
+                        case 'm':
+                            maxPacketSize = util::stringToui32 (value.c_str ());
+                            break;
+                        case 'r':
+                            rounds = util::stringToui32 (value.c_str ());
+                            break;
+                        case 's':
+                            seed = util::stringToui32 (value.c_str ());
+                            break;
                         case 't':
                             timeout = util::stringToui32 (value.c_str ());
                             break;

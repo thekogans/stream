@@ -128,9 +128,9 @@ namespace thekogans {
                                     }
                                 }
                             };
-                            util::JobQueue::Job::UniquePtr job (
-                                new WriteJob (udpSocket, std::move (buffer), address));
-                            jobQueue.Enq (std::move (job));
+                            jobQueue.Enq (
+                                *util::JobQueue::Job::Ptr (
+                                    new WriteJob (udpSocket, std::move (buffer), address)));
                         }
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG
@@ -183,9 +183,9 @@ namespace thekogans {
                                     }
                                 }
                             };
-                            util::JobQueue::Job::UniquePtr job (
-                                new WriteJob (udpSocket, std::move (buffer), to, from));
-                            jobQueue.Enq (std::move (job));
+                            jobQueue.Enq (
+                                *util::JobQueue::Job::Ptr (
+                                    new WriteJob (udpSocket, std::move (buffer), to, from)));
                         }
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG

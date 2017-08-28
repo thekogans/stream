@@ -147,9 +147,9 @@ namespace thekogans {
                                 }
                             }
                         };
-                        util::JobQueue::Job::UniquePtr job (
-                            new WriteJob (stream, std::move (buffer)));
-                        jobQueue.Enq (std::move (job));
+                        jobQueue.Enq (
+                            *util::JobQueue::Job::Ptr (
+                                new WriteJob (stream, std::move (buffer))));
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG
                 }

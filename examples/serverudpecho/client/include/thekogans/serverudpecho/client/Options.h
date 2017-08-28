@@ -37,6 +37,9 @@ namespace thekogans {
                     util::ui32 logLevel;
                     std::string addr;
                     util::ui16 port;
+                    util::ui32 maxPacketSize;
+                    util::ui32 rounds;
+                    util::ui32 seed;
                     util::ui32 timeout;
 
                     Options () :
@@ -44,6 +47,9 @@ namespace thekogans {
                         version (false),
                         logLevel (util::LoggerMgr::Info),
                         port (8854),
+                        maxPacketSize (64 * 1024),
+                        rounds (10),
+                        seed (64),
                         timeout (3) {}
 
                     virtual void DoOption (char option, const std::string &value);

@@ -144,7 +144,7 @@ namespace thekogans {
                     loggerMgr.decorations =
                         util::LoggerMgr::stringTodecorations (
                             node.attribute ("Decorations").value ());
-                    THEKOGANS_UTIL_LOG_RESET_EX (loggerMgr.level, loggerMgr.decorations);
+                    THEKOGANS_UTIL_LOG_RESET (loggerMgr.level, loggerMgr.decorations);
                     for (pugi::xml_node child = node.first_child ();
                             !child.empty (); child = child.next_sibling ()) {
                         if (child.type () == pugi::node_element) {

@@ -61,9 +61,8 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    THEKOGANS_UTIL_LOG_INIT (argv[0]);
     server::Options::Instance ().Parse (argc, argv, "hvlcfrka");
-    THEKOGANS_UTIL_LOG_RESET_EX (
+    THEKOGANS_UTIL_LOG_INIT (
         server::Options::Instance ().loggerMgr.level,
         server::Options::Instance ().loggerMgr.decorations);
     if (server::Options::Instance ().help ||

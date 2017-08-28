@@ -60,8 +60,7 @@ int main (
         int argc,
         const char *argv[]) {
     loggermgr::Options::Instance ().Parse (argc, argv, "hvlcfrkpa");
-    THEKOGANS_UTIL_LOG_INIT (argv[0]);
-    THEKOGANS_UTIL_LOG_RESET_EX (
+    THEKOGANS_UTIL_LOG_INIT (
         loggermgr::Options::Instance ().loggerMgr.level,
         loggermgr::Options::Instance ().loggerMgr.decorations);
     if (loggermgr::Options::Instance ().help ||

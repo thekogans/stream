@@ -433,7 +433,7 @@ namespace thekogans {
                                     }
                                     else if (error != 0) {
                                         CFErrorRefPtr errorPtr (error);
-                                        THEKOGANS_UTIL_THROW_CFERROR_EXCEPTION (error);
+                                        THEKOGANS_UTIL_THROW_CFERRORREF_EXCEPTION (error);
                                     }
                                 }
                             }

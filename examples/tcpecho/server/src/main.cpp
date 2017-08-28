@@ -21,7 +21,7 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/RunLoop.h"
+#include "thekogans/util/SystemRunLoop.h"
 #include "thekogans/util/ConsoleLogger.h"
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/MainRunLoop.h"
@@ -60,8 +60,7 @@ int main (
         int argc,
         const char *argv[]) {
     server::Options::Instance ().Parse (argc, argv, "hvlcfrkpa");
-    THEKOGANS_UTIL_LOG_INIT (argv[0]);
-    THEKOGANS_UTIL_LOG_RESET_EX (
+    THEKOGANS_UTIL_LOG_INIT (
         server::Options::Instance ().loggerMgr.level,
         server::Options::Instance ().loggerMgr.decorations);
     if (server::Options::Instance ().help ||
@@ -128,6 +127,17 @@ int main (
             THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
             server::Server::Instance ().Start (
                 server::Options::Instance ().addresses);
+        #if defined (TOOLCHAIN_OS_Windows)
+            util::MainRunLoopCreateInstance::Parameterize (
+                0, 0, util::SystemRunLoop::CreateThreadWindow ());
+        #elif defined (TOOLCHAIN_OS_Linix)
+            XInitThreads ();
+            util::MainRunLoopCreateInstance::Parameterize (
+                0, 0, util::SystemRunLoop::CreateThreadWindow ());
+        #elif defined (TOOLCHAIN_OS_OSX)
+            util::MainRunLoopCreateInstance::Parameterize (
+                CFRunLoopGetMain ());
+        #endif // defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoop::Instance ().Start ();
             server::Server::Instance ().Stop ();
             THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);

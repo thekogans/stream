@@ -310,8 +310,7 @@ namespace thekogans {
                     }
                 }
             };
-            util::JobQueue::Job::UniquePtr job (new NotifyEventHandlersJob);
-            jobQueue.Enq (std::move (job));
+            jobQueue.Enq (*util::JobQueue::Job::Ptr (new NotifyEventHandlersJob));
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

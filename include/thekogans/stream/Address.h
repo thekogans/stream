@@ -47,6 +47,7 @@
         #include <linux/netlink.h>
         #include <linux/if_packet.h>
         #include <net/ethernet.h>
+        #include <vector>
     #elif defined (TOOLCHAIN_OS_OSX)
         #include <net/if_dl.h>
     #endif // defined (TOOLCHAIN_OS_Linux)

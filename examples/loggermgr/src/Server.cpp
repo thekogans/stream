@@ -80,7 +80,7 @@ namespace thekogans {
                 }
             }
 
-            void Server::Run () {
+            void Server::Run () throw () {
                 while (!done) {
                     THEKOGANS_UTIL_TRY {
                         eventQueue->WaitForEvents ();
@@ -121,7 +121,7 @@ namespace thekogans {
                                 document.load_buffer (buffer->GetReadPtr (), buffer->GetDataAvailableForReading ());
                             if (result == pugi::status_ok) {
                                 stream::StreamLogger::Entry entry (document.document_element ());
-                                util::LoggerMgr::Instance ().Log (entry.subsystem.c_str (),
+                                util::GlobalLoggerMgr::Instance ().Log (entry.subsystem.c_str (),
                                     entry.level, entry.header, entry.message);
                             }
                             else {
@@ -132,7 +132,7 @@ namespace thekogans {
                         }
                     };
                     jobQueue.Enq (
-                        util::JobQueue::Job::UniquePtr (
+                        *util::JobQueue::Job::Ptr (
                             new Job (std::move (buffer), address)));
                 }
                 THEKOGANS_UTIL_CATCH_AND_LOG

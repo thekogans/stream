@@ -57,7 +57,7 @@ namespace thekogans {
 
             private:
                 // util::Thread
-                virtual void Run ();
+                virtual void Run () throw ();
 
                 // AsyncIoEventSink
                 virtual void HandleStreamError (

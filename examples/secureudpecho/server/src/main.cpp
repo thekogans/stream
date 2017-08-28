@@ -61,8 +61,7 @@ int main (
         int argc,
         const char *argv[]) {
     server::Options::Instance ().Parse (argc, argv, "hvlcfrk");
-    THEKOGANS_UTIL_LOG_INIT (argv[0]);
-    THEKOGANS_UTIL_LOG_RESET_EX (
+    THEKOGANS_UTIL_LOG_INIT (
         server::Options::Instance ().loggerMgr.level,
         server::Options::Instance ().loggerMgr.decorations);
     if (server::Options::Instance ().help ||

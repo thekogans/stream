@@ -39,6 +39,52 @@
 namespace thekogans {
     namespace stream {
 
+        /// \brief
+        /// Forward declaration of StreamSelector.
+        struct StreamSelector;
+        /// \brief
+        /// Forward declaration of AsyncIoEventQueue.
+        struct AsyncIoEventQueue;
+        /// \brief
+        /// Forward declaration of AsyncIoEventSink.
+        struct AsyncIoEventSink;
+        /// \brief
+        /// Forward declaration of Stream.
+        struct Stream;
+
+        enum {
+            /// \brief
+            /// AsyncIoEventQueueRegistryList list id.
+            ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID,
+            /// \brief
+            /// AsyncIoEventQueueTimedStreamsList list id.
+            ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID,
+            /// \brief
+            /// AsyncIoEventQueueDeletedStreamsList list id.
+            ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID
+        };
+
+        /// \brief
+        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID>.
+        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID>
+            AsyncIoEventQueueRegistryList;
+        /// \brief
+        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>.
+        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>
+            AsyncIoEventQueueTimedStreamsList;
+        /// \brief
+        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>.
+        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>
+            AsyncIoEventQueueDeletedStreamsList;
+
+        // Did I mention M$ is a brain dead company? Here's another
+        // example of their stupidity and the hoops we have to jump
+        // through to get around the obstacles they throw our way.
+    #if defined (_MSC_VER)
+        #pragma warning (push)
+        #pragma warning (disable : 4275)
+    #endif // defined (_MSC_VER)
+
         /// \struct Stream Stream.h thekogans/stream/Stream.h
         ///
         /// \brief
@@ -85,52 +131,6 @@ namespace thekogans {
         ///       SecureUDPSocket\n
         ///         ClientSecureUDPSocket\n
         ///       ServerSecureUDPSocket\n
-
-        /// \brief
-        /// Forward declaration of StreamSelector.
-        struct StreamSelector;
-        /// \brief
-        /// Forward declaration of AsyncIoEventQueue.
-        struct AsyncIoEventQueue;
-        /// \brief
-        /// Forward declaration of AsyncIoEventSink.
-        struct AsyncIoEventSink;
-        /// \brief
-        /// Forward declaration of Stream.
-        struct Stream;
-
-        enum {
-            /// \brief
-            /// AsyncIoEventQueueRegistryList list id.
-            ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID,
-            /// \brief
-            /// AsyncIoEventQueueTimedStreamsList list id.
-            ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID,
-            /// \brief
-            /// AsyncIoEventQueueDeletedStreamsList list id.
-            ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID
-        };
-
-        /// \brief
-        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID>.
-        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID>
-            AsyncIoEventQueueRegistryList;
-        /// \brief
-        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>.
-        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>
-            AsyncIoEventQueueTimedStreamsList;
-        /// \brief
-        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>.
-        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>
-            AsyncIoEventQueueDeletedStreamsList;
-
-        // Did I mention M$ is a brain dead company? Here's another
-        // example of their stupidity and the hoops we have to jump
-        // through to get around the obstacles they throw our way.
-    #if defined (_MSC_VER)
-        #pragma warning (push)
-        #pragma warning (disable : 4275)
-    #endif // defined (_MSC_VER)
 
         struct _LIB_THEKOGANS_STREAM_DECL Stream :
                 public util::ThreadSafeRefCounted,

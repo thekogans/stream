@@ -95,8 +95,9 @@ int main (
         int argc,
         const char *argv[]) {
     client::Options::Instance ().Parse (argc, argv, "hvlapt");
-    THEKOGANS_UTIL_LOG_INIT (argv[0]);
-    THEKOGANS_UTIL_LOG_RESET (client::Options::Instance ().logLevel);
+    THEKOGANS_UTIL_LOG_RESET (
+        client::Options::Instance ().logLevel,
+        util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (
         util::Logger::Ptr (new util::ConsoleLogger));
     if (client::Options::Instance ().help) {
