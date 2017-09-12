@@ -147,7 +147,6 @@ namespace thekogans {
                     const Address &address_,
                     NamedPipe::PipeType pipeType_,
                     DWORD bufferSize_) :
-                    Stream::Context (VALUE_SERVER_NAMED_PIPE),
                     address (address_),
                     pipeType (pipeType_),
                     bufferSize (bufferSize_) {}
