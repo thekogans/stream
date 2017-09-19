@@ -34,30 +34,35 @@ set(SOURCES
     src/Address.cpp
     src/AsyncIoEventQueue.cpp
     src/AsyncIoEventSink.cpp
-    src/ClientNamedPipe.cpp
     src/ClientSecureTCPSocket.cpp
     src/ClientSecureUDPSocket.cpp
     src/ClientTCPSocket.cpp
     src/ClientUDPSocket.cpp
     src/MsgHdr.cpp
-    src/NamedPipe.cpp
     src/OpenSSLUtils.cpp
     src/OpenSSLUtilsEx.cpp
     src/Pipe.cpp
     src/SecureTCPSocket.cpp
     src/SecureUDPSocket.cpp
-    src/ServerNamedPipe.cpp
     src/ServerSecureTCPSocket.cpp
     src/ServerSecureUDPSocket.cpp
     src/ServerTCPSocket.cpp
     src/ServerUDPSocket.cpp
     src/Socket.cpp
     src/Stream.cpp
-    src/StreamLogger.cpp
     src/StreamSelector.cpp
     src/TCPSocket.cpp
     src/UDPSocket.cpp
     src/Version.cpp)
+
+if(WIN32)
+    set(SOURCES ${SOURCES}
+        src/ClientNamedPipe.cpp
+        src/NamedPipe.cpp
+        src/ServerNamedPipe.cpp
+        src/StreamLogger.cpp)
+endif()
+
 
 add_library(thekogans_stream ${HEADERS} ${SOURCES})
 
