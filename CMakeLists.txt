@@ -30,51 +30,51 @@ endif()
 
 file(GLOB_RECURSE HEADERS "include/thekogans/stream/*.h")
 set(SOURCES
-        src/Adapters.cpp
-        src/Address.cpp
-        src/AsyncIoEventQueue.cpp
-        src/AsyncIoEventSink.cpp
-        src/ClientNamedPipe.cpp
-        src/ClientSecureTCPSocket.cpp
-        src/ClientSecureUDPSocket.cpp
-        src/ClientTCPSocket.cpp
-        src/ClientUDPSocket.cpp
-        src/MsgHdr.cpp
-        src/NamedPipe.cpp
-        src/OpenSSLUtils.cpp
-        src/OpenSSLUtilsEx.cpp
-        src/Pipe.cpp
-        src/SecureTCPSocket.cpp
-        src/SecureUDPSocket.cpp
-        src/ServerNamedPipe.cpp
-        src/ServerSecureTCPSocket.cpp
-        src/ServerSecureUDPSocket.cpp
-        src/ServerTCPSocket.cpp
-        src/ServerUDPSocket.cpp
-        src/Socket.cpp
-        src/Stream.cpp
-        src/StreamLogger.cpp
-        src/StreamSelector.cpp
-        src/TCPSocket.cpp
-        src/UDPSocket.cpp
-        src/Version.cpp)
+    src/Adapters.cpp
+    src/Address.cpp
+    src/AsyncIoEventQueue.cpp
+    src/AsyncIoEventSink.cpp
+    src/ClientNamedPipe.cpp
+    src/ClientSecureTCPSocket.cpp
+    src/ClientSecureUDPSocket.cpp
+    src/ClientTCPSocket.cpp
+    src/ClientUDPSocket.cpp
+    src/MsgHdr.cpp
+    src/NamedPipe.cpp
+    src/OpenSSLUtils.cpp
+    src/OpenSSLUtilsEx.cpp
+    src/Pipe.cpp
+    src/SecureTCPSocket.cpp
+    src/SecureUDPSocket.cpp
+    src/ServerNamedPipe.cpp
+    src/ServerSecureTCPSocket.cpp
+    src/ServerSecureUDPSocket.cpp
+    src/ServerTCPSocket.cpp
+    src/ServerUDPSocket.cpp
+    src/Socket.cpp
+    src/Stream.cpp
+    src/StreamLogger.cpp
+    src/StreamSelector.cpp
+    src/TCPSocket.cpp
+    src/UDPSocket.cpp
+    src/Version.cpp)
 
 add_library(thekogans_stream ${HEADERS} ${SOURCES})
 
 if(WIN32)
-      target_link_libraries(thekogans_stream WS2_32)
+    target_link_libraries(thekogans_stream WS2_32)
 endif()
 
 # Link against the dependencies defined by Kragle, if this library is used in kragle
 # You might want to setup your own linkage for your project...
 if(KRAGLE_DEPS)
     target_compile_definitions(thekogans_stream PUBLIC
-            -DTHEKOGANS_STREAM_HAVE_OPENSSL)
+        -DTHEKOGANS_STREAM_HAVE_OPENSSL)
 
     target_link_libraries(thekogans_stream
-            thekogans_util
-            openssl_lib
-            zlib_lib)
+        thekogans_util
+        openssl_lib
+        zlib_lib)
 endif()
 
 target_include_directories(thekogans_stream PUBLIC include)
