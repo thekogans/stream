@@ -242,6 +242,12 @@ namespace thekogans {
             }
         }
 
+    #if defined (_MSC_VER)
+        #pragma warning (push)
+        #pragma warning (disable : 4302)
+        #pragma warning (disable : 4311)
+    #endif // defined (_MSC_VER)
+
         void SecureTCPSocket::SessionConnect (
                 SSL_CTX *ctx,
                 const SessionInfo &sessionInfo_) {
@@ -320,6 +326,10 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
+
+    #if defined (_MSC_VER)
+        #pragma warning (pop)
+    #endif // defined (_MSC_VER)
 
         bool SecureTCPSocket::IsSessionReused () const {
             return SSL_session_reused (ssl.get ()) == 1;

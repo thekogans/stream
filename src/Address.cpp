@@ -244,7 +244,11 @@ namespace thekogans {
             if (path.size () < sizeof (un.sun_path)) {
                 memset (this, 0, sizeof (sockaddr_un));
                 un.sun_family = AF_LOCAL;
+            #if defined (TOOLCHAIN_OS_Windows)
+                strncpy_s (un.sun_path, sizeof (un.sun_path), path.c_str (), sizeof (un.sun_path));
+            #else // defined (TOOLCHAIN_OS_Windows)
                 strncpy (un.sun_path, path.c_str (), sizeof (un.sun_path));
+            #endif // defined (TOOLCHAIN_OS_Windows)
             #if defined (TOOLCHAIN_OS_OSX)
                 un.sun_len =
             #endif // defined (TOOLCHAIN_OS_OSX)
@@ -454,7 +458,11 @@ namespace thekogans {
         void Address::SetPath (const std::string &path) {
             if (path.size () < sizeof (un.sun_path)) {
                 if (GetFamily () == AF_LOCAL) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    strncpy_s (un.sun_path, sizeof (un.sun_path), path.c_str (), sizeof (un.sun_path));
+                #else // defined (TOOLCHAIN_OS_Windows)
                     strncpy (un.sun_path, path.c_str (), sizeof (un.sun_path));
+                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
