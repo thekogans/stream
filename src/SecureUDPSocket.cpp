@@ -98,8 +98,7 @@ namespace thekogans {
 
     #if defined (_MSC_VER)
         #pragma warning (push)
-        #pragma warning (disable : 4302)
-        #pragma warning (disable : 4311)
+        #pragma warning (disable : 4302 4311)
     #endif // defined (_MSC_VER)
 
         void SecureUDPSocket::SessionConnect (
