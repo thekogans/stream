@@ -32,9 +32,11 @@
     #include <unistd.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/internal.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Pipe.h"

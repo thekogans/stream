@@ -37,6 +37,9 @@
 #include <regex>
 #include <openssl/rand.h>
 #include <openssl/hmac.h>
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/WindowsUtils.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/OwnerVector.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
@@ -47,7 +50,6 @@
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-#include "thekogans/util/internal.h"
 #include "thekogans/stream/SecureTCPSocket.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 

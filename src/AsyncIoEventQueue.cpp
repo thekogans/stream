@@ -40,7 +40,6 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/StringUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include "thekogans/util/internal.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #if defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/stream/Socket.h"

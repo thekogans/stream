@@ -53,7 +53,6 @@
     #include <vector>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
-#include <vector>
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include <pugixml.hpp>
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)

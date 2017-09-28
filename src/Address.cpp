@@ -19,7 +19,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/XMLUtils.h"
-#include "thekogans/util/internal.h"
 #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/StringUtils.h"
 #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
