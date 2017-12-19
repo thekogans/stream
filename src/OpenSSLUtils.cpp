@@ -47,6 +47,7 @@
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
+#include "thekogans/util/StringUtils.h"
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
@@ -483,7 +484,7 @@ namespace thekogans {
         OpenSSLInit::OpenSSLInit (
                 bool multiThreaded,
                 util::ui32 entropyNeeded,
-                bool loadSystemRootCACertificates,
+                bool loadSystemCACertificates,
                 bool loadSystemRootCACertificatesOnly) {
             if (multiThreaded) {
                 int lockCount = CRYPTO_num_locks ();
@@ -527,7 +528,7 @@ namespace thekogans {
             if (SSL_SESSIONSessionInfoIndex == -1) {
                 THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
             }
-            if (loadSystemRootCACertificates) {
+            if (loadSystemCACertificates) {
                 SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);
             }
             // FIXME: load a CRL.
@@ -661,7 +662,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
         }
 
-        _LIB_THEKOGANS_STREAM_DECL int
+        _LIB_THEKOGANS_STREAM_DECL int _LIB_THEKOGANS_STREAM_API
         VerifyCallback (
                 int ok,
                 X509_STORE_CTX *store) {
@@ -677,8 +678,8 @@ namespace thekogans {
                     X509_NAME_oneline (X509_get_subject_name (cert), subject, sizeof (subject));
                 }
                 else {
-                    strcpy (issuer, "Unknown issuer.");
-                    strcpy (issuer, "Unknown subject.");
+                    util::CopyString (issuer, MAX_NAME_LENGTH, "Unknown issuer.");
+                    util::CopyString (subject, MAX_NAME_LENGTH, "Unknown subject.");
                 }
                 const char *message = X509_verify_cert_error_string (error);
                 THEKOGANS_UTIL_LOG_SUBSYSTEM_ERROR (
@@ -704,7 +705,7 @@ namespace thekogans {
                     std::string patern;
                     for (std::size_t i = 0, count = certificateName.size (); i < count; ++i) {
                         if (certificateName[i] == '*') {
-                            patern += ".*";
+                            patern += ".+";
                         }
                         else if (certificateName[i] == '.') {
                             patern += "\\.";

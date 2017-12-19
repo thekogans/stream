@@ -464,9 +464,10 @@ namespace thekogans {
         /// \param[in] store Certificate store to query about
         /// the failed handshake.
         /// \return ok
-        _LIB_THEKOGANS_STREAM_DECL int VerifyCallback (
-            int ok,
-            X509_STORE_CTX *store);
+        _LIB_THEKOGANS_STREAM_DECL int _LIB_THEKOGANS_STREAM_API
+            VerifyCallback (
+                int ok,
+                X509_STORE_CTX *store);
         /// \brief
         /// Perform a simple post connection check. Make sure
         /// the handshake succeeded and the host name in the
@@ -481,19 +482,19 @@ namespace thekogans {
                 const std::string &serverName);
 
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
-        GetCRLDistributionPoints (
-            X509 *cert,
-            std::vector<std::string> &crlDistributionPoints);
+            GetCRLDistributionPoints (
+                X509 *cert,
+                std::vector<std::string> &crlDistributionPoints);
         enum {
             FORMAT_DER,
             FORMAT_PEM
         };
         _LIB_THEKOGANS_STREAM_DECL X509_CRLPtr _LIB_THEKOGANS_STREAM_API
-        LoadCRL (
-            const std::string &path,
-            util::ui32 format,
-            pem_password_cb *passwordCallback,
-            void *userData);
+            LoadCRL (
+                const std::string &path,
+                util::ui32 format,
+                pem_password_cb *passwordCallback,
+                void *userData);
         /// \brief
         /// Cache system CA certificates.
         /// \param[in] loadSystemRootCACertificatesOnly Load system root (self signed) CA certificates only.
@@ -534,7 +535,7 @@ namespace thekogans {
         /// \param[in] ctx SSL_CTX to load the private key in to.
         /// \param[in] privateKey String representing a private key.
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
-        /// \paparam[in] userData User data for passwordCallback.
+        /// \param[in] userData User data for passwordCallback.
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
             LoadPrivateKey (
                 SSL_CTX *ctx,

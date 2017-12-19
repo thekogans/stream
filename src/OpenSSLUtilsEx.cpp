@@ -307,8 +307,86 @@ namespace thekogans {
             }
         }
 
-        DHSharedSecret::DHSharedSecret (Prime prime_) :
-                prime (prime_) {
+        EVP_PKEYPtr DHParams::FromPrimeLength (
+                std::size_t primeLength,
+                std::size_t generator,
+                ENGINE *engine) {
+            EVP_PKEY *params = 0;
+            EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_DH, engine));
+            if (ctx.get () != 0 &&
+                    EVP_PKEY_paramgen_init (ctx.get ()) == 1 &&
+                    EVP_PKEY_CTX_set_dh_paramgen_prime_len (ctx.get (), (int)primeLength) == 1 &&
+                    EVP_PKEY_CTX_set_dh_paramgen_generator (ctx.get (), (int)generator) == 1 &&
+                    EVP_PKEY_paramgen (ctx.get (), &params) == 1) {
+                return EVP_PKEYPtr (params);
+            }
+            else {
+                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+            }
+        }
+
+        EVP_PKEYPtr DHParams::FromPrime (
+                BIGNUM &prime,
+                std::size_t generator,
+                ENGINE *engine) {
+            DHPtr dh (DH_new ());
+            if (dh.get () != 0) {
+                dh->p = BN_dup (&prime);
+                dh->g = BN_new ();
+                if (dh->p != 0 && dh->g != 0) {
+                    BN_set_word (dh->g, generator);
+                    EVP_PKEYPtr params (EVP_PKEY_new ());
+                    if (params.get () != 0) {
+                        EVP_PKEY_assign_DH (params.get (), dh.release ());
+                        return params;
+                    }
+                    else {
+                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    }
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                }
+            }
+            else {
+                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+            }
+        }
+
+        EVP_PKEYPtr DHParams::FromRFC3526Prime (
+                RFC3526Prime prime,
+                std::size_t generator,
+                ENGINE *engine) {
+            DHPtr dh (DH_new ());
+            if (dh.get () != 0) {
+                dh->p = BN_new ();
+                dh->g = BN_new ();
+                if (dh->p != 0 && dh->g != 0) {
+                    BN_bin2bn (primes[prime].data, primes[prime].length, dh->p);
+                    BN_set_word (dh->g, generator);
+                    EVP_PKEYPtr params (EVP_PKEY_new ());
+                    if (params.get () != 0) {
+                        EVP_PKEY_assign_DH (params.get (), dh.release ());
+                        return params;
+                    }
+                    else {
+                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    }
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                }
+            }
+            else {
+                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+            }
+        }
+
+        DHSharedSecret::DHSharedSecret (
+                Prime prime_,
+                util::ui32 generator_) :
+                prime (prime_),
+                generator (generator_) {
             if (prime < PrimesSize) {
                 Reset ();
             }
@@ -321,11 +399,11 @@ namespace thekogans {
         void DHSharedSecret::Reset () {
             dh.reset (DH_new ());
             if (dh.get () != 0) {
-                dh->g = BN_new ();
                 dh->p = BN_new ();
-                if (dh->g != 0 && dh->p != 0) {
-                    BN_set_word (dh->g, 2);
+                dh->g = BN_new ();
+                if (dh->p != 0 && dh->g != 0) {
                     BN_bin2bn (primes[prime].data, primes[prime].length, dh->p);
+                    BN_set_word (dh->g, generator);
                     if (DH_generate_key (dh.get ()) != 1) {
                         THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
                     }
@@ -570,8 +648,74 @@ namespace thekogans {
             return bn;
         }
 
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+        LoadPrivateKey (
+                const std::string &path,
+                pem_password_cb *passwordCallback,
+                void *userData) {
+            BIOPtr bio (BIO_new_file (path.c_str (), "r"));
+            if (bio.get () != 0) {
+                EVP_PKEYPtr key (PEM_read_bio_PrivateKey (bio.get (), 0, passwordCallback, userData));
+                if (key.get () != 0) {
+                    return key;
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                }
+            }
+            else {
+                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+            }
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+        LoadPublicKey (
+                const std::string &path,
+                pem_password_cb *passwordCallback,
+                void *userData) {
+            BIOPtr bio (BIO_new_file (path.c_str (), "r"));
+            if (bio.get () != 0) {
+                EVP_PKEYPtr key (PEM_read_bio_PUBKEY (bio.get (), 0, passwordCallback, userData));
+                if (key.get () != 0) {
+                    return key;
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                }
+            }
+            else {
+                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+            }
+        }
+
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+        LoadPublicKeyFromCertificat (
+                const std::string &path,
+                pem_password_cb *passwordCallback,
+                void *userData) {
+            BIOPtr bio (BIO_new_file (path.c_str (), "r"));
+            if (bio.get () != 0) {
+                X509Ptr certificate (PEM_read_bio_X509 (bio.get (), 0, passwordCallback, userData));
+                if (certificate.get () != 0) {
+                    EVP_PKEYPtr key (X509_get_pubkey (certificate.get ()));
+                    if (key.get () != 0) {
+                        return key;
+                    }
+                    else {
+                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    }
+                }
+                else {
+                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                }
+            }
+            else {
+                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+            }
+        }
+
         _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
-        GetPublicKey (EVP_PKEY &key) {
+        PublicKeyToDER (EVP_PKEY &key) {
             util::ui8 *publicKey = 0;
             int publicKeyLength = i2d_PUBKEY (&key, &publicKey);
             return util::Buffer::UniquePtr (
@@ -585,7 +729,7 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
-        GetPrivateKey (EVP_PKEY &key) {
+        PrivateKeyToDER (EVP_PKEY &key) {
             util::ui8 *privateKey = 0;
             int privateKeyLength = i2d_PrivateKey (&key, &privateKey);
             return util::Buffer::UniquePtr (
@@ -599,7 +743,7 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-        CreatePublicKey (
+        DERToPublicKey (
                 const void *publicKey,
                 std::size_t publicKeyLength) {
             if (publicKey != 0 && publicKeyLength > 0) {
@@ -613,7 +757,7 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-        CreatePrivateKey (
+        DERToPrivateKey (
                 const void *privateKey,
                 std::size_t privateKeyLength) {
             if (privateKey != 0 && privateKeyLength > 0) {
@@ -680,34 +824,12 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            EVP_PKEYPtr GenerateDHParams (
-                    std::size_t primeLength,
-                    std::size_t generator,
-                    ENGINE *engine) {
-                EVP_PKEY *params = 0;
-                EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new_id (EVP_PKEY_DH, engine));
-                if (ctx.get () != 0 &&
-                        EVP_PKEY_paramgen_init (ctx.get ()) == 1 &&
-                        EVP_PKEY_CTX_set_dh_paramgen_prime_len (ctx.get (), (int)primeLength) == 1 &&
-                        EVP_PKEY_CTX_set_dh_paramgen_generator (ctx.get (), (int)generator) == 1 &&
-                        EVP_PKEY_paramgen (ctx.get (), &params) == 1) {
-                    return EVP_PKEYPtr (params);
-                }
-                else {
-                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
-                }
-            }
-        }
-
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
         CreateDHKey (
-                std::size_t primeLength,
-                std::size_t generator,
+                EVP_PKEY &params,
                 ENGINE *engine) {
-            EVP_PKEYPtr params = GenerateDHParams (primeLength, generator, engine);
             EVP_PKEY *key = 0;
-            EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new (params.get (), engine));
+            EVP_PKEY_CTXPtr ctx (EVP_PKEY_CTX_new (&params, engine));
             if (ctx.get () != 0 &&
                     EVP_PKEY_keygen_init (ctx.get ()) == 1 &&
                     EVP_PKEY_keygen (ctx.get (), &key) == 1) {

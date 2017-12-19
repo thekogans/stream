@@ -12,7 +12,13 @@
   </features>
   <dependencies>
     <project organization = "thekogans"
-             name = "util"/>
+             name = "util">
+      <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
+        <features>
+          <feature>THEKOGANS_UTIL_HAVE_PUGIXML</feature>
+        </features>
+      </if>
+    </project>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
       <toolchain organization = "thekogans"
                  name = "pugixml"/>

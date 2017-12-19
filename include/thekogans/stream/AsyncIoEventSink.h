@@ -34,6 +34,15 @@
 namespace thekogans {
     namespace stream {
 
+    #if defined (TOOLCHAIN_OS_Windows)
+        struct ServerNamedPipe;
+    #endif // defined (TOOLCHAIN_OS_Windows)
+        struct ServerTCPSocket;
+    #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+        struct ServerSecureTCPSocket;
+        struct ServerSecureUDPSocket;
+    #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+
         /// \struct AsyncIoEventSink AsyncIoEventSink.h thekogans/stream/AsyncIoEventSink.h
         ///
         /// \brief
@@ -63,15 +72,6 @@ namespace thekogans {
         ///   This last one cannot be over stressed. Again, you are being
         ///   called asynchronously from a completely different thread.
         ///   There is no one there to catch your exceptions. YOU WILL SEG FAULT!
-
-    #if defined (TOOLCHAIN_OS_Windows)
-        struct ServerNamedPipe;
-    #endif // defined (TOOLCHAIN_OS_Windows)
-        struct ServerTCPSocket;
-    #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-        struct ServerSecureTCPSocket;
-        struct ServerSecureUDPSocket;
-    #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
         struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink {
             /// \brief

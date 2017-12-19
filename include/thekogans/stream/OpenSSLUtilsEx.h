@@ -108,6 +108,69 @@ namespace thekogans {
         /// Convenient typedef for std::unique_ptr<BIGNUM, BIGNUMDeleter>.
         typedef std::unique_ptr<BIGNUM, BIGNUMDeleter> BIGNUMPtr;
 
+        /// \struct DHParams OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
+        ///
+        /// \brief
+        /// A convenient class to generate DH parameters (prime and generator) using
+        /// various different techniques.
+        struct _LIB_THEKOGANS_STREAM_DECL DHParams {
+            /// \brief
+            /// Generate a fresh prime give the prime length. This method is by far
+            /// the slowest as finding suitable primes for DH is not easy.
+            /// \param[in] primeLength Length of prime to generate.
+            /// \param[in] generator DH generator.
+            /// \return DH parameters suitable for key and shared secret generation.
+            static EVP_PKEYPtr FromPrimeLength (
+                std::size_t primeLength,
+                std::size_t generator = DH_GENERATOR_2,
+                ENGINE *engine = 0);
+            /// \brief
+            /// Generate DH parameters from a given prime.
+            /// WARNING: Not every prime is a DH prime. They are fairly difficult to
+            /// generate and take a long time. You are strongly encouraged to use
+            /// FromRFC3526Prime as these primes have been veted by the community and
+            /// are considered safe.
+            /// \param[in] prime DH prime.
+            /// \param[in] generator DH generator.
+            /// \return DH parameters suitable for key and shared secret generation.
+            static EVP_PKEYPtr FromPrime (
+                BIGNUM &prime,
+                std::size_t generator = DH_GENERATOR_2,
+                ENGINE *engine = 0);
+
+            /// \enum
+            /// Primes found in RFC 3526.
+            enum RFC3526Prime {
+                /// \brief
+                /// 1536 bit prime.
+                PRIME_MODP_1536,
+                /// \brief
+                /// 2048 bit prime.
+                PRIME_MODP_2048,
+                /// \brief
+                /// 3072 bit prime.
+                PRIME_MODP_3072,
+                /// \brief
+                /// 4096 bit prime.
+                PRIME_MODP_4096,
+                /// \brief
+                /// 6144 bit prime.
+                PRIME_MODP_6144,
+                /// \brief
+                /// 8192 bit prime.
+                PRIME_MODP_8192
+            };
+            /// \brief
+            /// Generate DH parameters from primes found in RFC 3526.
+            /// \param[in] prime One of PRIME_MODP_* values above.
+            /// \param[in] generator DH generator.
+            /// \return DH parameters suitable for key and shared secret generation.
+            static EVP_PKEYPtr FromRFC3526Prime (
+                RFC3526Prime prime,
+                std::size_t generator = DH_GENERATOR_2,
+                ENGINE *engine = 0);
+        };
+
         /// \brief
         /// The following utilities aid in performing basic crypto operations outside of TLS.
         /// Support for [EC]DH shared secret negotiation, symmetric key generation, buffer
@@ -186,6 +249,9 @@ namespace thekogans {
             /// A prime suitable for DH key exchange.
             Prime prime;
             /// \brief
+            /// DH group generator.
+            util::ui32 generator;
+            /// \brief
             /// Diffie-Hellman parameters.
             DHPtr dh;
 
@@ -196,7 +262,10 @@ namespace thekogans {
             /// VERY IMPORTANT: Computing primes suitable for key exchange
             /// is very difficult. You are strongly encouraged to use one
             /// of the primes provided above.
-            DHSharedSecret (Prime prime_ = PRIME_MODP_8192);
+            /// \param[in] generator_ DH group generator.
+            DHSharedSecret (
+                Prime prime_ = PRIME_MODP_8192,
+                util::ui32 generator_ = DH_GENERATOR_2);
 
             /// \brief
             /// GetPublicKey is designed to return the same public key every time
@@ -411,24 +480,57 @@ namespace thekogans {
             BIGNUMFromui32 (util::ui32 value);
 
         /// \brief
+        /// Load a PEM encoded private key from a file.
+        /// \param[in] path File containing a private key.
+        /// \param[in] passwordCallback Provide a password if file is encrypted.
+        /// \param[in] userData User data for passwordCallback.
+        /// \return Private key.
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+            LoadPrivateKey (
+                const std::string &path,
+                pem_password_cb *passwordCallback = 0,
+                void *userData = 0);
+        /// \brief
+        /// Load a PEM encoded public key from a file.
+        /// \param[in] path File containing a public key.
+        /// \param[in] passwordCallback Provide a password if file is encrypted.
+        /// \param[in] userData User data for passwordCallback.
+        /// \return Public key.
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+            LoadPublicKey (
+                const std::string &path,
+                pem_password_cb *passwordCallback = 0,
+                void *userData = 0);
+        /// \brief
+        /// Load a public key from a certificate file.
+        /// \param[in] path File containing a certificate.
+        /// \param[in] passwordCallback Provide a password if file is encrypted.
+        /// \param[in] userData User data for passwordCallback.
+        /// \return Public key.
+        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+            LoadPublicKeyFromCertificat (
+                const std::string &path,
+                pem_password_cb *passwordCallback = 0,
+                void *userData = 0);
+        /// \brief
         /// Return a DER encoded public key portion of the given public/private key.
         /// \param[in] key Public/private key whose public key to return.
         /// \return A DER encoded public key portion of the given public/private key.
         _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
-            GetPublicKey (EVP_PKEY &key);
+            PublicKeyToDER (EVP_PKEY &key);
         /// \brief
         /// Return a DER encoded private key.
         /// \param[in] key Private key to encode.
         /// \return A DER encoded private key.
         _LIB_THEKOGANS_STREAM_DECL util::Buffer::UniquePtr _LIB_THEKOGANS_STREAM_API
-            GetPrivateKey (EVP_PKEY &key);
+            PrivateKeyToDER (EVP_PKEY &key);
         /// \brief
         /// Convert a DER encoding in to a public key.
         /// \param[in] publicKey DER encoded public key.
         /// \param[in] publicKeyLength Public key length.
         /// \return Decoded public key.
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-            CreatePublicKey (
+            DERToPublicKey (
                 const void *publicKey,
                 std::size_t publicKeyLength);
         /// \brief
@@ -437,7 +539,7 @@ namespace thekogans {
         /// \param[in] privateKeyLength Private key length.
         /// \return Decoded private key.
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-            CreatePrivateKey (
+            DERToPrivateKey (
                 const void *privateKey,
                 std::size_t privateKeyLength);
         /// \brief
@@ -462,14 +564,13 @@ namespace thekogans {
                 ENGINE *engine = 0);
         /// \brief
         /// Create an DH key.
-        /// \param[in] primeLength The length of the prime (in bits).
-        /// \param[in] generator DH key generator.
+        /// \param[in] params DH parameters generated by calling
+        /// one DHParams::From... methods.
         /// \param[in] engine OpenSSL engine object.
         /// \return A new DH key.
         _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
             CreateDHKey (
-                std::size_t primeLength,
-                std::size_t generator = 2,
+                EVP_PKEY &params,
                 ENGINE *engine = 0);
         /// \brief
         /// Create an EC key.
