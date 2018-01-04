@@ -662,7 +662,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
         }
 
-        _LIB_THEKOGANS_STREAM_DECL int _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL int
         VerifyCallback (
                 int ok,
                 X509_STORE_CTX *store) {

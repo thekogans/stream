@@ -464,7 +464,7 @@ namespace thekogans {
         /// \param[in] store Certificate store to query about
         /// the failed handshake.
         /// \return ok
-        _LIB_THEKOGANS_STREAM_DECL int _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL int
             VerifyCallback (
                 int ok,
                 X509_STORE_CTX *store);
