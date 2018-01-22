@@ -129,14 +129,14 @@ int main (
                 server::Options::Instance ().addresses);
         #if defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoopCreateInstance::Parameterize (
-                0, 0, util::SystemRunLoop::CreateThreadWindow ());
+                true, 0, 0, util::SystemRunLoop::CreateThreadWindow ());
         #elif defined (TOOLCHAIN_OS_Linix)
             XInitThreads ();
             util::MainRunLoopCreateInstance::Parameterize (
-                0, 0, util::SystemRunLoop::CreateThreadWindow ());
+                true, 0, 0, util::SystemRunLoop::CreateThreadWindow ());
         #elif defined (TOOLCHAIN_OS_OSX)
             util::MainRunLoopCreateInstance::Parameterize (
-                CFRunLoopGetMain ());
+                true, CFRunLoopGetMain ());
         #endif // defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoop::Instance ().Start ();
             server::Server::Instance ().Stop ();

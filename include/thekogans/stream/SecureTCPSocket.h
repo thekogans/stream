@@ -105,10 +105,10 @@ namespace thekogans {
                 SecureTCPSocket &secureTCPSocket;
                 /// \brief
                 /// Input side of the async connection.
-                BIOPtr inBIO;
+                crypto::BIOPtr inBIO;
                 /// \brief
                 /// Output side of the async connection.
-                BIOPtr outBIO;
+                crypto::BIOPtr outBIO;
                 /// \brief
                 /// List of buffers waiting to be encrypted
                 /// before being put on the wire.

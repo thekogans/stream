@@ -25,6 +25,7 @@
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/RandomSource.h"
+#include "thekogans/crypto/SystemCACertificates.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerSecureTCPSocket.h"
@@ -235,7 +236,7 @@ namespace thekogans {
             ctx.reset (SSL_CTX_new (GetTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
                 if (loadSystemCACertificates) {
-                    LoadSystemCACertificates (ctx.get ());
+                    crypto::SystemCACertificates::Instance ().Use (ctx.get ());
                 }
                 if (!caCertificates.empty ()) {
                     LoadCACertificates (ctx.get (), caCertificates);
@@ -269,7 +270,7 @@ namespace thekogans {
                     }
                     if (SSL_CTX_set_session_id_context (
                             ctx.get (), sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH) != 1) {
-                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                     SSL_CTX_set_timeout (ctx.get (), cachedSessionTTL);
                 }

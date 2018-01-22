@@ -32,7 +32,6 @@
     #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include <ctime>
 #include <memory>
 #include <string>
 #include <list>
@@ -40,16 +39,12 @@
     #include <pugixml.hpp>
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/x509v3.h>
 #include <openssl/pem.h>
-#include <openssl/evp.h>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
-#include "thekogans/util/RefCounted.h"
-#include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/Exception.h"
+#include "thekogans/crypto/OpenSSLInit.h"
+#include "thekogans/crypto/OpenSSLUtils.h"
 #include "thekogans/stream/Config.h"
 
 namespace thekogans {
@@ -97,160 +92,13 @@ namespace thekogans {
         /// Convenient typedef for std::unique_ptr<SSL_SESSION, SSL_SESSIONDeleter>.
         typedef std::unique_ptr<SSL_SESSION, SSL_SESSIONDeleter> SSL_SESSIONPtr;
 
-        /// \struct BIODeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for BIO.
-        struct _LIB_THEKOGANS_STREAM_DECL BIODeleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] bio BIO to delete.
-            void operator () (BIO *bio);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<BIO, BIODeleter>.
-        typedef std::unique_ptr<BIO, BIODeleter> BIOPtr;
-
-        /// \struct X509Deleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for X509.
-        struct _LIB_THEKOGANS_STREAM_DECL X509Deleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] x509 X509 to delete.
-            void operator () (X509 *x509);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<X509, X509Deleter>.
-        typedef std::unique_ptr<X509, X509Deleter> X509Ptr;
-
-        /// \struct X509_STOREDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for X509_STORE.
-        struct _LIB_THEKOGANS_STREAM_DECL X509_STOREDeleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] store X509_STORE to delete.
-            void operator () (X509_STORE *store);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<X509_STORE, X509_STOREDeleter>.
-        typedef std::unique_ptr<X509_STORE, X509_STOREDeleter> X509_STOREPtr;
-
-        /// \struct X509_CRLDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for X509_CRL.
-        struct _LIB_THEKOGANS_STREAM_DECL X509_CRLDeleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] crl X509_CRL to delete.
-            void operator () (X509_CRL *crl);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<X509_CRL, X509_CRLDeleter>.
-        typedef std::unique_ptr<X509_CRL, X509_CRLDeleter> X509_CRLPtr;
-
-        /// \struct DHDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for DH.
-        struct _LIB_THEKOGANS_STREAM_DECL DHDeleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] dh DH to delete.
-            void operator () (DH *dh);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<DH, DHDeleter>.
-        typedef std::unique_ptr<DH, DHDeleter> DHPtr;
-
-        /// \struct EVP_PKEYDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for EVP_PKEY.
-        struct _LIB_THEKOGANS_STREAM_DECL EVP_PKEYDeleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] key EVP_PKEY to delete.
-            void operator () (EVP_PKEY *key);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<EVP_PKEY, EVP_PKEYDeleter>.
-        typedef std::unique_ptr<EVP_PKEY, EVP_PKEYDeleter> EVP_PKEYPtr;
-
-        /// \struct EC_KEYDeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for EC_KEY.
-        struct _LIB_THEKOGANS_STREAM_DECL EC_KEYDeleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] key EC_KEY to delete.
-            void operator () (EC_KEY *key);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<EC_KEY, EC_KEYDeleter>.
-        typedef std::unique_ptr<EC_KEY, EC_KEYDeleter> EC_KEYPtr;
-
-        /// \struct DSADeleter OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Custom deleter for DSA.
-        struct _LIB_THEKOGANS_STREAM_DECL DSADeleter {
-            /// \brief
-            /// Called by unique_ptr::~unique_ptr.
-            /// \param[in] dsa DSA to delete.
-            void operator () (DSA *dsa);
-        };
-        /// \brief
-        /// Convenient typedef for std::unique_ptr<DSA, DSADeleter>.
-        typedef std::unique_ptr<DSA, DSADeleter> DSAPtr;
-
-        /// \struct OpenSSLAllocator OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
-        ///
-        /// \brief
-        /// Wraps OPENSSL_malloc/free to allow openssl allocated objects
-        /// to be used with thekogans.net allocator machinery.
-        struct _LIB_THEKOGANS_STREAM_DECL OpenSSLAllocator : public util::Allocator {
-            /// \brief
-            /// Global OpenSSLAllocator.
-            static OpenSSLAllocator Global;
-
-            /// \brief
-            /// ctor.
-            OpenSSLAllocator () {}
-
-            /// \brief
-            /// Allocate a block.
-            /// NOTE: Allocator policy is to return (void *)0 if size == 0.
-            /// if size > 0 and an error occurs, Allocator will throw an exception.
-            /// \param[in] size Size of block to allocate.
-            /// \return Pointer to the allocated block ((void *)0 if size == 0).
-            virtual void *Alloc (std::size_t size);
-            /// \brief
-            /// Free a previously Alloc(ated) block.
-            /// NOTE: Allocator policy is to do nothing if ptr == 0.
-            /// \param[in] ptr Pointer to the block returned by Alloc.
-            /// \param[in] size Same size parameter previously passed in to Alloc.
-            virtual void Free (
-                void *ptr,
-                std::size_t /*size*/);
-
-            /// \brief
-            /// OpenSSLAllocator is neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (OpenSSLAllocator)
-        };
-
         /// \struct OpenSSLInit OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
         ///
         /// \brief
         /// OpenSSLInit encapsulates the details of initializing the OpenSSL
         /// library. Instantiate one of these before making any calls in to
         /// the library proper.
-        struct _LIB_THEKOGANS_STREAM_DECL OpenSSLInit {
+        struct _LIB_THEKOGANS_STREAM_DECL OpenSSLInit : public crypto::OpenSSLInit {
             /// \brief
             /// Used by Secure[TCP | UDP]Socket to associate a it's pointer with SSL.
             static int SSLSecureSocketIndex;
@@ -259,30 +107,15 @@ namespace thekogans {
             /// pointer with SSL_SESSION.
             static int SSL_SESSIONSessionInfoIndex;
 
-            enum {
-                /// \brief
-                /// Minimum entropy bytes to use for PRNG seeding
-                /// (anything less than this would weaken the crypto).
-                MIN_ENTROPY_NEEDED = 512,
-                /// \brief
-                /// Default entropy bytes to use for PRNG seeding.
-                DEFAULT_ENTROPY_NEEDED = 1024
-            };
             /// \brief
             /// ctor.
             /// Initialize the Open SSL library.
             /// \param[in] multiThreaded true = initialize thread support.
             /// \param[in] entropyNeeded Number of entropy bytes to use to seed the PRNG.
-            /// \param[in] loadSystemCACertificates Load system CA certificates.
-            /// \param[in] loadSystemRootCACertificatesOnly Load system root (self signed) CA certificates only.
             OpenSSLInit (
                 bool multiThreaded = true,
                 util::ui32 entropyNeeded = DEFAULT_ENTROPY_NEEDED,
-                bool loadSystemCACertificates = true,
-                bool loadSystemRootCACertificatesOnly = true);
-            /// \brief
-            /// \dtor.
-            ~OpenSSLInit ();
+                util::ui64 workingSetSize = DEFAULT_WORKING_SET_SIZE);
 
             /// \brief
             /// OpenSSLInit is neither copy constructable, nor assignable.
@@ -480,31 +313,6 @@ namespace thekogans {
             PostConnectionCheck (
                 SSL *ssl,
                 const std::string &serverName);
-
-        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
-            GetCRLDistributionPoints (
-                X509 *cert,
-                std::vector<std::string> &crlDistributionPoints);
-        enum {
-            FORMAT_DER,
-            FORMAT_PEM
-        };
-        _LIB_THEKOGANS_STREAM_DECL X509_CRLPtr _LIB_THEKOGANS_STREAM_API
-            LoadCRL (
-                const std::string &path,
-                util::ui32 format,
-                pem_password_cb *passwordCallback,
-                void *userData);
-        /// \brief
-        /// Cache system CA certificates.
-        /// \param[in] loadSystemRootCACertificatesOnly Load system root (self signed) CA certificates only.
-        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
-            CacheSystemCACertificates (bool loadSystemRootCACertificatesOnly = true);
-        /// \brief
-        /// Load system CA certificates.
-        /// \param[in] ctx SSL_CTX to load the certificates in to.
-        _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
-            LoadSystemCACertificates (SSL_CTX *ctx);
         /// \brief
         /// Load a PEM encoded CA certificate list.
         /// \param[in] ctx SSL_CTX to load the certificate in to.
@@ -583,7 +391,7 @@ namespace thekogans {
         /// \param[in] buffer Buffer containing the DER encoded certificate.
         /// \param[in] length Length of buffer.
         /// \return Parsed certificate.
-        _LIB_THEKOGANS_STREAM_DECL X509Ptr _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
             ParseDERCertificate (
                 const void *buffer,
                 std::size_t length);
@@ -594,7 +402,7 @@ namespace thekogans {
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         /// \return Parsed certificate.
-        _LIB_THEKOGANS_STREAM_DECL X509Ptr _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
             ParsePEMCertificate (
                 const void *buffer,
                 std::size_t length,
@@ -607,7 +415,7 @@ namespace thekogans {
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         /// \return Parsed public key.
-        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL crypto::EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
             ParsePUBKEY (
                 const void *buffer,
                 std::size_t length,
@@ -620,7 +428,7 @@ namespace thekogans {
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         /// \return Parsed private key.
-        _LIB_THEKOGANS_STREAM_DECL EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL crypto::EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
             ParsePrivateKey (
                 const void *buffer,
                 std::size_t length,
@@ -633,7 +441,7 @@ namespace thekogans {
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         /// \return Parsed DH parameters.
-        _LIB_THEKOGANS_STREAM_DECL DHPtr _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL crypto::DHPtr _LIB_THEKOGANS_STREAM_API
             ParseDHParams (
                 const void *buffer,
                 std::size_t length,
@@ -646,77 +454,12 @@ namespace thekogans {
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         /// \return Parsed DSA parameters.
-        _LIB_THEKOGANS_STREAM_DECL DSAPtr _LIB_THEKOGANS_STREAM_API
+        _LIB_THEKOGANS_STREAM_DECL crypto::DSAPtr _LIB_THEKOGANS_STREAM_API
             ParseDSAParams (
                 const void *buffer,
                 std::size_t length,
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
-
-        /// \brief
-        /// These extensions to \see{thekogans::util::Exception} allow
-        /// OpenSSL errors to be treated uniformly just like all the rest.
-
-        /// \brief
-        /// Create an \see{thekogans::util::Exception} and traceback using
-        /// OpenSSL's error stack.
-        /// \param[in] file Translation unit.
-        /// \param[in] function Function in the translation unit.
-        /// \param[in] line Translation unit line number.
-        /// \param[in] buildTime Translation unit build time.
-        /// \param[in] message Extra message to add to the exception report.
-        /// \return An \see{thekogans::util::Exception} and traceback.
-        _LIB_THEKOGANS_STREAM_DECL util::Exception _LIB_THEKOGANS_STREAM_API
-            CreateOpenSSLException (
-                const char *file,
-                const char *function,
-                util::ui32 line,
-                const char *buildTime,
-                const char *message = "");
-
-        /// \def THEKOGANS_STREAM_OPENSSL_EXCEPTION_EX(
-        ///          file, function, line, buildTime)
-        /// Build an Exception from OpenSSL error stack.
-        #define THEKOGANS_STREAM_OPENSSL_EXCEPTION_EX(\
-                file, function, line, buildTime)\
-            thekogans::stream::CreateOpenSSLException (\
-                file, function, line, buildTime)
-        /// \def THEKOGANS_STREAM_OPENSSL_EXCEPTION
-        /// Build an Exception from OpenSSL error stack.
-        #define THEKOGANS_STREAM_OPENSSL_EXCEPTION\
-            THEKOGANS_STREAM_OPENSSL_EXCEPTION_EX (\
-                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
-
-        /// \def THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION_EX(
-        ///          file, function, line, buildTime)
-        /// Throw an Exception from OpenSSL error stack.
-        #define THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION_EX(\
-                file, function, line, buildTime)\
-            THEKOGANS_UTIL_DEBUG_BREAK\
-            throw THEKOGANS_STREAM_OPENSSL_EXCEPTION_EX (\
-                file, function, line, buildTime)
-        /// \def THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION
-        /// Throw an Exception from OpenSSL error stack.
-        #define THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION\
-            THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION_EX (\
-                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__)
-
-        /// \def THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION_EX(
-        ///          file, function, line, buildTime)
-        /// Throw an Exception from OpenSSL error stack.
-        #define THEKOGANS_STREAM_THROW_OPENSSL_AND_MESSAGE_EXCEPTION_EX(\
-                file, function, line, buildTime, format, ...)\
-            THEKOGANS_UTIL_DEBUG_BREAK\
-            throw thekogans::stream::CreateOpenSSLException (\
-                file, function, line, buildTime,\
-                thekogans::util::FormatString (format, __VA_ARGS__).c_str ())
-        /// \def THEKOGANS_STREAM_THROW_OPENSSL_AND_MESSAGE_EXCEPTION(format, ...)
-        /// Throw an Exception from OpenSSL error stack.
-        #define THEKOGANS_STREAM_THROW_OPENSSL_AND_MESSAGE_EXCEPTION(\
-                format, ...)\
-            THEKOGANS_STREAM_THROW_OPENSSL_AND_MESSAGE_EXCEPTION_EX (\
-                __FILE__, __FUNCTION__, __LINE__, __DATE__ " " __TIME__,\
-                format, __VA_ARGS__)
 
     } // namespace stream
 } // namespace thekogans

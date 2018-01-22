@@ -2,7 +2,7 @@
                 project = "stream"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "10"
+                minor_version = "11"
                 patch_version = "0"
                 guid = "5e33fdb222451ad9697ca87aec9de144"
                 schema_version = "2">
@@ -24,6 +24,8 @@
                  name = "pugixml"/>
     </if>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
+      <project organization = "thekogans"
+               name = "crypto"/>
       <toolchain organization = "thekogans"
                  name = "openssl_ssl"/>
       <toolchain organization = "thekogans"
@@ -37,16 +39,10 @@
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <library>Ws2_32.lib</library>
         <library>Iphlpapi.lib</library>
-        <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
-          <library>Crypt32.lib</library>
-        </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
         <framework>CoreFoundation</framework>
         <framework>SystemConfiguration</framework>
-        <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
-          <framework>Security</framework>
-        </if>
       </when>
     </choose>
   </dependencies>
@@ -86,7 +82,6 @@
       <cpp_header>$(organization)/$(project_directory)/ClientSecureTCPSocket.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/ClientSecureUDPSocket.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/OpenSSLUtils.h</cpp_header>
-      <cpp_header>$(organization)/$(project_directory)/OpenSSLUtilsEx.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/SecureTCPSocket.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/SecureUDPSocket.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/ServerSecureTCPSocket.h</cpp_header>
@@ -122,7 +117,6 @@
       <cpp_source>ClientSecureTCPSocket.cpp</cpp_source>
       <cpp_source>ClientSecureUDPSocket.cpp</cpp_source>
       <cpp_source>OpenSSLUtils.cpp</cpp_source>
-      <cpp_source>OpenSSLUtilsEx.cpp</cpp_source>
       <cpp_source>SecureTCPSocket.cpp</cpp_source>
       <cpp_source>SecureUDPSocket.cpp</cpp_source>
       <cpp_source>ServerSecureTCPSocket.cpp</cpp_source>

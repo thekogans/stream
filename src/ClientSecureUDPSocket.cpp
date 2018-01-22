@@ -21,7 +21,7 @@
     #include <sstream>
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-#include "thekogans/stream/OpenSSLUtils.h"
+#include "thekogans/crypto/SystemCACertificates.h"
 #include "thekogans/stream/ClientSecureUDPSocket.h"
 
 namespace thekogans {
@@ -169,7 +169,7 @@ namespace thekogans {
             ctx.reset (SSL_CTX_new (GetDTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
                 if (loadSystemCACertificates) {
-                    LoadSystemCACertificates (ctx.get ());
+                    crypto::SystemCACertificates::Instance ().Use (ctx.get ());
                 }
                 if (!caCertificates.empty ()) {
                     LoadCACertificates (ctx.get (), caCertificates);
@@ -191,7 +191,7 @@ namespace thekogans {
                 SSL_CTX_set_read_ahead (ctx.get (), 1);
             }
             else {
-                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
             }
         }
 

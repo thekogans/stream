@@ -22,7 +22,7 @@
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
-#include "thekogans/stream/OpenSSLUtils.h"
+#include "thekogans/crypto/SystemCACertificates.h"
 #include "thekogans/stream/ClientSecureTCPSocket.h"
 
 namespace thekogans {
@@ -170,7 +170,7 @@ namespace thekogans {
             ctx.reset (SSL_CTX_new (GetTLSMethod (protocolVersion)));
             if (ctx.get () != 0) {
                 if (loadSystemCACertificates) {
-                    LoadSystemCACertificates (ctx.get ());
+                    crypto::SystemCACertificates::Instance ().Use (ctx.get ());
                 }
                 if (!caCertificates.empty ()) {
                     LoadCACertificates (ctx.get (), caCertificates);
@@ -191,7 +191,7 @@ namespace thekogans {
                 SSL_CTX_set_mode (ctx.get (), SSL_MODE_AUTO_RETRY);
             }
             else {
-                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
             }
         }
 

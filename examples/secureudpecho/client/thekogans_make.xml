@@ -10,6 +10,8 @@
     <project organization = "thekogans"
              name = "util"/>
     <project organization = "thekogans"
+             name = "crypto"/>
+    <project organization = "thekogans"
              name = "stream"/>
     <toolchain organization = "thekogans"
                name = "pugixml"/>

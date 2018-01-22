@@ -314,7 +314,7 @@ namespace thekogans {
                     }
                     if (SSL_CTX_set_session_id_context (
                             ctx.get (), sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH) != 1) {
-                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                     SSL_CTX_set_timeout (ctx.get (), cachedSessionTTL);
                 }

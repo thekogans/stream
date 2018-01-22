@@ -41,7 +41,7 @@ namespace thekogans {
                 HookSSL ();
             }
             else {
-                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
             }
         }
 
@@ -96,7 +96,7 @@ namespace thekogans {
                     }
                     else if (!BIO_should_retry (inBIO.get ())) {
                         secureTCPSocket.asyncInfo->eventSink.HandleStreamError (
-                            secureTCPSocket, THEKOGANS_STREAM_OPENSSL_EXCEPTION);
+                            secureTCPSocket, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                         return;
                     }
                 }
@@ -120,7 +120,7 @@ namespace thekogans {
                     }
                     else if (secureTCPSocket.IsFatalError (bytesRead)) {
                         secureTCPSocket.asyncInfo->eventSink.HandleStreamError (
-                            secureTCPSocket, THEKOGANS_STREAM_OPENSSL_EXCEPTION);
+                            secureTCPSocket, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                         return;
                     }
                 } while (bytesRead > 0);
@@ -142,7 +142,7 @@ namespace thekogans {
                     }
                     else if (secureTCPSocket.IsFatalError (bytesWritten)) {
                         secureTCPSocket.asyncInfo->eventSink.HandleStreamError (
-                            secureTCPSocket, THEKOGANS_STREAM_OPENSSL_EXCEPTION);
+                            secureTCPSocket, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                         return;
                     }
                 }
@@ -164,7 +164,7 @@ namespace thekogans {
                     }
                     else if (!BIO_should_retry (outBIO.get ())) {
                         secureTCPSocket.asyncInfo->eventSink.HandleStreamError (
-                            secureTCPSocket, THEKOGANS_STREAM_OPENSSL_EXCEPTION);
+                            secureTCPSocket, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                         return;
                     }
                 }
@@ -190,7 +190,7 @@ namespace thekogans {
             if (buffer != 0 && count > 0) {
                 int bytesRead = SSL_read (ssl.get (), buffer, count);
                 if (bytesRead < 0) {
-                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
                 sessionInfo.countTransfered += bytesRead;
                 return bytesRead;
@@ -214,7 +214,7 @@ namespace thekogans {
                 else {
                     bytesWritten = SSL_write (ssl.get (), buffer, count);
                     if (bytesWritten < 0) {
-                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                     sessionInfo.countTransfered += bytesWritten;
                 }
@@ -264,7 +264,7 @@ namespace thekogans {
                         asyncInfoEx->HookSSL ();
                     }
                     else if (SSL_set_fd (ssl.get (), (int)handle) != 1) {
-                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                     SSL_set_connect_state (ssl.get ());
                     SSL_set_ex_data (ssl.get (), OpenSSLInit::SSLSecureSocketIndex, this);
@@ -277,11 +277,11 @@ namespace thekogans {
                         }
                     }
                     else {
-                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                 }
                 else {
-                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
             }
             else {
@@ -302,7 +302,7 @@ namespace thekogans {
                     }
                     // NOTE: SSL_set_fd will create a bio with BIO_NOCLOSE.
                     else if (SSL_set_fd (ssl.get (), (int)handle) != 1) {
-                        THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                     SSL_set_accept_state (ssl.get ());
                     SSL_set_ex_data (ssl.get (),
@@ -312,12 +312,12 @@ namespace thekogans {
                     if (!IsAsync ()) {
                         int result = SSL_accept (ssl.get ());
                         if (IsFatalError (result)) {
-                            THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                            THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                         }
                     }
                 }
                 else {
-                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
             }
             else {
@@ -347,16 +347,16 @@ namespace thekogans {
                     else if (SSL_is_server (ssl.get ()) == 1) {
                         result = SSL_do_handshake (ssl.get ());
                         if (IsFatalError (result)) {
-                            THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                            THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                         }
                     }
                 }
                 else {
-                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
             }
             else {
-                THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
             }
         }
 
@@ -381,7 +381,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
             }
         }
@@ -514,7 +514,7 @@ namespace thekogans {
                             socket->asyncInfoEx->RunTLS ();
                         }
                         else {
-                            THEKOGANS_STREAM_THROW_OPENSSL_EXCEPTION;
+                            THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                         }
                     }
                     if (socket->ShutdownCompleted ()) {
@@ -560,7 +560,7 @@ namespace thekogans {
                 if (!sessionInfo.serverName.empty ()) {
                     int result = PostConnectionCheck (ssl.get (), sessionInfo.serverName);
                     if (result != X509_V_OK) {
-                        THEKOGANS_STREAM_THROW_OPENSSL_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_AND_MESSAGE_EXCEPTION (
                             " (%s)", X509_verify_cert_error_string (result));
                     }
                 }
