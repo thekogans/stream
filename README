@@ -1,3 +1,34 @@
-This folder contains thekogans stream library.
+libthekogans_stream is designed to be used to write high performance,
+asynchronous, networked applications. It abstracts all the details and
+platform differences from pipes, named pipes (Windows only) and
+sockets. Asynchronous IO is done using best in class facilities
+available on each platform (Windows: IOCP, Linux: epoll, OS X:
+kqueue). The hallmarks of libthekogans_stream are it’s simplicity and
+elegance (if I say so myself). Here is the entire libthekogans_stream
+hierarchy:
 
-Visit http://www.thekogans.net/?page_id=63 to learn how to build and use it.
+    Stream
+        Pipe
+        NamedPipe
+            ClientNamedPipe
+            ServerNamedPipe
+        Socket
+            TCPSocket
+                ClientTCPSocket
+                ServerTCPSocket
+                SecureTCPSocket
+                    ClientSecureTCPSocket
+                ServerSecureTCPSocket
+            UDPSocket
+                ClientUDPSocket
+                ServerUDPSocket
+                SecureUDPSocket*
+                    ClientSecureUDPSocket*
+                ServerSecureUDPSocket*
+
+* In the design and implementation phase. These should be available in
+  version 0.12.0.
+
+One of the greatest strengths of libthekogans_stream is it’s use of
+the memento pattern to persist stream open parameters to allow streams
+to be reconstituted from rest.
