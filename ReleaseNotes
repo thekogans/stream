@@ -1,0 +1,236 @@
+version 0.7.2:
+
+    fixed StreamByteSource to inherit from Serializer::ByteSource in Stream.h.
+    fixed TCPSocketByteSource to inherit from Serializer::ByteSource in TCPSocket.h.
+    fixed UDPSocketByteSource to inherit from Serializer::ByteSource in UDPSocket.h.
+
+version 0.7.1:
+
+    Adapters::Addresses::MAC_LENGTH now uses os specific constants.
+    added AF_LINK support in Address.h under OS X.
+    removed unused key and cipher support from OpenSSLUtils.h.
+    removed HandleServerSecureTCPSocketConnected from SecureTCPSocket. this functionality is handled by the handle taking ctor.
+    removed HandleServerTCPSocketConnected from TCPSocket. this functionality is handled by the handle taking ctor.
+    fixed incorrect constant use in TCPSocket::SetKeepAlive.
+    fixed linux compilation issues.
+    documentation improvements and typos.
+
+version 0.7.0:
+
+    added Adapters.h.
+    added sockaddr_[nl | ll | dl] to Address.h.
+    added GlobalAsyncIoEventQueue in AsyncIoEventQueue.h.
+    Stream.h
+        folded typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr; in to THEKOGANS_STREAM_DECLARE_STREAM.
+        added StreamByteSource.
+        added throw () to HandleError.
+        added throw () to HandleOverlapped and HandleTimedOutOverlapped.
+        added throw () to HandleAsyncEvent and HandleTimedOutAsyncEvent.
+        fixed a bug with getting wrong buffer for async callbacks.
+    cleaned up the use of _MSC_VER in preparation of supporting g++ on windows.
+    OpenSSLUtils.h:
+        added encryption/decryption.
+        added symmetric key generation.
+        added asymmetric key generation.
+        added support for key set negotiation and rotation.
+    added HandleServerSecureTCPSocketConnected to SecureTCPSocket.h.
+    Socket.h:
+        removed GetLocalAddresses (replaced with Adapters.h).
+        added family, type and protocol members to better deal with systems on which this info is not available.
+    TCPSocket.h:
+        made IsConnected public.
+        added DEFAULT_MAX_PENDING_CONNECTIONS.
+        added idleTime, interval and count to the SetKeepAlive.
+        added HandleServerTCPSocketConnected to allow derived classes to handle their own async connection events.
+        added TCPSocketByteSource.
+    UDPSocket.h:
+        added [Is | Set]HdrIncl.
+        added multicast support.
+        added HandleServerUDPSocketConnected to allow derived classes to handle their own async connection events.
+        added UDPSocketByteSource.
+        added UDPSocketReadFromByteSource.
+        added UDPSocketReadMsgByteSource.
+    documentation improvements and typos.
+
+version 0.6.3:
+
+    moved inline SecureTCPSocket::IsSessionReused in to the cpp file to remove dependency on OpenSSL in the public api.
+    moved inline SecureUDPSocket::IsSessionReused in to the cpp file to remove dependency on OpenSSL in the public api.
+
+version 0.6.2:
+
+    updated Stream.h and UDPSocket.h to work with the new util::Buffer interfaces.
+    documentation improvements and typos.
+
+version 0.6.1:
+
+    changed the signature of all Job interfaces to include throw ().
+    removed extraneous dependencies from a few thekogans_make.xml in examples.
+    documentation improvements and typos.
+
+version 0.6.0:
+
+    added [Client | Server]UDPSocket.
+    began fleshing out support for [Client | Server]SecureUDPSocket. should be finished in the next point release. BROKEN, PLEASE DON’T USE.
+    added AsyncIoEventSink::HandleServerUDPSocketConnection.
+    AsyncIoEventQueue.h:
+        added support for timed async streams.
+        added TimeoutPolicy to control the runtime purging of timed out streams.
+        added SetTimeoutPolicy.
+        replaced all std::list with util::IntrusiveList.
+    implemented the new Stream timed stream api in Pipe.
+    implemented the new Stream timed stream api in NamedPipe.
+    Socket.h:
+        moved platform specific preprocessor directives to Config.h
+        implemented the new Stream timed stream api.
+        added [Is | Set]ExclusiveAddressUse.
+        moved [Is | Set]Nagle to TCPSocket.
+        moved [Get | Set]Linger to TCPSocket.
+        moved Shutdown to TCPSocket.
+    Stream.h:
+        made Stream derive from three separate IntrusiveList::Node.
+        removed Deleter.
+        added a timed stream api:
+            [Get | Set]ReadTimeout.
+            [Get | Set]WriteTimeout.
+        moved Overlapped in to Stream::AsyncInfo and completely redesigned it.
+        redesigned BufferInfo.
+        added HandleError, HandleTimedOutOverlapped and HandleTimedOutAsyncEvent.
+        added TimedOverlapped and Timed event to support sync [Named]Pipe.
+    added ConnectOverlapped and AcceptOverlapped in to TCPSocket.
+    UDPSocket.h:
+        moved OpenInfo in to [Client | Server]UDPSocket.
+        added ReadFromWriteToOverlapped.
+        added ReadMsgWriteMsgOverlapped.
+    fixed race conditions in examples (server was not properly handling Thread::Wait).
+    documentation improvements and typos.
+
+version 0.5.2:
+
+    added mkcerts-ecdhe-ecdsa to securetcpecho example.
+    fixed a bug where ecdh parameters weren’t parsed correctly.
+    replaced boost::atomic_flag with thekogans::util::SpinLock in SecureTCPSocket.
+    replaced a preprocessor directive in Socket to allow Is/SetReusePort to work on OS X.
+    moved Stream::AsyncInfo::Write[To | Msg]BufferInfo to UDPSocket.
+    documentation improvements and typos.
+
+version 0.5.1:
+
+    removed the non reentrancy restriction from async SecureTCPSocket.
+    added -q flag to stream/examples/securetcpecho/server.
+    documentation improvements and typos.
+
+version 0.5.0:
+
+    added Address::GetAddrLength.
+    AsyncIoEventSink:
+        added HandleUDPSocketReadMsg.
+        added HandleUDPSocketWriteMsg.
+    added ClientNamedPipe::OpenInfo::ctor.
+    added ClientTCPSocket::OpenInfo::ctor.
+    added struct MsgHdr (MsgHdr.h).
+    moved SecureTCPSocket::SessionInfo to OpenSSLUtils.h.
+    Overlapped:
+        split ReadWriteInfo in to seperate classes to better model different io types.
+        added ReadFromOverlapped and WriteToOverlapped to support the new io types.
+        added ReadMsgOverlapped and WriteMsgOverlapped to support the new io types.
+    added ServerTCPSocket::OpenInfo::ctor.
+    moved Socket::[Is | Set]Broadcast to UDPSocket.
+    Stream:
+        added AsyncInfo::EventReadFrom and AsyncInfo::EventWriteTo.
+        added AsyncInfo::EventReadMsg and AsyncInfo::EventWriteMsg.
+        reworked AsyncInfo::BufferInfo to properly support different io types.
+    UDPSocket:
+        added [Read | Write]Msg to support [recv | send]msg.
+        added IsConnected.
+        added [Is | Set]RecvPktInfo.
+        added [Is | Set]Broadcast.
+    documentation improvements and typos.
+
+version 0.4.1:
+
+    added AsyncIoEventSink::HandleSecureTCPSocketHandshakeStarting.
+    added SecureTCPSocket::GetSSL.
+    renamed SecureTCPSocket::FlushSSL to SecureTCPSocket::RunTLS.
+    added Socket::IsIPV6Only and Socket::SetIPV6Only.
+    updated UDPSocket to use connect to bind to a given adderss.
+    began preparing UDPSocket to act as base for SecureUDPSocket.
+    documentation improvements and typos.
+
+version 0.4.0:
+
+    replaced echo example with udpecho, tcpecho, securetcpecho and namedpipeecho examples.
+    renamed BroadcastSocket to UDPSocket.
+    added TCPSocket as base for all SOCK_STREAM sockets.
+    removed TenantStream and all of it’s derivatives.
+    added OpenSSLUtils.h/cpp to wrap OpenSSL objects.
+    added SecureTCPSocket, ServerSecureTCPSocket and ClientSecureTCPSocket.
+    changed the signature of Address::ToString to better match other ToString methods.
+    Makefile:
+        added Features file to control building of various features.
+        updated to work with the new build system improvements.
+        reworked dependencies to only include when needed.
+        reworked source/header specification to work with the Features file.
+    AsyncIoEventQueue:
+        removed AsyncIoEventSink as base.
+        added Registry class to keep track of registered streams.
+        reworked the windows ctor.
+        moved Event… enums to Stream::AsyncInfo.
+        added DeleteStream.
+        reworked AddStream to be completely platform independent.
+        fixed event handling logic to deal with differences between Linux and OS X.
+    AsyncIoEventSink:
+        added HandleTCPSocketConnected.
+        added HandleSecureTCPSocketConnected.
+        added HandleSecureTCPSocketHandshakeCompleted.
+        added HandleSecureTCPSocketShutdownCompleted.
+        changed method names dealing with BroadcastSocket to UDPSocket.
+    Overlapped:
+        complete redesign.
+        removed unneeded methods.
+        added helper classes to hide operation specifics:
+            ConnectOverlapped
+            AcceptOverlapped
+            ReadOverlapped
+            WriteOverlapped
+    Pipe:
+        changed internal pointer type from unique_ptr to util::RefCounted::Ptr.
+        GetDataAvailable is no longer derived from Stream.
+        removed unneeded private methods.
+    Stream:
+        complete redesign. a stream now models basic io (read/write).
+        removed unneeded factory methods and streamlined stream recreation from rest.
+        completely reworked AsyncInfo.
+    NamedPipe:
+        GetDataAvailable is no longer derived from Stream.
+        removed unneeded private methods.
+    ClientNamedPipe:
+        changed internal pointer type from unique_ptr to util::RefCounted::Ptr.
+        added OpenInfo::TAG_ADDESS.
+        removed unused OpenInfo ctor.
+        fixed uninitialized members in OpenInfo ctor.
+        removed unneeded private methods.
+    ServerNamedPipe:
+        changed internal pointer type from unique_ptr to util::RefCounted::Ptr.
+        added OpenInfo::TAG_ADDESS.
+        removed unused OpenInfo ctor.
+        fixed uninitialized members in OpenInfo ctor.
+        removed unneeded private methods.
+    Socket:
+        removed unneeded headers.
+        changed internal pointer type from unique_ptr to util::RefCounted::Ptr.
+        GetDataAvailable is no longer derived from Stream.
+        exposed SetBlocking for public use.
+        added Is/SetReusePort (Linux only).
+        added Get/SetLinger.
+        removed unneeded private methods.
+        Socket is no longer pure virtual and can stand up to direct use.
+        moved all SOCK_STREAM methods to TCPSocket.
+    renamed ServerSocket to ServerTCPSocket.
+    renamed ClientSocket to ClientTCPSocket.
+    bug fixes.
+    documentation improvements and typos.
+
+version 0.3.4:
+
+    initial release
