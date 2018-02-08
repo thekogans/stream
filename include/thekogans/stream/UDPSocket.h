@@ -319,7 +319,9 @@ namespace thekogans {
                     /// Called by unique_ptr::~unique_ptr.
                     /// \param[in] readFromWriteToOverlapped ReadFromWriteToOverlapped to delete.
                     void operator () (ReadFromWriteToOverlapped *readFromWriteToOverlapped) {
-                        delete readFromWriteToOverlapped;
+                        if (readFromWriteToOverlapped != 0) {
+                            delete readFromWriteToOverlapped;
+                        }
                     }
                 };
                 /// \brief
@@ -410,7 +412,9 @@ namespace thekogans {
                     /// Called by unique_ptr::~unique_ptr.
                     /// \param[in] readMsgWriteMsgInfo ReadMsgWriteMsgOverlapped to delete.
                     void operator () (ReadMsgWriteMsgOverlapped *readMsgWriteMsgOverlapped) {
-                        delete readMsgWriteMsgOverlapped;
+                        if (readMsgWriteMsgOverlapped != 0) {
+                            delete readMsgWriteMsgOverlapped;
+                        }
                     }
                 };
                 /// \brief

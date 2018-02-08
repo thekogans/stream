@@ -36,7 +36,9 @@ to be reconstituted from rest.
 libthekogans_stream has the following required dependencies:
 
 libthekogans_util
+
 Windows: Ws2_32.lib, Iphlpapi.lib.
+
 OS X: framworks: CoreFoundation, SystemConfiguration.
 
 libthekogans_stream has the following optional dependencies:

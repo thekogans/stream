@@ -221,7 +221,9 @@ namespace thekogans {
                     /// Called by unique_ptr::~unique_ptr.
                     /// \param[in] connectOverlapped ConnectOverlapped to delete.
                     void operator () (ConnectOverlapped *connectOverlapped) {
-                        delete connectOverlapped;
+                        if (connectOverlapped != 0) {
+                            delete connectOverlapped;
+                        }
                     }
                 };
                 /// \brief
@@ -268,7 +270,9 @@ namespace thekogans {
                     /// Called by unique_ptr::~unique_ptr.
                     /// \param[in] acceptOverlapped AcceptOverlapped to delete.
                     void operator () (AcceptOverlapped *acceptOverlapped) {
-                        delete acceptOverlapped;
+                        if (acceptOverlapped != 0) {
+                            delete acceptOverlapped;
+                        }
                     }
                 };
                 /// \brief

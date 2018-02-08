@@ -88,7 +88,9 @@ namespace thekogans {
                     /// Called by unique_ptr::~unique_ptr.
                     /// \param[in] asyncInfo AsyncInfoEx to delete.
                     void operator () (AsyncInfoEx *asyncInfoEx) {
-                        delete asyncInfoEx;
+                        if (asyncInfoEx != 0) {
+                            delete asyncInfoEx;
+                        }
                     }
                 };
                 /// \brief

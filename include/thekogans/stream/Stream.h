@@ -443,7 +443,9 @@ namespace thekogans {
                     /// Called by unique_ptr::~unique_ptr.
                     /// \param[in] asyncInfo AsyncInfo to delete.
                     void operator () (AsyncInfo *asyncInfo) {
-                        delete asyncInfo;
+                        if (asyncInfo != 0) {
+                            delete asyncInfo;
+                        }
                     }
                 };
                 /// \brief
@@ -570,7 +572,9 @@ namespace thekogans {
                         /// Called by unique_ptr::~unique_ptr.
                         /// \param[in] overlapped Overlapped to delete.
                         void operator () (Overlapped *overlapped) {
-                            delete overlapped;
+                            if (overlapped != 0) {
+                                delete overlapped;
+                            }
                         }
                     };
                     /// \brief
@@ -668,7 +672,9 @@ namespace thekogans {
                         /// Called by unique_ptr::~unique_ptr.
                         /// \param[in] readWriteInfo ReadWriteOverlapped to delete.
                         void operator () (ReadWriteOverlapped *readWriteOverlapped) {
-                            delete readWriteOverlapped;
+                            if (readWriteOverlapped != 0) {
+                                delete readWriteOverlapped;
+                            }
                         }
                     };
                     /// \brief
@@ -997,7 +1003,9 @@ namespace thekogans {
                     /// Called by unique_ptr::~unique_ptr.
                     /// \param[in] timedOverlapped TimedOverlapped to delete.
                     void operator () (TimedOverlapped *timedOverlapped) {
-                        delete timedOverlapped;
+                        if (timedOverlapped != 0) {
+                            delete timedOverlapped;
+                        }
                     }
                 };
                 /// \brief
