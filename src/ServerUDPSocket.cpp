@@ -145,7 +145,7 @@ namespace thekogans {
                         }
                     }
                     if (readMsgWriteMsgOverlapped.buffer.get () != 0 &&
-                            readMsgWriteMsgOverlapped.buffer->GetDataAvailableForReading () != 0) {
+                            !readMsgWriteMsgOverlapped.buffer->IsEmpty ()) {
                         Connection::UniquePtr connection (
                             new Connection (
                                 std::move (readMsgWriteMsgOverlapped.buffer),

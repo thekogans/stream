@@ -106,7 +106,7 @@ namespace thekogans {
                         address.AddrToString ().c_str (),
                         address.GetPort ());
                     THEKOGANS_UTIL_TRY {
-                        if (buffer->GetDataAvailableForReading () != 0) {
+                        if (!buffer->IsEmpty ()) {
                             struct WriteJob : public util::JobQueue::Job {
                                 UDPSocket::Ptr udpSocket;
                                 util::Buffer::UniquePtr buffer;
@@ -158,7 +158,7 @@ namespace thekogans {
                         to.AddrToString ().c_str (),
                         to.GetPort ());
                     THEKOGANS_UTIL_TRY {
-                        if (buffer->GetDataAvailableForReading () != 0) {
+                        if (!buffer->IsEmpty ()) {
                             struct WriteJob : public util::JobQueue::Job {
                                 UDPSocket::Ptr udpSocket;
                                 util::Buffer::UniquePtr buffer;

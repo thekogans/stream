@@ -222,7 +222,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                         (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                    if (readWriteOverlapped.buffer->GetDataAvailableForReading () != 0) {
+                    if (!readWriteOverlapped.buffer->IsEmpty ()) {
                         PostAsyncRead ();
                         asyncInfo->eventSink.HandleStreamRead (
                             *this, std::move (readWriteOverlapped.buffer));
@@ -239,7 +239,7 @@ namespace thekogans {
             else if (overlapped.event == AsyncInfo::EventWrite) {
                 AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                     (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                assert (readWriteOverlapped.buffer->GetDataAvailableForReading () == 0);
+                assert (readWriteOverlapped.buffer->IsEmpty ());
                 asyncInfo->eventSink.HandleStreamWrite (
                     *this, std::move (readWriteOverlapped.buffer));
             }

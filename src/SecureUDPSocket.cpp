@@ -77,7 +77,7 @@ namespace thekogans {
         }
 
         void SecureUDPSocket::WriteBuffer (util::Buffer::UniquePtr buffer) {
-            if (buffer.get () != 0 && buffer->GetDataAvailableForReading () > 0) {
+            if (buffer.get () != 0 && !buffer->IsEmpty ()) {
                 if (IsAsync ()) {
                     {
                         util::LockGuard<util::SpinLock> guard (spinLock);
@@ -303,7 +303,7 @@ namespace thekogans {
                         }
                     }
                     if (readWriteOverlapped.buffer.get () != 0 &&
-                            readWriteOverlapped.buffer->GetDataAvailableForReading () != 0) {
+                            !readWriteOverlapped.buffer->IsEmpty ()) {
                         PostAsyncRead (false);
                         {
                             util::LockGuard<util::SpinLock> guard (spinLock);
@@ -323,7 +323,7 @@ namespace thekogans {
             else if (overlapped.event == AsyncInfo::EventWrite) {
                 AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                     (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                assert (readWriteOverlapped.buffer->GetDataAvailableForReading () == 0);
+                assert (readWriteOverlapped.buffer->IsEmpty ());
                 asyncInfo->eventSink.HandleStreamWrite (
                     *this, std::move (readWriteOverlapped.buffer));
             }
@@ -489,13 +489,13 @@ namespace thekogans {
                     // We just received a buffer of cipher text from
                     // the socket. We shove this buffer in to the inBIO.
                     if (decryptBuffer != 0) {
-                        assert (decryptBuffer->GetDataAvailableForReading () > 0);
+                        assert (!decryptBuffer->IsEmpty ());
                         int bytesWritten = BIO_write (inBIO.get (),
                             decryptBuffer->GetReadPtr (),
                             (int)decryptBuffer->GetDataAvailableForReading ());
                         if (bytesWritten > 0) {
                             decryptBuffer->AdvanceReadOffset (bytesWritten);
-                            if (decryptBuffer->GetDataAvailableForReading () == 0) {
+                            if (decryptBuffer->IsEmpty ()) {
                                 util::LockGuard<util::SpinLock> guard (spinLock);
                                 decryptList.pop_front ();
                             }
@@ -534,14 +534,14 @@ namespace thekogans {
                     // This is the encrypt side. We use SSL_write to
                     // encrypt plain text data waiting to be sent out.
                     if (encryptBuffer != 0) {
-                        assert (encryptBuffer->GetDataAvailableForReading () > 0);
+                        assert (!encryptBuffer->IsEmpty ());
                         int bytesWritten = SSL_write (ssl.get (),
                             encryptBuffer->GetReadPtr (),
                             (int)encryptBuffer->GetDataAvailableForReading ());
                         if (bytesWritten > 0) {
                             sessionInfo.countTransfered += bytesWritten;
                             encryptBuffer->AdvanceReadOffset (bytesWritten);
-                            if (encryptBuffer->GetDataAvailableForReading () == 0) {
+                            if (encryptBuffer->IsEmpty ()) {
                                 util::LockGuard<util::SpinLock> guard (spinLock);
                                 encryptList.pop_front ();
                             }

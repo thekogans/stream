@@ -489,7 +489,7 @@ namespace thekogans {
                         }
                     }
                     if (readMsgWriteMsgOverlapped.buffer.get () != 0 &&
-                            readMsgWriteMsgOverlapped.buffer->GetDataAvailableForReading () != 0) {
+                            !readMsgWriteMsgOverlapped.buffer->IsEmpty ()) {
                         asyncInfo->eventSink.HandleServerSecureUDPSocketConnection (*this,
                             CreatePeerConnection (
                                 std::move (readMsgWriteMsgOverlapped.buffer),

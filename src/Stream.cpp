@@ -465,7 +465,7 @@ namespace thekogans {
         }
 
         bool Stream::AsyncInfo::WriteBufferInfo::Notify () {
-            if (buffer->GetDataAvailableForReading () == 0) {
+            if (buffer->IsEmpty ()) {
                 stream.asyncInfo->eventSink.HandleStreamWrite (
                     stream, std::move (buffer));
                 return true;

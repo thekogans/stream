@@ -114,7 +114,7 @@ namespace thekogans {
                         stream::Stream &stream,
                         util::Buffer::UniquePtr buffer) throw () {
                     THEKOGANS_UTIL_TRY {
-                        if (buffer->GetDataAvailableForReading () != 0) {
+                        if (!buffer->IsEmpty ()) {
                             struct WriteJob : public util::JobQueue::Job {
                                 stream::Stream::Ptr stream;
                                 util::Buffer::UniquePtr buffer;

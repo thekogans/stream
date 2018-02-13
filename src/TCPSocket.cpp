@@ -170,7 +170,7 @@ namespace thekogans {
         }
 
         void TCPSocket::WriteBuffer (util::Buffer::UniquePtr buffer) {
-            if (buffer.get () != 0 && buffer->GetDataAvailableForReading () > 0) {
+            if (buffer.get () != 0 && !buffer->IsEmpty ()) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
@@ -655,7 +655,7 @@ namespace thekogans {
                         }
                     }
                     if (readWriteOverlapped.buffer.get () != 0 &&
-                            readWriteOverlapped.buffer->GetDataAvailableForReading () != 0) {
+                            !readWriteOverlapped.buffer->IsEmpty ()) {
                         PostAsyncRead ();
                         asyncInfo->eventSink.HandleStreamRead (*this,
                             std::move (readWriteOverlapped.buffer));
@@ -672,7 +672,7 @@ namespace thekogans {
             else if (overlapped.event == AsyncInfo::EventWrite) {
                 AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                     (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                assert (readWriteOverlapped.buffer->GetDataAvailableForReading () == 0);
+                assert (readWriteOverlapped.buffer->IsEmpty ());
                 asyncInfo->eventSink.HandleStreamWrite (
                     *this, std::move (readWriteOverlapped.buffer));
             }
