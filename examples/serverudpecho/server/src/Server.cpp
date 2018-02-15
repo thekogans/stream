@@ -19,7 +19,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/ServerUDPSocket.h"
-#include "thekogans/serverudpecho/server/Server.h"
+#include "thekogans/stream/serverudpecho/server/Server.h"
 
 namespace thekogans {
     namespace stream {

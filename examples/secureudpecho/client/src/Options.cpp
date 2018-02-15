@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/secureudpecho/client/Options.h"
+#include "thekogans/stream/secureudpecho/client/Options.h"
 
 namespace thekogans {
     namespace stream {

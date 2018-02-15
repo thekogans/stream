@@ -16,7 +16,7 @@
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/StringUtils.h"
-#include "thekogans/tcpecho/client/Options.h"
+#include "thekogans/stream/tcpecho/client/Options.h"
 
 namespace thekogans {
     namespace stream {

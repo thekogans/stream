@@ -30,8 +30,8 @@
 #include "thekogans/stream/ClientSecureTCPSocket.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/securetcpecho/client/Options.h"
-#include "thekogans/securetcpecho/client/Version.h"
+#include "thekogans/stream/securetcpecho/client/Options.h"
+#include "thekogans/stream/securetcpecho/client/Version.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::securetcpecho;

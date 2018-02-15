@@ -22,7 +22,7 @@
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/File.h"
-#include "thekogans/udpecho/server/Options.h"
+#include "thekogans/stream/udpecho/server/Options.h"
 
 namespace thekogans {
     namespace stream {

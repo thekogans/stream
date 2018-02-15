@@ -22,7 +22,7 @@
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/File.h"
-#include "thekogans/loggermgr/Options.h"
+#include "thekogans/stream/loggermgr/Options.h"
 
 namespace thekogans {
     namespace stream {

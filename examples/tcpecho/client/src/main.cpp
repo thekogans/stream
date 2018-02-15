@@ -28,8 +28,8 @@
 #include "thekogans/stream/Address.h"
 #include "thekogans/stream/TCPSocket.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/tcpecho/client/Options.h"
-#include "thekogans/tcpecho/client/Version.h"
+#include "thekogans/stream/tcpecho/client/Options.h"
+#include "thekogans/stream/tcpecho/client/Version.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::tcpecho;

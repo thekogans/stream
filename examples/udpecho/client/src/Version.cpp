@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/udpecho/client/Version.h"
+#include "thekogans/stream/udpecho/client/Version.h"
 
 namespace thekogans {
     namespace stream {
@@ -24,9 +24,9 @@ namespace thekogans {
 
                 const util::Version &GetVersion () {
                     static const util::Version version (
-                        THEKOGANS_UDPECHO_CLIENT_MAJOR_VERSION,
-                        THEKOGANS_UDPECHO_CLIENT_MINOR_VERSION,
-                        THEKOGANS_UDPECHO_CLIENT_PATCH_VERSION);
+                        THEKOGANS_STREAM_UDPECHO_CLIENT_MAJOR_VERSION,
+                        THEKOGANS_STREAM_UDPECHO_CLIENT_MINOR_VERSION,
+                        THEKOGANS_STREAM_UDPECHO_CLIENT_PATCH_VERSION);
                     return version;
                 }
 

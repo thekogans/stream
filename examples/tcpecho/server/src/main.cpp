@@ -28,9 +28,9 @@
 #include "thekogans/util/File.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/tcpecho/server/Options.h"
-#include "thekogans/tcpecho/server/Version.h"
-#include "thekogans/tcpecho/server/Server.h"
+#include "thekogans/stream/tcpecho/server/Options.h"
+#include "thekogans/stream/tcpecho/server/Version.h"
+#include "thekogans/stream/tcpecho/server/Server.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::tcpecho;
@@ -129,14 +129,33 @@ int main (
                 server::Options::Instance ().addresses);
         #if defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoopCreateInstance::Parameterize (
-                true, 0, 0, util::SystemRunLoop::CreateThreadWindow ());
+                std::string (),
+                util::JobQueue::TYPE_FIFO,
+                util::UI32_MAX,
+                0,
+                true,
+                0,
+                0,
+                util::SystemRunLoop::CreateThreadWindow ());
         #elif defined (TOOLCHAIN_OS_Linix)
             XInitThreads ();
             util::MainRunLoopCreateInstance::Parameterize (
-                true, 0, 0, util::SystemRunLoop::CreateThreadWindow ());
+                std::string (),
+                util::JobQueue::TYPE_FIFO,
+                util::UI32_MAX,
+                0,
+                true,
+                0,
+                0,
+                util::SystemRunLoop::CreateThreadWindow ());
         #elif defined (TOOLCHAIN_OS_OSX)
             util::MainRunLoopCreateInstance::Parameterize (
-                true, CFRunLoopGetMain ());
+                std::string (),
+                util::JobQueue::TYPE_FIFO,
+                util::UI32_MAX,
+                0,
+                true,
+                CFRunLoopGetMain ());
         #endif // defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoop::Instance ().Start ();
             server::Server::Instance ().Stop ();

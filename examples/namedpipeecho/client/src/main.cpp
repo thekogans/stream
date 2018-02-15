@@ -30,8 +30,8 @@
 #include "thekogans/stream/Address.h"
 #include "thekogans/stream/ClientNamedPipe.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/namedpipeecho/client/Options.h"
-#include "thekogans/namedpipeecho/client/Version.h"
+#include "thekogans/stream/namedpipeecho/client/Options.h"
+#include "thekogans/stream/namedpipeecho/client/Version.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::namedpipeecho;

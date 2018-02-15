@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/securetcpecho/server/Version.h"
+#include "thekogans/stream/securetcpecho/server/Version.h"
 
 namespace thekogans {
     namespace stream {
@@ -24,9 +24,9 @@ namespace thekogans {
 
                 const thekogans::util::Version &GetVersion () {
                     static const thekogans::util::Version version (
-                        THEKOGANS_SECURETCPECHO_SERVER_MAJOR_VERSION,
-                        THEKOGANS_SECURETCPECHO_SERVER_MINOR_VERSION,
-                        THEKOGANS_SECURETCPECHO_SERVER_PATCH_VERSION);
+                        THEKOGANS_STREAM_SECURETCPECHO_SERVER_MAJOR_VERSION,
+                        THEKOGANS_STREAM_SECURETCPECHO_SERVER_MINOR_VERSION,
+                        THEKOGANS_STREAM_SECURETCPECHO_SERVER_PATCH_VERSION);
                     return version;
                 }
 

@@ -28,9 +28,9 @@
 #include "thekogans/util/File.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/loggermgr/Options.h"
-#include "thekogans/loggermgr/Version.h"
-#include "thekogans/loggermgr/Server.h"
+#include "thekogans/stream/loggermgr/Options.h"
+#include "thekogans/stream/loggermgr/Version.h"
+#include "thekogans/stream/loggermgr/Server.h"
 
 using namespace thekogans;
 using namespace thekogans::stream;

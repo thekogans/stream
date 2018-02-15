@@ -21,7 +21,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/ServerNamedPipe.h"
-#include "thekogans/namedpipeecho/server/Server.h"
+#include "thekogans/stream/namedpipeecho/server/Server.h"
 
 namespace thekogans {
     namespace stream {

@@ -17,7 +17,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include "thekogans/namedpipeecho/server/Version.h"
+#include "thekogans/stream/namedpipeecho/server/Version.h"
 
 namespace thekogans {
     namespace stream {
@@ -26,9 +26,9 @@ namespace thekogans {
 
                 const util::Version &GetVersion () {
                     static const util::Version version (
-                        THEKOGANS_NAMEDPIPEECHO_SERVER_MAJOR_VERSION,
-                        THEKOGANS_NAMEDPIPEECHO_SERVER_MINOR_VERSION,
-                        THEKOGANS_NAMEDPIPEECHO_SERVER_PATCH_VERSION);
+                        THEKOGANS_STREAM_NAMEDPIPEECHO_SERVER_MAJOR_VERSION,
+                        THEKOGANS_STREAM_NAMEDPIPEECHO_SERVER_MINOR_VERSION,
+                        THEKOGANS_STREAM_NAMEDPIPEECHO_SERVER_PATCH_VERSION);
                     return version;
                 }
 

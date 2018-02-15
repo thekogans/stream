@@ -1,5 +1,5 @@
 <thekogans_make organization = "thekogans"
-                project = "namedpipeecho_server"
+                project = "stream_namedpipeecho_server"
                 project_type = "program"
                 major_version = "0"
                 minor_version = "2"

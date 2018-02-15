@@ -28,9 +28,9 @@
 #include "thekogans/util/File.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/serverudpecho/server/Options.h"
-#include "thekogans/serverudpecho/server/Version.h"
-#include "thekogans/serverudpecho/server/Server.h"
+#include "thekogans/stream/serverudpecho/server/Options.h"
+#include "thekogans/stream/serverudpecho/server/Version.h"
+#include "thekogans/stream/serverudpecho/server/Server.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::serverudpecho;

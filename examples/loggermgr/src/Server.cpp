@@ -21,7 +21,7 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/UDPSocket.h"
 #include "thekogans/stream/StreamLogger.h"
-#include "thekogans/loggermgr/Server.h"
+#include "thekogans/stream/loggermgr/Server.h"
 
 namespace thekogans {
     namespace stream {

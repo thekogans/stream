@@ -21,7 +21,7 @@
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/File.h"
-#include "thekogans/secureudpecho/server/Options.h"
+#include "thekogans/stream/secureudpecho/server/Options.h"
 
 namespace thekogans {
     namespace stream {

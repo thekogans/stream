@@ -17,7 +17,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include "thekogans/namedpipeecho/client/Options.h"
+#include "thekogans/stream/namedpipeecho/client/Options.h"
 
 namespace thekogans {
     namespace stream {

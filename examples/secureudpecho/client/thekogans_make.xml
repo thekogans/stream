@@ -1,5 +1,5 @@
 <thekogans_make organization = "thekogans"
-                project = "secureudpecho_client"
+                project = "stream_secureudpecho_client"
                 project_type = "program"
                 major_version = "0"
                 minor_version = "2"

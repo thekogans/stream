@@ -29,9 +29,9 @@
 #include "thekogans/util/Timer.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/udpecho/server/Options.h"
-#include "thekogans/udpecho/server/Version.h"
-#include "thekogans/udpecho/server/Server.h"
+#include "thekogans/stream/udpecho/server/Options.h"
+#include "thekogans/stream/udpecho/server/Version.h"
+#include "thekogans/stream/udpecho/server/Server.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::udpecho;

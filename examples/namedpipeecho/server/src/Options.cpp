@@ -23,7 +23,7 @@
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/File.h"
-#include "thekogans/namedpipeecho/server/Options.h"
+#include "thekogans/stream/namedpipeecho/server/Options.h"
 
 namespace thekogans {
     namespace stream {

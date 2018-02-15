@@ -29,9 +29,9 @@
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/securetcpecho/server/Options.h"
-#include "thekogans/securetcpecho/server/Version.h"
-#include "thekogans/securetcpecho/server/Server.h"
+#include "thekogans/stream/securetcpecho/server/Options.h"
+#include "thekogans/stream/securetcpecho/server/Version.h"
+#include "thekogans/stream/securetcpecho/server/Server.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::securetcpecho;

@@ -27,8 +27,8 @@
 #include "thekogans/stream/Address.h"
 #include "thekogans/stream/ClientUDPSocket.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/serverudpecho/client/Options.h"
-#include "thekogans/serverudpecho/client/Version.h"
+#include "thekogans/stream/serverudpecho/client/Options.h"
+#include "thekogans/stream/serverudpecho/client/Version.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::serverudpecho;

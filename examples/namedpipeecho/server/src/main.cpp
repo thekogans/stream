@@ -30,9 +30,9 @@
 #include "thekogans/util/File.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Version.h"
-#include "thekogans/namedpipeecho/server/Options.h"
-#include "thekogans/namedpipeecho/server/Version.h"
-#include "thekogans/namedpipeecho/server/Server.h"
+#include "thekogans/stream/namedpipeecho/server/Options.h"
+#include "thekogans/stream/namedpipeecho/server/Version.h"
+#include "thekogans/stream/namedpipeecho/server/Server.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::namedpipeecho;
