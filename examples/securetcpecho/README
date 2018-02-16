@@ -16,7 +16,7 @@ To run the server, open a command prompt.
 
 If you're using the Flat naming convention, navigate to server/bin and type:
 
-thekogans_stream_securetcpecho_server-$TOOLCHAIN_TRIPLET-$config-$type.$version$TOOLCHAIN_PROGRAM_SUFFIX -c -l:Debug server.xml
+./thekogans_stream_securetcpecho_server-$TOOLCHAIN_TRIPLET-$config-$type.$version$TOOLCHAIN_PROGRAM_SUFFIX -c -l:Debug server.xml
 
 To run the client, open a command prompt, navigate to client/bin and type:
 
@@ -30,7 +30,7 @@ ifconfig
 
 If you're using the Hierarchical naming convention, navigate to server/bin/$TOOLCHAIN_BRANCH/$config/$type and type:
 
-thekogans_stream_securetcpecho_server.$version$TOOLCHAIN_PROGRAM_SUFFIX -c -l:Debug server.xml
+./thekogans_stream_securetcpecho_server.$version$TOOLCHAIN_PROGRAM_SUFFIX -c -l:Debug server.xml
 
 To run the client, open a command prompt, navigate to client/bin/$TOOLCHAIN_BRANCH/$config/$type and type:
 
