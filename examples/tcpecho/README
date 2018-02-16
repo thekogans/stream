@@ -1,19 +1,39 @@
 This example exercises the TCPSocket and friends.
 
-To run the server, open a command prompt, navigate to server/bin and type:
+To build the server:
 
-Windows:
-thekogans_tcpecho_server-Windows-x86_64-cl-Release-Static.0.1.0.exe -c -l:Debug
+build -o:thekogans -p:stream -e:tcpecho_server -c:$config -t:$type
 
-Linux/OS X:
-./thekogans_tcpecho_server-Windows-x86_64-cl-Release-Static.0.1.0 -c -l:Debug
+To build the client:
+
+build -o:thekogans -p:stream -e:tcpecho_client -c:$config -t:$type
+
+To run the server, open a command prompt.
+
+If you're using the Flat naming convention, navigate to server/bin and type:
+
+thekogans_stream_tcpecho_server-$TOOLCHAIN_TRIPLET-$config-$type.$version$TOOLCHAIN_PROGRAM_SUFFIX -c -l:Debug
 
 To run the client, open a command prompt, navigate to client/bin and type:
 
 Windows:
 ipconfig
-thekogans_tcpecho_client-Windows-x86_64-cl-Release-Static.0.1.0.exe -l:Debug -a:'address from ipconfig'
 
 Linux/OS X:
 ifconfig
-./thekogans_tcpecho_client-Windows-x86_64-cl-Release-Static.0.1.0 -l:Debug -a:'address from ifconfig'
+
+./thekogans_stream_tcpecho_client-$TOOLCHAIN_TRIPLET-$config-$type.$version$TOOLCHAIN_PROGRAM_SUFFIX -l:Debug -a:'address from ipconfig/ifconfig'
+
+If you're using the Hierarchical naming convention, navigate to server/bin/$TOOLCHAIN_BRANCH/$config/$type and type:
+
+thekogans_stream_tcpecho_server.$version$TOOLCHAIN_PROGRAM_SUFFIX -c -l:Debug
+
+To run the client, open a command prompt, navigate to client/bin/$TOOLCHAIN_BRANCH/$config/$type and type:
+
+Windows:
+ipconfig
+
+Linux/OS X:
+ifconfig
+
+./thekogans_stream_tcpecho_client.$version$TOOLCHAIN_PROGRAM_SUFFIX -l:Debug -a:'address from ipconfig/ifconfig'
