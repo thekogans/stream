@@ -282,8 +282,8 @@ namespace thekogans {
         }
 
         void Adapters::NotifyEventHandlers () {
-            struct NotifyEventHandlersJob : public util::JobQueue::Job {
-                // util::JobQueue::Job
+            struct NotifyEventHandlersJob : public util::RunLoop::Job {
+                // util::RunLoop::Job
                 virtual void Execute (volatile const bool &done) throw () {
                     if (!done) {
                         THEKOGANS_UTIL_TRY {
@@ -310,7 +310,7 @@ namespace thekogans {
                     }
                 }
             };
-            jobQueue.Enq (*util::JobQueue::Job::Ptr (new NotifyEventHandlersJob));
+            jobQueue.Enq (*util::RunLoop::Job::Ptr (new NotifyEventHandlersJob));
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
