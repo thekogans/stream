@@ -29,6 +29,7 @@
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Flags.h"
+#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
@@ -115,20 +116,26 @@ namespace thekogans {
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #if defined (TOOLCHAIN_TYPE_Static)
         void Stream::StaticInit () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            ClientNamedPipe::StaticInit ();
-            ServerNamedPipe::StaticInit ();
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            ClientTCPSocket::StaticInit ();
-            ServerTCPSocket::StaticInit ();
-            ClientUDPSocket::StaticInit ();
-            ServerUDPSocket::StaticInit ();
-        #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-            ClientSecureTCPSocket::StaticInit ();
-            ServerSecureTCPSocket::StaticInit ();
-            ClientSecureUDPSocket::StaticInit ();
-            ServerSecureUDPSocket::StaticInit ();
-        #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+            static volatile bool registered = false;
+            static util::SpinLock spinLock;
+            util::LockGuard<util::SpinLock> guard (spinLock);
+            if (!registered) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                ClientNamedPipe::StaticInit ();
+                ServerNamedPipe::StaticInit ();
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                ClientTCPSocket::StaticInit ();
+                ServerTCPSocket::StaticInit ();
+                ClientUDPSocket::StaticInit ();
+                ServerUDPSocket::StaticInit ();
+            #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+                ClientSecureTCPSocket::StaticInit ();
+                ServerSecureTCPSocket::StaticInit ();
+                ClientSecureUDPSocket::StaticInit ();
+                ServerSecureUDPSocket::StaticInit ();
+            #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+                registered = true;
+            }
         }
     #endif // defined (TOOLCHAIN_TYPE_Static)
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
