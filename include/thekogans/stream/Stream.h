@@ -270,8 +270,6 @@ namespace thekogans {
             /// \param[in] node XML node representing an Context of a particular type.
             /// \return A fully parsed and populated Context of that type.
             static Context::UniquePtr GetContext (const pugi::xml_node &node);
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         #if defined (TOOLCHAIN_TYPE_Static)
             /// \brief
             /// Because the stream library uses dynamic initialization,
