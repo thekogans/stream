@@ -112,25 +112,26 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
+    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #if defined (TOOLCHAIN_TYPE_Static)
         void Stream::StaticInit () {
-            volatile Pipe pipe;
         #if defined (TOOLCHAIN_OS_Windows)
-            volatile ClientNamedPipe clientNamedPipe;
-            volatile ServerNamedPipe serverNamedPipe;
+            ClientNamedPipe::StaticInit ();
+            ServerNamedPipe::StaticInit ();
         #endif // defined (TOOLCHAIN_OS_Windows)
-            volatile ClientTCPSocket clientTCPSocket;
-            volatile ServerTCPSocket serverTCPSocket;
-            volatile ClientUDPSocket clinetudpSocket;
-            volatile ServerUDPSocket serverUDPSocket;
+            ClientTCPSocket::StaticInit ();
+            ServerTCPSocket::StaticInit ();
+            ClientUDPSocket::StaticInit ();
+            ServerUDPSocket::StaticInit ();
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-            volatile ClientSecureTCPSocket clientSecureTCPSocket;
-            volatile ServerSecureTCPSocket serverSecureTCPSocket;
-            volatile ClientSecureUDPSocket clientSecureUDPSocket;
-            volatile ServerSecureUDPSocket serverSecureUDPSocket;
+            ClientSecureTCPSocket::StaticInit ();
+            ServerSecureTCPSocket::StaticInit ();
+            ClientSecureUDPSocket::StaticInit ();
+            ServerSecureUDPSocket::StaticInit ();
         #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
         }
     #endif // defined (TOOLCHAIN_TYPE_Static)
+    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         void Stream::Close () {
             if (IsOpen ()) {

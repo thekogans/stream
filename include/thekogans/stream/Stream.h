@@ -212,8 +212,7 @@ namespace thekogans {
             /// Typedef for Context factory method. A method of this type will
             /// create a correct Context from the values found in the XML node.
             /// \param[in] node XML node that will contain the Context.
-            typedef Context::UniquePtr (*ContextFactory) (
-                const pugi::xml_node &node);
+            typedef Context::UniquePtr (*ContextFactory) (const pugi::xml_node &node);
             /// \brief
             /// Typedef for an Context/Stream factories map. This map
             /// is populated at initialization time by the MapInitializer
@@ -272,6 +271,7 @@ namespace thekogans {
             /// \return A fully parsed and populated Context of that type.
             static Context::UniquePtr GetContext (const pugi::xml_node &node);
         #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         #if defined (TOOLCHAIN_TYPE_Static)
             /// \brief
             /// Because the stream library uses dynamic initialization,
@@ -282,6 +282,7 @@ namespace thekogans {
             /// link to.
             static void StaticInit ();
         #endif // defined (TOOLCHAIN_TYPE_Static)
+        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
             /// \brief
             /// Check if stream has a valid handle.
@@ -1113,20 +1114,43 @@ namespace thekogans {
     #endif // defined (_MSC_VER)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+        /// \def THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type, base)
+        /// This macro is used in a stream declaration file (.h).
+        /// It sets up everything needed for the stream to be dynamically
+        /// discoverable, and creatable.
+        /// \param[in] type Stream class name.
+        #define THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
+            typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
+        public:\
+            static thekogans::stream::Stream::Context::UniquePtr CreateContext (\
+                    const pugi::xml_node &node) {\
+                return thekogans::stream::Stream::Context::UniquePtr (\
+                    new type::Context (node));\
+            }
+
+        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)
+        /// This macro is used in the stream definition file (.cpp).
+        /// It sets up everything needed for the stream to be dynamically
+        /// discoverable, and creatable.
+        /// \param[in] type Stream class name.
+        #define THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
+    #if defined (TOOLCHAIN_TYPE_Static)
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
         /// This macro is used in a stream declaration file (.h).
         /// It sets up everything needed for the stream to be dynamically
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
-            typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
-        public:\
-            static thekogans::stream::Stream::MapInitializer mapInitializer;\
-            static thekogans::stream::Stream::Context::UniquePtr CreateContext (\
-                    const pugi::xml_node &node) {\
-                return thekogans::stream::Stream::Context::UniquePtr (\
-                    new type::Context (node));\
+            THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
+            static void StaticInit () {\
+                std::pair<Map::iterator, bool> result =\
+                    GetMap ().insert (Map::value_type (#type, type::CreateContext));\
+                if (!result.second) {\
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
+                        "'%s' is already registered.", #type);\
+                }\
             }
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
@@ -1135,9 +1159,27 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
-        thekogans::stream::Stream::MapInitializer type::mapInitializer (\
-            #type, type::CreateContext);
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)
+    #else // defined (TOOLCHAIN_TYPE_Static)
+        /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
+        /// This macro is used in a stream declaration file (.h).
+        /// It sets up everything needed for the stream to be dynamically
+        /// discoverable, and creatable.
+        /// \param[in] type Stream class name.
+        #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
+            THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
+            static thekogans::stream::Stream::MapInitializer mapInitializer;
+
+        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
+        /// This macro is used in the stream definition file (.cpp).
+        /// It sets up everything needed for the stream to be dynamically
+        /// discoverable, and creatable.
+        /// \param[in] type Stream class name.
+        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)\
+            thekogans::stream::Stream::MapInitializer type::mapInitializer (\
+                #type, type::CreateContext);
+    #endif // defined (TOOLCHAIN_TYPE_Static)
     #else // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
         /// This macro is used in a stream declaration file (.h).
@@ -1154,7 +1196,7 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
     } // namespace stream
