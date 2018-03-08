@@ -105,7 +105,7 @@ namespace thekogans {
                     address.AddrToString ().c_str (),
                     address.GetPort ());
                 THEKOGANS_UTIL_TRY {
-                    struct Job : public util::JobQueue::Job {
+                    struct Job : public util::RunLoop::Job {
                         util::Buffer::UniquePtr buffer;
                         stream::Address address;
 
@@ -114,7 +114,7 @@ namespace thekogans {
                             buffer (std::move (buffer_)),
                             address (address_) {}
 
-                        // util::JobQueue::Job
+                        // util::RunLoop::Job
                         virtual void Execute (volatile const bool &done) throw () {
                             pugi::xml_document document;
                             pugi::xml_parse_result result =
@@ -131,8 +131,8 @@ namespace thekogans {
                             }
                         }
                     };
-                    jobQueue.Enq (
-                        *util::JobQueue::Job::Ptr (
+                    jobQueue.EnqJob (
+                        *util::RunLoop::Job::Ptr (
                             new Job (std::move (buffer), address)));
                 }
                 THEKOGANS_UTIL_CATCH_AND_LOG

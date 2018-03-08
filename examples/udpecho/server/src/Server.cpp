@@ -107,7 +107,7 @@ namespace thekogans {
                         address.GetPort ());
                     THEKOGANS_UTIL_TRY {
                         if (!buffer->IsEmpty ()) {
-                            struct WriteJob : public util::JobQueue::Job {
+                            struct WriteJob : public util::RunLoop::Job {
                                 UDPSocket::Ptr udpSocket;
                                 util::Buffer::UniquePtr buffer;
                                 Address address;
@@ -118,7 +118,7 @@ namespace thekogans {
                                     udpSocket (&udpSocket_),
                                     buffer (std::move (buffer_)),
                                     address (address_) {}
-                                // util::JobQueue::Job
+                                // util::RunLoop::Job
                                 virtual void Execute (volatile const bool &done) throw () {
                                     if (!done) {
                                         THEKOGANS_UTIL_TRY {
@@ -128,8 +128,8 @@ namespace thekogans {
                                     }
                                 }
                             };
-                            jobQueue.Enq (
-                                *util::JobQueue::Job::Ptr (
+                            jobQueue.EnqJob (
+                                *util::RunLoop::Job::Ptr (
                                     new WriteJob (udpSocket, std::move (buffer), address)));
                         }
                     }
@@ -159,7 +159,7 @@ namespace thekogans {
                         to.GetPort ());
                     THEKOGANS_UTIL_TRY {
                         if (!buffer->IsEmpty ()) {
-                            struct WriteJob : public util::JobQueue::Job {
+                            struct WriteJob : public util::RunLoop::Job {
                                 UDPSocket::Ptr udpSocket;
                                 util::Buffer::UniquePtr buffer;
                                 Address from;
@@ -173,7 +173,7 @@ namespace thekogans {
                                     buffer (std::move (buffer_)),
                                     from (from_),
                                     to (to_) {}
-                                // util::JobQueue::Job
+                                // util::RunLoop::Job
                                 virtual void Execute (volatile const bool &done) throw () {
                                     if (!done) {
                                         THEKOGANS_UTIL_TRY {
@@ -183,8 +183,8 @@ namespace thekogans {
                                     }
                                 }
                             };
-                            jobQueue.Enq (
-                                *util::JobQueue::Job::Ptr (
+                            jobQueue.EnqJob (
+                                *util::RunLoop::Job::Ptr (
                                     new WriteJob (udpSocket, std::move (buffer), to, from)));
                         }
                     }

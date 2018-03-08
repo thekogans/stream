@@ -121,7 +121,7 @@ namespace thekogans {
                         util::Buffer::UniquePtr buffer) throw () {
                     if (useWriteQueue) {
                         THEKOGANS_UTIL_TRY {
-                            struct WriteJob : public util::JobQueue::Job {
+                            struct WriteJob : public util::RunLoop::Job {
                                 stream::Stream::Ptr stream;
                                 util::Buffer::UniquePtr buffer;
                                 WriteJob (
@@ -129,7 +129,7 @@ namespace thekogans {
                                     util::Buffer::UniquePtr buffer_) :
                                     stream (&stream_),
                                     buffer (std::move (buffer_)) {}
-                                // util::JobQueue::Job
+                                // util::RunLoop::Job
                                 virtual void Execute (volatile const bool &done) throw () {
                                     if (!done) {
                                         THEKOGANS_UTIL_TRY {
@@ -139,8 +139,8 @@ namespace thekogans {
                                     }
                                 }
                             };
-                            jobQueue.Enq (
-                                *util::JobQueue::Job::Ptr (
+                            jobQueue.EnqJob (
+                                *util::RunLoop::Job::Ptr (
                                     new WriteJob (stream, std::move (buffer))));
                         }
                         THEKOGANS_UTIL_CATCH_AND_LOG

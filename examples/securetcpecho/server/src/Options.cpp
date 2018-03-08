@@ -41,7 +41,7 @@ namespace thekogans {
                         help (false),
                         version (false),
                         useWriteQueue (false),
-                        startDirectory (util::Path::GetCurrPath ()),
+                        startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
                             util::Directory::Watcher::Instance ().AddWatch (
                                 startDirectory, *this)) {

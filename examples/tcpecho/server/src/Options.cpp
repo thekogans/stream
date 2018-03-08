@@ -43,7 +43,7 @@ namespace thekogans {
                         help (false),
                         version (false),
                         port (DEFAULT_PORT),
-                        startDirectory (util::Path::GetCurrPath ()),
+                        startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
                             util::Directory::Watcher::Instance ().AddWatch (
                                 startDirectory, *this)) {
