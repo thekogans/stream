@@ -28,6 +28,7 @@
         #endif // !defined (NOMINMAX)
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
+    #include <winsock2.h>
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <net/ethernet.h>
     #if defined (TOOLCHAIN_OS_OSX)
@@ -257,11 +258,23 @@ namespace thekogans {
             /// \return A list of current adapter addresses.
             AddressesList GetAddressesList ();
 
+        private:
             /// \brief
             /// Used internally to notify listeners of network change events.
             void NotifyEventHandlers ();
 
-        private:
+        #if defined (TOOLCHAIN_OS_Windows)
+            static VOID NETIOAPI_API_ InterfaceChangeCallback (
+                PVOID /*CallerContext*/,
+                PMIB_IPINTERFACE_ROW Row,
+                MIB_NOTIFICATION_TYPE /*NotificationType*/);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            static void SCDynamicStoreCallBack (
+                SCDynamicStoreRef /*store*/,
+                CFArrayRef /*changedKeys*/,
+                void * /*info*/);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+
             /// \brief
             /// Get all interface addresses.
             /// \param[out] addressesMap Map of addresses to return.

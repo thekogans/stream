@@ -17,10 +17,22 @@
 
 #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
+#if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+    #endif // !defined (_WINDOWS_)
+    #include <winsock2.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include <sstream>
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "thekogans/util/Exception.h"
 #include "thekogans/crypto/SystemCACertificates.h"
 #include "thekogans/stream/ClientSecureUDPSocket.h"
 

@@ -310,8 +310,7 @@ namespace thekogans {
                     }
                 }
             };
-            jobQueue.EnqJob (
-                *util::RunLoop::Job::Ptr (new NotifyEventHandlersJob));
+            jobQueue.EnqJob (util::RunLoop::Job::Ptr (new NotifyEventHandlersJob));
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -556,13 +555,13 @@ namespace thekogans {
                 }
             };
             typedef std::unique_ptr<__CFRunLoopSource, CFRunLoopSourceRefDeleter> CFRunLoopSourceRefPtr;
+        }
 
-            void SCDynamicStoreCallBack (
-                    SCDynamicStoreRef /*store*/,
-                    CFArrayRef /*changedKeys*/,
-                    void * /*info*/) {
-                Adapters::Instance ().NotifyEventHandlers ();
-            }
+        void Adapters::SCDynamicStoreCallBack (
+                SCDynamicStoreRef /*store*/,
+                CFArrayRef /*changedKeys*/,
+                void * /*info*/) {
+            Adapters::Instance ().NotifyEventHandlers ();
         }
     #endif // defined (TOOLCHAIN_OS_OSX)
 
@@ -785,16 +784,16 @@ namespace thekogans {
                     row.DisableDefaultRoutes == TRUE ? "true" : "false");
             }
         #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        }
 
-            VOID NETIOAPI_API_ InterfaceChangeCallback (
-                    PVOID /*CallerContext*/,
-                    PMIB_IPINTERFACE_ROW Row,
-                    MIB_NOTIFICATION_TYPE /*NotificationType*/) {
-            #if defined (TOOLCHAIN_CONFIG_Debug)
-                LogMIB_IPINTERFACE_ROW (*Row);
-            #endif // defined (TOOLCHAIN_CONFIG_Debug)
-                Adapters::Instance ().NotifyEventHandlers ();
-            }
+        VOID NETIOAPI_API_ Adapters::InterfaceChangeCallback (
+                PVOID /*CallerContext*/,
+                PMIB_IPINTERFACE_ROW Row,
+                MIB_NOTIFICATION_TYPE /*NotificationType*/) {
+        #if defined (TOOLCHAIN_CONFIG_Debug)
+            LogMIB_IPINTERFACE_ROW (*Row);
+        #endif // defined (TOOLCHAIN_CONFIG_Debug)
+            Adapters::Instance ().NotifyEventHandlers ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
