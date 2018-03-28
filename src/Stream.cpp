@@ -36,6 +36,7 @@
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Stream.h"
+#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #if defined (TOOLCHAIN_TYPE_Static)
     #include "thekogans/stream/Pipe.h"
     #if defined (TOOLCHAIN_OS_Windows)
@@ -53,6 +54,7 @@
         #include "thekogans/stream/ServerSecureUDPSocket.h"
     #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 #endif // defined (TOOLCHAIN_TYPE_Static)
+#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
 namespace thekogans {
     namespace stream {
