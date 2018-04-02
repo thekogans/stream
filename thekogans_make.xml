@@ -11,21 +11,21 @@
     <feature>THEKOGANS_STREAM_HAVE_OPENSSL</feature>
   </features>
   <dependencies>
-    <project organization = "thekogans"
-             name = "util">
+    <dependency organization = "thekogans"
+                name = "util">
       <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
         <features>
           <feature>THEKOGANS_UTIL_HAVE_PUGIXML</feature>
         </features>
       </if>
-    </project>
+    </dependency>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
       <toolchain organization = "thekogans"
                  name = "pugixml"/>
     </if>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
-      <project organization = "thekogans"
-               name = "crypto"/>
+      <dependency organization = "thekogans"
+                  name = "crypto"/>
       <toolchain organization = "thekogans"
                  name = "openssl_ssl"/>
       <toolchain organization = "thekogans"

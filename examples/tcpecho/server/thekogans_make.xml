@@ -7,10 +7,10 @@
                 guid = "51f9394b95efeb28f30e3a8869d73fa6"
                 schema_version = "2">
   <dependencies>
-    <project organization = "thekogans"
-             name = "util"/>
-    <project organization = "thekogans"
-             name = "stream"/>
+    <dependency organization = "thekogans"
+                name = "util"/>
+    <dependency organization = "thekogans"
+                name = "stream"/>
     <toolchain organization = "thekogans"
                name = "pugixml"/>
     <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
