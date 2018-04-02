@@ -2,7 +2,7 @@
                 project = "stream"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "11"
+                minor_version = "12"
                 patch_version = "0"
                 guid = "5e33fdb222451ad9697ca87aec9de144"
                 schema_version = "2">
