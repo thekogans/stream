@@ -23,8 +23,8 @@
         #if !defined (NOMINMAX)
             #define NOMINMAX
         #endif // !defined (NOMINMAX)
+        #include <windows.h.>
     #endif // !defined (_WINDOWS_)
-    #include <windows.h.>
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #include <ws2ipdef.h>

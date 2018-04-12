@@ -508,8 +508,7 @@ namespace thekogans {
                     #if defined (TOOLCHAIN_OS_Linux)
                         else if (curr->ifa_addr->sa_family == AF_PACKET) {
                             const sockaddr_ll *addr = (const sockaddr_ll *)curr->ifa_addr;
-                            // FIXME: Check addr->sll_hatype.
-                            if (addr->sll_halen == Addresses::MAC_LENGTH) {
+                            if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == Addresses::MAC_LENGTH) {
                                 memcpy (it->second.mac, addr->sll_addr, addr->sll_halen);
                             }
                         }

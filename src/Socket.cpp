@@ -23,6 +23,7 @@
         #if !defined (NOMINMAX)
             #define NOMINMAX
         #endif // !defined (NOMINMAX)
+        #include <windows.h>
     #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
 #else // defined (TOOLCHAIN_OS_Windows)
