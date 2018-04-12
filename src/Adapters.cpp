@@ -34,6 +34,7 @@
     #include <net/if.h>
     #include <ifaddrs.h>
     #if defined (TOOLCHAIN_OS_Linux)
+        #include <net/if_arp.h>
         #include <linux/rtnetlink.h>
     #elif defined (TOOLCHAIN_OS_OSX)
         #include <net/if_dl.h>
