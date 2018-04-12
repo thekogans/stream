@@ -15,9 +15,16 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include <cassert>
-#include <set>
 #if defined (TOOLCHAIN_OS_Windows)
+    #if !defined (_WINDOWS_)
+        #if !defined (WIN32_LEAN_AND_MEAN)
+            #define WIN32_LEAN_AND_MEAN
+        #endif // !defined (WIN32_LEAN_AND_MEAN)
+        #if !defined (NOMINMAX)
+            #define NOMINMAX
+        #endif // !defined (NOMINMAX)
+        #include <windows.h>
+    #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
     #include <ws2def.h>
     #include <ws2ipdef.h>
@@ -35,6 +42,8 @@
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/Flags.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
+#include <cassert>
+#include <set>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
@@ -363,10 +372,14 @@ namespace thekogans {
                 if (size > 0) {
                     buffer.resize (size);
                 }
-                rc = ::GetAdaptersAddresses (AF_UNSPEC,
-                    GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST |
-                    GAA_FLAG_SKIP_DNS_SERVER, 0,
-                    (PIP_ADAPTER_ADDRESSES)(size > 0 ? &buffer[0] : 0), &size);
+                rc = ::GetAdaptersAddresses (
+                    AF_UNSPEC,
+                    GAA_FLAG_SKIP_ANYCAST |
+                    GAA_FLAG_SKIP_MULTICAST |
+                    GAA_FLAG_SKIP_DNS_SERVER,
+                    0,
+                    (PIP_ADAPTER_ADDRESSES)(size > 0 ? &buffer[0] : 0),
+                    &size);
             } while (rc == ERROR_BUFFER_OVERFLOW && size > 0);
             if (rc == ERROR_SUCCESS) {
                 if (size > 0) {
