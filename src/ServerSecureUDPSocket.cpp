@@ -127,8 +127,12 @@ namespace thekogans {
 
             public:
                 CookieFactory () {
-                    util::RandomSource randomSource;
-                    randomSource.GetBytes (cookieSecret, COOKIE_SECRET_LENGTH);
+                    if (util::GlobalRandomSource::Instance ().GetBytes (
+                            cookieSecret, COOKIE_SECRET_LENGTH) != COOKIE_SECRET_LENGTH) {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Unable to get %u random bytes for cookie.",
+                            COOKIE_SECRET_LENGTH);
+                    }
                 }
 
                 void GetCookie (
@@ -308,15 +312,19 @@ namespace thekogans {
                     SSL_OP_NO_TICKET);
                 if (cachedSessionTTL > 0) {
                     util::ui8 sessionId[SSL_MAX_SSL_SESSION_ID_LENGTH] = {0};
-                    {
-                        util::RandomSource randomSource;
-                        randomSource.GetBytes (sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH);
+                    if (util::GlobalRandomSource::Instacne ().GetBytes (
+                            sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH) == SSL_MAX_SSL_SESSION_ID_LENGTH) {
+                        if (SSL_CTX_set_session_id_context (
+                                ctx.get (), sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH) != 1) {
+                            THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
+                        }
+                        SSL_CTX_set_timeout (ctx.get (), cachedSessionTTL);
                     }
-                    if (SSL_CTX_set_session_id_context (
-                            ctx.get (), sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH) != 1) {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Unable to get %u random bytes for session id.",
+                            SSL_MAX_SSL_SESSION_ID_LENGTH);
                     }
-                    SSL_CTX_set_timeout (ctx.get (), cachedSessionTTL);
                 }
                 SSL_CTX_set_mode (ctx.get (), SSL_MODE_AUTO_RETRY);
                 SSL_CTX_set_read_ahead (ctx.get (), 1);
