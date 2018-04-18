@@ -154,7 +154,7 @@ namespace thekogans {
                 int bytesAvailable = (int)BIO_ctrl_pending (outBIO.get ());
                 if (bytesAvailable > 0) {
                     util::Buffer::UniquePtr buffer (
-                        new util::Buffer (util::HostEndian, (std::size_t)bytesAvailable));
+                        new util::Buffer (util::HostEndian, (util::ui32)bytesAvailable));
                     int bytesRead = BIO_read (outBIO.get (),
                         buffer->GetWritePtr (),
                         (int)buffer->GetDataAvailableForWriting ());

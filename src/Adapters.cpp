@@ -320,7 +320,8 @@ namespace thekogans {
                     }
                 }
             };
-            jobQueue.EnqJob (util::RunLoop::Job::Ptr (new NotifyEventHandlersJob));
+            jobQueue.EnqJob (
+                util::RunLoop::Job::Ptr (new NotifyEventHandlersJob));
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

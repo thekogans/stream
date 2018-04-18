@@ -132,7 +132,7 @@ namespace thekogans {
                         }
                     };
                     jobQueue.EnqJob (
-                        *util::RunLoop::Job::Ptr (
+                        util::RunLoop::Job::Ptr (
                             new Job (std::move (buffer), address)));
                 }
                 THEKOGANS_UTIL_CATCH_AND_LOG

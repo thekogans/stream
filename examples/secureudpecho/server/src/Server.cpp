@@ -137,7 +137,7 @@ namespace thekogans {
                             }
                         };
                         jobQueue.EnqJob (
-                            *util::RunLoop::Job::Ptr (
+                            util::RunLoop::Job::Ptr (
                                 new WriteJob (stream, std::move (buffer))));
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG

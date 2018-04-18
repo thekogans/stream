@@ -312,7 +312,7 @@ namespace thekogans {
                     SSL_OP_NO_TICKET);
                 if (cachedSessionTTL > 0) {
                     util::ui8 sessionId[SSL_MAX_SSL_SESSION_ID_LENGTH] = {0};
-                    if (util::GlobalRandomSource::Instacne ().GetBytes (
+                    if (util::GlobalRandomSource::Instance ().GetBytes (
                             sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH) == SSL_MAX_SSL_SESSION_ID_LENGTH) {
                         if (SSL_CTX_set_session_id_context (
                                 ctx.get (), sessionId, SSL_MAX_SSL_SESSION_ID_LENGTH) != 1) {

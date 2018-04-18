@@ -129,7 +129,7 @@ namespace thekogans {
                                 }
                             };
                             jobQueue.EnqJob (
-                                *util::RunLoop::Job::Ptr (
+                                util::RunLoop::Job::Ptr (
                                     new WriteJob (udpSocket, std::move (buffer), address)));
                         }
                     }
@@ -184,7 +184,7 @@ namespace thekogans {
                                 }
                             };
                             jobQueue.EnqJob (
-                                *util::RunLoop::Job::Ptr (
+                                util::RunLoop::Job::Ptr (
                                     new WriteJob (udpSocket, std::move (buffer), to, from)));
                         }
                     }
