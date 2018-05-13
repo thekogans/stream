@@ -132,8 +132,8 @@ int main (
                 std::string (),
                 util::JobQueue::TYPE_FIFO,
                 util::UI32_MAX,
-                0,
                 true,
+                0,
                 0,
                 0,
                 util::SystemRunLoop::CreateThreadWindow ());
@@ -143,8 +143,8 @@ int main (
                 std::string (),
                 util::JobQueue::TYPE_FIFO,
                 util::UI32_MAX,
-                0,
                 true,
+                0,
                 0,
                 0,
                 util::SystemRunLoop::CreateThreadWindow ());
@@ -153,8 +153,8 @@ int main (
                 std::string (),
                 util::JobQueue::TYPE_FIFO,
                 util::UI32_MAX,
-                0,
                 true,
+                0,
                 CFRunLoopGetMain ());
         #endif // defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoop::Instance ().Start ();
