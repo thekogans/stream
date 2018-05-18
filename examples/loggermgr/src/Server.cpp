@@ -115,7 +115,7 @@ namespace thekogans {
                             address (address_) {}
 
                         // util::RunLoop::Job
-                        virtual void Execute (volatile const bool &done) throw () {
+                        virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                             pugi::xml_document document;
                             pugi::xml_parse_result result =
                                 document.load_buffer (buffer->GetReadPtr (), buffer->GetDataAvailableForReading ());

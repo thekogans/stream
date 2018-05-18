@@ -294,7 +294,7 @@ namespace thekogans {
         void Adapters::NotifyEventHandlers () {
             struct NotifyEventHandlersJob : public util::RunLoop::Job {
                 // util::RunLoop::Job
-                virtual void Execute (volatile const bool &done) throw () {
+                virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                     if (!done) {
                         THEKOGANS_UTIL_TRY {
                             DiffProcessor diffProcessor;
