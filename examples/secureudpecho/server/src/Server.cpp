@@ -128,7 +128,7 @@ namespace thekogans {
                                 buffer (std::move (buffer_)) {}
                             // util::RunLoop::Job
                             virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                                if (!done) {
+                                if (!ShouldStop (done)) {
                                     THEKOGANS_UTIL_TRY {
                                         stream->WriteBuffer (std::move (buffer));
                                     }

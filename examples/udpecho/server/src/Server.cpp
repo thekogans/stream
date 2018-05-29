@@ -120,7 +120,7 @@ namespace thekogans {
                                     address (address_) {}
                                 // util::RunLoop::Job
                                 virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                                    if (!done) {
+                                    if (!ShouldStop (done)) {
                                         THEKOGANS_UTIL_TRY {
                                             udpSocket->WriteBufferTo (std::move (buffer), address);
                                         }
@@ -175,7 +175,7 @@ namespace thekogans {
                                     to (to_) {}
                                 // util::RunLoop::Job
                                 virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
-                                    if (!done) {
+                                    if (!ShouldStop (done)) {
                                         THEKOGANS_UTIL_TRY {
                                             udpSocket->WriteBufferMsg (std::move (buffer), from, to);
                                         }
