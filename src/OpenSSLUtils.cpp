@@ -42,6 +42,7 @@
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include "thekogans/util/XMLUtils.h"
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "thekogans/crypto/OpenSSLException.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 
 namespace thekogans {

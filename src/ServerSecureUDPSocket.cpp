@@ -25,6 +25,7 @@
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/RandomSource.h"
+#include "thekogans/crypto/OpenSSLException.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerSecureUDPSocket.h"

@@ -35,6 +35,7 @@
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Exception.h"
 #include "thekogans/crypto/SystemCACertificates.h"
+#include "thekogans/crypto/OpenSSLException.h"
 #include "thekogans/stream/ClientSecureUDPSocket.h"
 
 namespace thekogans {
