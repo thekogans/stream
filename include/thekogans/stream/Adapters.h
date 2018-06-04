@@ -29,6 +29,9 @@
         #include <windows.h>
     #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
+    #include <ws2def.h>
+    #include <ws2ipdef.h>
+    #include <iphlpapi.h>
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <net/ethernet.h>
     #if defined (TOOLCHAIN_OS_OSX)
@@ -266,7 +269,7 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             static VOID NETIOAPI_API_ InterfaceChangeCallback (
                 PVOID /*CallerContext*/,
-                PMIB_IPINTERFACE_ROW Row,
+                PVOID /*PMIB_IPINTERFACE_ROW*/ Row,
                 MIB_NOTIFICATION_TYPE /*NotificationType*/);
         #elif defined (TOOLCHAIN_OS_OSX)
             static void SCDynamicStoreCallBack (

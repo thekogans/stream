@@ -802,10 +802,10 @@ namespace thekogans {
 
         VOID NETIOAPI_API_ Adapters::InterfaceChangeCallback (
                 PVOID /*CallerContext*/,
-                PMIB_IPINTERFACE_ROW Row,
+                PVOID /*PMIB_IPINTERFACE_ROW*/ Row,
                 MIB_NOTIFICATION_TYPE /*NotificationType*/) {
         #if defined (TOOLCHAIN_CONFIG_Debug)
-            LogMIB_IPINTERFACE_ROW (*Row);
+            LogMIB_IPINTERFACE_ROW (*(PMIB_IPINTERFACE_ROW)Row);
         #endif // defined (TOOLCHAIN_CONFIG_Debug)
             Adapters::Instance ().NotifyEventHandlers ();
         }
@@ -828,8 +828,12 @@ namespace thekogans {
         void Adapters::StartListening () {
         #if defined (TOOLCHAIN_OS_Windows)
             if (handle == 0) {
+                typedef VOID (NETIOAPI_API_ *INTERFACE_CHANGE_CALLBACK) (
+                    PVOID,
+                    PMIB_IPINTERFACE_ROW,
+                    MIB_NOTIFICATION_TYPE);
                 DWORD rc = NotifyIpInterfaceChange (AF_UNSPEC,
-                    InterfaceChangeCallback, 0, FALSE, &handle);
+                    (INTERFACE_CHANGE_CALLBACK)InterfaceChangeCallback, 0, FALSE, &handle);
                 if (rc != NO_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (rc);
                 }
