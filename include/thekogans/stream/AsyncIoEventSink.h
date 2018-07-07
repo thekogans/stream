@@ -53,10 +53,10 @@ namespace thekogans {
         /// are some restrictions on what is considered in good taste. The following are
         /// very much encouraged:
         /// - Do be quick about it:
-        ///   - Queue a job on a thekogans::util::JobQueue!
-        ///   - Schedule a job on a thekogans::util::Scheduler!
+        ///   - Queue a job on a \see{thekogans::util::JobQueue}!
+        ///   - Schedule a job on a \see{thekogans::util::Scheduler}!
         ///   - Prime a thekogans::util::Pipeline stage!
-        ///   - Borrow a worker from a thekogans::util::WorkerPool!
+        ///   - Borrow a \see{thekogans::util::JobQueue} from a \see{thekogans::util::JobQueuePool}!
         /// - About the only sensible thing to do when responding
         ///   to \see{AsyncIoEventSink::HandleStreamError} and
         ///   \see{AsyncIoEventSink::HandleStreamDisconnect} is to call

@@ -490,7 +490,7 @@ namespace thekogans {
         ///
         /// \brief
         /// GlobalAsyncIoEventQueue follows the same design pattern as all the other global objects
-        /// (See \see{thekogans::util::GlobalJobQueue}, \see{thekogans::util::GlobalWorkerPool}...).
+        /// (See \see{thekogans::util::GlobalJobQueue}, \see{thekogans::util::GlobalJobQueuePool}...).
         /// It's job is to be a convenient global singleton for monitoring async streams. If you need
         /// multiple AsyncIoEventQueues, by all means use as many as you need. But if your needs are
         /// simple, GlobalAsyncIoEventQueue is here to help. The beauty of it's design is, if you never
