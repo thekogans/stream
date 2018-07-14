@@ -97,7 +97,7 @@ namespace thekogans {
                 /// by a client. If you want to be able to handle multiple
                 /// clients 'connecting' at once, you will need to set the
                 /// receive buffer to some multiple of this value.
-                util::ui32 maxMessageLength;
+                std::size_t maxMessageLength;
 
             #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
@@ -118,7 +118,7 @@ namespace thekogans {
                 /// \param[in] maxMessageLength_ Maximum length of initiating message.
                 Context (
                     const Address &address_,
-                    util::ui32 maxMessageLength_) :
+                    std::size_t maxMessageLength_) :
                     address (address_),
                     maxMessageLength (maxMessageLength_) {}
 
@@ -138,7 +138,7 @@ namespace thekogans {
                 /// \return String representing the rest state of the
                 /// UDPSocket.
                 virtual std::string ToString (
-                    util::ui32 indentationLevel = 0,
+                    std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -155,7 +155,7 @@ namespace thekogans {
             /// by a client. If you want to be able to handle multiple
             /// clients 'connecting' at once, you will need to set the
             /// receive buffer to some multiple of this value.
-            const util::ui32 maxMessageLength;
+            const std::size_t maxMessageLength;
 
             enum {
                 /// \brief
@@ -170,7 +170,7 @@ namespace thekogans {
             /// \param[in] maxMessageLength_ Maximum length of initiating message.
             ServerUDPSocket (
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                util::ui32 maxMessageLength_ = DEFAULT_MAX_MESSAGE_LENGTH) :
+                std::size_t maxMessageLength_ = DEFAULT_MAX_MESSAGE_LENGTH) :
                 UDPSocket (handle),
                 maxMessageLength (maxMessageLength_) {}
             /// \brief
@@ -183,7 +183,7 @@ namespace thekogans {
                 int family,
                 int type,
                 int protocol,
-                util::ui32 maxMessageLength_ = DEFAULT_MAX_MESSAGE_LENGTH) :
+                std::size_t maxMessageLength_ = DEFAULT_MAX_MESSAGE_LENGTH) :
                 UDPSocket (family, type, protocol),
                 maxMessageLength (maxMessageLength_) {}
             /// \brief
@@ -192,7 +192,7 @@ namespace thekogans {
             /// \param[in] maxMessageLength_ Maximum length of initiating message.
             ServerUDPSocket (
                 const Address &address,
-                util::ui32 maxMessageLength_ = DEFAULT_MAX_MESSAGE_LENGTH);
+                std::size_t maxMessageLength_ = DEFAULT_MAX_MESSAGE_LENGTH);
 
             /// \struct Connection ServerUDPSocket.h thekogans/stream/ServerUDPSocket.h
             ///
@@ -227,7 +227,7 @@ namespace thekogans {
                         util::Buffer::UniquePtr buffer_,
                         const Address &from,
                         const Address &to,
-                        util::ui32 maxMessageLength) :
+                        std::size_t maxMessageLength) :
                         udpSocket (new UDPSocket (from.GetFamily (), SOCK_DGRAM, IPPROTO_UDP)),
                         buffer (std::move (buffer_)) {
                     udpSocket->SetReuseAddress (true);
@@ -254,9 +254,9 @@ namespace thekogans {
             // Stream
             /// \brief
             /// ServerUDPSocket only listens for connections.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                     void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerUDPSocket can't Read.");
@@ -264,9 +264,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerUDPSocket only listens for connections.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                     const void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerUDPSocket can't Write.");
@@ -284,9 +284,9 @@ namespace thekogans {
             // UDPSocket
             /// \brief
             /// ServerUDPSocket only listens for connections.
-            virtual util::ui32 ReadFrom (
+            virtual std::size_t ReadFrom (
                     void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     Address &address) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -295,9 +295,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerUDPSocket only listens for connections.
-            virtual util::ui32 WriteTo (
+            virtual std::size_t WriteTo (
                     const void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &address) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -316,9 +316,9 @@ namespace thekogans {
 
             /// \brief
             /// ServerUDPSocket only listens for connections.
-            virtual util::ui32 ReadMsg (
+            virtual std::size_t ReadMsg (
                     void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     Address &from,
                     Address &to) {
                 assert (0);
@@ -328,9 +328,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerUDPSocket only listens for connections.
-            virtual util::ui32 WriteMsg (
+            virtual std::size_t WriteMsg (
                     const void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &from,
                     const Address &to) {
                 assert (0);

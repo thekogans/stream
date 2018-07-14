@@ -111,7 +111,7 @@ namespace thekogans {
                 /// \return String representing the rest state of the
                 /// ClientUDPSocket.
                 virtual std::string ToString (
-                    util::ui32 indentationLevel = 0,
+                    std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 

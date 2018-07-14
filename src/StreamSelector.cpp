@@ -82,7 +82,7 @@ namespace thekogans {
                 }
             }
             if (IsStreamReadyForReading (readPipe)) {
-                util::ui32 bufferSize = readPipe.GetDataAvailable ();
+                std::size_t bufferSize = readPipe.GetDataAvailable ();
                 if (bufferSize != 0) {
                     std::vector<util::ui8> buffer (bufferSize);
                     if (readPipe.Read (&buffer[0], bufferSize) != bufferSize) {
@@ -106,7 +106,7 @@ namespace thekogans {
                 }
             }
             if (IsStreamReadyForReading (readPipe)) {
-                util::ui32 bufferSize = readPipe.GetDataAvailable ();
+                std::size_t bufferSize = readPipe.GetDataAvailable ();
                 if (bufferSize != 0) {
                     std::vector<util::ui8> buffer (bufferSize);
                     if (readPipe.Read (&buffer[0], bufferSize) != bufferSize) {

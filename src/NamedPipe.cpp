@@ -25,9 +25,9 @@
 namespace thekogans {
     namespace stream {
 
-        util::ui32 NamedPipe::Read (
+        std::size_t NamedPipe::Read (
                 void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             DWORD numberOfBytesRead = 0;
             if (buffer != 0 && count > 0) {
                 TimedOverlapped::UniquePtr overlapped;
@@ -65,9 +65,9 @@ namespace thekogans {
             return numberOfBytesRead;
         }
 
-        util::ui32 NamedPipe::Write (
+        std::size_t NamedPipe::Write (
                 const void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             DWORD numberOfBytesWriten = 0;
             if (buffer != 0 && count > 0) {
                 if (IsAsync ()) {
@@ -178,7 +178,7 @@ namespace thekogans {
             }
         }
 
-        util::ui32 NamedPipe::GetDataAvailable () {
+        std::size_t NamedPipe::GetDataAvailable () {
             DWORD totalBytesAvailable = 0;
             if (!PeekNamedPipe (handle, 0, 0, 0, &totalBytesAvailable, 0)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

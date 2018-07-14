@@ -137,7 +137,7 @@ namespace thekogans {
         }
 
         std::string ClientSecureUDPSocket::Context::DTLSContext::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 util::Attributes attributes;
@@ -232,7 +232,7 @@ namespace thekogans {
         }
 
         std::string ClientSecureUDPSocket::Context::DTLSContext::FormatCertificates (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const std::list<std::string> &certificates) const {
             std::ostringstream stream;
             for (std::list<std::string>::const_iterator
@@ -269,7 +269,7 @@ namespace thekogans {
         }
 
         std::string ClientSecureUDPSocket::Context::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 std::ostringstream stream;

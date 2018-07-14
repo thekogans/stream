@@ -106,7 +106,7 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            util::ui32 GetDataAvailable () const;
+            std::size_t GetDataAvailable () const;
 
             /// \brief
             /// Get socket family.
@@ -189,20 +189,20 @@ namespace thekogans {
             /// \brief
             /// Return send buffer size.
             /// \return Send buffer size.
-            util::ui32 GetSendBufferSize () const;
+            std::size_t GetSendBufferSize () const;
             /// \brief
             /// Set send buffer size.
             /// \param[in] size Send buffer size.
-            void SetSendBufferSize (util::ui32 size);
+            void SetSendBufferSize (std::size_t size);
 
             /// \brief
             /// Return receive buffer size.
             /// \return Receive buffer size.
-            util::ui32 GetReceiveBufferSize () const;
+            std::size_t GetReceiveBufferSize () const;
             /// \brief
             /// Set receive buffer size.
             /// \param[in] size Receive buffer size.
-            void SetReceiveBufferSize (util::ui32 size);
+            void SetReceiveBufferSize (std::size_t size);
 
             /// \brief
             /// Return the last error that ocured on this socket.

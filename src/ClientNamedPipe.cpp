@@ -68,7 +68,7 @@ namespace thekogans {
         }
 
         std::string ClientNamedPipe::Context::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 std::ostringstream stream;

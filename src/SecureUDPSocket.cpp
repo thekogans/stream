@@ -18,6 +18,7 @@
 #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
 #include <cassert>
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
@@ -31,9 +32,9 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (SecureUDPSocket, util::SpinLock)
 
-        util::ui32 SecureUDPSocket::Read (
+        std::size_t SecureUDPSocket::Read (
                 void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
                 int bytesRead = SSL_read (ssl.get (), buffer, count);
                 if (bytesRead < 0) {
@@ -48,9 +49,9 @@ namespace thekogans {
             }
         }
 
-        util::ui32 SecureUDPSocket::Write (
+        std::size_t SecureUDPSocket::Write (
                 const void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
                 int bytesWritten = 0;
                 if (IsAsync ()) {
@@ -295,7 +296,7 @@ namespace thekogans {
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                         (AsyncInfo::ReadWriteOverlapped &)overlapped;
                     if (readWriteOverlapped.buffer.get () == 0) {
-                        util::ui32 bufferLength = GetDataAvailable ();
+                        std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer.reset (
                                 new util::Buffer (util::HostEndian, bufferLength));
@@ -333,7 +334,7 @@ namespace thekogans {
         void SecureUDPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferLength = GetDataAvailable ();
+                    std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer::UniquePtr buffer (
                             new util::Buffer (util::HostEndian, bufferLength));
@@ -417,7 +418,7 @@ namespace thekogans {
                     // Guard against clients that don't support secure
                     // renegotiation.
                     if (SSL_get_secure_renegotiation_support (ssl.get ()) != 1) {
-                        sessionInfo.renegotiationFrequency = util::UI32_MAX;
+                        sessionInfo.renegotiationFrequency = SIZE_T_MAX;
                     }
                     sessionInfo.countTransfered = 0;
                 }
@@ -558,10 +559,10 @@ namespace thekogans {
                     // encrypt, or openssl generated protocol data that
                     // needs to be handled, we drain the outBIO, and put
                     // it on the wire.
-                    int bytesAvailable = (int)BIO_ctrl_pending (outBIO.get ());
+                    std::size_t bytesAvailable = BIO_ctrl_pending (outBIO.get ());
                     if (bytesAvailable > 0) {
                         util::Buffer::UniquePtr buffer (
-                            new util::Buffer (util::HostEndian, (util::ui32)bytesAvailable));
+                            new util::Buffer (util::HostEndian, bytesAvailable));
                         int bytesRead = BIO_read (outBIO.get (),
                             buffer->GetWritePtr (),
                             (int)buffer->GetDataAvailableForWriting ());

@@ -302,7 +302,7 @@ namespace thekogans {
                     /// \return String representing the rest state of the
                     /// ServerSecureUDPSocket::Context::DTLSContext.
                     virtual std::string ToString (
-                        util::ui32 indentationLevel = 0,
+                        std::size_t indentationLevel = 0,
                         const char *tagName = TAG_CONTEXT) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -331,7 +331,7 @@ namespace thekogans {
                     /// \param[in] certificates List of certificates to format.
                     /// \return A string representing an XML structure of a certificate chain.
                     std::string FormatCertificates (
-                        util::ui32 indentationLevel,
+                        std::size_t indentationLevel,
                         const std::list<std::string> &certificates) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
@@ -368,7 +368,7 @@ namespace thekogans {
                 /// \return String representing the rest state of the
                 /// ServerSecureUDPSocket.
                 virtual std::string ToString (
-                    util::ui32 indentationLevel = 0,
+                    std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -429,9 +429,9 @@ namespace thekogans {
             // Stream
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                     void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't Read.");
@@ -439,9 +439,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                     const void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't Write.");
@@ -459,9 +459,9 @@ namespace thekogans {
             // UDPSocket
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
-            virtual util::ui32 ReadFrom (
+            virtual std::size_t ReadFrom (
                     void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     Address &address) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -470,9 +470,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
-            virtual util::ui32 WriteTo (
+            virtual std::size_t WriteTo (
                     const void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &address) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -491,9 +491,9 @@ namespace thekogans {
 
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
-            virtual util::ui32 ReadMsg (
+            virtual std::size_t ReadMsg (
                     void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     Address &from,
                     Address &to) {
                 assert (0);
@@ -503,9 +503,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
-            virtual util::ui32 WriteMsg (
+            virtual std::size_t WriteMsg (
                     const void *buffer,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &from,
                     const Address &to) {
                 assert (0);

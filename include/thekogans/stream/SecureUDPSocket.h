@@ -122,17 +122,17 @@ namespace thekogans {
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Buffer length.
             /// \return Count of bytes actually placed in the buffer.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                 void *buffer,
-                util::ui32 count);
+                std::size_t count);
             /// \brief
             /// Write bytes to the stream.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Buffer length.
             /// \return Count of bytes actually written.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                 const void *buffer,
-                util::ui32 count);
+                std::size_t count);
 
             /// \brief
             /// Async write a buffer to the stream.
@@ -220,9 +220,9 @@ namespace thekogans {
             /// SecureUDPSocket must be connected to a peer by
             /// calling \see{UDPSocket::Connect}. After that use
             /// \see{Read}.
-            virtual util::ui32 ReadFrom (
+            virtual std::size_t ReadFrom (
                     void * /*buffer*/,
-                    util::ui32 /*count*/,
+                    std::size_t /*count*/,
                     Address & /*address*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -233,9 +233,9 @@ namespace thekogans {
             /// SecureUDPSocket must be connected to a peer by
             /// calling \see{UDPSocket::Connect}. After that use
             /// \see{Write}.
-            virtual util::ui32 WriteTo (
+            virtual std::size_t WriteTo (
                     const void * /*buffer*/,
-                    util::ui32 /*count*/,
+                    std::size_t /*count*/,
                     const Address & /*address*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

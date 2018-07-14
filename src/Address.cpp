@@ -722,7 +722,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         std::string Address::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 util::Attributes attributes;

@@ -46,14 +46,14 @@ namespace thekogans {
                         address.Parse (child);
                     }
                     else if (childName == TAG_MAX_MESSAGE_LENGTH) {
-                        maxMessageLength = util::stringToui32 (child.text ().get ());
+                        maxMessageLength = util::stringTosize_t (child.text ().get ());
                     }
                 }
             }
         }
 
         std::string ServerUDPSocket::Context::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 std::ostringstream stream;
@@ -79,7 +79,7 @@ namespace thekogans {
 
         ServerUDPSocket::ServerUDPSocket (
                 const Address &address,
-                util::ui32 maxMessageLength_) :
+                std::size_t maxMessageLength_) :
                 UDPSocket (address.GetFamily (), SOCK_DGRAM, IPPROTO_UDP),
                 maxMessageLength (maxMessageLength_) {
             SetReuseAddress (true);
@@ -131,7 +131,7 @@ namespace thekogans {
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
                         (ReadMsgWriteMsgOverlapped &)overlapped;
                     if (readMsgWriteMsgOverlapped.buffer.get () == 0) {
-                        util::ui32 bufferLength = GetDataAvailable ();
+                        std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
@@ -166,7 +166,7 @@ namespace thekogans {
         void ServerUDPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferSize = GetDataAvailable ();
+                    std::size_t bufferSize = GetDataAvailable ();
                     if (bufferSize != 0) {
                         Connection::UniquePtr connection = Accept ();
                         // Connections inherit the listening socket's

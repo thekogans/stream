@@ -80,17 +80,17 @@ namespace thekogans {
             /// NOTE: This api is to be called by blocking
             /// streams only. Async stream will listen for
             /// incoming data, and notify AsyncIoEventSink.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                 void *buffer,
-                util::ui32 count);
+                std::size_t count);
             /// \brief
             /// Write bytes to the stream.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Buffer length.
             /// \return Count of bytes actually written.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                 const void *buffer,
-                util::ui32 count);
+                std::size_t count);
 
             /// \brief
             /// Async write a buffer to the stream.
@@ -122,7 +122,7 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            util::ui32 GetDataAvailable ();
+            std::size_t GetDataAvailable ();
 
         protected:
             // Stream

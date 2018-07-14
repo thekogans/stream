@@ -277,7 +277,7 @@ namespace thekogans {
             return name;
         }
 
-        util::ui32 Socket::GetDataAvailable () const {
+        std::size_t Socket::GetDataAvailable () const {
             u_long value = 0;
         #if defined (TOOLCHAIN_OS_Windows)
             if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
@@ -289,7 +289,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
-            return (util::ui32)value;
+            return (std::size_t)value;
         }
 
         void Socket::Bind (const Address &address) {
@@ -438,7 +438,7 @@ namespace thekogans {
         }
     #endif // defined (SO_REUSEPORT) || defined (SO_REUSE_UNICASTPORT)
 
-        util::ui32 Socket::GetSendBufferSize () const {
+        std::size_t Socket::GetSendBufferSize () const {
             util::ui32 size = 0;
             socklen_t length = sizeof (size);
             if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
@@ -449,15 +449,16 @@ namespace thekogans {
             return size;
         }
 
-        void Socket::SetSendBufferSize (util::ui32 size) {
+        void Socket::SetSendBufferSize (std::size_t size) {
+            util::ui32 value = (util::ui32)size;
             if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_SNDBUF, (char *)&size, sizeof (size)) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    SO_SNDBUF, (char *)&value, sizeof (value)) == THEKOGANS_STREAM_SOCKET_ERROR) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
         }
 
-        util::ui32 Socket::GetReceiveBufferSize () const {
+        std::size_t Socket::GetReceiveBufferSize () const {
             util::ui32 size = 0;
             socklen_t length = sizeof (size);
             if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
@@ -468,9 +469,10 @@ namespace thekogans {
             return size;
         }
 
-        void Socket::SetReceiveBufferSize (util::ui32 size) {
+        void Socket::SetReceiveBufferSize (std::size_t size) {
+            util::ui32 value = (util::ui32)size;
             if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_RCVBUF, (char *)&size, sizeof (size)) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    SO_RCVBUF, (char *)&value, sizeof (value)) == THEKOGANS_STREAM_SOCKET_ERROR) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }

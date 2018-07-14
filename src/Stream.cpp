@@ -68,7 +68,7 @@ namespace thekogans {
         }
 
         std::string Stream::Context::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 util::Attributes attributes;
@@ -158,12 +158,12 @@ namespace thekogans {
 
         void Stream::ReadFullBuffer (
                 void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
                 if (!IsAsync ()) {
                     util::ui8 *data = (util::ui8 *)buffer;
                     while (count > 0) {
-                        util::ui32 countRead = Read (data, count);
+                        std::size_t countRead = Read (data, count);
                         if (countRead > 0) {
                             data += countRead;
                             count -= countRead;
@@ -187,12 +187,12 @@ namespace thekogans {
 
         void Stream::WriteFullBuffer (
                 const void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
                 if (!IsAsync ()) {
                     const util::ui8 *data = (const util::ui8 *)buffer;
                     while (count > 0) {
-                        util::ui32 countWritten = Write (data, count);
+                        std::size_t countWritten = Write (data, count);
                         if (countWritten > 0) {
                             data += countWritten;
                             count -= countWritten;
@@ -327,7 +327,7 @@ namespace thekogans {
 
         Stream::AsyncInfo::ReadWriteOverlapped::ReadWriteOverlapped (
                 Stream &stream,
-                util::ui32 count,
+                std::size_t count,
                 bool useGetBuffer) :
                 Overlapped (stream, Stream::AsyncInfo::EventRead),
                 buffer (useGetBuffer ?
@@ -351,7 +351,7 @@ namespace thekogans {
         Stream::AsyncInfo::ReadWriteOverlapped::ReadWriteOverlapped (
                 Stream &stream,
                 const void *buffer_,
-                util::ui32 count,
+                std::size_t count,
                 bool useGetBuffer) :
                 Overlapped (stream, Stream::AsyncInfo::EventWrite),
                 buffer (useGetBuffer ?
@@ -449,7 +449,7 @@ namespace thekogans {
         Stream::AsyncInfo::WriteBufferInfo::WriteBufferInfo (
             Stream &stream_,
             const void *buffer_,
-            util::ui32 count,
+            std::size_t count,
             bool useGetBuffer) :
             BufferInfo (AsyncInfo::EventWrite),
             stream (stream_),
@@ -469,7 +469,7 @@ namespace thekogans {
             ssize_t countWritten = send (stream.handle,
                 buffer->GetReadPtr (), buffer->GetDataAvailableForReading (), 0);
             if (countWritten > 0) {
-                buffer->AdvanceReadOffset ((util::ui32)countWritten);
+                buffer->AdvanceReadOffset ((std::size_t)countWritten);
             }
             return countWritten;
         }

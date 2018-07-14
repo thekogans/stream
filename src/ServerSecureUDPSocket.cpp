@@ -222,7 +222,7 @@ namespace thekogans {
         }
 
         std::string ServerSecureUDPSocket::Context::DTLSContext::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 util::Attributes attributes;
@@ -357,7 +357,7 @@ namespace thekogans {
         }
 
         std::string ServerSecureUDPSocket::Context::DTLSContext::FormatCertificates (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const std::list<std::string> &certificateChain) const {
             std::ostringstream stream;
             for (std::list<std::string>::const_iterator it = certificateChain.begin (),
@@ -395,7 +395,7 @@ namespace thekogans {
         }
 
         std::string ServerSecureUDPSocket::Context::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 std::ostringstream stream;
@@ -484,7 +484,7 @@ namespace thekogans {
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
                         (ReadMsgWriteMsgOverlapped &)overlapped;
                     if (readMsgWriteMsgOverlapped.buffer.get () == 0) {
-                        util::ui32 bufferLength = GetDataAvailable ();
+                        std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
@@ -516,7 +516,7 @@ namespace thekogans {
         void ServerSecureUDPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferSize = GetDataAvailable ();
+                    std::size_t bufferSize = GetDataAvailable ();
                     if (bufferSize != 0) {
                         SecureUDPSocket::Ptr connection = Accept ();
                         // Connections inherit the listening socket's

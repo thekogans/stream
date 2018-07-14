@@ -100,18 +100,18 @@ namespace thekogans {
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Buffer length.
             /// \return Count of bytes actually placed in the buffer.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                 void *buffer,
-                util::ui32 count);
+                std::size_t count);
             /// \brief
             /// Write bytes to the stream.
             /// NOTE: This method can only be called after calling \see{Connect}.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Buffer length.
             /// \return Count of bytes actually written.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                 const void *buffer,
-                util::ui32 count);
+                std::size_t count);
             /// \brief
             /// Async write a buffer to the stream.
             /// NOTE: This method can only be called after calling \see{Connect}.
@@ -124,9 +124,9 @@ namespace thekogans {
             /// \param[in] count size of buffer.
             /// \param[out] address Peer address the datagram was sent from.
             /// \return Number of bytes read.
-            virtual util::ui32 ReadFrom (
+            virtual std::size_t ReadFrom (
                 void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 Address &address);
             /// \brief
             /// Write a datagram to the given address.
@@ -135,9 +135,9 @@ namespace thekogans {
             /// \param[in] count Size of buffer.
             /// \param[in] address Address the datagram is sent to.
             /// \return Number of bytes written.
-            virtual util::ui32 WriteTo (
+            virtual std::size_t WriteTo (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &address);
             /// \brief
             /// Async write a datagram to the given address.
@@ -158,9 +158,9 @@ namespace thekogans {
             /// \param[out] from The address of the host that sent the message.
             /// \param[out] to The local interface address that received the message.
             /// \return Number of bytes received.
-            virtual util::ui32 ReadMsg (
+            virtual std::size_t ReadMsg (
                 void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 Address &from,
                 Address &to);
             /// \brief
@@ -173,9 +173,9 @@ namespace thekogans {
             /// \param[in] from The local interface address from which the message is sent.
             /// \param[in] to The address of the host that receive the message.
             /// \return Number of bytes sent.
-            virtual util::ui32 WriteMsg (
+            virtual std::size_t WriteMsg (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &from,
                 const Address &to);
             /// \brief
@@ -353,7 +353,7 @@ namespace thekogans {
                 /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
                 ReadFromWriteToOverlapped (
                     UDPSocket &udpSocket,
-                    util::ui32 count,
+                    std::size_t count,
                     bool useGetBuffer = true);
                 /// \brief
                 /// ctor.
@@ -365,7 +365,7 @@ namespace thekogans {
                 ReadFromWriteToOverlapped (
                     UDPSocket &udpSocket,
                     const void *buffer_,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &address_,
                     bool useGetBuffer = true);
                 /// \brief
@@ -446,7 +446,7 @@ namespace thekogans {
                 /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
                 ReadMsgWriteMsgOverlapped (
                     UDPSocket &udpSocket,
-                    util::ui32 count,
+                    std::size_t count,
                     bool useGetBuffer = true);
                 /// \brief
                 /// ctor.
@@ -459,7 +459,7 @@ namespace thekogans {
                 ReadMsgWriteMsgOverlapped (
                     UDPSocket &udpSocket,
                     const void *buffer_,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &from_,
                     const Address &to_,
                     bool useGetBuffer = true);
@@ -504,7 +504,7 @@ namespace thekogans {
             /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
             void PostAsyncWrite (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 bool useGetBuffer = true);
             /// \brief
             /// Initiate an overlapped WSARecvFrom.
@@ -518,7 +518,7 @@ namespace thekogans {
             /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
             void PostAsyncWriteTo (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &address,
                 bool useGetBuffer = true);
             /// \brief
@@ -533,7 +533,7 @@ namespace thekogans {
             /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
             void PostAsyncWriteMsg (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &from,
                 const Address &to,
                 bool useGetBuffer = true);
@@ -573,7 +573,7 @@ namespace thekogans {
                 WriteToBufferInfo (
                     UDPSocket &udpSocket_,
                     const void *buffer_,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &address_,
                     bool useGetBuffer = true);
                 /// \brief
@@ -640,7 +640,7 @@ namespace thekogans {
                 WriteMsgBufferInfo (
                     UDPSocket &udpSocket_,
                     const void *buffer_,
-                    util::ui32 count,
+                    std::size_t count,
                     const Address &from_,
                     const Address &to_,
                     bool useGetBuffer = true);

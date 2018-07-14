@@ -29,7 +29,7 @@ namespace thekogans {
 
         MsgHdr::MsgHdr (
                 void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 Address &address) {
         #if defined (TOOLCHAIN_OS_Windows)
             wsaBuf.buf = (char *)buffer;
@@ -56,7 +56,7 @@ namespace thekogans {
 
         MsgHdr::MsgHdr (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &from,
                 const Address &to) {
         #if defined (TOOLCHAIN_OS_Windows)

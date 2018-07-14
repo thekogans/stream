@@ -106,9 +106,9 @@ namespace thekogans {
             Bind (address);
         }
 
-        util::ui32 UDPSocket::Read (
+        std::size_t UDPSocket::Read (
                 void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
@@ -126,7 +126,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                 }
-                return (util::ui32)countRead;
+                return (std::size_t)countRead;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -135,9 +135,9 @@ namespace thekogans {
             }
         }
 
-        util::ui32 UDPSocket::Write (
+        std::size_t UDPSocket::Write (
                 const void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD numberOfBytesSent = 0;
@@ -168,7 +168,7 @@ namespace thekogans {
                             THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                     }
                 }
-                return (util::ui32)countWritten;
+                return (std::size_t)countWritten;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -209,9 +209,9 @@ namespace thekogans {
             }
         }
 
-        util::ui32 UDPSocket::ReadFrom (
+        std::size_t UDPSocket::ReadFrom (
                 void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 Address &address) {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -232,7 +232,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                 }
-                return (util::ui32)countRead;
+                return (std::size_t)countRead;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -241,9 +241,9 @@ namespace thekogans {
             }
         }
 
-        util::ui32 UDPSocket::WriteTo (
+        std::size_t UDPSocket::WriteTo (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &address) {
             if (buffer != 0 && count > 0 && address != Address::Empty) {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -278,7 +278,7 @@ namespace thekogans {
                             THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                     }
                 }
-                return (util::ui32)countWritten;
+                return (std::size_t)countWritten;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -325,9 +325,9 @@ namespace thekogans {
             }
         }
 
-        util::ui32 UDPSocket::ReadMsg (
+        std::size_t UDPSocket::ReadMsg (
                 void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 Address &from,
                 Address &to) {
             if (buffer != 0 && count > 0) {
@@ -365,7 +365,7 @@ namespace thekogans {
                     from.length = sizeof (sockaddr_un);
                 }
                 to = msgHdr.GetToAddress (GetHostAddress ().GetPort ());
-                return (util::ui32)countRead;
+                return (std::size_t)countRead;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -374,9 +374,9 @@ namespace thekogans {
             }
         }
 
-        util::ui32 UDPSocket::WriteMsg (
+        std::size_t UDPSocket::WriteMsg (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &from,
                 const Address &to) {
             if (buffer != 0 && count > 0 &&
@@ -412,7 +412,7 @@ namespace thekogans {
                             THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                     }
                 }
-                return (util::ui32)countWritten;
+                return (std::size_t)countWritten;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -851,7 +851,7 @@ namespace thekogans {
 
         UDPSocket::ReadFromWriteToOverlapped::ReadFromWriteToOverlapped (
                 UDPSocket &udpSocket,
-                util::ui32 count,
+                std::size_t count,
                 bool useGetBuffer) :
                 Overlapped (udpSocket, Stream::AsyncInfo::EventReadFrom),
                 buffer (useGetBuffer ?
@@ -877,7 +877,7 @@ namespace thekogans {
         UDPSocket::ReadFromWriteToOverlapped::ReadFromWriteToOverlapped (
                 UDPSocket &udpSocket,
                 const void *buffer_,
-                util::ui32 count,
+                std::size_t count,
                 const Address &address_,
                 bool useGetBuffer) :
                 Overlapped (udpSocket, Stream::AsyncInfo::EventWriteTo),
@@ -917,7 +917,7 @@ namespace thekogans {
 
         UDPSocket::ReadMsgWriteMsgOverlapped::ReadMsgWriteMsgOverlapped (
             UDPSocket &udpSocket,
-            util::ui32 count,
+            std::size_t count,
             bool useGetBuffer) :
             Overlapped (udpSocket, Stream::AsyncInfo::EventReadMsg),
             buffer (useGetBuffer ?
@@ -936,7 +936,7 @@ namespace thekogans {
         UDPSocket::ReadMsgWriteMsgOverlapped::ReadMsgWriteMsgOverlapped (
             UDPSocket &udpSocket,
             const void *buffer_,
-            util::ui32 count,
+            std::size_t count,
             const Address &from_,
             const Address &to_,
             bool useGetBuffer) :
@@ -996,7 +996,7 @@ namespace thekogans {
 
         void UDPSocket::PostAsyncWrite (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 bool useGetBuffer) {
             AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
                 new AsyncInfo::ReadWriteOverlapped (*this, buffer, count, useGetBuffer));
@@ -1030,7 +1030,7 @@ namespace thekogans {
 
         void UDPSocket::PostAsyncWriteTo (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &address,
                 bool useGetBuffer) {
             ReadFromWriteToOverlapped::UniquePtr overlapped (
@@ -1066,7 +1066,7 @@ namespace thekogans {
 
         void UDPSocket::PostAsyncWriteMsg (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &from,
                 const Address &to,
                 bool useGetBuffer) {
@@ -1091,7 +1091,7 @@ namespace thekogans {
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                         (AsyncInfo::ReadWriteOverlapped &)overlapped;
                     if (readWriteOverlapped.buffer.get () == 0) {
-                        util::ui32 bufferLength = GetDataAvailable ();
+                        std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
@@ -1124,7 +1124,7 @@ namespace thekogans {
                     ReadFromWriteToOverlapped &readFromWriteToOverlapped =
                         (ReadFromWriteToOverlapped &)overlapped;
                     if (readFromWriteToOverlapped.buffer.get () == 0) {
-                        util::ui32 bufferLength = GetDataAvailable ();
+                        std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readFromWriteToOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
@@ -1162,7 +1162,7 @@ namespace thekogans {
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
                         (ReadMsgWriteMsgOverlapped &)overlapped;
                     if (readMsgWriteMsgOverlapped.buffer.get () == 0) {
-                        util::ui32 bufferLength = GetDataAvailable ();
+                        std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
@@ -1204,7 +1204,7 @@ namespace thekogans {
         UDPSocket::WriteToBufferInfo::WriteToBufferInfo (
             UDPSocket &udpSocket_,
             const void *buffer_,
-            util::ui32 count,
+            std::size_t count,
             const Address &address_,
             bool useGetBuffer) :
             BufferInfo (AsyncInfo::EventWriteTo),
@@ -1227,7 +1227,7 @@ namespace thekogans {
                 buffer->GetReadPtr (), buffer->GetDataAvailableForReading (), 0,
                 &address.address, address.length);
             if (countWritten > 0) {
-                buffer->AdvanceReadOffset ((util::ui32)countWritten);
+                buffer->AdvanceReadOffset ((std::size_t)countWritten);
             }
             return countWritten;
         }
@@ -1246,7 +1246,7 @@ namespace thekogans {
         UDPSocket::WriteMsgBufferInfo::WriteMsgBufferInfo (
             UDPSocket &udpSocket_,
             const void *buffer_,
-            util::ui32 count,
+            std::size_t count,
             const Address &from_,
             const Address &to_,
             bool useGetBuffer) :
@@ -1270,7 +1270,7 @@ namespace thekogans {
             MsgHdr msgHdr (buffer->GetReadPtr (), buffer->GetDataAvailableForReading (), from, to);
             ssize_t countWritten = sendmsg (udpSocket.handle, &msgHdr, 0);
             if (countWritten > 0) {
-                buffer->AdvanceReadOffset ((util::ui32)countWritten);
+                buffer->AdvanceReadOffset ((std::size_t)countWritten);
             }
             return countWritten;
         }
@@ -1287,7 +1287,7 @@ namespace thekogans {
         void UDPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferLength = GetDataAvailable ();
+                    std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer::UniquePtr buffer =
                             asyncInfo->eventSink.GetBuffer (
@@ -1309,7 +1309,7 @@ namespace thekogans {
             }
             if (event == AsyncInfo::EventReadFrom) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferLength = GetDataAvailable ();
+                    std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer::UniquePtr buffer =
                             asyncInfo->eventSink.GetBuffer (
@@ -1332,7 +1332,7 @@ namespace thekogans {
             }
             else if (event == AsyncInfo::EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferLength = GetDataAvailable ();
+                    std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer::UniquePtr buffer =
                             asyncInfo->eventSink.GetBuffer (

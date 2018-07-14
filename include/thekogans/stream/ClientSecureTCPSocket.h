@@ -263,7 +263,7 @@ namespace thekogans {
                     /// \return XML string representing the rest state of the
                     /// ClientSecureTCPSocket.
                     std::string ToString (
-                        util::ui32 indentationLevel = 0,
+                        std::size_t indentationLevel = 0,
                         const char *tagName = TAG_CONTEXT) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -291,7 +291,7 @@ namespace thekogans {
                     /// \param[in] certificates List of certificates to format.
                     /// \return An XML string containing the certificate chain.
                     std::string FormatCertificates (
-                        util::ui32 indentationLevel,
+                        std::size_t indentationLevel,
                         const std::list<std::string> &certificates) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
@@ -339,7 +339,7 @@ namespace thekogans {
                 /// \return String representing the rest state of the
                 /// ClientSecureTCPSocket.
                 virtual std::string ToString (
-                    util::ui32 indentationLevel = 0,
+                    std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 

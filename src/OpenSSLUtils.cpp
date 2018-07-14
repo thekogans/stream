@@ -153,7 +153,7 @@ namespace thekogans {
         }
 
         std::string SessionInfo::ToString (
-                util::ui32 indentationLevel,
+                std::size_t indentationLevel,
                 const char *tagName) const {
             if (tagName != 0) {
                 util::Attributes attributes;
@@ -164,7 +164,7 @@ namespace thekogans {
                 attributes.push_back (
                     util::Attribute (
                         ATTR_RENEGOTIATION_FREQUENCY,
-                        util::ui32Tostring (renegotiationFrequency)));
+                        util::size_tTostring (renegotiationFrequency)));
                 attributes.push_back (
                     util::Attribute (
                         ATTR_BIDIRECTIONAL_SHUTDOWN,
@@ -172,7 +172,7 @@ namespace thekogans {
                 attributes.push_back (
                     util::Attribute (
                         ATTR_COUNT_TRANSFERED,
-                        util::ui32Tostring (countTransfered)));
+                        util::size_tTostring (countTransfered)));
                 return util::OpenTag (indentationLevel, tagName, attributes, true, true);
             }
             else {

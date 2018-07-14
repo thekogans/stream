@@ -98,9 +98,9 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        util::ui32 TCPSocket::Read (
+        std::size_t TCPSocket::Read (
                 void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
@@ -118,7 +118,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                 }
-                return (util::ui32)countRead;
+                return (std::size_t)countRead;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -127,9 +127,9 @@ namespace thekogans {
             }
         }
 
-        util::ui32 TCPSocket::Write (
+        std::size_t TCPSocket::Write (
                 const void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD numberOfBytesSent = 0;
@@ -160,7 +160,7 @@ namespace thekogans {
                             THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                     }
                 }
-                return (util::ui32)countWritten;
+                return (std::size_t)countWritten;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -595,7 +595,7 @@ namespace thekogans {
 
         void TCPSocket::PostAsyncWrite (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 bool useGetBuffer) {
             AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
                 new AsyncInfo::ReadWriteOverlapped (*this, buffer, count, useGetBuffer));
@@ -645,7 +645,7 @@ namespace thekogans {
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                         (AsyncInfo::ReadWriteOverlapped &)overlapped;
                     if (readWriteOverlapped.buffer.get () == 0) {
-                        util::ui32 bufferLength = GetDataAvailable ();
+                        std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
@@ -694,7 +694,7 @@ namespace thekogans {
             }
             else if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferLength = GetDataAvailable ();
+                    std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer::UniquePtr buffer =
                             asyncInfo->eventSink.GetBuffer (

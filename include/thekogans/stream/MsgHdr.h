@@ -70,7 +70,7 @@ namespace thekogans {
             /// \param[out] address Local address on which the message arrived.
             MsgHdr (
                 void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 Address &address);
             /// \brief
             /// ctor. Used by WriteMsg.
@@ -80,7 +80,7 @@ namespace thekogans {
             /// \param[in] to Peer address that will receive the message.
             MsgHdr (
                 const void *buffer,
-                util::ui32 count,
+                std::size_t count,
                 const Address &from,
                 const Address &to);
 

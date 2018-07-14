@@ -175,7 +175,7 @@ namespace thekogans {
             /// \brief
             /// How many bytes to transfer before initiating
             /// a session renegotiation.
-            util::ui32 renegotiationFrequency;
+            std::size_t renegotiationFrequency;
             /// \brief
             /// If true, perform bidirectional shutdown.
             bool bidirectionalShutdown;
@@ -183,7 +183,7 @@ namespace thekogans {
             /// Count of bytes transfered (both read and write).
             /// When it reaches renegotiationFrequency, a rehandshake
             /// will be initiated and the counter will be reset.
-            util::ui32 countTransfered;
+            std::size_t countTransfered;
             /// \brief
             /// Active session.
             SSL_SESSIONPtr session;
@@ -203,9 +203,9 @@ namespace thekogans {
             /// transfered (both read and write).
             SessionInfo (
                 const std::string &serverName_ = std::string (),
-                util::ui32 renegotiationFrequency_ = DEFAULT_RENEGOTIATION_FREQUENCY,
+                std::size_t renegotiationFrequency_ = DEFAULT_RENEGOTIATION_FREQUENCY,
                 bool bidirectionalShutdown_ = true,
-                util::ui32 countTransfered_ = 0) :
+                std::size_t countTransfered_ = 0) :
                 serverName (serverName_),
                 renegotiationFrequency (renegotiationFrequency_),
                 bidirectionalShutdown (bidirectionalShutdown_),
@@ -252,7 +252,7 @@ namespace thekogans {
             /// \return String representing the rest state of the
             /// SecureTCPSocket::SessionInfo.
             std::string ToString (
-                util::ui32 indentationLevel = 0,
+                std::size_t indentationLevel = 0,
                 const char *tagName = TAG_SESSION_INFO) const;
         #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         };

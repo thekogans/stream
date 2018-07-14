@@ -146,7 +146,7 @@ namespace thekogans {
                 /// \param[in] countOfEvents Number of events in the batch.
                 virtual void BeginEventBatch (
                     const util::TimeSpec & /*currentTime*/,
-                    util::ui32 /*countOfEvents*/) {}
+                    std::size_t /*countOfEvents*/) {}
                 /// \brief
                 /// Called by AsyncIoEventQueue::WaitForEvents after processing
                 /// a batch of io events.
@@ -159,8 +159,8 @@ namespace thekogans {
                 /// Use countOfRecentTimedStreams to estimate the distribution
                 /// of work among all timed streams.
                 virtual void EndEventBatch (
-                    util::ui32 /*countOfTimedStreams*/,
-                    util::ui32 /*countOfRecentTimedStreams*/) {}
+                    std::size_t /*countOfTimedStreams*/,
+                    std::size_t /*countOfRecentTimedStreams*/) {}
                 /// \brief
                 /// Called by AsyncIoEventQueue::WaitForEvents to give the policy
                 /// a chance to gather run-time statistics. It's called for every
@@ -331,7 +331,7 @@ namespace thekogans {
             void AddStream (
                 Stream &stream,
                 AsyncIoEventSink &eventSink,
-                util::ui32 bufferLength = DEFAULT_BUFFER_LENGTH);
+                std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
             /// \brief
             /// Adds the given stream to the deletedStreams list.
             /// Streams are aggregated for deletion so as not to
@@ -355,7 +355,7 @@ namespace thekogans {
             /// \param[in] timeSpec How long to wait for events.
             /// IMPORTANT: timeSpec is a relative value.
             void WaitForEvents (
-                util::ui32 maxEventsBatch = DEFAULT_MAX_EVENTS_BATCH,
+                std::size_t maxEventsBatch = DEFAULT_MAX_EVENTS_BATCH,
                 util::TimeSpec timeSpec = util::TimeSpec::Infinite);
             /// \brief
             /// Break out of the wait state.

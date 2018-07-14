@@ -210,7 +210,7 @@ namespace thekogans {
             virtual util::Buffer::UniquePtr GetBuffer (
                     Stream & /*stream*/,
                     util::Endianness endianness,
-                    util::ui32 count) throw () {
+                    std::size_t count) throw () {
                 return util::Buffer::UniquePtr (count > 0 ?
                     new util::Buffer (endianness, count) : 0);
             }
@@ -226,7 +226,7 @@ namespace thekogans {
                     Stream & /*stream*/,
                     util::Endianness endianness,
                     const void *buffer,
-                    util::ui32 count) throw () {
+                    std::size_t count) throw () {
                 return util::Buffer::UniquePtr (
                     new util::Buffer (endianness,
                         (const util::ui8 *)buffer,

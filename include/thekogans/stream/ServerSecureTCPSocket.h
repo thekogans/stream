@@ -372,7 +372,7 @@ namespace thekogans {
                     /// \return String representing the rest state of the
                     /// ServerSecureTCPSocket::Context::TLSContext.
                     virtual std::string ToString (
-                        util::ui32 indentationLevel = 0,
+                        std::size_t indentationLevel = 0,
                         const char *tagName = TAG_CONTEXT) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -399,7 +399,7 @@ namespace thekogans {
                     /// \param[in] certificates List of certificates to format.
                     /// \return A string representing an XML structure of a certificate chain.
                     std::string FormatCertificates (
-                        util::ui32 indentationLevel,
+                        std::size_t indentationLevel,
                         const std::list<std::string> &certificates) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
@@ -454,7 +454,7 @@ namespace thekogans {
                 /// \return String representing the rest state of the
                 /// ServerSecureTCPSocket.
                 virtual std::string ToString (
-                    util::ui32 indentationLevel = 0,
+                    std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -515,9 +515,9 @@ namespace thekogans {
             // Stream
             /// \brief
             /// ServerSecureTCPSocket only listens for connections.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                     void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureTCPSocket can't Read.");
@@ -525,9 +525,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerSecureTCPSocket only listens for connections.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                     const void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureTCPSocket can't Write.");

@@ -196,7 +196,7 @@ namespace thekogans {
                 /// \param[in] tagName Name of the containing tag.
                 /// \return The XML reprentation of the Context.
                 virtual std::string ToString (
-                    util::ui32 /*indentationLevel*/ = 0,
+                    std::size_t /*indentationLevel*/ = 0,
                     const char * /*tagName*/ = TAG_CONTEXT) const = 0;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -309,9 +309,9 @@ namespace thekogans {
             /// NOTE: This api is to be called by blocking streams only.
             /// An async stream will listen for incoming data, and notify
             /// \see{AsyncIoEventSink::HandleStreamRead}.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                 void * /*buffer*/,
-                util::ui32 /*count*/) = 0;
+                std::size_t /*count*/) = 0;
             /// \brief
             /// Write bytes to the stream.
             /// \param[in] buffer Bytes to write.
@@ -320,17 +320,17 @@ namespace thekogans {
             /// NOTE: Blocking streams may or may not be able to write
             /// an entire buffer all in one shot. Use the return value
             /// to tell how many bytes were actually written. This is
-            /// why WriteFullBuffer (const void *, util::ui32) below
+            /// why WriteFullBuffer (const void *, std::size_t) below
             /// exists. Async streams will write the entire buffer,
             /// and will notify \see{AsyncIoEventSink::HandleStreamWrite}
             /// when they are done.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                 const void * /*buffer*/,
-                util::ui32 /*count*/) = 0;
+                std::size_t /*count*/) = 0;
 
             /// \brief
             /// Async write a buffer to the stream. This function is a
-            /// mirror image of WriteFullBuffer (const void *, util::ui32).
+            /// mirror image of WriteFullBuffer (const void *, std::size_t).
             /// It is meant to be used with async streams only. The reason
             /// this function is not supported with synchronous streams
             /// is the util::Buffer::UniquePtr parameter. A synchronous
@@ -338,11 +338,11 @@ namespace thekogans {
             /// don't take ownership it will be gone when we return. The
             /// only way we can take ownership is if we're asynchronous.
             /// NOTE: The rational behind this function is: Async
-            /// Write (const void *, util::ui32) has no way of knowing
+            /// Write (const void *, std::size_t) has no way of knowing
             /// where it's parameters come from. To place a burden on
             /// the user, and have her hold on to the const void *buffer
             /// until the async Write completes is not acceptable. Async
-            /// Write (const void *, util::ui32) does the only logical
+            /// Write (const void *, std::size_t) does the only logical
             /// thing left for it to do, it makes a copy of the supplied
             /// const void *buffer. As you can imagine that can be very
             /// wasteful, and inefficient. To add insult to injury, if
@@ -395,7 +395,7 @@ namespace thekogans {
             /// \param[in] count Buffer length.
             void ReadFullBuffer (
                 void *buffer,
-                util::ui32 count);
+                std::size_t count);
 
             /// \brief
             /// Don't return until count of bytes is written.
@@ -405,7 +405,7 @@ namespace thekogans {
             /// \param[in] count Buffer length.
             void WriteFullBuffer (
                 const void *buffer,
-                util::ui32 count);
+                std::size_t count);
 
             /// \brief
             /// Return the read timeout value.
@@ -541,7 +541,7 @@ namespace thekogans {
                 AsyncIoEventSink &eventSink;
                 /// \brief
                 /// Buffer length for async WSARecv[From | Msg].
-                util::ui32 bufferLength;
+                std::size_t bufferLength;
             #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// Forward declaration of Overlapped.
@@ -702,7 +702,7 @@ namespace thekogans {
                     /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
                     ReadWriteOverlapped (
                         Stream &stream,
-                        util::ui32 count,
+                        std::size_t count,
                         bool useGetBuffer = true);
                     /// \brief
                     /// ctor.
@@ -713,7 +713,7 @@ namespace thekogans {
                     ReadWriteOverlapped (
                         Stream &stream,
                         const void *buffer_,
-                        util::ui32 count,
+                        std::size_t count,
                         bool useGetBuffer = true);
                     /// \brief
                     /// ctor.
@@ -819,7 +819,7 @@ namespace thekogans {
                     WriteBufferInfo (
                         Stream &stream_,
                         const void *buffer_,
-                        util::ui32 count,
+                        std::size_t count,
                         bool useGetBuffer = true);
                     /// \brief
                     /// ctor.
@@ -881,7 +881,7 @@ namespace thekogans {
                     AsyncIoEventQueue &eventQueue_,
                     Stream &stream_,
                     AsyncIoEventSink &eventSink_,
-                    util::ui32 bufferLength_) :
+                    std::size_t bufferLength_) :
                     eventQueue (eventQueue_),
                     stream (stream_),
                     eventSink (eventSink_),

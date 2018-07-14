@@ -61,9 +61,9 @@ namespace thekogans {
             writePipe.handle = handles[1];
         }
 
-        util::ui32 Pipe::Read (
+        std::size_t Pipe::Read (
                 void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD countRead = 0;
             if (buffer != 0 && count > 0) {
@@ -112,13 +112,13 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return (util::ui32)countRead;
+            return (std::size_t)countRead;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        util::ui32 Pipe::Write (
+        std::size_t Pipe::Write (
                 const void *buffer,
-                util::ui32 count) {
+                std::size_t count) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD countWritten = 0;
             if (buffer != 0 && count > 0) {
@@ -190,7 +190,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return (util::ui32)countWritten;
+            return (std::size_t)countWritten;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -253,7 +253,7 @@ namespace thekogans {
             }
         }
 
-        util::ui32 Pipe::GetDataAvailable () {
+        std::size_t Pipe::GetDataAvailable () {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD totalBytesAvailable = 0;
             if (!PeekNamedPipe (handle, 0, 0, 0, &totalBytesAvailable, 0)) {
@@ -267,7 +267,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-            return (util::ui32)value;
+            return value;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -350,7 +350,7 @@ namespace thekogans {
             }
             else if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    util::ui32 bufferLength = GetDataAvailable ();
+                    std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer::UniquePtr buffer =
                             asyncInfo->eventSink.GetBuffer (

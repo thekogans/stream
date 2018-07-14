@@ -135,7 +135,7 @@ namespace thekogans {
                 /// \return String representing the rest state of the
                 /// ServerTCPSocket.
                 virtual std::string ToString (
-                    util::ui32 indentationLevel = 0,
+                    std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
             #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
@@ -184,9 +184,9 @@ namespace thekogans {
             // Stream
             /// \brief
             /// ServerTCPSocket only listens for connections.
-            virtual util::ui32 Read (
+            virtual std::size_t Read (
                     void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerTCPSocket can't Read.");
@@ -194,9 +194,9 @@ namespace thekogans {
             }
             /// \brief
             /// ServerTCPSocket only listens for connections.
-            virtual util::ui32 Write (
+            virtual std::size_t Write (
                     const void * /*buffer*/,
-                    util::ui32 /*count*/) {
+                    std::size_t /*count*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerTCPSocket can't Write.");

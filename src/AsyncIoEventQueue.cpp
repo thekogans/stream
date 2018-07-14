@@ -72,14 +72,14 @@ namespace thekogans {
             AsyncIoEventQueue::TimeoutPolicy &timeoutPolicy;
             util::TimeSpec &lastEventBatchTime;
             const util::TimeSpec &currentTime;
-            util::ui32 countOfTimedStreams;
-            util::ui32 countOfRecentTimedStreams;
+            std::size_t countOfTimedStreams;
+            std::size_t countOfRecentTimedStreams;
 
             TimeoutPolicyController (
                     AsyncIoEventQueue::TimeoutPolicy &timeoutPolicy_,
                     util::TimeSpec &lastEventBatchTime_,
                     const util::TimeSpec &currentTime_,
-                    util::ui32 countOfEvents) :
+                    std::size_t countOfEvents) :
                     timeoutPolicy (timeoutPolicy_),
                     lastEventBatchTime (lastEventBatchTime_),
                     currentTime (currentTime_),
@@ -192,7 +192,7 @@ namespace thekogans {
         void AsyncIoEventQueue::AddStream (
                 Stream &stream,
                 AsyncIoEventSink &eventSink,
-                util::ui32 bufferLength) {
+                std::size_t bufferLength) {
             if (stream.IsOpen () && !stream.IsAsync ()) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (CreateIoCompletionPort (
@@ -263,7 +263,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void AsyncIoEventQueue::WaitForEvents (
-                util::ui32 maxEventsBatch,
+                std::size_t maxEventsBatch,
                 util::TimeSpec timeSpec) {
             if (maxEventsBatch > 0) {
                 volatile StreamDeleter streamDeleter (*this);
@@ -356,7 +356,7 @@ namespace thekogans {
                     for (int i = 0; i < count; ++i) {
                         Stream *stream = (Stream *)epollEvents[i].data.ptr;
                         if (stream == &readPipe) {
-                            util::ui32 bufferSize = readPipe.GetDataAvailable ();
+                            std::size_t bufferSize = readPipe.GetDataAvailable ();
                             if (bufferSize != 0) {
                                 std::vector<util::ui8> buffer (bufferSize);
                                 readPipe.Read (&buffer[0], bufferSize);
@@ -462,7 +462,7 @@ namespace thekogans {
                     for (int i = 0; i < count; ++i) {
                         Stream *stream = (Stream *)kqueueEvents[i].udata;
                         if (stream == &readPipe) {
-                            util::ui32 bufferSize = readPipe.GetDataAvailable ();
+                            std::size_t bufferSize = readPipe.GetDataAvailable ();
                             if (bufferSize != 0) {
                                 std::vector<util::ui8> buffer (bufferSize);
                                 readPipe.Read (&buffer[0], bufferSize);
