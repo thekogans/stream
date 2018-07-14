@@ -36,7 +36,7 @@ namespace thekogans {
                 void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
-                int bytesRead = SSL_read (ssl.get (), buffer, count);
+                int bytesRead = SSL_read (ssl.get (), buffer, (int)count);
                 if (bytesRead < 0) {
                     THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
@@ -64,7 +64,7 @@ namespace thekogans {
                     RunDTLS ();
                 }
                 else {
-                    bytesWritten = SSL_write (ssl.get (), buffer, count);
+                    bytesWritten = SSL_write (ssl.get (), buffer, (int)count);
                     if (bytesWritten < 0) {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }

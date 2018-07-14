@@ -37,7 +37,7 @@ namespace thekogans {
                 if (!ReadFile (
                         handle,
                         buffer,
-                        count,
+                        (DWORD)count,
                         overlapped.get () == 0 ? 0 : &numberOfBytesRead,
                         overlapped.get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -94,7 +94,7 @@ namespace thekogans {
                     if (!WriteFile (
                             handle,
                             buffer,
-                            count,
+                            (DWORD)count,
                             overlapped.get () == 0 ? 0 : &numberOfBytesWriten,
                             overlapped.get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;

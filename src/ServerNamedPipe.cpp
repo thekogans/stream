@@ -55,7 +55,7 @@ namespace thekogans {
                                 NamedPipe::Byte : NamedPipe::Message;
                         }
                         else if (childName == TAG_BUFFER_SIZE) {
-                            bufferSize = util::stringTosize_t (child.text ().get ());
+                            bufferSize = util::stringToui32 (child.text ().get ());
                         }
                     }
                 }
@@ -80,7 +80,7 @@ namespace thekogans {
                             (pipeType == NamedPipe::Byte ? VALUE_BYTE : VALUE_MESSAGE) <<
                         util::CloseTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
                         util::OpenTag (indentationLevel + 1, TAG_BUFFER_SIZE) <<
-                            util::size_tTostring (bufferSize) <<
+                            util::ui32Tostring (bufferSize) <<
                         util::CloseTag (indentationLevel + 1, TAG_BUFFER_SIZE) <<
                     util::CloseTag (indentationLevel, tagName);
                 return stream.str ();

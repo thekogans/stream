@@ -61,7 +61,7 @@ namespace thekogans {
                     Stream::Context::ToString (indentationLevel, tagName) <<
                         address.ToString (indentationLevel + 1) <<
                         util::OpenTag (indentationLevel + 1, TAG_MAX_MESSAGE_LENGTH) <<
-                            util::i32Tostring (maxMessageLength) <<
+                            util::size_tTostring (maxMessageLength) <<
                         util::CloseTag (indentationLevel + 1, TAG_MAX_MESSAGE_LENGTH) <<
                     util::CloseTag (indentationLevel, tagName);
                 return stream.str ();

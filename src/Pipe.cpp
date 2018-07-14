@@ -71,7 +71,7 @@ namespace thekogans {
                 if (readTimeout != util::TimeSpec::Zero) {
                     overlapped.reset (new TimedOverlapped);
                 }
-                if (!ReadFile (handle, buffer, count,
+                if (!ReadFile (handle, buffer, (DWORD)count,
                         overlapped.get () == 0 ? 0 : &countRead, overlapped.get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode == ERROR_IO_PENDING) {
@@ -141,7 +141,7 @@ namespace thekogans {
                     if (writeTimeout != util::TimeSpec::Zero) {
                         overlapped.reset (new TimedOverlapped);
                     }
-                    if (!WriteFile (handle, buffer, count,
+                    if (!WriteFile (handle, buffer, (DWORD)count,
                             overlapped.get () == 0 ? 0 : &countWritten, overlapped.get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode == ERROR_IO_PENDING) {

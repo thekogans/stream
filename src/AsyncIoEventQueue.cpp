@@ -272,7 +272,7 @@ namespace thekogans {
                 std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
                 ULONG count = 0;
                 if (!GetQueuedCompletionStatusEx (handle, &iocpEvents[0],
-                        maxEventsBatch, &count, (DWORD)timeSpec.ToMilliseconds (), FALSE)) {
+                        (ULONG)maxEventsBatch, &count, (DWORD)timeSpec.ToMilliseconds (), FALSE)) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode != WAIT_TIMEOUT) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
