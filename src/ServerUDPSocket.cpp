@@ -93,19 +93,18 @@ namespace thekogans {
         ServerUDPSocket::Connection::UniquePtr ServerUDPSocket::Accept () {
             Connection::UniquePtr connection;
             {
-                util::Buffer::UniquePtr buffer;
+                util::Buffer buffer;
                 if (IsAsync ()) {
                     buffer = asyncInfo->eventSink.GetBuffer (
                         *this, util::HostEndian, maxMessageLength);
                 }
                 else {
-                    buffer.reset (
-                        new util::Buffer (util::HostEndian, maxMessageLength));
+                    buffer = util::Buffer (util::HostEndian, maxMessageLength);
                 }
                 Address from;
                 Address to;
-                if (buffer->AdvanceWriteOffset (
-                        ReadMsg (buffer->GetWritePtr (), maxMessageLength, from, to)) > 0) {
+                if (buffer.AdvanceWriteOffset (
+                        ReadMsg (buffer.GetWritePtr (), maxMessageLength, from, to)) > 0) {
                     connection.reset (
                         new Connection (
                             std::move (buffer), from, to, maxMessageLength));
@@ -136,16 +135,16 @@ namespace thekogans {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
                                     *this, util::HostEndian, bufferLength);
-                            readMsgWriteMsgOverlapped.buffer->AdvanceWriteOffset (
+                            readMsgWriteMsgOverlapped.buffer.AdvanceWriteOffset (
                                 ReadMsg (
-                                    readMsgWriteMsgOverlapped.buffer->GetWritePtr (),
+                                    readMsgWriteMsgOverlapped.buffer.GetWritePtr (),
                                     bufferLength,
                                     readMsgWriteMsgOverlapped.from,
                                     readMsgWriteMsgOverlapped.to));
                         }
                     }
                     if (readMsgWriteMsgOverlapped.buffer.get () != 0 &&
-                            !readMsgWriteMsgOverlapped.buffer->IsEmpty ()) {
+                            !readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         Connection::UniquePtr connection (
                             new Connection (
                                 std::move (readMsgWriteMsgOverlapped.buffer),

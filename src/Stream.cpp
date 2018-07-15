@@ -335,8 +335,7 @@ namespace thekogans {
                         stream,
                         util::HostEndian,
                         count) :
-                    util::Buffer::UniquePtr (
-                        count > 0 ? new util::Buffer (util::HostEndian, count) : 0)),
+                    util::Buffer (util::HostEndian, count),
                 flags (0) {
             if (count > 0) {
                 wsaBuf.len = (ULONG)buffer->GetDataAvailableForWriting ();
@@ -360,11 +359,10 @@ namespace thekogans {
                         util::HostEndian,
                         buffer_,
                         count) :
-                    util::Buffer::UniquePtr (
-                        new util::Buffer (
-                            util::HostEndian,
-                            (const util::ui8 *)buffer_,
-                            (const util::ui8 *)buffer_ + count))),
+                    util::Buffer (
+                        util::HostEndian,
+                        (const util::ui8 *)buffer_,
+                        (const util::ui8 *)buffer_ + count)),
                 flags (0) {
             wsaBuf.len = (ULONG)buffer->GetDataAvailableForReading ();
             wsaBuf.buf = (char *)buffer->GetReadPtr ();
@@ -459,23 +457,22 @@ namespace thekogans {
                     util::HostEndian,
                     buffer_,
                     count) :
-                util::Buffer::UniquePtr (
-                    new util::Buffer (
-                        util::HostEndian,
-                        (const util::ui8 *)buffer_,
-                        (const util::ui8 *)buffer_ + count))) {}
+                util::Buffer (
+                    util::HostEndian,
+                    (const util::ui8 *)buffer_,
+                    (const util::ui8 *)buffer_ + count)) {}
 
         ssize_t Stream::AsyncInfo::WriteBufferInfo::Write () {
             ssize_t countWritten = send (stream.handle,
-                buffer->GetReadPtr (), buffer->GetDataAvailableForReading (), 0);
+                buffer.GetReadPtr (), buffer.GetDataAvailableForReading (), 0);
             if (countWritten > 0) {
-                buffer->AdvanceReadOffset ((std::size_t)countWritten);
+                buffer.AdvanceReadOffset ((std::size_t)countWritten);
             }
             return countWritten;
         }
 
         bool Stream::AsyncInfo::WriteBufferInfo::Notify () {
-            if (buffer->IsEmpty ()) {
+            if (buffer.IsEmpty ()) {
                 stream.asyncInfo->eventSink.HandleStreamWrite (
                     stream, std::move (buffer));
                 return true;

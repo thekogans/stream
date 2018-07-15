@@ -450,7 +450,7 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual void WriteBuffer (
-                    util::Buffer::UniquePtr /*buffer*/) {
+                    util::Buffer /*buffer*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't WriteBuffer.");
@@ -482,7 +482,7 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual void WriteBufferTo (
-                    util::Buffer::UniquePtr buffer,
+                    util::Buffer buffer,
                     const Address &address) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -516,7 +516,7 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual void WriteBufferMsg (
-                    util::Buffer::UniquePtr buffer,
+                    util::Buffer buffer,
                     const Address &from,
                     const Address &to) {
                 assert (0);
@@ -552,7 +552,7 @@ namespace thekogans {
             /// \param[in] to Local address that received the connection.
             /// \return A \see{SecureUDPSocket} representing the connection.
             SecureUDPSocket::Ptr CreatePeerConnection (
-                util::Buffer::UniquePtr buffer,
+                util::Buffer buffer,
                 const Address &from,
                 const Address &to) const;
 

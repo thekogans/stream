@@ -70,7 +70,7 @@ namespace thekogans {
                         ServerUDPSocket::Connection::UniquePtr connection) throw ();
                     virtual void HandleStreamRead (
                         Stream &stream,
-                        util::Buffer::UniquePtr buffer) throw ();
+                        util::Buffer buffer) throw ();
                 };
 
             } // namespace server

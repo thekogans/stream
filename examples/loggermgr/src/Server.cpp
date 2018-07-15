@@ -98,7 +98,7 @@ namespace thekogans {
 
             void Server::HandleSocketReadFrom (
                     stream::Socket &socket,
-                    util::Buffer::UniquePtr buffer,
+                    util::Buffer buffer,
                     const stream::Address &address) throw () {
                 THEKOGANS_UTIL_LOG_DEBUG (
                     "Received buffer from: %s:%u\n",
@@ -106,10 +106,10 @@ namespace thekogans {
                     address.GetPort ());
                 THEKOGANS_UTIL_TRY {
                     struct Job : public util::RunLoop::Job {
-                        util::Buffer::UniquePtr buffer;
+                        util::Buffer buffer;
                         stream::Address address;
 
-                        Job (util::Buffer::UniquePtr buffer_,
+                        Job (util::Buffer buffer_,
                             const stream::Address &address_) :
                             buffer (std::move (buffer_)),
                             address (address_) {}
@@ -118,7 +118,7 @@ namespace thekogans {
                         virtual void Execute (const THEKOGANS_UTIL_ATOMIC<bool> &done) throw () {
                             pugi::xml_document document;
                             pugi::xml_parse_result result =
-                                document.load_buffer (buffer->GetReadPtr (), buffer->GetDataAvailableForReading ());
+                                document.load_buffer (buffer.GetReadPtr (), buffer.GetDataAvailableForReading ());
                             if (result == pugi::status_ok) {
                                 stream::StreamLogger::Entry entry (document.document_element ());
                                 util::GlobalLoggerMgr::Instance ().Log (entry.subsystem.c_str (),

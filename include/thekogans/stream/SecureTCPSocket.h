@@ -114,12 +114,12 @@ namespace thekogans {
                 /// \brief
                 /// List of buffers waiting to be encrypted
                 /// before being put on the wire.
-                std::list<util::Buffer::UniquePtr> encryptList;
+                std::list<util::Buffer> encryptList;
                 /// \brief
                 /// List of buffers that have arrived from
                 /// the wire, and are waiting to be decrypted
                 /// before being delivered to an \see{AsyncIoEventSink}.
-                std::list<util::Buffer::UniquePtr> decryptList;
+                std::list<util::Buffer> decryptList;
                 /// \brief
                 /// Protects access to encryptList and decryptList.
                 util::SpinLock spinLock;
@@ -142,11 +142,11 @@ namespace thekogans {
                 /// \brief
                 /// Add a buffer to the encryptList and call RunTLS.
                 /// \param[in] buffer Buffer to add to the encryptList.
-                void AddEncryptBuffer (util::Buffer::UniquePtr buffer);
+                void AddEncryptBuffer (util::Buffer buffer);
                 /// \brief
                 /// Add a buffer to the decryptList and call RunTLS.
                 /// \param[in] buffer Buffer to add to the decryptList.
-                void AddDecryptBuffer (util::Buffer::UniquePtr buffer);
+                void AddDecryptBuffer (util::Buffer buffer);
 
                 /// \brief
                 /// Async TLS pump. Runs the following state machine:
@@ -215,7 +215,7 @@ namespace thekogans {
             /// \brief
             /// Async write a buffer to the stream.
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer::UniquePtr buffer);
+            virtual void WriteBuffer (util::Buffer buffer);
 
             // SecureTCPSocket
             /// \brief

@@ -536,7 +536,7 @@ namespace thekogans {
             /// \brief
             /// ServerSecureTCPSocket only listens for connections.
             virtual void WriteBuffer (
-                    util::Buffer::UniquePtr /*buffer*/) {
+                    util::Buffer /*buffer*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureTCPSocket can't WriteBuffer.");

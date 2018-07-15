@@ -55,7 +55,7 @@ namespace thekogans {
             }
         }
 
-        void SecureTCPSocket::AsyncInfoEx::AddEncryptBuffer (util::Buffer::UniquePtr buffer) {
+        void SecureTCPSocket::AsyncInfoEx::AddEncryptBuffer (util::Buffer buffer) {
             {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 encryptList.push_back (std::move (buffer));
@@ -63,7 +63,7 @@ namespace thekogans {
             RunTLS ();
         }
 
-        void SecureTCPSocket::AsyncInfoEx::AddDecryptBuffer (util::Buffer::UniquePtr buffer) {
+        void SecureTCPSocket::AsyncInfoEx::AddDecryptBuffer (util::Buffer buffer) {
             {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 decryptList.push_back (std::move (buffer));
@@ -108,15 +108,15 @@ namespace thekogans {
                 // to the AsyncIoEventSink::HandleStreamRead.
                 int bytesRead = 0;
                 do {
-                    util::Buffer::UniquePtr buffer =
+                    util::Buffer buffer =
                         secureTCPSocket.asyncInfo->eventSink.GetBuffer (
                             secureTCPSocket, util::HostEndian, TLS_MAX_RECORD_LENGTH);
                     bytesRead = SSL_read (secureTCPSocket.ssl.get (),
-                        buffer->GetWritePtr (),
-                        (int)buffer->GetDataAvailableForWriting ());
+                        buffer.GetWritePtr (),
+                        (int)buffer.GetDataAvailableForWriting ());
                     if (bytesRead > 0) {
                         secureTCPSocket.sessionInfo.countTransfered += bytesRead;
-                        buffer->AdvanceWriteOffset (bytesRead);
+                        buffer.AdvanceWriteOffset (bytesRead);
                         secureTCPSocket.asyncInfo->eventSink.HandleStreamRead (
                             secureTCPSocket, std::move (buffer));
                     }
@@ -155,13 +155,12 @@ namespace thekogans {
                 // it on the wire.
                 std::size_t bytesAvailable = BIO_ctrl_pending (outBIO.get ());
                 if (bytesAvailable > 0) {
-                    util::Buffer::UniquePtr buffer (
-                        new util::Buffer (util::HostEndian, bytesAvailable));
+                    util::Buffer buffer (util::HostEndian, bytesAvailable);
                     int bytesRead = BIO_read (outBIO.get (),
-                        buffer->GetWritePtr (),
-                        (int)buffer->GetDataAvailableForWriting ());
+                        buffer.GetWritePtr (),
+                        (int)buffer.GetDataAvailableForWriting ());
                     if (bytesRead > 0) {
-                        buffer->AdvanceWriteOffset (bytesRead);
+                        buffer.AdvanceWriteOffset (bytesRead);
                         secureTCPSocket.TCPSocket::WriteBuffer (std::move (buffer));
                     }
                     else if (!BIO_should_retry (outBIO.get ())) {
@@ -177,8 +176,8 @@ namespace thekogans {
                 util::Buffer *&decryptBuffer,
                 util::Buffer *&encryptBuffer) {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            decryptBuffer = !decryptList.empty () ? decryptList.front ().get () : 0;
-            encryptBuffer = !encryptList.empty () ? encryptList.front ().get () : 0;
+            decryptBuffer = !decryptList.empty () ? &decryptList.front () : 0;
+            encryptBuffer = !encryptList.empty () ? &encryptList.front () : 0;
             return
                 (decryptBuffer != 0 ||
                     encryptBuffer != 0 ||
@@ -228,8 +227,8 @@ namespace thekogans {
             }
         }
 
-        void SecureTCPSocket::WriteBuffer (util::Buffer::UniquePtr buffer) {
-            if (buffer.get () != 0 && !buffer->IsEmpty ()) {
+        void SecureTCPSocket::WriteBuffer (util::Buffer buffer) {
+            if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                     asyncInfoEx->AddEncryptBuffer (std::move (buffer));
                 }
@@ -426,12 +425,12 @@ namespace thekogans {
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer.reset (
                                 new util::Buffer (util::HostEndian, bufferLength));
-                            readWriteOverlapped.buffer->AdvanceWriteOffset (
-                                Read (readWriteOverlapped.buffer->GetWritePtr (), bufferLength));
+                            readWriteOverlapped.buffer.AdvanceWriteOffset (
+                                Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
                     }
                     if (readWriteOverlapped.buffer.get () != 0 &&
-                            !readWriteOverlapped.buffer->IsEmpty ()) {
+                            !readWriteOverlapped.buffer.IsEmpty ()) {
                         PostAsyncRead (false);
                         asyncInfoEx->AddDecryptBuffer (std::move (readWriteOverlapped.buffer));
                     }
@@ -447,7 +446,7 @@ namespace thekogans {
             else if (overlapped.event == AsyncInfo::EventWrite) {
                 AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                     (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                assert (readWriteOverlapped.buffer->IsEmpty ());
+                assert (readWriteOverlapped.buffer.IsEmpty ());
                 asyncInfo->eventSink.HandleStreamWrite (
                     *this, std::move (readWriteOverlapped.buffer));
             }
@@ -471,10 +470,9 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
-                        util::Buffer::UniquePtr buffer (
-                            new util::Buffer (util::HostEndian, bufferLength));
-                        if (buffer->AdvanceWriteOffset (
-                                TCPSocket::Read (buffer->GetWritePtr (), bufferLength)) > 0) {
+                        util::Buffer buffer (util::HostEndian, bufferLength);
+                        if (buffer.AdvanceWriteOffset (
+                                TCPSocket::Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             asyncInfoEx->AddDecryptBuffer (std::move (buffer));
                         }
                     }

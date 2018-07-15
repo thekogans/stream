@@ -215,7 +215,7 @@ namespace thekogans {
                 UDPSocket::Ptr udpSocket;
                 /// \brief
                 /// The datagram that arrived.
-                util::Buffer::UniquePtr buffer;
+                util::Buffer buffer;
 
                 /// \brief
                 /// ctor.
@@ -224,7 +224,7 @@ namespace thekogans {
                 /// \param[in] to The local interface address that received the message.
                 /// \param[in] maxMessageLength Maximum message length.
                 Connection (
-                        util::Buffer::UniquePtr buffer_,
+                        util::Buffer buffer_,
                         const Address &from,
                         const Address &to,
                         std::size_t maxMessageLength) :
@@ -275,7 +275,7 @@ namespace thekogans {
             /// \brief
             /// ServerUDPSocket only listens for connections.
             virtual void WriteBuffer (
-                    util::Buffer::UniquePtr /*buffer*/) {
+                    util::Buffer /*buffer*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerUDPSocket can't WriteBuffer.");
@@ -307,7 +307,7 @@ namespace thekogans {
             /// \brief
             /// ServerUDPSocket only listens for connections.
             virtual void WriteBufferTo (
-                    util::Buffer::UniquePtr buffer,
+                    util::Buffer buffer,
                     const Address &address) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -341,7 +341,7 @@ namespace thekogans {
             /// \brief
             /// ServerUDPSocket only listens for connections.
             virtual void WriteBufferMsg (
-                    util::Buffer::UniquePtr buffer,
+                    util::Buffer buffer,
                     const Address &from,
                     const Address &to) {
                 assert (0);

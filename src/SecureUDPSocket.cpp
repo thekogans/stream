@@ -78,8 +78,8 @@ namespace thekogans {
             }
         }
 
-        void SecureUDPSocket::WriteBuffer (util::Buffer::UniquePtr buffer) {
-            if (buffer.get () != 0 && !buffer->IsEmpty ()) {
+        void SecureUDPSocket::WriteBuffer (util::Buffer buffer) {
+            if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                     {
                         util::LockGuard<util::SpinLock> guard (spinLock);
@@ -336,10 +336,9 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
-                        util::Buffer::UniquePtr buffer (
-                            new util::Buffer (util::HostEndian, bufferLength));
-                        if (buffer->AdvanceWriteOffset (
-                                UDPSocket::Read (buffer->GetWritePtr (), bufferLength)) > 0) {
+                        util::Buffer buffer (util::HostEndian, bufferLength);
+                        if (buffer.AdvanceWriteOffset (
+                                UDPSocket::Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             {
                                 util::LockGuard<util::SpinLock> guard (spinLock);
                                 decryptList.push_back (std::move (buffer));
@@ -473,8 +472,8 @@ namespace thekogans {
                 util::Buffer *&decryptBuffer,
                 util::Buffer *&encryptBuffer) {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            decryptBuffer = !decryptList.empty () ? decryptList.front ().get () : 0;
-            encryptBuffer = !encryptList.empty () ? encryptList.front ().get () : 0;
+            decryptBuffer = !decryptList.empty () ? &decryptList.front () : 0;
+            encryptBuffer = !encryptList.empty () ? &encryptList.front () : 0;
             return
                 decryptBuffer != 0 ||
                 encryptBuffer != 0 ||
@@ -514,15 +513,15 @@ namespace thekogans {
                     // to the AsyncIoEventSink::HandleStreamRead.
                     int bytesRead = 0;
                     do {
-                        util::Buffer::UniquePtr buffer =
+                        util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
                                 *this, util::HostEndian, TLS_MAX_RECORD_LENGTH);
                         bytesRead = SSL_read (ssl.get (),
-                            buffer->GetWritePtr (),
-                            (int)buffer->GetDataAvailableForWriting ());
+                            buffer.GetWritePtr (),
+                            (int)buffer.GetDataAvailableForWriting ());
                         if (bytesRead > 0) {
                             sessionInfo.countTransfered += bytesRead;
-                            buffer->AdvanceWriteOffset (bytesRead);
+                            buffer.AdvanceWriteOffset (bytesRead);
                             asyncInfo->eventSink.HandleStreamRead (
                                 *this, std::move (buffer));
                         }
@@ -561,13 +560,12 @@ namespace thekogans {
                     // it on the wire.
                     std::size_t bytesAvailable = BIO_ctrl_pending (outBIO.get ());
                     if (bytesAvailable > 0) {
-                        util::Buffer::UniquePtr buffer (
-                            new util::Buffer (util::HostEndian, bytesAvailable));
+                        util::Buffer buffer (util::HostEndian, bytesAvailable);
                         int bytesRead = BIO_read (outBIO.get (),
-                            buffer->GetWritePtr (),
-                            (int)buffer->GetDataAvailableForWriting ());
+                            buffer.GetWritePtr (),
+                            (int)buffer.GetDataAvailableForWriting ());
                         if (bytesRead > 0) {
-                            buffer->AdvanceWriteOffset (bytesRead);
+                            buffer.AdvanceWriteOffset (bytesRead);
                             UDPSocket::WriteBuffer (std::move (buffer));
                         }
                         else if (!BIO_should_retry (outBIO.get ())) {

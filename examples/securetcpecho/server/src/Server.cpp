@@ -118,15 +118,15 @@ namespace thekogans {
 
                 void Server::HandleStreamRead (
                         stream::Stream &stream,
-                        util::Buffer::UniquePtr buffer) throw () {
+                        util::Buffer buffer) throw () {
                     if (useWriteQueue) {
                         THEKOGANS_UTIL_TRY {
                             struct WriteJob : public util::RunLoop::Job {
                                 stream::Stream::Ptr stream;
-                                util::Buffer::UniquePtr buffer;
+                                util::Buffer buffer;
                                 WriteJob (
                                     stream::Stream &stream_,
-                                    util::Buffer::UniquePtr buffer_) :
+                                    util::Buffer buffer_) :
                                     stream (&stream_),
                                     buffer (std::move (buffer_)) {}
                                 // util::RunLoop::Job

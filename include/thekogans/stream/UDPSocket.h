@@ -116,7 +116,7 @@ namespace thekogans {
             /// Async write a buffer to the stream.
             /// NOTE: This method can only be called after calling \see{Connect}.
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer::UniquePtr buffer);
+            virtual void WriteBuffer (util::Buffer buffer);
 
             /// \brief
             /// Read a datagram and the address it was sent from.
@@ -145,7 +145,7 @@ namespace thekogans {
             /// \param[in] buffer Buffer representing the datagram.
             /// \param[in] address Address the datagram is sent to.
             virtual void WriteBufferTo (
-                util::Buffer::UniquePtr buffer,
+                util::Buffer buffer,
                 const Address &address);
 
             /// \brief
@@ -184,7 +184,7 @@ namespace thekogans {
             /// \param[in] from The local interface address from which the message is sent.
             /// \param[in] to The address of the host that will receive the message.
             virtual void WriteBufferMsg (
-                util::Buffer::UniquePtr buffer,
+                util::Buffer buffer,
                 const Address &from,
                 const Address &to);
 
@@ -335,7 +335,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Buffer used by UDPSocket::ReadFrom/WriteTo.
-                util::Buffer::UniquePtr buffer;
+                util::Buffer buffer;
                 /// \brief
                 /// Address used by UDPSocket::ReadFrom/WriteTo.
                 Address address;
@@ -375,7 +375,7 @@ namespace thekogans {
                 /// \param[in] address_ Used by \see{UDPSocket::PostAsyncWriteTo}.
                 ReadFromWriteToOverlapped (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer_,
+                        util::Buffer buffer_,
                         const Address &address_) :
                         Overlapped (udpSocket, Stream::AsyncInfo::EventWriteTo),
                         buffer (std::move (buffer_)),
@@ -428,7 +428,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Buffer used by Stream::Read/Write.
-                util::Buffer::UniquePtr buffer;
+                util::Buffer buffer;
                 /// \brief
                 /// Address from which the message was sent.
                 Address from;
@@ -471,7 +471,7 @@ namespace thekogans {
                 /// \param[in] to Used by \see{UDPSocket::PostAsyncWriteMsg}.
                 ReadMsgWriteMsgOverlapped (
                     UDPSocket &udpSocket,
-                    util::Buffer::UniquePtr buffer_,
+                    util::Buffer buffer_,
                     const Address &from_,
                     const Address &to_) :
                     Overlapped (udpSocket, Stream::AsyncInfo::EventWriteMsg),
@@ -558,7 +558,7 @@ namespace thekogans {
                 UDPSocket &udpSocket;
                 /// \brief
                 /// \see{util::Buffer} to write.
-                util::Buffer::UniquePtr buffer;
+                util::Buffer buffer;
                 /// \brief
                 /// Peer \see{Address} to write to.
                 Address address;
@@ -583,7 +583,7 @@ namespace thekogans {
                 /// \param[in] address_ Peer \see{Address} to write to.
                 WriteToBufferInfo (
                     UDPSocket &udpSocket_,
-                    util::Buffer::UniquePtr buffer_,
+                    util::Buffer buffer_,
                     const Address &address_) :
                     BufferInfo (AsyncInfo::EventWriteTo),
                     udpSocket (udpSocket_),
@@ -621,7 +621,7 @@ namespace thekogans {
                 UDPSocket &udpSocket;
                 /// \brief
                 /// \see{util::Buffer} to write.
-                util::Buffer::UniquePtr buffer;
+                util::Buffer buffer;
                 /// \brief
                 /// Local \see{Address} from which the message will be written.
                 Address from;
@@ -652,7 +652,7 @@ namespace thekogans {
                 /// \param[in] to_ Peer \see{Address} to write to.
                 WriteMsgBufferInfo (
                     UDPSocket &udpSocket_,
-                    util::Buffer::UniquePtr buffer_,
+                    util::Buffer buffer_,
                     const Address &from_,
                     const Address &to_) :
                     BufferInfo (AsyncInfo::EventWriteMsg),

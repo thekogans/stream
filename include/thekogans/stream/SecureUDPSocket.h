@@ -81,12 +81,12 @@ namespace thekogans {
             /// \brief
             /// List of buffers waiting to be encrypted
             /// before being put on the wire.
-            std::list<util::Buffer::UniquePtr> encryptList;
+            std::list<util::Buffer> encryptList;
             /// \brief
             /// List of buffers that have arrived from
             /// the wire, and are waiting to be decrypted
             /// before being delivered to an \see{AsyncIoEventSink}.
-            std::list<util::Buffer::UniquePtr> decryptList;
+            std::list<util::Buffer> decryptList;
             /// \brief
             /// RunDTLS, encryptList and decryptList are shared
             /// resources that need to be protected.
@@ -137,7 +137,7 @@ namespace thekogans {
             /// \brief
             /// Async write a buffer to the stream.
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer::UniquePtr buffer);
+            virtual void WriteBuffer (util::Buffer buffer);
 
             // SecureUDPSocket
             /// \brief
@@ -247,7 +247,7 @@ namespace thekogans {
             /// calling \see{UDPSocket::Connect}. After that use
             /// \see{WriteBuffer}.
             virtual void WriteBufferTo (
-                    util::Buffer::UniquePtr /*buffer*/,
+                    util::Buffer /*buffer*/,
                     const Address & /*address*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

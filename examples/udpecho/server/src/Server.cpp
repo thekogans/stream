@@ -99,21 +99,21 @@ namespace thekogans {
 
                 void Server::HandleUDPSocketReadFrom (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &address) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (
                         "Received buffer from: %s:%u\n",
                         address.AddrToString ().c_str (),
                         address.GetPort ());
                     THEKOGANS_UTIL_TRY {
-                        if (!buffer->IsEmpty ()) {
+                        if (!buffer.IsEmpty ()) {
                             struct WriteJob : public util::RunLoop::Job {
                                 UDPSocket::Ptr udpSocket;
-                                util::Buffer::UniquePtr buffer;
+                                util::Buffer buffer;
                                 Address address;
                                 WriteJob (
                                     UDPSocket &udpSocket_,
-                                    util::Buffer::UniquePtr buffer_,
+                                    util::Buffer buffer_,
                                     const Address &address_) :
                                     udpSocket (&udpSocket_),
                                     buffer (std::move (buffer_)),
@@ -138,7 +138,7 @@ namespace thekogans {
 
                 void Server::HandleUDPSocketWriteTo (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &address) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (
                         "Sent buffer to: %s:%u\n",
@@ -148,7 +148,7 @@ namespace thekogans {
 
                 void Server::HandleUDPSocketReadMsg (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &from,
                         const Address &to) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (
@@ -158,15 +158,15 @@ namespace thekogans {
                         to.AddrToString ().c_str (),
                         to.GetPort ());
                     THEKOGANS_UTIL_TRY {
-                        if (!buffer->IsEmpty ()) {
+                        if (!buffer.IsEmpty ()) {
                             struct WriteJob : public util::RunLoop::Job {
                                 UDPSocket::Ptr udpSocket;
-                                util::Buffer::UniquePtr buffer;
+                                util::Buffer buffer;
                                 Address from;
                                 Address to;
                                 WriteJob (
                                     UDPSocket &udpSocket_,
-                                    util::Buffer::UniquePtr buffer_,
+                                    util::Buffer buffer_,
                                     const Address &from_,
                                     const Address &to_) :
                                     udpSocket (&udpSocket_),
@@ -193,7 +193,7 @@ namespace thekogans {
 
                 void Server::HandleUDPSocketWriteMsg (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &from,
                         const Address &to) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (

@@ -66,20 +66,20 @@ namespace thekogans {
                         const util::Exception &exception) throw ();
                     virtual void HandleUDPSocketReadFrom (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &address) throw ();
                     virtual void HandleUDPSocketWriteTo (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &address) throw ();
                     virtual void HandleUDPSocketReadMsg (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &from,
                         const Address &to) throw ();
                     virtual void HandleUDPSocketWriteMsg (
                         UDPSocket &udpSocket,
-                        util::Buffer::UniquePtr buffer,
+                        util::Buffer buffer,
                         const Address &from,
                         const Address &to) throw ();
                 };

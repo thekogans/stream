@@ -448,19 +448,18 @@ namespace thekogans {
         SecureUDPSocket::Ptr ServerSecureUDPSocket::Accept () {
             SecureUDPSocket::Ptr connection;
             {
-                util::Buffer::UniquePtr buffer;
+                util::Buffer buffer;
                 if (IsAsync ()) {
                     buffer = asyncInfo->eventSink.GetBuffer (
                         *this, util::HostEndian, TLS_MAX_RECORD_LENGTH);
                 }
                 else {
-                    buffer.reset (
-                        new util::Buffer (util::HostEndian, TLS_MAX_RECORD_LENGTH));
+                    buffer = util::Buffer (util::HostEndian, TLS_MAX_RECORD_LENGTH);
                 }
                 Address from;
                 Address to;
-                if (buffer->AdvanceWriteOffset (
-                        ReadMsg (buffer->GetWritePtr (), TLS_MAX_RECORD_LENGTH, from, to)) > 0) {
+                if (buffer.AdvanceWriteOffset (
+                        ReadMsg (buffer.GetWritePtr (), TLS_MAX_RECORD_LENGTH, from, to)) > 0) {
                     connection = CreatePeerConnection (std::move (buffer), from, to);
                 }
             }
@@ -540,7 +539,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         SecureUDPSocket::Ptr ServerSecureUDPSocket::CreatePeerConnection (
-                util::Buffer::UniquePtr buffer,
+                util::Buffer buffer,
                 const Address &from,
                 const Address &to) const {
             SecureUDPSocket::Ptr connection (

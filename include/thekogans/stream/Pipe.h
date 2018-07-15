@@ -96,7 +96,7 @@ namespace thekogans {
             /// \brief
             /// Async write a buffer to the stream.
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer::UniquePtr buffer);
+            virtual void WriteBuffer (util::Buffer buffer);
 
             /// \brief
             /// Return read timeout value.

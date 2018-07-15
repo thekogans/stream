@@ -65,7 +65,7 @@ namespace thekogans {
                     const util::Exception &exception) throw ();
                 virtual void HandleSocketReadFrom (
                     stream::Socket &socket,
-                    util::Buffer::UniquePtr buffer,
+                    util::Buffer buffer,
                     const stream::Address &address) throw ();
             };
 

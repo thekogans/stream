@@ -333,7 +333,7 @@ namespace thekogans {
             /// mirror image of WriteFullBuffer (const void *, std::size_t).
             /// It is meant to be used with async streams only. The reason
             /// this function is not supported with synchronous streams
-            /// is the util::Buffer::UniquePtr parameter. A synchronous
+            /// is the util::Buffer parameter. A synchronous
             /// stream might only write a part of the buffer, but if we
             /// don't take ownership it will be gone when we return. The
             /// only way we can take ownership is if we're asynchronous.
@@ -360,22 +360,20 @@ namespace thekogans {
             /// \code{.cpp}
             /// using namespace thekogans;
             /// // Create the owning buffer.
-            /// util::Buffer::UniquePtr buffer (new
-            ///     util::Buffer (util::NetworkEndian, ...));
+            /// util::Buffer buffer (util::NetworkEndian, ...);
             /// do {
             ///     // Fill a portion of the buffer.
             ///     ...
             ///     // Send that portion to a stream for writing.
             ///     stream->WriteBuffer (
-            ///         util::Buffer::UniquePtr (new
-            ///             util::TenantReadBuffer (
-            ///                 buffer->endianness,
-            ///                 buffer->GetReadPtr (),
-            ///                 buffer->GetDataAvailableForReading ()));
+            ///         util::TenantReadBuffer (
+            ///             buffer.endianness,
+            ///             buffer.GetReadPtr (),
+            ///             buffer.GetDataAvailableForReading ());
             ///     // Continue filling and sending a portion of the owning
             ///     // buffer until done.
             ///     // NOTE: This technique assumes that you're correctly
-            ///     // maintaining the buffer->writeOffset. If you're using
+            ///     // maintaining the buffer.writeOffset. If you're using
             ///     // the various Buffer insertion operators, this is
             ///     // done for you automatically.
             /// } while (...);
@@ -385,7 +383,7 @@ namespace thekogans {
             /// // sent to WriteBuffer points in to it's data member.
             /// \endcode
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer::UniquePtr /*buffer*/) = 0;
+            virtual void WriteBuffer (util::Buffer /*buffer*/) = 0;
 
             /// \brief
             /// Don't return until count of bytes is read.
@@ -687,7 +685,7 @@ namespace thekogans {
 
                     /// \brief
                     /// Buffer used by Stream::Read/Write.
-                    util::Buffer::UniquePtr buffer;
+                    util::Buffer buffer;
                     /// \brief
                     /// WSARecv/Send buffer.
                     WSABUF wsaBuf;
@@ -721,12 +719,12 @@ namespace thekogans {
                     /// \param[in] buffer Buffer to write.
                     ReadWriteOverlapped (
                             Stream &stream,
-                            util::Buffer::UniquePtr buffer_) :
+                            util::Buffer buffer_) :
                             Overlapped (stream, Stream::AsyncInfo::EventWrite),
                             buffer (std::move (buffer_)),
                             flags (0) {
-                        wsaBuf.len = (ULONG)buffer->GetDataAvailableForReading ();
-                        wsaBuf.buf = (char *)buffer->GetReadPtr ();
+                        wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
+                        wsaBuf.buf = (char *)buffer.GetReadPtr ();
                     }
 
                     /// \brief
@@ -808,7 +806,7 @@ namespace thekogans {
                     Stream &stream;
                     /// \brief
                     /// Buffer to write.
-                    util::Buffer::UniquePtr buffer;
+                    util::Buffer buffer;
 
                     /// \brief
                     /// ctor.
@@ -827,7 +825,7 @@ namespace thekogans {
                     /// \param[in] buffer_ Buffer to write.
                     WriteBufferInfo (
                         Stream &stream_,
-                        util::Buffer::UniquePtr buffer_) :
+                        util::Buffer buffer_) :
                         BufferInfo (AsyncInfo::EventWrite),
                         stream (stream_),
                         buffer (std::move (buffer_)) {}

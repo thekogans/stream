@@ -68,7 +68,7 @@ namespace thekogans {
                         stream::Stream &stream) throw ();
                     virtual void HandleStreamRead (
                         stream::Stream &stream,
-                        util::Buffer::UniquePtr buffer) throw ();
+                        util::Buffer buffer) throw ();
                     virtual void HandleSecureTCPSocketHandshakeCompleted (
                         stream::SecureTCPSocket &secureTCPSocket) throw ();
                     virtual void HandleSecureTCPSocketShutdownCompleted (

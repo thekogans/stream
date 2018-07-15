@@ -169,8 +169,8 @@ namespace thekogans {
             }
         }
 
-        void TCPSocket::WriteBuffer (util::Buffer::UniquePtr buffer) {
-            if (buffer.get () != 0 && !buffer->IsEmpty ()) {
+        void TCPSocket::WriteBuffer (util::Buffer buffer) {
+            if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
@@ -696,10 +696,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
-                        util::Buffer::UniquePtr buffer =
+                        util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
                                 *this, util::HostEndian, bufferLength);
-                        if (buffer->AdvanceWriteOffset (Read (buffer->GetWritePtr (), bufferLength)) > 0) {
+                        if (buffer.AdvanceWriteOffset (Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             asyncInfo->eventSink.HandleStreamRead (*this, std::move (buffer));
                         }
                     }

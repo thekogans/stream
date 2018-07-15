@@ -207,12 +207,11 @@ namespace thekogans {
             /// \param[in] stream Stream that received the packet.
             /// \param[in] count Minimum buffer size (packet size).
             /// \return Buffer of appropriate size.
-            virtual util::Buffer::UniquePtr GetBuffer (
+            virtual util::Buffer GetBuffer (
                     Stream & /*stream*/,
                     util::Endianness endianness,
                     std::size_t count) throw () {
-                return util::Buffer::UniquePtr (count > 0 ?
-                    new util::Buffer (endianness, count) : 0);
+                return util::Buffer (endianness, count);
             }
 
             /// \brief
@@ -222,15 +221,15 @@ namespace thekogans {
             /// \param[in] buffer \see{Stream::Write} bufffer.
             /// \param[in] count \see{Stream::Write} buffer length.
             /// \return Buffer to write to the stream.
-            virtual util::Buffer::UniquePtr GetBuffer (
+            virtual util::Buffer GetBuffer (
                     Stream & /*stream*/,
                     util::Endianness endianness,
                     const void *buffer,
                     std::size_t count) throw () {
-                return util::Buffer::UniquePtr (
-                    new util::Buffer (endianness,
-                        (const util::ui8 *)buffer,
-                        (const util::ui8 *)buffer + count));
+                return util::Buffer (
+                    endianness,
+                    (const util::ui8 *)buffer,
+                    (const util::ui8 *)buffer + count);
             }
 
             /// \brief
@@ -239,14 +238,14 @@ namespace thekogans {
             /// \param[in] buffer The new data.
             virtual void HandleStreamRead (
                 Stream & /*stream*/,
-                util::Buffer::UniquePtr /*buffer*/) throw () {}
+                util::Buffer /*buffer*/) throw () {}
             /// \brief
             /// Called when data was written to a stream.
             /// \param[in] stream Stream where data was written.
             /// \param[in] buffer The written data.
             virtual void HandleStreamWrite (
                 Stream & /*stream*/,
-                util::Buffer::UniquePtr /*buffer*/) throw () {}
+                util::Buffer /*buffer*/) throw () {}
 
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
             /// \brief
@@ -303,7 +302,7 @@ namespace thekogans {
             /// \param[in] address Peer address that sent the datagram.
             virtual void HandleUDPSocketReadFrom (
                 UDPSocket & /*udpSocket*/,
-                util::Buffer::UniquePtr /*buffer*/,
+                util::Buffer /*buffer*/,
                 const Address & /*address*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a (Secure)UDPSocket.
@@ -312,7 +311,7 @@ namespace thekogans {
             /// \param[in] address Peer address that received the datagram.
             virtual void HandleUDPSocketWriteTo (
                 UDPSocket & /*udpSocket*/,
-                util::Buffer::UniquePtr /*buffer*/,
+                util::Buffer /*buffer*/,
                 const Address & /*address*/) throw () {}
 
             /// \brief
@@ -323,7 +322,7 @@ namespace thekogans {
             /// \param[in] to Local address that received the datagram.
             virtual void HandleUDPSocketReadMsg (
                 UDPSocket & /*udpSocket*/,
-                util::Buffer::UniquePtr /*buffer*/,
+                util::Buffer /*buffer*/,
                 const Address & /*from*/,
                 const Address & /*to*/) throw () {}
             /// \brief
@@ -334,7 +333,7 @@ namespace thekogans {
             /// \param[in] to Peer address that will receive the datagram.
             virtual void HandleUDPSocketWriteMsg (
                 UDPSocket & /*udpSocket*/,
-                util::Buffer::UniquePtr /*buffer*/,
+                util::Buffer /*buffer*/,
                 const Address & /*from*/,
                 const Address & /*to*/) throw () {}
         };
