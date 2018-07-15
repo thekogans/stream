@@ -75,8 +75,8 @@ namespace thekogans {
                         new AsyncInfo::ReadWriteOverlapped (*this, buffer, count));
                     if (!WriteFile (
                             handle,
-                            overlapped->buffer->GetReadPtr (),
-                            (DWORD)overlapped->buffer->GetDataAvailableForReading (),
+                            overlapped->buffer.GetReadPtr (),
+                            (DWORD)overlapped->buffer.GetDataAvailableForReading (),
                             0,
                             overlapped.get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -123,15 +123,15 @@ namespace thekogans {
             return numberOfBytesWriten;
         }
 
-        void NamedPipe::WriteBuffer (util::Buffer::UniquePtr buffer) {
-            if (buffer.get () != 0) {
+        void NamedPipe::WriteBuffer (util::Buffer buffer) {
+            if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                     AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
                     if (!WriteFile (
                             handle,
-                            overlapped->buffer->GetReadPtr (),
-                            (ULONG)overlapped->buffer->GetDataAvailableForReading (),
+                            overlapped->buffer.GetReadPtr (),
+                            (ULONG)overlapped->buffer.GetDataAvailableForReading (),
                             0,
                             overlapped.get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -145,10 +145,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "%s", "WriteBuffer is called on a blocking named pipe.");
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
@@ -197,8 +193,8 @@ namespace thekogans {
                     new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength));
                 if (!ReadFile (
                         handle,
-                        overlapped->buffer->GetWritePtr (),
-                        (DWORD)overlapped->buffer->GetDataAvailableForWriting (),
+                        overlapped->buffer.GetWritePtr (),
+                        (DWORD)overlapped->buffer.GetDataAvailableForWriting (),
                         0,
                         overlapped.get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -222,7 +218,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                         (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                    if (!readWriteOverlapped.buffer->IsEmpty ()) {
+                    if (!readWriteOverlapped.buffer.IsEmpty ()) {
                         PostAsyncRead ();
                         asyncInfo->eventSink.HandleStreamRead (
                             *this, std::move (readWriteOverlapped.buffer));
@@ -239,7 +235,7 @@ namespace thekogans {
             else if (overlapped.event == AsyncInfo::EventWrite) {
                 AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                     (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                assert (readWriteOverlapped.buffer->IsEmpty ());
+                assert (readWriteOverlapped.buffer.IsEmpty ());
                 asyncInfo->eventSink.HandleStreamWrite (
                     *this, std::move (readWriteOverlapped.buffer));
             }

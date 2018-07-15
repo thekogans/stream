@@ -482,22 +482,21 @@ namespace thekogans {
                     PostAsyncReadMsg ();
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
                         (ReadMsgWriteMsgOverlapped &)overlapped;
-                    if (readMsgWriteMsgOverlapped.buffer.get () == 0) {
+                    if (readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
                                     *this, util::HostEndian, bufferLength);
-                            readMsgWriteMsgOverlapped.buffer->AdvanceWriteOffset (
+                            readMsgWriteMsgOverlapped.buffer.AdvanceWriteOffset (
                                 ReadMsg (
-                                    readMsgWriteMsgOverlapped.buffer->GetWritePtr (),
+                                    readMsgWriteMsgOverlapped.buffer.GetWritePtr (),
                                     bufferLength,
                                     readMsgWriteMsgOverlapped.from,
                                     readMsgWriteMsgOverlapped.to));
                         }
                     }
-                    if (readMsgWriteMsgOverlapped.buffer.get () != 0 &&
-                            !readMsgWriteMsgOverlapped.buffer->IsEmpty ()) {
+                    if (!readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         asyncInfo->eventSink.HandleServerSecureUDPSocketConnection (*this,
                             CreatePeerConnection (
                                 std::move (readMsgWriteMsgOverlapped.buffer),

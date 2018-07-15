@@ -335,11 +335,11 @@ namespace thekogans {
                         stream,
                         util::HostEndian,
                         count) :
-                    util::Buffer (util::HostEndian, count),
+                    util::Buffer (util::HostEndian, count)),
                 flags (0) {
             if (count > 0) {
-                wsaBuf.len = (ULONG)buffer->GetDataAvailableForWriting ();
-                wsaBuf.buf = (char *)buffer->GetWritePtr ();
+                wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
+                wsaBuf.buf = (char *)buffer.GetWritePtr ();
             }
             else {
                 wsaBuf.len = 0;
@@ -364,20 +364,18 @@ namespace thekogans {
                         (const util::ui8 *)buffer_,
                         (const util::ui8 *)buffer_ + count)),
                 flags (0) {
-            wsaBuf.len = (ULONG)buffer->GetDataAvailableForReading ();
-            wsaBuf.buf = (char *)buffer->GetReadPtr ();
+            wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
+            wsaBuf.buf = (char *)buffer.GetReadPtr ();
         }
 
         void Stream::AsyncInfo::ReadWriteOverlapped::Epilog () {
             switch (event) {
                 case Stream::AsyncInfo::EventRead: {
-                    if (buffer.get () != 0) {
-                        buffer->AdvanceWriteOffset (GetCount ());
-                    }
+                    buffer.AdvanceWriteOffset (GetCount ());
                     break;
                 }
                 case Stream::AsyncInfo::EventWrite: {
-                    buffer->AdvanceReadOffset (GetCount ());
+                    buffer.AdvanceReadOffset (GetCount ());
                     break;
                 }
             }

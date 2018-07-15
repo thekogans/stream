@@ -129,7 +129,7 @@ namespace thekogans {
                     PostAsyncReadMsg ();
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
                         (ReadMsgWriteMsgOverlapped &)overlapped;
-                    if (readMsgWriteMsgOverlapped.buffer.get () == 0) {
+                    if (readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
@@ -143,8 +143,7 @@ namespace thekogans {
                                     readMsgWriteMsgOverlapped.to));
                         }
                     }
-                    if (readMsgWriteMsgOverlapped.buffer.get () != 0 &&
-                            !readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
+                    if (!readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         Connection::UniquePtr connection (
                             new Connection (
                                 std::move (readMsgWriteMsgOverlapped.buffer),

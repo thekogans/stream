@@ -381,8 +381,8 @@ namespace thekogans {
                         buffer (std::move (buffer_)),
                         address (address_),
                         flags (0) {
-                    wsaBuf.len = (ULONG)buffer->GetDataAvailableForReading ();
-                    wsaBuf.buf = (char *)buffer->GetReadPtr ();
+                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
+                    wsaBuf.buf = (char *)buffer.GetReadPtr ();
                 }
 
                 /// \brief
@@ -479,8 +479,8 @@ namespace thekogans {
                     from (from_),
                     to (to_),
                     msgHdr (
-                        buffer->GetReadPtr (),
-                        buffer->GetDataAvailableForReading (),
+                        buffer.GetReadPtr (),
+                        buffer.GetDataAvailableForReading (),
                         from,
                         to) {}
 

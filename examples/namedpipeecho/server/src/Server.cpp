@@ -112,15 +112,15 @@ namespace thekogans {
 
                 void Server::HandleStreamRead (
                         stream::Stream &stream,
-                        util::Buffer::UniquePtr buffer) throw () {
+                        util::Buffer buffer) throw () {
                     THEKOGANS_UTIL_TRY {
-                        if (!buffer->IsEmpty ()) {
+                        if (!buffer.IsEmpty ()) {
                             struct WriteJob : public util::RunLoop::Job {
                                 stream::Stream::Ptr stream;
-                                util::Buffer::UniquePtr buffer;
+                                util::Buffer buffer;
                                 WriteJob (
                                     stream::Stream &stream_,
-                                    util::Buffer::UniquePtr buffer_) :
+                                    util::Buffer buffer_) :
                                     stream (&stream_),
                                     buffer (std::move (buffer_)) {}
                                 // util::RunLoop::Job
@@ -133,7 +133,7 @@ namespace thekogans {
                                     }
                                 }
                             };
-                            jobQueue.Enq (
+                            jobQueue.EnqJob (
                                 util::RunLoop::Job::Ptr (
                                     new WriteJob (stream, std::move (buffer))));
                         }

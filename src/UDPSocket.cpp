@@ -897,9 +897,7 @@ namespace thekogans {
         void UDPSocket::ReadFromWriteToOverlapped::Epilog () {
             switch (event) {
                 case Stream::AsyncInfo::EventReadFrom: {
-                    if (buffer.get () != 0) {
-                        buffer.AdvanceWriteOffset (GetCount ());
-                    }
+                    buffer.AdvanceWriteOffset (GetCount ());
                     break;
                 }
                 case Stream::AsyncInfo::EventWriteTo: {
@@ -920,7 +918,7 @@ namespace thekogans {
                 udpSocket.asyncInfo->eventSink.GetBuffer (
                     udpSocket, util::HostEndian,
                     count) :
-                util::Buffer::UniquePtr (util::HostEndian, count)),
+                util::Buffer (util::HostEndian, count)),
             msgHdr (
                 count > 0 ? buffer.GetWritePtr () : 0,
                 count > 0 ? buffer.GetDataAvailableForWriting () : 0,
@@ -951,9 +949,7 @@ namespace thekogans {
         void UDPSocket::ReadMsgWriteMsgOverlapped::Epilog () {
             switch (event) {
                 case Stream::AsyncInfo::EventReadMsg: {
-                    if (buffer.get () != 0) {
-                        buffer.AdvanceWriteOffset (GetCount ());
-                    }
+                    buffer.AdvanceWriteOffset (GetCount ());
                     if (from.GetFamily () == AF_INET) {
                         from.length = sizeof (sockaddr_in);
                     }
@@ -1082,18 +1078,17 @@ namespace thekogans {
                     PostAsyncRead ();
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                         (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                    if (readWriteOverlapped.buffer.get () == 0) {
+                    if (readWriteOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
                                     *this, util::HostEndian, bufferLength);
-                            readWriteOverlapped.buffer->AdvanceWriteOffset (
+                            readWriteOverlapped.buffer.AdvanceWriteOffset (
                                 Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
                     }
-                    if (readWriteOverlapped.buffer.get () != 0 &&
-                            !readWriteOverlapped.buffer.IsEmpty ()) {
+                    if (!readWriteOverlapped.buffer.IsEmpty ()) {
                         asyncInfo->eventSink.HandleStreamRead (*this,
                             std::move (readWriteOverlapped.buffer));
                     }
@@ -1115,7 +1110,7 @@ namespace thekogans {
                     PostAsyncReadFrom ();
                     ReadFromWriteToOverlapped &readFromWriteToOverlapped =
                         (ReadFromWriteToOverlapped &)overlapped;
-                    if (readFromWriteToOverlapped.buffer.get () == 0) {
+                    if (readFromWriteToOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readFromWriteToOverlapped.buffer =
@@ -1128,8 +1123,7 @@ namespace thekogans {
                                     readFromWriteToOverlapped.address));
                         }
                     }
-                    if (readFromWriteToOverlapped.buffer.get () != 0 &&
-                            !readFromWriteToOverlapped.buffer.IsEmpty ()) {
+                    if (!readFromWriteToOverlapped.buffer.IsEmpty ()) {
                         asyncInfo->eventSink.HandleUDPSocketReadFrom (*this,
                             std::move (readFromWriteToOverlapped.buffer),
                             readFromWriteToOverlapped.address);
@@ -1153,7 +1147,7 @@ namespace thekogans {
                     PostAsyncReadMsg ();
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
                         (ReadMsgWriteMsgOverlapped &)overlapped;
-                    if (readMsgWriteMsgOverlapped.buffer.get () == 0) {
+                    if (readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
@@ -1167,8 +1161,7 @@ namespace thekogans {
                                     readMsgWriteMsgOverlapped.to));
                         }
                     }
-                    if (readMsgWriteMsgOverlapped.buffer.get () != 0 &&
-                            !readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
+                    if (!readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         asyncInfo->eventSink.HandleUDPSocketReadMsg (*this,
                             std::move (readMsgWriteMsgOverlapped.buffer),
                             readMsgWriteMsgOverlapped.from,

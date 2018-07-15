@@ -420,17 +420,16 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
                         (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                    if (readWriteOverlapped.buffer.get () == 0) {
+                    if (readWriteOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
-                            readWriteOverlapped.buffer.reset (
-                                new util::Buffer (util::HostEndian, bufferLength));
+                            readWriteOverlapped.buffer =
+                                util::Buffer (util::HostEndian, bufferLength);
                             readWriteOverlapped.buffer.AdvanceWriteOffset (
                                 Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
                     }
-                    if (readWriteOverlapped.buffer.get () != 0 &&
-                            !readWriteOverlapped.buffer.IsEmpty ()) {
+                    if (!readWriteOverlapped.buffer.IsEmpty ()) {
                         PostAsyncRead (false);
                         asyncInfoEx->AddDecryptBuffer (std::move (readWriteOverlapped.buffer));
                     }
