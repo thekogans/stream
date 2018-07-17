@@ -66,9 +66,7 @@ int main (
     if (loggermgr::Options::Instance ().help ||
             loggermgr::Options::Instance ().version ||
             loggermgr::Options::Instance ().loggerMgr.consoleLogger) {
-        THEKOGANS_UTIL_LOG_ADD_LOGGER (
-            util::Logger::Ptr (
-                new util::ConsoleLogger));
+        THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::Ptr (new util::ConsoleLogger));
     }
     if (!loggermgr::Options::Instance ().loggerMgr.fileLogger.path.empty ()) {
         THEKOGANS_UTIL_LOG_ADD_LOGGER (
@@ -78,6 +76,7 @@ int main (
                     loggermgr::Options::Instance ().loggerMgr.fileLogger.archive,
                     loggermgr::Options::Instance ().loggerMgr.fileLogger.maxLogFileSize)));
     }
+    THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (loggermgr::Options::Instance ().help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] "
@@ -134,6 +133,5 @@ int main (
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }
-    THEKOGANS_UTIL_LOG_FLUSH
     return 0;
 }

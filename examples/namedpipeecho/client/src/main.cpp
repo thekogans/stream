@@ -92,8 +92,8 @@ int main (
     THEKOGANS_UTIL_LOG_INIT (
         client::Options::Instance ().logLevel,
         util::LoggerMgr::All);
-    THEKOGANS_UTIL_LOG_ADD_LOGGER (
-        util::Logger::Ptr (new util::ConsoleLogger ()));
+    THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::Ptr (new util::ConsoleLogger ()));
+    THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (client::Options::Instance ().help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] -a:'host address'\n\n"
@@ -127,7 +127,6 @@ int main (
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }
-    THEKOGANS_UTIL_LOG_FLUSH
     return 0;
 }
 

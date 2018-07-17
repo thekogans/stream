@@ -68,8 +68,7 @@ int main (
             server::Options::Instance ().version ||
             server::Options::Instance ().loggerMgr.consoleLogger ||
             server::Options::Instance ().path.empty ()) {
-        THEKOGANS_UTIL_LOG_ADD_LOGGER (
-            util::Logger::Ptr (new util::ConsoleLogger ()));
+        THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::Ptr (new util::ConsoleLogger ()));
     }
     if (!server::Options::Instance ().loggerMgr.fileLogger.path.empty ()) {
         THEKOGANS_UTIL_LOG_ADD_LOGGER (
@@ -79,6 +78,7 @@ int main (
                     server::Options::Instance ().loggerMgr.fileLogger.archive,
                     server::Options::Instance ().loggerMgr.fileLogger.maxLogFileSize)));
     }
+    THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (server::Options::Instance ().help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] [-k:'path'] path\n\n"
@@ -140,6 +140,5 @@ int main (
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }
-    THEKOGANS_UTIL_LOG_FLUSH
     return 0;
 }
