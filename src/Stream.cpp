@@ -72,7 +72,7 @@ namespace thekogans {
                 const char *tagName) const {
             if (tagName != 0) {
                 util::Attributes attributes;
-                attributes.push_back (util::Attribute (ATTR_TYPE, type));
+                attributes.push_back (util::Attribute (ATTR_TYPE, util::Encodestring (type)));
                 return util::OpenTag (indentationLevel, tagName, attributes, false, true);
             }
             else {
