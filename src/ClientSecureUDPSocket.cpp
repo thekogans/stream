@@ -216,7 +216,7 @@ namespace thekogans {
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void ClientSecureUDPSocket::Context::DTLSContext::ParseCertificates (
                 const pugi::xml_node &node,
-                std::list<std::string> &certificates) {
+                Certificates &certificates) {
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -233,9 +233,9 @@ namespace thekogans {
 
         std::string ClientSecureUDPSocket::Context::DTLSContext::FormatCertificates (
                 std::size_t indentationLevel,
-                const std::list<std::string> &certificates) const {
+                const Certificates &certificates) const {
             std::ostringstream stream;
-            for (std::list<std::string>::const_iterator
+            for (Certificates::const_iterator
                     it = certificates.begin (),
                     end = certificates.end (); it != end; ++it) {
                 stream <<

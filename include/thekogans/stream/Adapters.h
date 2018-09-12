@@ -115,13 +115,19 @@ namespace thekogans {
                         broadcast (broadcast_) {}
                 };
                 /// \brief
+                /// Convenient typedef for std::list<IPV4>.
+                typedef std::list<IPV4> IPV4Addresses;
+                /// \brief
                 /// List of IPV4 addresses. If the adapter was not
                 /// configured for IPV4 it will be empty.
-                std::list<IPV4> ipv4;
+                IPV4Addresses ipv4;
+                /// \brief
+                /// Convenient typedef for std::list<Address>.
+                typedef std::list<Address> IPV6Addresses;
                 /// \brief
                 /// List of IPV6 addresses. If the adapter was not
                 /// configured for IPV6 it will be empty.
-                std::list<Address> ipv6;
+                IPV6Addresses ipv6;
                 /// \enum
                 /// Adapter MAC address length.
                 enum {

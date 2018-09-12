@@ -57,7 +57,7 @@ namespace thekogans {
             util::ui16 family = address.GetFamily ();
             if (family == AF_INET) {
                 const std::string addressString = address.AddrToString ();
-                for (std::list<IPV4>::const_iterator
+                for (IPV4Addresses::const_iterator
                         it = ipv4.begin (),
                         end = ipv4.end (); it != end; ++it) {
                     if ((*it).unicast.AddrToString () == addressString) {
@@ -67,7 +67,7 @@ namespace thekogans {
             }
             else if (family == AF_INET6) {
                 const std::string addressString = address.AddrToString ();
-                for (std::list<Address>::const_iterator
+                for (IPV6Addresses::const_iterator
                         it = ipv6.begin (),
                         end = ipv6.end (); it != end; ++it) {
                     if ((*it).AddrToString () == addressString) {
@@ -98,7 +98,7 @@ namespace thekogans {
                 "Index: " << index << std::endl <<
                 "Multicast: " << util::boolTostring (multicast) << std::endl <<
                 "IPV4:\n";
-            for (std::list<IPV4>::const_iterator
+            for (IPV4Addresses::const_iterator
                     it = ipv4.begin (),
                     end = ipv4.end (); it != end; ++it) {
                 stream <<
@@ -106,7 +106,7 @@ namespace thekogans {
                     "  Broadcast:\n" << (*it).broadcast.ToString (2);
             }
             stream << "IPV6:\n";
-            for (std::list<Address>::const_iterator
+            for (IPV6Addresses::const_iterator
                     it = ipv6.begin (),
                     end = ipv6.end (); it != end; ++it) {
                 stream << (*it).ToString (1);
@@ -127,7 +127,7 @@ namespace thekogans {
 
         void Adapters::RegisterEventHandler (EventHandler &eventHandler) {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            for (std::list<EventHandler::Ptr>::iterator
+            for (EventHandlers::iterator
                     it = eventHandlers.begin (),
                     end = eventHandlers.end (); it != end; ++it) {
                 if ((*it).Get () == &eventHandler) {
@@ -143,7 +143,7 @@ namespace thekogans {
 
         void Adapters::UnregisterEventHandler (EventHandler &eventHandler) {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            for (std::list<EventHandler::Ptr>::iterator
+            for (EventHandlers::iterator
                     it = eventHandlers.begin (),
                     end = eventHandlers.end (); it != end; ++it) {
                 if ((*it).Get () == &eventHandler) {
@@ -175,17 +175,17 @@ namespace thekogans {
             }
 
             inline bool operator != (
-                    const std::list<Adapters::Addresses::IPV4> &item1,
-                    const std::list<Adapters::Addresses::IPV4> &item2) {
+                    const Adapters::Addresses::IPV4Addresses &item1,
+                    const Adapters::Addresses::IPV4Addresses &item2) {
                 if (item1.size () == item2.size ()) {
                     std::set<std::string> ipv41;
-                    for (std::list<Adapters::Addresses::IPV4>::const_iterator
+                    for (Adapters::Addresses::IPV4Addresses::const_iterator
                             it = item1.begin (),
                             end = item1.end (); it != end; ++it) {
                         ipv41.insert ((*it).unicast.AddrToString ());
                     }
                     std::set<std::string> ipv42;
-                    for (std::list<Adapters::Addresses::IPV4>::const_iterator
+                    for (Adapters::Addresses::IPV4Addresses::const_iterator
                             it = item2.begin (),
                             end = item2.end (); it != end; ++it) {
                         ipv42.insert ((*it).unicast.AddrToString ());
@@ -196,17 +196,17 @@ namespace thekogans {
             }
 
             inline bool operator != (
-                    const std::list<Address> &item1,
-                    const std::list<Address> &item2) {
+                    const Adapters::Addresses::IPV6Addresses &item1,
+                    const Adapters::Addresses::IPV6Addresses &item2) {
                 if (item1.size () == item2.size ()) {
                     std::set<std::string> ipv61;
-                    for (std::list<Address>::const_iterator
+                    for (Adapters::Addresses::IPV6Addresses::const_iterator
                             it = item1.begin (),
                             end = item1.end (); it != end; ++it) {
                         ipv61.insert ((*it).AddrToString ());
                     }
                     std::set<std::string> ipv62;
-                    for (std::list<Address>::const_iterator
+                    for (Adapters::Addresses::IPV6Addresses::const_iterator
                             it = item2.begin (),
                             end = item2.end (); it != end; ++it) {
                         ipv62.insert ((*it).AddrToString ());
@@ -298,7 +298,7 @@ namespace thekogans {
                     if (!ShouldStop (done)) {
                         THEKOGANS_UTIL_TRY {
                             DiffProcessor diffProcessor;
-                            std::list<EventHandler::Ptr> eventHandlers;
+                            EventHandlers eventHandlers;
                             {
                                 Adapters::AddressesMap newAddressesMap;
                                 Adapters::Instance ().GetAddressesMap (newAddressesMap);
@@ -309,7 +309,7 @@ namespace thekogans {
                                     eventHandlers = Adapters::Instance ().eventHandlers;
                                 }
                             }
-                            for (std::list<EventHandler::Ptr>::iterator
+                            for (EventHandlers::iterator
                                     it = eventHandlers.begin (),
                                     end = eventHandlers.end (); it != end; ++it) {
                                 diffProcessor.NotifyEventHandler (**it);

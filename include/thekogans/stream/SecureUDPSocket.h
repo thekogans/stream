@@ -79,14 +79,17 @@ namespace thekogans {
             /// Output side of the async connection.
             crypto::BIOPtr outBIO;
             /// \brief
+            /// Convenient typedef for std::list<util::Buffer>.
+            typedef std::list<util::Buffer> Buffers;
+            /// \brief
             /// List of buffers waiting to be encrypted
             /// before being put on the wire.
-            std::list<util::Buffer> encryptList;
+            Buffers encryptList;
             /// \brief
             /// List of buffers that have arrived from
             /// the wire, and are waiting to be decrypted
             /// before being delivered to an \see{AsyncIoEventSink}.
-            std::list<util::Buffer> decryptList;
+            Buffers decryptList;
             /// \brief
             /// RunDTLS, encryptList and decryptList are shared
             /// resources that need to be protected.

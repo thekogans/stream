@@ -162,11 +162,14 @@ namespace thekogans {
                     /// true = Load system CA certificates.
                     bool loadSystemCACertificates;
                     /// \brief
+                    /// Convenient typedef for std::list<std::string>.
+                    typedef std::list<std::string> Certificates;
+                    /// \brief
                     /// CA certificates used to validate client certificates.
-                    std::list<std::string> caCertificates;
+                    Certificates caCertificates;
                     /// \brief
                     /// Server certificate chain file.
-                    std::list<std::string> certificateChain;
+                    Certificates certificateChain;
                     /// \brief
                     /// Server private key file.
                     std::string privateKey;
@@ -225,8 +228,8 @@ namespace thekogans {
                     DTLSContext (
                             const std::string &protocolVersion_,
                             bool loadSystemCACertificates_,
-                            const std::list<std::string> &caCertificates_,
-                            const std::list<std::string> &certificateChain_,
+                            const Certificates &caCertificates_,
+                            const Certificates &certificateChain_,
                             const std::string &privateKey_,
                             const std::string &cipherList_,
                             bool verifyServer_ = true,
@@ -284,7 +287,7 @@ namespace thekogans {
                     /// \param[out] certificates List of parsed certificates.
                     void ParseCertificates (
                         const pugi::xml_node &node,
-                        std::list<std::string> &certificates);
+                        Certificates &certificates);
                     /// \brief
                     /// Format an XML string containing the certificate chain.
                     /// \param[in] indentationLevel Pretty print parameter.
@@ -292,7 +295,7 @@ namespace thekogans {
                     /// \return An XML string containing the certificate chain.
                     std::string FormatCertificates (
                         std::size_t indentationLevel,
-                        const std::list<std::string> &certificates) const;
+                        const Certificates &certificates) const;
                 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
                 /// \brief
