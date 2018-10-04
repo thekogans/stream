@@ -116,7 +116,7 @@ namespace thekogans {
             "CountTransfered";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        SessionInfo SessionInfo::Empty;
+        const SessionInfo SessionInfo::Empty;
 
         SessionInfo::SessionInfo (const SessionInfo &sessionInfo) :
                 serverName (sessionInfo.serverName),

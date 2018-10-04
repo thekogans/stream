@@ -1164,7 +1164,7 @@ namespace thekogans {
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
             THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
-            static thekogans::stream::Stream::MapInitializer mapInitializer;
+            static const thekogans::stream::Stream::MapInitializer mapInitializer;
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
         /// This macro is used in the stream definition file (.cpp).
@@ -1173,7 +1173,7 @@ namespace thekogans {
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
             THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)\
-            thekogans::stream::Stream::MapInitializer type::mapInitializer (\
+            const thekogans::stream::Stream::MapInitializer type::mapInitializer (\
                 #type, type::CreateContext);
     #endif // defined (TOOLCHAIN_TYPE_Static)
     #else // defined (THEKOGANS_STREAM_HAVE_PUGIXML)

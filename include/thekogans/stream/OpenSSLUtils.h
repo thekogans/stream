@@ -190,7 +190,7 @@ namespace thekogans {
 
             /// \brief
             /// An empty SessionInfo.
-            static SessionInfo Empty;
+            static const SessionInfo Empty;
 
             /// \brief
             /// ctor.

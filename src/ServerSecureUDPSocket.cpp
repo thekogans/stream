@@ -70,7 +70,7 @@ namespace thekogans {
             "CachedSessionTTL";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        ServerSecureUDPSocket::Context::DTLSContext ServerSecureUDPSocket::Context::DTLSContext::Empty;
+        const ServerSecureUDPSocket::Context::DTLSContext ServerSecureUDPSocket::Context::DTLSContext::Empty;
 
         ServerSecureUDPSocket::Context::DTLSContext::DTLSContext (const DTLSContext &context) :
                 protocolVersion (context.protocolVersion),

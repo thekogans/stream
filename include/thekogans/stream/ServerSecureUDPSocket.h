@@ -253,7 +253,7 @@ namespace thekogans {
 
                     /// \brief
                     /// An empty DTLSContext.
-                    static DTLSContext Empty;
+                    static const DTLSContext Empty;
 
                     /// \brief
                     /// Default ctor.

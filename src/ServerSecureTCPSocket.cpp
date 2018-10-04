@@ -83,7 +83,7 @@ namespace thekogans {
             "CachedSessionTTL";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        ServerSecureTCPSocket::Context::TLSContext ServerSecureTCPSocket::Context::TLSContext::Empty;
+        const ServerSecureTCPSocket::Context::TLSContext ServerSecureTCPSocket::Context::TLSContext::Empty;
 
         ServerSecureTCPSocket::Context::TLSContext::TLSContext (const TLSContext &context) :
                 protocolVersion (context.protocolVersion),

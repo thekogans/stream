@@ -188,7 +188,7 @@ namespace thekogans {
 
                     /// \brief
                     /// An empty TLSContext.
-                    static TLSContext Empty;
+                    static const TLSContext Empty;
 
                     /// \brief
                     /// Default ctor.

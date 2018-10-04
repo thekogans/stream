@@ -66,7 +66,7 @@ namespace thekogans {
             "MaxServerCertificateChainDepth";
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        ClientSecureUDPSocket::Context::DTLSContext ClientSecureUDPSocket::Context::DTLSContext::Empty;
+        const ClientSecureUDPSocket::Context::DTLSContext ClientSecureUDPSocket::Context::DTLSContext::Empty;
 
         ClientSecureUDPSocket::Context::DTLSContext::DTLSContext (const DTLSContext &context) :
                 protocolVersion (context.protocolVersion),

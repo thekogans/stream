@@ -129,33 +129,32 @@ int main (
                 server::Options::Instance ().addresses);
         #if defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoopCreateInstance::Parameterize (
-                std::string (),
+                "MainRunLoop",
                 util::JobQueue::TYPE_FIFO,
                 util::UI32_MAX,
                 true,
-                0,
                 0,
                 0,
                 util::SystemRunLoop::CreateThreadWindow ());
         #elif defined (TOOLCHAIN_OS_Linix)
             XInitThreads ();
             util::MainRunLoopCreateInstance::Parameterize (
-                std::string (),
+                "MainRunLoop",
                 util::JobQueue::TYPE_FIFO,
                 util::UI32_MAX,
                 true,
                 0,
                 0,
-                0,
-                util::SystemRunLoop::CreateThreadWindow ());
+                util::SystemRunLoop::CreateThreadWindow (),
+                std::vector<Display *> ());
         #elif defined (TOOLCHAIN_OS_OSX)
             util::MainRunLoopCreateInstance::Parameterize (
-                std::string (),
+                "MainRunLoop",
                 util::JobQueue::TYPE_FIFO,
                 util::UI32_MAX,
                 true,
-                0,
-                CFRunLoopGetMain ());
+                util::SystemRunLoop::OSXRunLoop::Ptr (
+                    new util::SystemRunLoop::CFOSXRunLoop));
         #endif // defined (TOOLCHAIN_OS_Windows)
             util::MainRunLoop::Instance ().Start ();
             server::Server::Instance ().Stop ();
