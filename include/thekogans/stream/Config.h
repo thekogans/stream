@@ -24,15 +24,15 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
     #define _LIB_THEKOGANS_STREAM_API __stdcall
-    #if defined (TOOLCHAIN_TYPE_Shared)
+    #if defined (THEKOGANS_STREAM_TYPE_Shared)
         #if defined (_LIB_THEKOGANS_STREAM_BUILD)
             #define _LIB_THEKOGANS_STREAM_DECL __declspec (dllexport)
         #else // defined (_LIB_THEKOGANS_STREAM_BUILD)
             #define _LIB_THEKOGANS_STREAM_DECL __declspec (dllimport)
         #endif // defined (_LIB_THEKOGANS_STREAM_BUILD)
-    #else // defined (TOOLCHAIN_TYPE_Shared)
+    #else // defined (THEKOGANS_STREAM_TYPE_Shared)
         #define _LIB_THEKOGANS_STREAM_DECL
-    #endif // defined (TOOLCHAIN_TYPE_Shared)
+    #endif // defined (THEKOGANS_STREAM_TYPE_Shared)
     #if defined (_MSC_VER)
         #pragma warning (disable: 4251)  // using non-exported as public in exported
         #pragma warning (disable: 4786)

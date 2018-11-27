@@ -657,7 +657,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
-        #if defined (TOOLCHAIN_CONFIG_Debug)
+        #if defined (THEKOGANS_STREAM_CONFIG_Debug)
             std::string IfTypeTostring (util::ui32 ifType) {
                 return
                     ifType == 1 ? "IF_TYPE_OTHER" :
@@ -797,16 +797,16 @@ namespace thekogans {
                     NL_INTERFACE_OFFLOAD_RODTostring (row.ReceiveOffload).c_str (),
                     row.DisableDefaultRoutes == TRUE ? "true" : "false");
             }
-        #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        #endif // defined (THEKOGANS_STREAM_CONFIG_Debug)
         }
 
         VOID NETIOAPI_API_ Adapters::InterfaceChangeCallback (
                 PVOID /*CallerContext*/,
                 PVOID /*PMIB_IPINTERFACE_ROW*/ Row,
                 MIB_NOTIFICATION_TYPE /*NotificationType*/) {
-        #if defined (TOOLCHAIN_CONFIG_Debug)
+        #if defined (THEKOGANS_STREAM_CONFIG_Debug)
             LogMIB_IPINTERFACE_ROW (*(PMIB_IPINTERFACE_ROW)Row);
-        #endif // defined (TOOLCHAIN_CONFIG_Debug)
+        #endif // defined (THEKOGANS_STREAM_CONFIG_Debug)
             Adapters::Instance ().NotifyEventHandlers ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

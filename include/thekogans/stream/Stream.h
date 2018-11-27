@@ -270,7 +270,7 @@ namespace thekogans {
             /// \param[in] node XML node representing an Context of a particular type.
             /// \return A fully parsed and populated Context of that type.
             static Context::UniquePtr GetContext (const pugi::xml_node &node);
-        #if defined (TOOLCHAIN_TYPE_Static)
+        #if defined (THEKOGANS_STREAM_TYPE_Static)
             /// \brief
             /// Because the stream library uses dynamic initialization,
             /// when using it in static builds call this method to have
@@ -279,7 +279,7 @@ namespace thekogans {
             /// available to your application are the ones you explicitly
             /// link to.
             static void StaticInit ();
-        #endif // defined (TOOLCHAIN_TYPE_Static)
+        #endif // defined (THEKOGANS_STREAM_TYPE_Static)
         #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
             /// \brief
@@ -1132,7 +1132,7 @@ namespace thekogans {
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)\
             THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
-    #if defined (TOOLCHAIN_TYPE_Static)
+    #if defined (THEKOGANS_STREAM_TYPE_Static)
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
         /// This macro is used in a stream declaration file (.h).
         /// It sets up everything needed for the stream to be dynamically
@@ -1156,7 +1156,7 @@ namespace thekogans {
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
             THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)
-    #else // defined (TOOLCHAIN_TYPE_Static)
+    #else // defined (THEKOGANS_STREAM_TYPE_Static)
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
         /// This macro is used in a stream declaration file (.h).
         /// It sets up everything needed for the stream to be dynamically
@@ -1175,7 +1175,7 @@ namespace thekogans {
             THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)\
             const thekogans::stream::Stream::MapInitializer type::mapInitializer (\
                 #type, type::CreateContext);
-    #endif // defined (TOOLCHAIN_TYPE_Static)
+    #endif // defined (THEKOGANS_STREAM_TYPE_Static)
     #else // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
         /// This macro is used in a stream declaration file (.h).

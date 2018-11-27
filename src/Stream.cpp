@@ -37,7 +37,7 @@
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Stream.h"
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-#if defined (TOOLCHAIN_TYPE_Static)
+#if defined (THEKOGANS_STREAM_TYPE_Static)
     #include "thekogans/stream/Pipe.h"
     #if defined (TOOLCHAIN_OS_Windows)
         #include "thekogans/stream/ClientNamedPipe.h"
@@ -53,7 +53,7 @@
         #include "thekogans/stream/ClientSecureUDPSocket.h"
         #include "thekogans/stream/ServerSecureUDPSocket.h"
     #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-#endif // defined (TOOLCHAIN_TYPE_Static)
+#endif // defined (THEKOGANS_STREAM_TYPE_Static)
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
 namespace thekogans {
@@ -116,7 +116,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
     #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #if defined (TOOLCHAIN_TYPE_Static)
+    #if defined (THEKOGANS_STREAM_TYPE_Static)
         void Stream::StaticInit () {
             static volatile bool registered = false;
             static util::SpinLock spinLock;
@@ -139,7 +139,7 @@ namespace thekogans {
                 registered = true;
             }
         }
-    #endif // defined (TOOLCHAIN_TYPE_Static)
+    #endif // defined (THEKOGANS_STREAM_TYPE_Static)
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         void Stream::Close () {
