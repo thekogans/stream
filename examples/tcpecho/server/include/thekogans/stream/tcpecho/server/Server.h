@@ -51,7 +51,8 @@ namespace thekogans {
                         bool reuseAddress = false,
                         util::ui32 maxPendingConnections =
                             stream::ServerTCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
-                        util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+                        util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                        util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
                     void Stop ();
 
                 private:

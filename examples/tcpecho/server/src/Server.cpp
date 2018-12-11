@@ -30,7 +30,8 @@ namespace thekogans {
                         const std::list<stream::Address> &addresses,
                         bool reuseAddress,
                         util::ui32 maxPendingConnections,
-                        util::i32 priority) {
+                        util::i32 priority,
+                        util::ui32 affinity) {
                     if (done) {
                         if (!addresses.empty ()) {
                             eventQueue.reset (new stream::AsyncIoEventQueue ());
@@ -46,7 +47,7 @@ namespace thekogans {
                                     (*it).AddrToString ().c_str (), (*it).GetPort ());
                             }
                             done = false;
-                            Create (priority);
+                            Create (priority, affinity);
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
