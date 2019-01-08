@@ -88,11 +88,75 @@ namespace thekogans {
 
             /// \brief
             /// Called to initiate stream error processing.
-            /// \param[in] stream Stream on which an error occurred.
-            /// \param[in] exception Exception representing the error.
+            /// \param[in] stream \see{Stream} on which an error occurred.
+            /// \param[in] exception \see{util::Exception} representing the error.
             virtual void HandleStreamError (
                 Stream & /*stream*/,
                 const util::Exception & /*exception*/) throw () {}
+
+            /// \brief
+            /// Called when a remote peer has disconnected.
+            /// \param[in] stream \see{Stream} which has been disconnected.
+            virtual void HandleStreamDisconnect (
+                Stream & /*stream*/) throw () {}
+
+            /// \brief
+            /// Used by Read handlers to hook the buffer creation process.
+            /// This technique is very useful for protocol filters. If
+            /// you're writing a filter that has it's own protocol header
+            /// that it needs to wrap the buffer with (before sending it
+            /// along for upstream processing) override this api and allocate
+            /// a buffer big enough to hold your header + bufferSize.
+            /// \param[in] stream \see{Stream} that received the packet.
+            /// \param[in] count Minimum buffer size (packet size).
+            /// \return Buffer of appropriate size.
+            virtual util::Buffer GetBuffer (
+                    Stream & /*stream*/,
+                    util::Endianness endianness,
+                    std::size_t count) throw () {
+                return util::Buffer (endianness, count);
+            }
+            /// \brief
+            /// Called when new data has arrived on a stream.
+            /// \param[in] stream \see{Stream} that received the data.
+            /// \param[in] buffer The new data.
+            virtual void HandleStreamRead (
+                Stream & /*stream*/,
+                util::Buffer /*buffer*/) throw () {}
+
+            /// \brief
+            /// The analog to the GetBuffer above. Used by Write handler
+            /// to allow the sink to add appropriate protocol headers.
+            /// \param[in] stream \see{Stream} that will receive the buffer.
+            /// \param[in] buffer \see{Stream::Write} bufffer.
+            /// \param[in] count \see{Stream::Write} buffer length.
+            /// \return \see{util::Buffer} to write to the stream.
+            virtual util::Buffer GetBuffer (
+                    Stream & /*stream*/,
+                    util::Endianness endianness,
+                    const void *buffer,
+                    std::size_t count) throw () {
+                return util::Buffer (
+                    endianness,
+                    (const util::ui8 *)buffer,
+                    (const util::ui8 *)buffer + count);
+            }
+            /// \brief
+            /// Called when data was written to a stream.
+            /// \param[in] stream Stream where data was written.
+            /// \param[in] buffer The written data.
+            virtual void HandleStreamWrite (
+                Stream & /*stream*/,
+                util::Buffer /*buffer*/) throw () {}
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Called to report a connection on a \see{ServerNamedPipe}.
+            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
+            /// the connection occurred.
+            virtual void HandleServerNamedPipeConnection (
+                ServerNamedPipe & /*serverNamedPipe*/) throw () {}
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Called when a client \see{TCPSocket} has established
@@ -129,18 +193,10 @@ namespace thekogans {
                 SecureUDPSocket & /*udpSocket*/) throw () {}
         #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Called to report a connection on a \see{ServerNamedPipe}.
-            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
-            /// the connection occurred.
-            virtual void HandleServerNamedPipeConnection (
-                ServerNamedPipe & /*serverNamedPipe*/) throw () {}
-        #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Override this method if you're deriving from a TCPSocket.
             /// \param[in] handle OS socket handle to wrap.
-            /// \return A TCPSocket derivative.
+            /// \return A \see{TCPSocket} derivative.
             virtual TCPSocket::Ptr GetTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
                 return TCPSocket::Ptr (new TCPSocket (handle));
             }
@@ -162,6 +218,7 @@ namespace thekogans {
             virtual void HandleServerUDPSocketConnection (
                 ServerUDPSocket & /*serverUDPSocket*/,
                 ServerUDPSocket::Connection::UniquePtr /*connection*/) throw () {}
+
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
             /// \brief
             /// Called to report a new connection on a \see{ServerSecureTCPSocket}.
@@ -189,65 +246,7 @@ namespace thekogans {
             virtual void HandleServerSecureUDPSocketConnection (
                 ServerSecureUDPSocket & /*serverSecureUDPSocket*/,
                 SecureUDPSocket::Ptr /*connection*/) throw () {}
-        #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
-            /// \brief
-            /// Called when a remote peer has disconnected.
-            /// \param[in] stream Stream which has been disconnected.
-            virtual void HandleStreamDisconnect (
-                Stream & /*stream*/) throw () {}
-
-            /// \brief
-            /// Used by Read handlers to hook the buffer creation process.
-            /// This technique is very useful for protocol filters. If
-            /// you're writing a filter that has it's own protocol header
-            /// that it needs to wrap the buffer with (before sending it
-            /// along for upstream processing) override this api and allocate
-            /// a buffer big enough to hold your header + bufferSize.
-            /// \param[in] stream Stream that received the packet.
-            /// \param[in] count Minimum buffer size (packet size).
-            /// \return Buffer of appropriate size.
-            virtual util::Buffer GetBuffer (
-                    Stream & /*stream*/,
-                    util::Endianness endianness,
-                    std::size_t count) throw () {
-                return util::Buffer (endianness, count);
-            }
-
-            /// \brief
-            /// The analog to the GetBuffer above. Used by Write handler
-            /// to allow the sink to add appropriate protocol headers.
-            /// \param[in] stream Stream that will receive the buffer.
-            /// \param[in] buffer \see{Stream::Write} bufffer.
-            /// \param[in] count \see{Stream::Write} buffer length.
-            /// \return Buffer to write to the stream.
-            virtual util::Buffer GetBuffer (
-                    Stream & /*stream*/,
-                    util::Endianness endianness,
-                    const void *buffer,
-                    std::size_t count) throw () {
-                return util::Buffer (
-                    endianness,
-                    (const util::ui8 *)buffer,
-                    (const util::ui8 *)buffer + count);
-            }
-
-            /// \brief
-            /// Called when new data has arrived on a stream.
-            /// \param[in] stream Stream that received the data.
-            /// \param[in] buffer The new data.
-            virtual void HandleStreamRead (
-                Stream & /*stream*/,
-                util::Buffer /*buffer*/) throw () {}
-            /// \brief
-            /// Called when data was written to a stream.
-            /// \param[in] stream Stream where data was written.
-            /// \param[in] buffer The written data.
-            virtual void HandleStreamWrite (
-                Stream & /*stream*/,
-                util::Buffer /*buffer*/) throw () {}
-
-        #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
             /// \brief
             /// Called when the TLS handshake is about to start.
             /// This could be client side SSL_connect, server side
