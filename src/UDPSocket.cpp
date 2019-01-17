@@ -1276,7 +1276,7 @@ namespace thekogans {
                             asyncInfo->eventSink.GetBuffer (
                                 *this, util::HostEndian, bufferLength);
                         if (buffer.AdvanceWriteOffset (
-                                Read (buffer.GetWritePtr (), bufferLength) )> 0) {
+                                Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             asyncInfo->eventSink.HandleStreamRead (
                                 *this, std::move (buffer));
                         }
