@@ -27,6 +27,7 @@
 #if !defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/stream/Pipe.h"
 #endif // !defined (TOOLCHAIN_OS_Windows)
+#include "thekogans/stream/AsyncIoEventSink.h"
 
 namespace thekogans {
     namespace stream {
@@ -276,7 +277,7 @@ namespace thekogans {
             /// to concurrently process I/O completion packets
             /// for the I/O completion port.
             /// NOTE: All async io goes through the stream.
-            /// AsyncIoEventSink will be called by the stream
+            /// \see{AsyncIoEventSink} will be called by the stream
             /// after it has determined what to call.
             AsyncIoEventQueue (
                 util::ui32 concurrentThreads = DEFAULT_CONCURRENT_THREADS);
@@ -315,7 +316,7 @@ namespace thekogans {
             /// \brief
             /// Add a given stream to the queue.
             /// \param[in] stream Stream to add.
-            /// \param[in] eventSink AsyncIoEventSink that will
+            /// \param[in] eventSink \see{AsyncIoEventSink} that will
             /// receive the events.
             /// \param[in] bufferLength Buffer length for async
             /// WSARecv[From | Msg] and ReadFile on Windows.

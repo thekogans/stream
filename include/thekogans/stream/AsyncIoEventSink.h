@@ -20,6 +20,7 @@
 
 #include <memory>
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/stream/Config.h"
@@ -74,31 +75,37 @@ namespace thekogans {
         ///   called asynchronously from a completely different thread.
         ///   There is no one there to catch your exceptions. YOU WILL SEG FAULT!
 
-        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink {
+        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink : public util::ThreadSafeRefCounted {
             /// \brief
-            /// There are times you want to create an async stream for
-            /// writing, and don't really care about the disposition of
-            /// the write request (\see{StreamLogger}. Pass one of these
-            /// to \see{AsyncIoEventQueue::AddStream}.
-            static AsyncIoEventSink NOOP;
+            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncIoEventSink>.
+            typedef util::ThreadSafeRefCounted::Ptr<AsyncIoEventSink> Ptr;
 
+        protected:
+            /// \brief
+            /// Next AsyncIoEventSink in the chain.
+            AsyncIoEventSink *next;
+
+        public:
             /// \brief
             /// dtor.
-            virtual ~AsyncIoEventSink () {}
+            /// \param[in] next_ Next AsyncIoEventSink in the chain.
+            AsyncIoEventSink (AsyncIoEventSink *next_ = 0);
+            /// \brief
+            /// dtor.
+            virtual ~AsyncIoEventSink ();
 
             /// \brief
             /// Called to initiate stream error processing.
             /// \param[in] stream \see{Stream} on which an error occurred.
             /// \param[in] exception \see{util::Exception} representing the error.
             virtual void HandleStreamError (
-                Stream & /*stream*/,
-                const util::Exception & /*exception*/) throw () {}
+                Stream &stream,
+                const util::Exception &exception) throw ();
 
             /// \brief
             /// Called when a remote peer has disconnected.
             /// \param[in] stream \see{Stream} which has been disconnected.
-            virtual void HandleStreamDisconnect (
-                Stream & /*stream*/) throw () {}
+            virtual void HandleStreamDisconnect (Stream &stream) throw ();
 
             /// \brief
             /// Used by Read handlers to hook the buffer creation process.
@@ -111,7 +118,7 @@ namespace thekogans {
             /// \param[in] count Minimum buffer size (packet size).
             /// \return Buffer of appropriate size.
             virtual util::Buffer GetBuffer (
-                    Stream & /*stream*/,
+                    Stream &stream,
                     util::Endianness endianness,
                     std::size_t count) throw () {
                 return util::Buffer (endianness, count);
@@ -121,8 +128,8 @@ namespace thekogans {
             /// \param[in] stream \see{Stream} that received the data.
             /// \param[in] buffer The new data.
             virtual void HandleStreamRead (
-                Stream & /*stream*/,
-                util::Buffer /*buffer*/) throw () {}
+                Stream &stream,
+                util::Buffer buffer) throw ();
 
             /// \brief
             /// The analog to the GetBuffer above. Used by Write handler
@@ -132,7 +139,7 @@ namespace thekogans {
             /// \param[in] count \see{Stream::Write} buffer length.
             /// \return \see{util::Buffer} to write to the stream.
             virtual util::Buffer GetBuffer (
-                    Stream & /*stream*/,
+                    Stream &stream,
                     util::Endianness endianness,
                     const void *buffer,
                     std::size_t count) throw () {
@@ -146,8 +153,8 @@ namespace thekogans {
             /// \param[in] stream Stream where data was written.
             /// \param[in] buffer The written data.
             virtual void HandleStreamWrite (
-                Stream & /*stream*/,
-                util::Buffer /*buffer*/) throw () {}
+                Stream &stream,
+                util::Buffer buffer) throw ();
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -155,7 +162,7 @@ namespace thekogans {
             /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
             /// the connection occurred.
             virtual void HandleServerNamedPipeConnection (
-                ServerNamedPipe & /*serverNamedPipe*/) throw () {}
+                ServerNamedPipe &serverNamedPipe) throw ();
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
@@ -164,10 +171,10 @@ namespace thekogans {
             /// \param[in] tcpSocket \see{TCPSocket} that established
             /// a connection.
             virtual void HandleTCPSocketConnected (
-                TCPSocket & /*tcpSocket*/) throw () {}
+                TCPSocket &tcpSocket) throw ();
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
             /// \brief
-            /// Override this method if you're deriving from a SecureTCPSocket.
+            /// Override this method if you're deriving from a \see{SecureTCPSocket}.
             /// \param[in] handle OS socket handle to wrap.
             /// \return A SecureTCPSocket derivative.
             virtual SecureTCPSocket::Ptr GetSecureTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
@@ -181,7 +188,7 @@ namespace thekogans {
             /// NOTE: The TLS handshake has not occurred yet. Call
             /// \see{SecureTCPSocket::SessionConnect} to begin a TLS handshake.
             virtual void HandleSecureTCPSocketConnected (
-                SecureTCPSocket & /*tcpSocket*/) throw () {}
+                SecureTCPSocket &tcpSocket) throw ();
             /// \brief
             /// Called when a client \see{SecureUDPSocket} has established a
             /// connection to the server.
@@ -190,7 +197,7 @@ namespace thekogans {
             /// NOTE: The DTLS handshake has not occurred yet. Call
             /// \see{SecureUDPSocket::SessionConnect} to begin a DTLS handshake.
             virtual void HandleSecureUDPSocketConnected (
-                SecureUDPSocket & /*udpSocket*/) throw () {}
+                SecureUDPSocket &udpSocket) throw ();
         #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
             /// \brief
@@ -207,8 +214,8 @@ namespace thekogans {
             /// \param[in] connection The new connection socket.
             /// NOTE: The new connection will be sync (blocking).
             virtual void HandleServerTCPSocketConnection (
-                ServerTCPSocket & /*serverTCPSocket*/,
-                TCPSocket::Ptr /*connection*/) throw () {}
+                ServerTCPSocket &serverTCPSocket,
+                TCPSocket::Ptr connection) throw ();
             /// \brief
             /// Called to report a new connection on a \see{ServerUDPSocket}.
             /// \param[in] serverUDPSocket \see{ServerUDPSocket} on which the
@@ -216,8 +223,8 @@ namespace thekogans {
             /// \param[in] connection The new connection info.
             /// NOTE: The new connection will be sync (blocking).
             virtual void HandleServerUDPSocketConnection (
-                ServerUDPSocket & /*serverUDPSocket*/,
-                ServerUDPSocket::Connection::UniquePtr /*connection*/) throw () {}
+                ServerUDPSocket &serverUDPSocket,
+                ServerUDPSocket::Connection::UniquePtr connection) throw ();
 
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
             /// \brief
@@ -231,8 +238,8 @@ namespace thekogans {
             /// call \see{SecureTCPSocket::SessionAccept} to begin a TLS
             /// handshake.
             virtual void HandleServerSecureTCPSocketConnection (
-                ServerSecureTCPSocket & /*serverSecureTCPSocket*/,
-                SecureTCPSocket::Ptr /*connection*/) throw () {}
+                ServerSecureTCPSocket &serverSecureTCPSocket,
+                SecureTCPSocket::Ptr connection) throw ();
             /// \brief
             /// Called to report a new connection on a \see{ServerSecureUDPSocket}.
             /// \param[in] serverSecureUDPSocket \see{ServerSecureUDPSocket} on which
@@ -240,12 +247,12 @@ namespace thekogans {
             /// \param[in] connection The new connection socket.
             /// NOTE: The new connection will be sync (blocking).
             /// NOTE: The DTLS handshake has not occurred yet. After
-            /// adding the new connection to the AsyncIoEventQueue,
+            /// adding the new connection to the \see{AsyncIoEventQueue},
             /// call \see{SecureUDPSocket::SessionAccept} to begin
             /// a DTLS handshake.
             virtual void HandleServerSecureUDPSocketConnection (
-                ServerSecureUDPSocket & /*serverSecureUDPSocket*/,
-                SecureUDPSocket::Ptr /*connection*/) throw () {}
+                ServerSecureUDPSocket &serverSecureUDPSocket,
+                SecureUDPSocket::Ptr connection) throw ();
 
             /// \brief
             /// Called when the TLS handshake is about to start.
@@ -254,7 +261,7 @@ namespace thekogans {
             /// \param[in] secureTCPSocket \see{SecureTCPSocket}
             /// on which the TLS handshake is about to start.
             virtual void HandleSecureTCPSocketHandshakeStarting (
-                SecureTCPSocket & /*secureTCPSocket*/) throw () {}
+                SecureTCPSocket &secureTCPSocket) throw ();
             /// \brief
             /// Called when the TLS handshake completed. This could
             /// be client side SSL_connect, server side SSL_accept
@@ -262,13 +269,13 @@ namespace thekogans {
             /// \param[in] secureTCPSocket \see{SecureTCPSocket}
             /// on which the TLS handshake completed.
             virtual void HandleSecureTCPSocketHandshakeCompleted (
-                SecureTCPSocket & /*secureTCPSocket*/) throw () {}
+                SecureTCPSocket &secureTCPSocket) throw ();
             /// \brief
             /// Called when a bidirectional TLS shutdown completed.
             /// \param[in] secureTCPSocket \see{SecureTCPSocket}
             /// on which the TLS shutdown completed.
             virtual void HandleSecureTCPSocketShutdownCompleted (
-                SecureTCPSocket & /*secureTCPSocket*/) throw () {}
+                SecureTCPSocket &secureTCPSocket) throw ();
 
             /// \brief
             /// Called when the DTLS handshake is about to start.
@@ -277,7 +284,7 @@ namespace thekogans {
             /// \param[in] secureUDPSocket \see{SecureUDPSocket} on
             /// which the DTLS handshake completed.
             virtual void HandleSecureUDPSocketHandshakeStarting (
-                SecureUDPSocket & /*secureUDPSocket*/) throw () {}
+                SecureUDPSocket &secureUDPSocket) throw ();
             /// \brief
             /// Called when the DTLS handshake completed. This could
             /// be client side SSL_connect, server side SSL_accept
@@ -285,13 +292,13 @@ namespace thekogans {
             /// \param[in] secureUDPSocket \see{SecureUDPSocket} on
             /// which the DTLS handshake completed.
             virtual void HandleSecureUDPSocketHandshakeCompleted (
-                SecureUDPSocket & /*secureUDPSocket*/) throw () {}
+                SecureUDPSocket &secureUDPSocket) throw ();
             /// \brief
             /// Called when a bidirectional DTLS shutdown completed.
             /// \param[in] secureUDPSocket \see{SecureUDPSocket} on
             /// which the DTLS shutdown completed.
             virtual void HandleSecureUDPSocketShutdownCompleted (
-                SecureUDPSocket & /*secureUDPSocket*/) throw () {}
+                SecureUDPSocket &secureUDPSocket) throw ();
         #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
             /// \brief
@@ -300,18 +307,18 @@ namespace thekogans {
             /// \param[in] buffer The new datagram.
             /// \param[in] address Peer address that sent the datagram.
             virtual void HandleUDPSocketReadFrom (
-                UDPSocket & /*udpSocket*/,
-                util::Buffer /*buffer*/,
-                const Address & /*address*/) throw () {}
+                UDPSocket &udpSocket,
+                util::Buffer buffer,
+                const Address &address) throw ();
             /// \brief
             /// Called when a datagram was written to a (Secure)UDPSocket.
             /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
             /// \param[in] buffer The written datagram.
             /// \param[in] address Peer address that received the datagram.
             virtual void HandleUDPSocketWriteTo (
-                UDPSocket & /*udpSocket*/,
-                util::Buffer /*buffer*/,
-                const Address & /*address*/) throw () {}
+                UDPSocket &udpSocket,
+                util::Buffer buffer,
+                const Address &address) throw ();
 
             /// \brief
             /// Called when a new datagram has arrived on a (Secure)UDPSocket.
@@ -320,10 +327,10 @@ namespace thekogans {
             /// \param[in] from Peer address that sent the datagram.
             /// \param[in] to Local address that received the datagram.
             virtual void HandleUDPSocketReadMsg (
-                UDPSocket & /*udpSocket*/,
-                util::Buffer /*buffer*/,
-                const Address & /*from*/,
-                const Address & /*to*/) throw () {}
+                UDPSocket &udpSocket,
+                util::Buffer buffer,
+                const Address &from,
+                const Address &to) throw ();
             /// \brief
             /// Called when a datagram was written to a (Secure)UDPSocket.
             /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
@@ -331,10 +338,10 @@ namespace thekogans {
             /// \param[in] from Local address from which the datagram was sent.
             /// \param[in] to Peer address that will receive the datagram.
             virtual void HandleUDPSocketWriteMsg (
-                UDPSocket & /*udpSocket*/,
-                util::Buffer /*buffer*/,
-                const Address & /*from*/,
-                const Address & /*to*/) throw () {}
+                UDPSocket &udpSocket,
+                util::Buffer buffer,
+                const Address &from,
+                const Address &to) throw ();
         };
 
     } // namespace stream

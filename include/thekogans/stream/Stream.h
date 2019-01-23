@@ -40,13 +40,13 @@ namespace thekogans {
     namespace stream {
 
         /// \brief
-        /// Forward declaration of StreamSelector.
+        /// Forward declaration of \see{StreamSelector}.
         struct StreamSelector;
         /// \brief
-        /// Forward declaration of AsyncIoEventQueue.
+        /// Forward declaration of \see{AsyncIoEventQueue}.
         struct AsyncIoEventQueue;
         /// \brief
-        /// Forward declaration of AsyncIoEventSink.
+        /// Forward declaration of \see{AsyncIoEventSink}.
         struct AsyncIoEventSink;
         /// \brief
         /// Forward declaration of Stream.
@@ -115,9 +115,11 @@ namespace thekogans {
         ///
         /// Stream\n
         ///   Pipe\n
+        /// #if defined (TOOLCHAIN_OS_Windows)
         ///   NamedPipe\n
         ///     ClientNamedPipe\n
         ///     ServerNamedPipe\n
+        /// #endif // defined (TOOLCHAIN_OS_Windows)
         ///   Socket\n
         ///     TCPSocket\n
         ///       ClientTCPSocket\n
@@ -535,7 +537,7 @@ namespace thekogans {
                 /// The Stream this AsyncInfo belongs to.
                 Stream &stream;
                 /// \brief
-                /// The AsyncIoEventSink that will receive notifications.
+                /// The \see{AsyncIoEventSink} that will receive notifications.
                 AsyncIoEventSink &eventSink;
                 /// \brief
                 /// Buffer length for async WSARecv[From | Msg].
@@ -879,17 +881,10 @@ namespace thekogans {
                     AsyncIoEventQueue &eventQueue_,
                     Stream &stream_,
                     AsyncIoEventSink &eventSink_,
-                    std::size_t bufferLength_) :
-                    eventQueue (eventQueue_),
-                    stream (stream_),
-                    eventSink (eventSink_),
-                    bufferLength (bufferLength_),
-                #if !defined (TOOLCHAIN_OS_Windows)
-                    events (EventInvalid),
-                    readDeadline (util::TimeSpec::Zero),
-                    writeDeadline (util::TimeSpec::Zero),
-                #endif // !defined (TOOLCHAIN_OS_Windows)
-                    lastEventTime (util::TimeSpec::Zero) {}
+                    std::size_t bufferLength_);
+                /// \brief
+                /// dtor.
+                ~AsyncInfo ();
 
             #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
@@ -901,10 +896,6 @@ namespace thekogans {
                 /// \param[in] overlapped Overlapped to delete.
                 void DeleteOverlapped (Overlapped *overlapped);
             #else // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// dtor.
-                ~AsyncInfo ();
-
                 /// \brief
                 /// Adds \see{AsyncIoEventQueue} events the stream is
                 /// interested in.

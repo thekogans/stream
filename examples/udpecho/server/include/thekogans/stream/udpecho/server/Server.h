@@ -60,6 +60,11 @@ namespace thekogans {
                     // util::Thread
                     virtual void Run () throw ();
 
+                    // util::ThreadSafeRefCounted.
+                    /// \brief
+                    /// We're a singleton. Our lifetime is forever.
+                    virtual void Harakiri () {}
+
                     // AsyncIoEventSink
                     virtual void HandleStreamError (
                         Stream &stream,

@@ -557,6 +557,7 @@ namespace thekogans {
                 Stream *stream = deletedStreamsList.pop_front ();
                 timedStreamsList.erase (stream);
                 registryList.erase (stream);
+                stream->asyncInfo.release ();
                 stream->Release ();
             }
         }

@@ -228,7 +228,7 @@ namespace thekogans {
             /// NOTE: This api is to be used by blocking (not async)
             /// ServerNamedPipes only. An async ServerNamedPipe will
             /// start listening for an incoming connection as soon as
-            /// you call AsyncIoEventQueue::AddStream, and will notify
+            /// you call \see{AsyncIoEventQueue::AddStream}, and will notify
             /// AsyncIoEventSink::HandleServerNamedPipeConnection.
             void Connect ();
 
@@ -239,7 +239,7 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Used by the AsyncIoEventQueue to allow the stream to
+            /// Used by the \see{AsyncIoEventQueue} to allow the stream to
             /// initialize itself. When this function is called, the
             /// stream is already async, and Stream::AsyncInfo has
             /// been created. At this point the stream should do
@@ -247,7 +247,7 @@ namespace thekogans {
             /// do.
             virtual void InitAsyncIo ();
             /// \brief
-            /// Used by AsyncIoEventQueue to notify the stream that
+            /// Used by \see{AsyncIoEventQueue} to notify the stream that
             /// an overlapped operation has completed successfully.
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();

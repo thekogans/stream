@@ -254,6 +254,40 @@ namespace thekogans {
                 event == EVENT_WRITE_MSG ? EventWriteMsg : EventInvalid;
         }
 
+        Stream::AsyncInfo::AsyncInfo (
+                AsyncIoEventQueue &eventQueue_,
+                Stream &stream_,
+                AsyncIoEventSink &eventSink_,
+                std::size_t bufferLength_) :
+                eventQueue (eventQueue_),
+                stream (stream_),
+                eventSink (eventSink_),
+                bufferLength (bufferLength_),
+            #if !defined (TOOLCHAIN_OS_Windows)
+                events (EventInvalid),
+                readDeadline (util::TimeSpec::Zero),
+                writeDeadline (util::TimeSpec::Zero),
+            #endif // !defined (TOOLCHAIN_OS_Windows)
+                lastEventTime (util::TimeSpec::Zero) {
+            eventSink.AddRef ();
+        }
+
+        Stream::AsyncInfo::~AsyncInfo () {
+            eventSink.Release ();
+        #if !defined (TOOLCHAIN_OS_Windows)
+            util::LockGuard<util::SpinLock> guard (spinLock);
+            struct Callback : public BufferInfoList::Callback {
+                typedef BufferInfoList::Callback::result_type result_type;
+                typedef BufferInfoList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type bufferInfo) {
+                    delete bufferInfo;
+                    return true;
+                }
+            } callback;
+            bufferInfoList.clear (callback);
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+        }
+
     #if defined (TOOLCHAIN_OS_Windows)
         Stream::AsyncInfo::Overlapped::Overlapped (
                 Stream &stream_,
@@ -476,19 +510,6 @@ namespace thekogans {
                 return true;
             }
             return false;
-        }
-
-        Stream::AsyncInfo::~AsyncInfo () {
-            util::LockGuard<util::SpinLock> guard (spinLock);
-            struct Callback : public BufferInfoList::Callback {
-                typedef BufferInfoList::Callback::result_type result_type;
-                typedef BufferInfoList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type bufferInfo) {
-                    delete bufferInfo;
-                    return true;
-                }
-            } callback;
-            bufferInfoList.clear (callback);
         }
 
         void Stream::AsyncInfo::AddStreamForEvents (util::ui32 events) {
