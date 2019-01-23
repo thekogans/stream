@@ -75,7 +75,7 @@ namespace thekogans {
         ///   called asynchronously from a completely different thread.
         ///   There is no one there to catch your exceptions. YOU WILL SEG FAULT!
 
-        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink : public util::ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink : virtual util::ThreadSafeRefCounted {
             /// \brief
             /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncIoEventSink>.
             typedef util::ThreadSafeRefCounted::Ptr<AsyncIoEventSink> Ptr;
