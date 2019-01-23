@@ -135,7 +135,7 @@ namespace thekogans {
         ///       ServerSecureUDPSocket\n
 
         struct _LIB_THEKOGANS_STREAM_DECL Stream :
-                virtual util::ThreadSafeRefCounted,
+                public virtual util::ThreadSafeRefCounted,
                 public AsyncIoEventQueueRegistryList::Node,
                 public AsyncIoEventQueueTimedStreamsList::Node,
                 public AsyncIoEventQueueDeletedStreamsList::Node {
