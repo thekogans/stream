@@ -48,7 +48,8 @@ namespace thekogans {
         ///
         /// \brief
         /// AsyncIoEventSink represents the callback mechanism by which async io events
-        /// are delivered.
+        /// are delivered. AsyncIoEventSinks can be chained together to provide a filtering
+        /// pipeline.
         ///
         /// IMPORTANT NOTE: This api is called asynchronously, and because of that, there
         /// are some restrictions on what is considered in good taste. The following are
@@ -171,16 +172,8 @@ namespace thekogans {
             /// a connection to the server.
             /// \param[in] tcpSocket \see{TCPSocket} that established
             /// a connection.
-            virtual void HandleTCPSocketConnected (
-                TCPSocket &tcpSocket) throw ();
+            virtual void HandleTCPSocketConnected (TCPSocket &tcpSocket) throw ();
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-            /// \brief
-            /// Override this method if you're deriving from a \see{SecureTCPSocket}.
-            /// \param[in] handle OS socket handle to wrap.
-            /// \return A SecureTCPSocket derivative.
-            virtual SecureTCPSocket::Ptr GetSecureTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
-                return SecureTCPSocket::Ptr (new SecureTCPSocket (handle));
-            }
             /// \brief
             /// Called when a client \see{SecureTCPSocket} has established a
             /// connection to the server.
@@ -228,6 +221,13 @@ namespace thekogans {
                 ServerUDPSocket::Connection::UniquePtr connection) throw ();
 
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+            /// \brief
+            /// Override this method if you're deriving from a \see{SecureTCPSocket}.
+            /// \param[in] handle OS socket handle to wrap.
+            /// \return A SecureTCPSocket derivative.
+            virtual SecureTCPSocket::Ptr GetSecureTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
+                return SecureTCPSocket::Ptr (new SecureTCPSocket (handle));
+            }
             /// \brief
             /// Called to report a new connection on a \see{ServerSecureTCPSocket}.
             /// \param[in] serverSecureTCPSocket \see{ServerSecureTCPSocket} on which
