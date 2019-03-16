@@ -20,29 +20,16 @@
 namespace thekogans {
     namespace stream {
 
-        AsyncIoEventSink::AsyncIoEventSink (AsyncIoEventSink *next_) :
-                next (next_) {
-            if (next != 0) {
-                next->AddRef ();
-            }
-        }
-
-        AsyncIoEventSink::~AsyncIoEventSink () {
-            if (next != 0) {
-                next->Release ();
-            }
-        }
-
         void AsyncIoEventSink::HandleStreamError (
                 Stream &stream,
                 const util::Exception &exception) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleStreamError (stream, exception);
             }
         }
 
         void AsyncIoEventSink::HandleStreamDisconnect (Stream &stream) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleStreamDisconnect (stream);
             }
         }
@@ -50,7 +37,7 @@ namespace thekogans {
         void AsyncIoEventSink::HandleStreamRead (
                 Stream &stream,
                 util::Buffer buffer) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleStreamRead (stream, std::move (buffer));
             }
         }
@@ -58,7 +45,7 @@ namespace thekogans {
         void AsyncIoEventSink::HandleStreamWrite (
                 Stream &stream,
                 util::Buffer buffer) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleStreamWrite (stream, std::move (buffer));
             }
         }
@@ -66,27 +53,27 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         void AsyncIoEventSink::HandleServerNamedPipeConnection (
                 ServerNamedPipe &serverNamedPipe) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleServerNamedPipeConnection (serverNamedPipe);
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         void AsyncIoEventSink::HandleTCPSocketConnected (TCPSocket &tcpSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleTCPSocketConnected (tcpSocket);
             }
         }
 
     #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
         void AsyncIoEventSink::HandleSecureTCPSocketConnected (SecureTCPSocket &tcpSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureTCPSocketConnected (tcpSocket);
             }
         }
 
         void AsyncIoEventSink::HandleSecureUDPSocketConnected (SecureUDPSocket &udpSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureUDPSocketConnected (udpSocket);
             }
         }
@@ -95,7 +82,7 @@ namespace thekogans {
         void AsyncIoEventSink::HandleServerTCPSocketConnection (
                 ServerTCPSocket &serverTCPSocket,
                 TCPSocket::Ptr connection) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleServerTCPSocketConnection (serverTCPSocket, connection);
             }
         }
@@ -103,7 +90,7 @@ namespace thekogans {
         void AsyncIoEventSink::HandleServerUDPSocketConnection (
                 ServerUDPSocket &serverUDPSocket,
                 ServerUDPSocket::Connection::UniquePtr connection) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleServerUDPSocketConnection (
                     serverUDPSocket,
                     std::move (connection));
@@ -114,7 +101,7 @@ namespace thekogans {
         void AsyncIoEventSink::HandleServerSecureTCPSocketConnection (
                 ServerSecureTCPSocket &serverSecureTCPSocket,
                 SecureTCPSocket::Ptr connection) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleServerSecureTCPSocketConnection (
                     serverSecureTCPSocket,
                     connection);
@@ -124,7 +111,7 @@ namespace thekogans {
         void AsyncIoEventSink::HandleServerSecureUDPSocketConnection (
                 ServerSecureUDPSocket &serverSecureUDPSocket,
                 SecureUDPSocket::Ptr connection) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleServerSecureUDPSocketConnection (
                     serverSecureUDPSocket,
                     std::move (connection));
@@ -133,7 +120,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleSecureTCPSocketHandshakeStarting (
                 SecureTCPSocket &secureTCPSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureTCPSocketHandshakeStarting (
                     secureTCPSocket);
             }
@@ -141,7 +128,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleSecureTCPSocketHandshakeCompleted (
                 SecureTCPSocket &secureTCPSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureTCPSocketHandshakeCompleted (
                     secureTCPSocket);
             }
@@ -149,7 +136,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleSecureTCPSocketShutdownCompleted (
                 SecureTCPSocket &secureTCPSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureTCPSocketShutdownCompleted (
                     secureTCPSocket);
             }
@@ -157,7 +144,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleSecureUDPSocketHandshakeStarting (
                 SecureUDPSocket &secureUDPSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureUDPSocketHandshakeStarting (
                     secureUDPSocket);
             }
@@ -165,7 +152,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleSecureUDPSocketHandshakeCompleted (
                 SecureUDPSocket &secureUDPSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureUDPSocketHandshakeCompleted (
                     secureUDPSocket);
             }
@@ -173,7 +160,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleSecureUDPSocketShutdownCompleted (
                 SecureUDPSocket &secureUDPSocket) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleSecureUDPSocketShutdownCompleted (
                     secureUDPSocket);
             }
@@ -184,7 +171,7 @@ namespace thekogans {
                 UDPSocket &udpSocket,
                 util::Buffer buffer,
                 const Address &address) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleUDPSocketReadFrom (
                     udpSocket,
                     std::move (buffer),
@@ -196,7 +183,7 @@ namespace thekogans {
                 UDPSocket &udpSocket,
                 util::Buffer buffer,
                 const Address &address) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleUDPSocketWriteTo (
                     udpSocket,
                     std::move (buffer),
@@ -209,7 +196,7 @@ namespace thekogans {
                 util::Buffer buffer,
                 const Address &from,
                 const Address &to) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleUDPSocketReadMsg (
                     udpSocket,
                     std::move (buffer),
@@ -223,7 +210,7 @@ namespace thekogans {
                 util::Buffer buffer,
                 const Address &from,
                 const Address &to) throw () {
-            if (next != 0) {
+            if (next.Get () != 0) {
                 next->HandleUDPSocketWriteMsg (
                     udpSocket,
                     std::move (buffer),

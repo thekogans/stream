@@ -85,16 +85,17 @@ namespace thekogans {
         protected:
             /// \brief
             /// Next AsyncIoEventSink in the chain.
-            AsyncIoEventSink *next;
+            AsyncIoEventSink::Ptr next;
 
         public:
             /// \brief
             /// dtor.
             /// \param[in] next_ Next AsyncIoEventSink in the chain.
-            AsyncIoEventSink (AsyncIoEventSink *next_ = 0);
+            AsyncIoEventSink (AsyncIoEventSink::Ptr next_ = 0) :
+                next (next_) {}
             /// \brief
             /// dtor.
-            virtual ~AsyncIoEventSink ();
+            virtual ~AsyncIoEventSink () {}
 
             /// \brief
             /// Called to initiate stream error processing.
