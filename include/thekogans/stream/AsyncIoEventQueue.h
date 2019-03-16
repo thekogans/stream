@@ -479,7 +479,7 @@ namespace thekogans {
                 util::ui32 maxSize_ = AsyncIoEventQueue::DEFAULT_MAX_SIZE,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 util::i32 priority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                util::ui32 affinity_ = util::UI32_MAX);
+                util::ui32 affinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
 
             /// \brief
             /// Create a global async io event queue with custom ctor arguments.
@@ -525,7 +525,7 @@ namespace thekogans {
                 util::ui32 maxSize = AsyncIoEventQueue::DEFAULT_MAX_SIZE,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                util::ui32 affinity = util::UI32_MAX);
+                util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
 
         private:
             // util::Thread

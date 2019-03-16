@@ -274,8 +274,18 @@ namespace thekogans {
 
         Stream::AsyncInfo::~AsyncInfo () {
             eventSink.Release ();
-        #if !defined (TOOLCHAIN_OS_Windows)
             util::LockGuard<util::SpinLock> guard (spinLock);
+        #if defined (TOOLCHAIN_OS_Windows)
+            struct Callback : public OverlappedList::Callback {
+                typedef OverlappedList::Callback::result_type result_type;
+                typedef OverlappedList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type overlapped) {
+                    delete overlapped;
+                    return true;
+                }
+            } callback;
+            overlappedList.clear (callback);
+        #else // defined (TOOLCHAIN_OS_Windows)
             struct Callback : public BufferInfoList::Callback {
                 typedef BufferInfoList::Callback::result_type result_type;
                 typedef BufferInfoList::Callback::argument_type argument_type;
@@ -285,7 +295,7 @@ namespace thekogans {
                 }
             } callback;
             bufferInfoList.clear (callback);
-        #endif // !defined (TOOLCHAIN_OS_Windows)
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
