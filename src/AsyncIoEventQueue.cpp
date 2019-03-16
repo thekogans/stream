@@ -194,21 +194,24 @@ namespace thekogans {
                 AsyncIoEventSink &eventSink,
                 std::size_t bufferLength) {
             if (stream.IsOpen () && !stream.IsAsync ()) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (CreateIoCompletionPort (
-                        stream.handle, handle, (ULONG_PTR)&stream, 0) == 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                // Adding the same stream to the queue is stupid but harmless.
+                if (!registryList.contains (&stream)) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    if (CreateIoCompletionPort (
+                            stream.handle, handle, (ULONG_PTR)&stream, 0) == 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    stream.asyncInfo.reset (
+                        new Stream::AsyncInfo (*this, stream, eventSink, bufferLength));
+                    stream.InitAsyncIo ();
+                    {
+                        util::LockGuard<util::SpinLock> guard (spinLock);
+                        registryList.push_back (&stream);
+                    }
+                    stream.AddRef ();
                 }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                stream.asyncInfo.reset (
-                    new Stream::AsyncInfo (*this, stream, eventSink, bufferLength));
-                stream.InitAsyncIo ();
-                {
-                    util::LockGuard<util::SpinLock> guard (spinLock);
-                    registryList.push_back (&stream);
-                }
-                stream.AddRef ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
