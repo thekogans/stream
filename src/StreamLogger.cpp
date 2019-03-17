@@ -78,7 +78,7 @@ namespace thekogans {
                 const std::string &message) throw () {
             std::string entry = Entry (subsystem, level,
                 header, message).ToString (entryTagName.c_str ());
-            stream->Write (entry.c_str (), (util::ui32)entry.size ());
+            stream->Write (entry.c_str (), entry.size ());
         }
 
     } // namespace stream

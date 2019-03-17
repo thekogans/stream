@@ -29,15 +29,19 @@
 namespace thekogans {
     namespace stream {
 
+        /// \brief
+        /// Forward declaration of \see{StreamSelector}.
+        struct StreamSelector;
+        /// \brief
+        /// Forward declaration of \see{AsyncIoEventQueue}.
+        struct AsyncIoEventQueue;
+
         /// \struct Pipe Pipe.h thekogans/stream/Pipe.h
         ///
         /// \brief
         /// Pipe wraps up an unnamed pipe. On Windows the pipes are
         /// actually created from named pipes so that we can take
         /// advantage of overlapped (async) io.
-
-        struct AsyncIoEventQueue;
-        struct StreamSelector;
 
         struct _LIB_THEKOGANS_STREAM_DECL Pipe : public Stream {
             /// \brief
@@ -156,11 +160,11 @@ namespace thekogans {
             virtual void HandleAsyncEvent (util::ui32 event) throw ();
 
             /// \brief
-            /// AsyncIoEventQueue needs access to SetBlocking.
-            friend struct AsyncIoEventQueue;
-            /// \brief
             /// StreamSelector needs access to SetBlocking.
             friend struct StreamSelector;
+            /// \brief
+            /// AsyncIoEventQueue needs access to SetBlocking.
+            friend struct AsyncIoEventQueue;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief

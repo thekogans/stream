@@ -27,7 +27,11 @@
 namespace thekogans {
     namespace stream {
 
+        /// \brief
+        /// Forward declaration of \see{ServerTCPSocket}.
         struct ServerTCPSocket;
+        /// \brief
+        /// Forward declaration of \see{ServerSecureTCPSocket}.
         struct ServerSecureTCPSocket;
 
         /// \struct TCPSocket TCPSocket.h thekogans/stream/TCPSocket.h

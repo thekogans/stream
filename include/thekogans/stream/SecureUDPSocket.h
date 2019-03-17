@@ -31,6 +31,10 @@
 namespace thekogans {
     namespace stream {
 
+        /// \brief
+        /// Forward declaration of \see{ServerSecureUDPSocket}.
+        struct ServerSecureUDPSocket;
+
         /// \struct SecureUDPSocket SecureUDPSocket.h thekogans/stream/SecureUDPSocket.h
         ///
         /// \brief
@@ -47,8 +51,6 @@ namespace thekogans {
         /// SecureUDPSocket directly. SessionConnect (client) and SessionAccept
         /// (server) take a SSL_CTX that you can fill with whatever values that
         /// make sense for your app.
-
-        struct ServerSecureUDPSocket;
 
         struct _LIB_THEKOGANS_STREAM_DECL SecureUDPSocket : public UDPSocket {
             /// \brief
