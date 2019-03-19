@@ -64,9 +64,9 @@ namespace thekogans {
         std::size_t Pipe::Read (
                 void *buffer,
                 std::size_t count) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD countRead = 0;
             if (buffer != 0 && count > 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD countRead = 0;
                 TimedOverlapped::UniquePtr overlapped;
                 if (readTimeout != util::TimeSpec::Zero) {
                     overlapped.reset (new TimedOverlapped);
@@ -86,15 +86,9 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            return countRead;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            ssize_t countRead = 0;
-            if (buffer != 0 && count > 0) {
+                return countRead;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                ssize_t countRead = 0;
                 if (readTimeout != util::TimeSpec::Zero && GetDataAvailable () == 0) {
                     TimedEvent timedEvent;
                     if (!timedEvent.Wait (handle, AsyncInfo::EventRead, readTimeout)) {
@@ -107,21 +101,21 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
+                return (std::size_t)countRead;
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return (std::size_t)countRead;
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         std::size_t Pipe::Write (
                 const void *buffer,
                 std::size_t count) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD countWritten = 0;
             if (buffer != 0 && count > 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD countWritten = 0;
                 if (IsAsync ()) {
                     AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, buffer, count));
@@ -157,15 +151,9 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            return countWritten;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            ssize_t countWritten = 0;
-            if (buffer != 0 && count > 0) {
+                return countWritten;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                ssize_t countWritten = 0;
                 if (IsAsync ()) {
                     asyncInfo->EnqBufferBack (
                         AsyncInfo::BufferInfo::UniquePtr (
@@ -185,39 +173,45 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 }
+                return (std::size_t)countWritten;
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return (std::size_t)countWritten;
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         void Pipe::WriteBuffer (util::Buffer buffer) {
-            if (IsAsync ()) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
-                    new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
-                if (!WriteFile (handle,
-                        overlapped->buffer.GetReadPtr (),
-                        (ULONG)overlapped->buffer.GetDataAvailableForReading (),
-                        0, overlapped.get ())) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                    if (errorCode != ERROR_IO_PENDING) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            if (!buffer.IsEmpty ()) {
+                if (IsAsync ()) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
+                        new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
+                    if (!WriteFile (handle,
+                            overlapped->buffer.GetReadPtr (),
+                            (ULONG)overlapped->buffer.GetDataAvailableForReading (),
+                            0, overlapped.get ())) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        if (errorCode != ERROR_IO_PENDING) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
                     }
+                    overlapped.release ();
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    asyncInfo->EnqBufferBack (
+                        AsyncInfo::BufferInfo::UniquePtr (
+                            new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
+                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
-                overlapped.release ();
-            #else // defined (TOOLCHAIN_OS_Windows)
-                asyncInfo->EnqBufferBack (
-                    AsyncInfo::BufferInfo::UniquePtr (
-                        new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "%s", "WriteBuffer is called on a blocking pipe.");
+                }
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "WriteBuffer is called on a blocking pipe.");
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
