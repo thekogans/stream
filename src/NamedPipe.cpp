@@ -28,8 +28,8 @@ namespace thekogans {
         std::size_t NamedPipe::Read (
                 void *buffer,
                 std::size_t count) {
-            DWORD numberOfBytesRead = 0;
             if (buffer != 0 && count > 0) {
+                DWORD numberOfBytesRead = 0;
                 TimedOverlapped::UniquePtr overlapped;
                 if (readTimeout != util::TimeSpec::Zero) {
                     overlapped.reset (new TimedOverlapped);
@@ -57,19 +57,19 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
+                return numberOfBytesRead;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return numberOfBytesRead;
         }
 
         std::size_t NamedPipe::Write (
                 const void *buffer,
                 std::size_t count) {
-            DWORD numberOfBytesWriten = 0;
             if (buffer != 0 && count > 0) {
+                DWORD numberOfBytesWriten = 0;
                 if (IsAsync ()) {
                     AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, buffer, count));
@@ -115,12 +115,12 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 }
+                return numberOfBytesWriten;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return numberOfBytesWriten;
         }
 
         void NamedPipe::WriteBuffer (util::Buffer buffer) {
