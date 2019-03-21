@@ -128,6 +128,13 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return true if the connected peer is a local process.
+            /// \return true if the connected peer is a local process.
+            inline bool IsPeerLocal () const {
+                return GetPeerAddress ().AddrToString () == GetHostAddress ().AddrToString ();
+            }
+
+            /// \brief
             /// Bind the socket to the given address.
             /// \param[in] address Address to bind the socket to.
             void Bind (const Address &address);
