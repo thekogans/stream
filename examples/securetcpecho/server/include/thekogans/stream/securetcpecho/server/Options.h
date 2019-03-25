@@ -67,6 +67,7 @@ namespace thekogans {
                             fileLogger.Reset ();
                         }
                     } loggerMgr;
+                    std::string priority;
                     bool useWriteQueue;
                     std::string lockFilePath;
                     std::string path;

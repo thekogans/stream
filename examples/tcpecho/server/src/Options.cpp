@@ -88,17 +88,17 @@ namespace thekogans {
                             port = util::stringToui16 (value.c_str ());
                             break;
                         case 'a':
-                            addresses.push_back (stream::Address (port, value));
+                            addresses.push_back (Address (port, value));
                             break;
                     }
                 }
 
                 void Options::Epilog () {
                     if (addresses.empty ()) {
-                        addresses.push_back (stream::Address::Any (port));
+                        addresses.push_back (Address::Any (port));
                     }
                     else if (port != DEFAULT_PORT) {
-                        for (std::list<stream::Address>::iterator
+                        for (std::list<Address>::iterator
                                 it = addresses.begin (),
                                 end = addresses.end (); it != end; ++it) {
                             (*it).SetPort (port);
@@ -210,8 +210,7 @@ namespace thekogans {
                             std::string address = util::Decodestring (child.text ().get ());
                             if (!address.empty ()) {
                                 THEKOGANS_UTIL_TRY {
-                                    addresses.push_back (
-                                        stream::Address (port, address));
+                                    addresses.push_back (Address (port, address));
                                 }
                                 THEKOGANS_UTIL_CATCH_AND_LOG
                             }

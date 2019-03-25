@@ -17,6 +17,7 @@
 
 #include "thekogans/util/Path.h"
 #include "thekogans/util/HRTimer.h"
+#include "thekogans/util/Thread.h"
 #include "thekogans/util/ConsoleLogger.h"
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/XMLUtils.h"
@@ -40,6 +41,7 @@ namespace thekogans {
                 Options::Options () :
                         help (false),
                         version (false),
+                        priority (util::Thread::NORMAL_THREAD_PRIORITY),
                         useWriteQueue (false),
                         startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
@@ -78,6 +80,9 @@ namespace thekogans {
                                 loggerMgr.fileLogger.maxLogFileSize =
                                     util::stringToui32 (value.c_str ());
                             }
+                            break;
+                        case 'p':
+                            priority = value;
                             break;
                         case 'q':
                             useWriteQueue = true;

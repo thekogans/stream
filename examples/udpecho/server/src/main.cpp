@@ -109,7 +109,7 @@ int main (
             struct LockFile {
                 util::Path path;
                 explicit LockFile (const std::string &path_) :
-                    path (path_) {
+                        path (path_) {
                     if (!path.IsEmpty ()) {
                         if (!path.Exists ()) {
                             util::File::Touch (path_);

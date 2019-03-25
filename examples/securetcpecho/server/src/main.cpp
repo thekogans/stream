@@ -21,12 +21,13 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/RunLoop.h"
+#include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/ConsoleLogger.h"
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/MainRunLoop.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Version.h"
+#include "thekogans/crypto/Version.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 #include "thekogans/stream/Version.h"
 #include "thekogans/stream/securetcpecho/server/Options.h"
@@ -60,7 +61,7 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    server::Options::Instance ().Parse (argc, argv, "hvlcfrqk");
+    server::Options::Instance ().Parse (argc, argv, "hvlcfrpqk");
     THEKOGANS_UTIL_LOG_INIT (
         server::Options::Instance ().loggerMgr.level,
         server::Options::Instance ().loggerMgr.decorations);
@@ -81,13 +82,14 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (server::Options::Instance ().help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] [-q] [-k:'path'] path\n\n"
+            "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] [-p:priority] [-q] [-k:'path'] path\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
             "c - Log to console.\n"
             "f - Log to file (path - Path of log file).\n"
             "r - Archive file log (maxSize - Max log file size before archiving).\n"
+            "p - Server thread priority.\n"
             "q - Use a queue (seperate thread) when responding to clients.\n"
             "k - Use lock file to prevent multiple instances (path - Path to lock file).\n"
             "path - Path to server.xml configuration file.\n",
@@ -97,9 +99,11 @@ int main (
     else if (server::Options::Instance ().version) {
         THEKOGANS_UTIL_LOG_INFO (
             "libthekogans_util - %s\n"
+            "libthekogans_crypto - %s\n"
             "libthekogans_stream - %s\n"
             "%s - %s\n",
             util::GetVersion ().ToString ().c_str (),
+            crypto::GetVersion ().ToString ().c_str (),
             stream::GetVersion ().ToString ().c_str (),
             argv[0], server::GetVersion ().ToString ().c_str ());
     }
@@ -128,18 +132,31 @@ int main (
                     }
                 }
             } lockFile (server::Options::Instance ().lockFilePath);
-            stream::OpenSSLInit openSSLInit;
-        #if defined (TOOLCHAIN_TYPE_Static)
-            stream::Stream::StaticInit ();
-        #endif // defined (TOOLCHAIN_TYPE_Static)
-            THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
-            server::Server::Instance ().Start (
-                server::Options::Instance ().path,
-                THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                server::Options::Instance ().useWriteQueue);
-            util::MainRunLoop::Instance ().Start ();
-            server::Server::Instance ().Stop ();
-            THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);
+            struct App {
+                App () {
+                    THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
+                        util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+                    stream::OpenSSLInit openSSLInit;
+                #if defined (TOOLCHAIN_TYPE_Static)
+                    stream::Stream::StaticInit ();
+                #endif // defined (TOOLCHAIN_TYPE_Static)
+                    util::MainRunLoopCreateInstance::Parameterize (
+                        "MainRunLoop",
+                        util::RunLoop::TYPE_FIFO,
+                        util::UI32_MAX,
+                        true);
+                    server::Server::Instance ().Start (
+                        server::Options::Instance ().path,
+                        util::Thread::stringToPriority (server::Options::Instance ().priority),
+                        server::Options::Instance ().useWriteQueue);
+                    util::MainRunLoop::Instance ().Start ();
+                }
+                ~App () {
+                    server::Server::Instance ().Stop ();
+                    THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",
+                        util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+                }
+            } app;
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

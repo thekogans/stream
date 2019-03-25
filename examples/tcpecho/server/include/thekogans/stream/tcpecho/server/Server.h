@@ -36,10 +36,10 @@ namespace thekogans {
                 struct Server :
                         public util::Singleton<Server>,
                         public util::Thread,
-                        public stream::AsyncIoEventSink {
+                        public AsyncIoEventSink {
                 private:
                     util::JobQueue jobQueue;
-                    stream::AsyncIoEventQueue::UniquePtr eventQueue;
+                    AsyncIoEventQueue::UniquePtr eventQueue;
                     volatile bool done;
 
                 public:
@@ -47,10 +47,10 @@ namespace thekogans {
                         done (true) {}
 
                     void Start (
-                        const std::list<stream::Address> &addresses,
+                        const std::list<Address> &addresses,
                         bool reuseAddress = false,
                         util::ui32 maxPendingConnections =
-                            stream::ServerTCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
+                            ServerTCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
                         util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                         util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
                     void Stop ();
@@ -64,17 +64,17 @@ namespace thekogans {
                     /// We're a singleton. Our lifetime is forever.
                     virtual void Harakiri () {}
 
-                    // stream::AsyncIoEventSink
+                    // AsyncIoEventSink
                     virtual void HandleStreamError (
-                        stream::Stream &stream,
+                        Stream &stream,
                         const util::Exception &exception) throw ();
                     virtual void HandleServerTCPSocketConnection (
-                        stream::ServerTCPSocket &serverTCPSocket,
-                        stream::TCPSocket::Ptr connection) throw ();
+                        ServerTCPSocket &serverTCPSocket,
+                        TCPSocket::Ptr connection) throw ();
                     virtual void HandleStreamDisconnect (
-                        stream::Stream &stream) throw ();
+                        Stream &stream) throw ();
                     virtual void HandleStreamRead (
-                        stream::Stream &stream,
+                        Stream &stream,
                         util::Buffer buffer) throw ();
                 };
 

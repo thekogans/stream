@@ -21,7 +21,7 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/SystemRunLoop.h"
+#include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/ConsoleLogger.h"
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/MainRunLoop.h"
@@ -124,41 +124,25 @@ int main (
                     }
                 }
             } lockFile (server::Options::Instance ().lockFilePath);
-            THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
-            server::Server::Instance ().Start (
-                server::Options::Instance ().addresses);
-        #if defined (TOOLCHAIN_OS_Windows)
-            util::MainRunLoopCreateInstance::Parameterize (
-                "MainRunLoop",
-                util::JobQueue::TYPE_FIFO,
-                util::UI32_MAX,
-                true,
-                0,
-                0,
-                util::SystemRunLoop::CreateThreadWindow ());
-        #elif defined (TOOLCHAIN_OS_Linix)
-            XInitThreads ();
-            util::MainRunLoopCreateInstance::Parameterize (
-                "MainRunLoop",
-                util::JobQueue::TYPE_FIFO,
-                util::UI32_MAX,
-                true,
-                0,
-                0,
-                util::SystemRunLoop::CreateThreadWindow (),
-                std::vector<Display *> ());
-        #elif defined (TOOLCHAIN_OS_OSX)
-            util::MainRunLoopCreateInstance::Parameterize (
-                "MainRunLoop",
-                util::JobQueue::TYPE_FIFO,
-                util::UI32_MAX,
-                true,
-                util::SystemRunLoop::OSXRunLoop::Ptr (
-                    new util::SystemRunLoop::CFOSXRunLoop));
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            util::MainRunLoop::Instance ().Start ();
-            server::Server::Instance ().Stop ();
-            THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);
+            struct App {
+                App () {
+                    THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
+                        util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+                    util::MainRunLoopCreateInstance::Parameterize (
+                        "MainRunLoop",
+                        util::RunLoop::TYPE_FIFO,
+                        util::UI32_MAX,
+                        true);
+                    server::Server::Instance ().Start (
+                        server::Options::Instance ().addresses);
+                    util::MainRunLoop::Instance ().Start ();
+                }
+                ~App () {
+                    server::Server::Instance ().Stop ();
+                    THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",
+                        util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+                }
+            } app;
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

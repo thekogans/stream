@@ -70,7 +70,7 @@ namespace thekogans {
                     } loggerMgr;
                     std::string lockFilePath;
                     util::ui16 port;
-                    std::list<stream::Address> addresses;
+                    std::list<Address> addresses;
                     std::string startDirectory;
                     util::Directory::Watcher::WatchId watchId;
 
