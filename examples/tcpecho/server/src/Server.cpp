@@ -165,12 +165,12 @@ namespace thekogans {
                                     free (tcpTable);
                                 }
                             } tcpTable;
-                            for (std::size_t i = 0, count = table.count; i < count; ++i) {
-                                if (pTcpTable->table[i].dwState == MIB_TCP_STATE_ESTAB) {
-                                    util::ui16 localPort = (util::ui16)ntohs (tcpTable->table[i].dwLocalPort);
-                                    util::ui16 remotePort = (util::ui16)ntohs (tcpTable->table[i].dwRemotePort);
+                            for (std::size_t i = 0, count = tcpTable.count; i < count; ++i) {
+                                if (tcpTable.tcpTable->table[i].dwState == MIB_TCP_STATE_ESTAB) {
+                                    util::ui16 localPort = (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwLocalPort);
+                                    util::ui16 remotePort = (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwRemotePort);
                                     if (localPort == peerPort && remotePort == hostPort) {
-                                        return util::GetProcessPath (tcpTable->table[i].dwOwningPid);
+                                        return util::GetProcessPath (tcpTable.tcpTable->table[i].dwOwningPid);
                                     }
                                 }
                             }
