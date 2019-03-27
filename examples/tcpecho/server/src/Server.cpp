@@ -122,58 +122,116 @@ namespace thekogans {
                             util::ui16 peerPort = peerAddress.GetPort ();
                             util::ui16 hostPort = hostAddress.GetPort ();
                         #if defined (TOOLCHAIN_OS_Windows)
-                            struct TCPTable {
-                                PMIB_TCPTABLE2 tcpTable;
-                                std::size_t count;
+                            int family = socket.GetFamily ();
+                            if (family == AF_INET) {
+                                struct TCPTable {
+                                    PMIB_TCPTABLE2 tcpTable;
+                                    std::size_t count;
 
-                                TCPTable () :
-                                        tcpTable ((MIB_TCPTABLE2 *)malloc (sizeof (MIB_TCPTABLE2))),
-                                        count (0) {
-                                    if (tcpTable != 0) {
-                                        ULONG size = sizeof (MIB_TCPTABLE2);
-                                        DWORD errorCode = GetTcpTable2 (tcpTable, &size, TRUE);
-                                        if (errorCode != NO_ERROR) {
-                                            if (errorCode == ERROR_INSUFFICIENT_BUFFER) {
-                                                free (tcpTable);
-                                                tcpTable = (MIB_TCPTABLE2 *)malloc (size);
-                                                if (tcpTable != 0) {
-                                                    DWORD errorCode = GetTcpTable2 (tcpTable, &size, TRUE);
-                                                    if (errorCode == NO_ERROR) {
-                                                        count = tcpTable->dwNumEntries;
+                                    TCPTable () :
+                                            tcpTable ((MIB_TCPTABLE2 *)malloc (sizeof (MIB_TCPTABLE2))),
+                                            count (0) {
+                                        if (tcpTable != 0) {
+                                            ULONG size = sizeof (MIB_TCPTABLE2);
+                                            DWORD errorCode = GetTcpTable2 (tcpTable, &size, TRUE);
+                                            if (errorCode != NO_ERROR) {
+                                                if (errorCode == ERROR_INSUFFICIENT_BUFFER) {
+                                                    free (tcpTable);
+                                                    tcpTable = (MIB_TCPTABLE2 *)malloc (size);
+                                                    if (tcpTable != 0) {
+                                                        DWORD errorCode = GetTcpTable2 (tcpTable, &size, TRUE);
+                                                        if (errorCode == NO_ERROR) {
+                                                            count = tcpTable->dwNumEntries;
+                                                        }
+                                                        else {
+                                                            free (tcpTable);
+                                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                        }
                                                     }
                                                     else {
-                                                        free (tcpTable);
-                                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                            THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
                                                     }
                                                 }
                                                 else {
-                                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                                        THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
+                                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                                                 }
                                             }
-                                            else {
-                                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                                            }
+                                        }
+                                        else {
+                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
                                         }
                                     }
-                                    else {
-                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                            THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
+                                    ~TCPTable () {
+                                        free (tcpTable);
                                     }
-                                }
-                                ~TCPTable () {
-                                    free (tcpTable);
-                                }
-                            } tcpTable;
-                            for (std::size_t i = 0, count = tcpTable.count; i < count; ++i) {
-                                if (tcpTable.tcpTable->table[i].dwState == MIB_TCP_STATE_ESTAB) {
-                                    util::ui16 localPort = (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwLocalPort);
-                                    util::ui16 remotePort = (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwRemotePort);
-                                    if (localPort == peerPort && remotePort == hostPort) {
-                                        return util::GetProcessPath (tcpTable.tcpTable->table[i].dwOwningPid);
+                                } tcpTable;
+                                for (std::size_t i = 0, count = tcpTable.count; i < count; ++i) {
+                                    if (tcpTable.tcpTable->table[i].dwState == MIB_TCP_STATE_ESTAB) {
+                                        util::ui16 localPort = (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwLocalPort);
+                                        util::ui16 remotePort = (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwRemotePort);
+                                        if (localPort == peerPort && remotePort == hostPort) {
+                                            return util::GetProcessPath (tcpTable.tcpTable->table[i].dwOwningPid);
+                                        }
                                     }
                                 }
                             }
+                            else if (family == AF_INET6) {
+                                struct TCP6Table {
+                                    PMIB_TCP6TABLE2 tcp6Table;
+                                    std::size_t count;
+
+                                    TCP6Table () :
+                                            tcp6Table ((MIB_TCP6TABLE2 *)malloc (sizeof (MIB_TCP6TABLE2))),
+                                            count (0) {
+                                        if (tcp6Table != 0) {
+                                            ULONG size = sizeof (MIB_TCP6TABLE2);
+                                            DWORD errorCode = GetTcp6Table2 (tcp6Table, &size, TRUE);
+                                            if (errorCode != NO_ERROR) {
+                                                if (errorCode == ERROR_INSUFFICIENT_BUFFER) {
+                                                    free (tcp6Table);
+                                                    tcp6Table = (MIB_TCP6TABLE2 *)malloc (size);
+                                                    if (tcp6Table != 0) {
+                                                        DWORD errorCode = GetTcp6Table2 (tcp6Table, &size, TRUE);
+                                                        if (errorCode == NO_ERROR) {
+                                                            count = tcp6Table->dwNumEntries;
+                                                        }
+                                                        else {
+                                                            free (tcp6Table);
+                                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                        }
+                                                    }
+                                                    else {
+                                                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                            THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
+                                                    }
+                                                }
+                                                else {
+                                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                }
+                                            }
+                                        }
+                                        else {
+                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM);
+                                        }
+                                    }
+                                    ~TCP6Table () {
+                                        free (tcp6Table);
+                                    }
+                                } tcp6Table;
+                                for (std::size_t i = 0, count = tcp6Table.count; i < count; ++i) {
+                                    if (tcp6Table.tcp6Table->table[i].dwState == MIB_TCP6_STATE_ESTAB) {
+                                        util::ui16 localPort = (util::ui16)ntohs ((u_short)tcp6Table.tcp6Table->table[i].dwLocalPort);
+                                        util::ui16 remotePort = (util::ui16)ntohs ((u_short)tcp6Table.tcp6Table->table[i].dwRemotePort);
+                                        if (localPort == peerPort && remotePort == hostPort) {
+                                            return util::GetProcessPath (tcp6Table.tcp6Table->table[i].dwOwningPid);
+                                        }
+                                    }
+                                }
+                            }
+                        #elif defined (TOOLCHAIN_OS_Linux)
                         #elif defined (TOOLCHAIN_OS_OSX)
                             struct Processes {
                                 kinfo_proc *processes;
