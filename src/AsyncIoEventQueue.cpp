@@ -368,10 +368,10 @@ namespace thekogans {
                         else if (epollEvents[i].events & EPOLLERR) {
                             // For all the great things epoll does, it's error
                             // handling is fucking abysmal. Not returning the
-                            // error code with EV_ERROR just does not make any
+                            // error code with EPOLLERR just does not make any
                             // sense. For sockets, we have a way of getting
                             // error codes. For pipes we do not. Since correct
-                            // processing of EV_ERROR is to close the stream,
+                            // processing of EPOLLERR is to close the stream,
                             // it's not completely hopeless. It would just be
                             // really nice if we could show something meaningful
                             // in the log.
@@ -477,7 +477,17 @@ namespace thekogans {
                                     (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data));
                         }
                         else if (kqueueEvents[i].flags & EV_EOF) {
-                            stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                            // If no one is listening on the other side, kqueue returns
+                            // EV_EOF instead of ECONNREFUSED. Simulate an error that would
+                            // be returned if we did a blocking connect.
+                            if (util::Flags32 (stream->asyncInfo->events).Test (
+                                    Stream::AsyncInfo::EventConnect)) {
+                                stream->HandleError (
+                                    THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (ECONNREFUSED));
+                            }
+                            else {
+                                stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                            }
                         }
                         else if (kqueueEvents[i].filter == EVFILT_READ) {
                             util::ui32 event =
