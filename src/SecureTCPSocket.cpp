@@ -388,16 +388,8 @@ namespace thekogans {
         }
 
         void SecureTCPSocket::InitAsyncIo () {
+            TCPSocket::InitAsyncIo ();
             asyncInfoEx.reset (new AsyncInfoEx (*this));
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (IsConnected ()) {
-                PostAsyncRead (false);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            SetBlocking (false);
-            asyncInfo->AddStreamForEvents (
-                AsyncInfo::EventDisconnect | AsyncInfo::EventRead);
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
