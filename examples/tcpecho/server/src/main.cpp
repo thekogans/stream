@@ -18,14 +18,13 @@
 #include <list>
 #include <string>
 #include "thekogans/util/CommandLineOptions.h"
-#include "thekogans/util/Path.h"
+#include "thekogans/util/ChildProcess.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/ConsoleLogger.h"
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/MainRunLoop.h"
-#include "thekogans/util/File.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Version.h"
 #include "thekogans/stream/tcpecho/server/Options.h"
@@ -104,30 +103,11 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            struct LockFile {
-                util::Path path;
-                explicit LockFile (const std::string &path_) :
-                    path (path_) {
-                    if (!path.IsEmpty ()) {
-                        if (!path.Exists ()) {
-                            util::File::Touch (path_);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Lock file (%s) found.\n", path_.c_str ());
-                        }
-                    }
-                }
-                ~LockFile () {
-                    if (path.Exists ()) {
-                        path.Delete ();
-                    }
-                }
-            } lockFile (server::Options::Instance ().lockFilePath);
             struct App {
                 App () {
                     THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
                         util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+                    util::LockFile lockFile (server::Options::Instance ().lockFilePath);
                     util::MainRunLoopCreateInstance::Parameterize (
                         "MainRunLoop",
                         util::RunLoop::TYPE_FIFO,
