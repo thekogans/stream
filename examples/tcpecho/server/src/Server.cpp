@@ -222,7 +222,7 @@ namespace thekogans {
                                     }
                                 } tcp6Table;
                                 for (std::size_t i = 0, count = tcp6Table.count; i < count; ++i) {
-                                    if (tcp6Table.tcp6Table->table[i].dwState == MIB_TCP6_STATE_ESTAB) {
+                                    if (tcp6Table.tcp6Table->table[i].State == MIB_TCP_STATE_ESTAB) {
                                         util::ui16 localPort = (util::ui16)ntohs ((u_short)tcp6Table.tcp6Table->table[i].dwLocalPort);
                                         util::ui16 remotePort = (util::ui16)ntohs ((u_short)tcp6Table.tcp6Table->table[i].dwRemotePort);
                                         if (localPort == peerPort && remotePort == hostPort) {

@@ -66,7 +66,7 @@ namespace {
         util::TimeSpec timeSpec;
         util::ui64 start;
         util::ui32 round;
-        util::ui32 totalBytes;
+        std::size_t totalBytes;
         util::f32 bandwidth;
 
     public:
