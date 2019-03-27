@@ -130,19 +130,6 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
         }
 
-        void ServerNamedPipe::Close () {
-            if (IsOpen ()) {
-                if (FlushFileBuffers (handle)) {
-                    DisconnectNamedPipe (handle);
-                    handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            }
-        }
-
         void ServerNamedPipe::Connect () {
             AsyncInfo::Overlapped::UniquePtr overlapped;
             if (IsAsync ()) {
@@ -161,6 +148,19 @@ namespace thekogans {
         ServerNamedPipe::Ptr ServerNamedPipe::Clone () const {
             return ServerNamedPipe::Ptr (
                 new ServerNamedPipe (address, pipeType, bufferSize));
+        }
+
+        void ServerNamedPipe::Close () {
+            if (IsOpen ()) {
+                if (FlushFileBuffers (handle)) {
+                    DisconnectNamedPipe (handle);
+                    handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
         }
 
         void ServerNamedPipe::InitAsyncIo () {

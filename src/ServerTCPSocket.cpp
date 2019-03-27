@@ -104,19 +104,18 @@ namespace thekogans {
         }
 
         TCPSocket::Ptr ServerTCPSocket::Accept () {
-            TCPSocket::Ptr connection;
-            if (IsAsync ()) {
-                connection = asyncInfo->eventSink.GetTCPSocket (
-                    (THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ());
-            }
-            else {
-                connection.Reset (
+            if (!IsAsync ()) {
+                TCPSocket::Ptr connection (
                     new TCPSocket ((THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
             #if defined (TOOLCHAIN_OS_Windows)
                 connection->UpdateAcceptContext (handle);
             #endif // defined (TOOLCHAIN_OS_Windows)
+                return connection;
             }
-            return connection;
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Accept is called on a non-blocking socket.");
+            }
         }
 
         void ServerTCPSocket::InitAsyncIo () {
@@ -145,8 +144,7 @@ namespace thekogans {
                     // THEKOGANS_STREAM_INVALID_SOCKET to let
                     // it know that we did in fact claimed it.
                     acceptOverlapped.connection = THEKOGANS_STREAM_INVALID_SOCKET;
-                    asyncInfo->eventSink.HandleServerTCPSocketConnection (
-                        *this, connection);
+                    asyncInfo->eventSink.HandleServerTCPSocketConnection (*this, connection);
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
@@ -158,7 +156,8 @@ namespace thekogans {
         void ServerTCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    TCPSocket::Ptr connection = Accept ();
+                    TCPSocket::Ptr connection =
+                        asyncInfo->eventSink.GetTCPSocket (TCPSocket::Accept ());
                     // Connections inherit the listening socket's
                     // non-blocking state. Since we handle all
                     // async io through AsyncIoEventQueue, set the

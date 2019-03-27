@@ -300,10 +300,6 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Close the stream.
-            virtual void Close ();
-
-            /// \brief
             /// Read bytes from the stream.
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Buffer length.
@@ -426,6 +422,10 @@ namespace thekogans {
             virtual void SetWriteTimeout (const util::TimeSpec & /*timeSpec*/) = 0;
 
         protected:
+            /// \brief
+            /// Close the stream.
+            virtual void Close ();
+
             /// \struct Stream::AsyncInfo Stream.h thekogans/stream/Stream.h
             ///
             /// \brief

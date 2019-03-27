@@ -435,19 +435,18 @@ namespace thekogans {
         }
 
         SecureTCPSocket::Ptr ServerSecureTCPSocket::Accept () {
-            SecureTCPSocket::Ptr connection;
-            if (IsAsync ()) {
-                connection = asyncInfo->eventSink.GetSecureTCPSocket (
-                    (THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ());
-            }
-            else {
-                connection.Reset (new SecureTCPSocket (
-                    (THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
+            if (!IsAsync ()) {
+                SecureTCPSocket::Ptr connection (
+                    new SecureTCPSocket ((THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
             #if defined (TOOLCHAIN_OS_Windows)
                 connection->UpdateAcceptContext (handle);
             #endif // defined (TOOLCHAIN_OS_Windows)
+                return connection;
             }
-            return connection;
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s", "Accept is called on a non-blocking socket.");
+            }
         }
 
         void ServerSecureTCPSocket::InitAsyncIo () {
@@ -489,7 +488,8 @@ namespace thekogans {
         void ServerSecureTCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    SecureTCPSocket::Ptr connection = Accept ();
+                    SecureTCPSocket::Ptr connection =
+                        asyncInfo->eventSink.GetSecureTCPSocket (TCPSocket::Accept ());
                     // Connections inherit the listening socket's
                     // non-blocking state. Since we handle all
                     // async io through AsyncIoEventQueue, set the

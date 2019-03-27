@@ -217,12 +217,6 @@ namespace thekogans {
             /// ServerNamedPipe has special Close semantics.
             ~ServerNamedPipe ();
 
-            // Stream
-            /// \brief
-            /// Close the stream. ServerNamedPipe has special close
-            /// semantics.
-            virtual void Close ();
-
             /// \brief
             /// Listen for an incoming connection.
             /// NOTE: This api is to be used by blocking (not async)
@@ -233,11 +227,17 @@ namespace thekogans {
             void Connect ();
 
             /// \brief
-            /// Clone this ServerNamedPipe using the values from Context.
+            /// Clone this ServerNamedPipe.
             /// \return Cloned ServerNamedPipe.
             ServerNamedPipe::Ptr Clone () const;
 
         protected:
+            // Stream
+            /// \brief
+            /// Close the stream. ServerNamedPipe has special close
+            /// semantics.
+            virtual void Close ();
+
             /// \brief
             /// Used by the \see{AsyncIoEventQueue} to allow the stream to
             /// initialize itself. When this function is called, the

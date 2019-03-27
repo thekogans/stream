@@ -76,11 +76,6 @@ namespace thekogans {
 
             // Stream
             /// \brief
-            /// On Windows socket handles are closed using
-            /// closesocket (not CloseHandle).
-            virtual void Close ();
-
-            /// \brief
             /// Return read timeout value.
             /// \return Read timeout value.
             virtual util::TimeSpec GetReadTimeout () const;
@@ -216,6 +211,13 @@ namespace thekogans {
             /// This api should only be used by AsyncIoEventQueue.
             /// \return Last error that ocured on this socket.
             THEKOGANS_UTIL_ERROR_CODE GetErrorCode () const;
+
+        protected:
+            // Stream
+            /// \brief
+            /// On Windows socket handles are closed using
+            /// closesocket (not CloseHandle).
+            virtual void Close ();
 
             /// \brief
             /// Streams are neither copy constructable, nor assignable.

@@ -142,20 +142,6 @@ namespace thekogans {
     #endif // defined (THEKOGANS_STREAM_TYPE_Static)
     #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-        void Stream::Close () {
-            if (IsOpen ()) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (!::CloseHandle (handle)) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                if (close (handle) < 0) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-            }
-        }
-
         void Stream::ReadFullBuffer (
                 void *buffer,
                 std::size_t count) {
@@ -211,6 +197,20 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void Stream::Close () {
+            if (IsOpen ()) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (!::CloseHandle (handle)) {
+            #else // defined (TOOLCHAIN_OS_Windows)
+                if (close (handle) < 0) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
         }
 

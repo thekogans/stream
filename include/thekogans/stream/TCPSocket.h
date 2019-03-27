@@ -195,6 +195,7 @@ namespace thekogans {
 
             /// \brief
             /// Accept a pending connection.
+            /// NOTE: This is a blocking function.
             /// \return Handle to new connection.
             THEKOGANS_STREAM_SOCKET Accept ();
 

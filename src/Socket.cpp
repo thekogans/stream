@@ -153,23 +153,6 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
         }
 
-        void Socket::Close () {
-            if (IsOpen ()) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (closesocket ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                if (close ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                family = -1;
-                type = -1;
-                protocol = -1;
-            }
-        }
-
         util::TimeSpec Socket::GetReadTimeout () const {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD value = 0;
@@ -493,6 +476,23 @@ namespace thekogans {
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
             return errorCode;
+        }
+
+        void Socket::Close () {
+            if (IsOpen ()) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (closesocket ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
+            #else // defined (TOOLCHAIN_OS_Windows)
+                if (close ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                }
+                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                family = -1;
+                type = -1;
+                protocol = -1;
+            }
         }
 
     } // namespace stream
