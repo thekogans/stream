@@ -66,6 +66,8 @@ namespace {
         util::TimeSpec timeSpec;
         util::ui64 start;
         util::ui32 round;
+        std::size_t roundBytes;
+        std::size_t receivedBytes;
         std::size_t totalBytes;
         util::f32 bandwidth;
 
@@ -83,6 +85,8 @@ namespace {
                 timeSpec (timeSpec_),
                 start (0),
                 round (0),
+                roundBytes (0),
+                receivedBytes (0),
                 totalBytes (0),
                 bandwidth (0.0f) {
             stream::GlobalAsyncIoEventQueue::Instance ().SetTimeoutPolicy (
@@ -94,10 +98,10 @@ namespace {
         void TestBandwidth (const stream::Address &address) {
             stream::TCPSocket::Ptr tcpSocket (
                 new stream::TCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
-            if (timeSpec != util::TimeSpec::Zero) {
-                tcpSocket->SetReadTimeout (timeSpec);
-                tcpSocket->SetWriteTimeout (timeSpec);
-            }
+            //if (timeSpec != util::TimeSpec::Zero) {
+            //    tcpSocket->SetReadTimeout (timeSpec);
+            //    tcpSocket->SetWriteTimeout (timeSpec);
+            //}
             stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this);
             tcpSocket->Connect (address);
         }
@@ -107,6 +111,9 @@ namespace {
         }
 
     private:
+        // util::RefCounted
+        virtual void Harakiri () {}
+
         // stream::AsyncIoEventSink
         virtual void HandleStreamError (
                 stream::Stream &stream,
@@ -119,9 +126,11 @@ namespace {
         virtual void HandleTCPSocketConnected (stream::TCPSocket &tcpSocket) throw () {
             start = util::HRTimer::Click ();
             round = 0;
+            roundBytes = seed;
+            receivedBytes = 0;
             totalBytes = 0;
             bandwidth = 0.0f;
-            tcpSocket.WriteBuffer (util::Buffer (util::HostEndian, seed, 0, seed));
+            tcpSocket.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
         }
 
         virtual void HandleStreamDisconnect (stream::Stream &stream) throw () {
@@ -132,16 +141,20 @@ namespace {
         virtual void HandleStreamRead (
                 stream::Stream &stream,
                 util::Buffer buffer) throw () {
+            receivedBytes += buffer.GetDataAvailableForReading ();
             totalBytes += buffer.GetDataAvailableForReading ();
-            if (++round < rounds) {
-                std::size_t bytes = (util::ui32)(a * buffer.GetDataAvailableForReading () + b);
-                stream.WriteBuffer (util::Buffer (util::HostEndian, bytes, 0, bytes));
-            }
-            else {
-                util::ui64 time = util::HRTimer::Click () - start;
-                bandwidth = (util::f32)((util::f64)util::HRTimer::GetFrequency () *
-                    totalBytes * 8 / time / (1024 * 1024));
-                ((stream::TCPSocket *)&stream)->Shutdown ();
+            if (receivedBytes == roundBytes) {
+                if (++round < rounds) {
+                    roundBytes = (std::size_t)(a * roundBytes + b);
+                    receivedBytes = 0;
+                    stream.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
+                }
+                else {
+                    util::ui64 time = util::HRTimer::Click () - start;
+                    bandwidth = (util::f32)((util::f64)util::HRTimer::GetFrequency () *
+                        totalBytes * 8 / time / (1024 * 1024));
+                    ((stream::TCPSocket *)&stream)->Shutdown ();
+                }
             }
         }
 
