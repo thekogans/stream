@@ -108,11 +108,11 @@ namespace {
             };
             stream::TCPSocket::Ptr tcpSocket (
                 new MyTCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
+            stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this, 0);
             if (timeSpec != util::TimeSpec::Zero) {
                 tcpSocket->SetReadTimeout (timeSpec);
                 tcpSocket->SetWriteTimeout (timeSpec);
             }
-            stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this, 0);
             tcpSocket->Connect (address);
         }
 
@@ -133,13 +133,19 @@ namespace {
         }
 
         virtual void HandleTCPSocketConnected (stream::TCPSocket &tcpSocket) throw () {
-            start = util::HRTimer::Click ();
-            round = 0;
-            roundBytes = seed;
-            receivedBytes = 0;
-            totalBytes = 0;
-            bandwidth = 0.0f;
-            tcpSocket.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
+            THEKOGANS_UTIL_TRY {
+                start = util::HRTimer::Click ();
+                round = 0;
+                roundBytes = seed;
+                receivedBytes = 0;
+                totalBytes = 0;
+                bandwidth = 0.0f;
+                tcpSocket.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
+            }
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                HandleStreamError (tcpSocket, exception);
+            }
         }
 
         virtual void HandleStreamDisconnect (stream::Stream &stream) throw () {
@@ -149,20 +155,26 @@ namespace {
         virtual void HandleStreamRead (
                 stream::Stream &stream,
                 util::Buffer buffer) throw () {
-            receivedBytes += buffer.GetDataAvailableForReading ();
-            totalBytes += buffer.GetDataAvailableForReading ();
-            if (receivedBytes == roundBytes) {
-                if (round++ < rounds) {
-                    roundBytes = (std::size_t)(a * roundBytes + b);
-                    receivedBytes = 0;
-                    stream.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
+            THEKOGANS_UTIL_TRY {
+                receivedBytes += buffer.GetDataAvailableForReading ();
+                totalBytes += buffer.GetDataAvailableForReading ();
+                if (receivedBytes == roundBytes) {
+                    if (round++ < rounds) {
+                        roundBytes = (std::size_t)(a * roundBytes + b);
+                        receivedBytes = 0;
+                        stream.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
+                    }
+                    else {
+                        util::ui64 time = util::HRTimer::Click () - start;
+                        bandwidth = (util::f32)((util::f64)util::HRTimer::GetFrequency () *
+                            totalBytes * 8 / time / (1024 * 1024));
+                        ((stream::TCPSocket *)&stream)->Shutdown ();
+                    }
                 }
-                else {
-                    util::ui64 time = util::HRTimer::Click () - start;
-                    bandwidth = (util::f32)((util::f64)util::HRTimer::GetFrequency () *
-                        totalBytes * 8 / time / (1024 * 1024));
-                    ((stream::TCPSocket *)&stream)->Shutdown ();
-                }
+            }
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                HandleStreamError (stream, exception);
             }
         }
 
