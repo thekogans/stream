@@ -108,11 +108,11 @@ namespace {
             };
             stream::TCPSocket::Ptr tcpSocket (
                 new MyTCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
-            //if (timeSpec != util::TimeSpec::Zero) {
-            //    tcpSocket->SetReadTimeout (timeSpec);
-            //    tcpSocket->SetWriteTimeout (timeSpec);
-            //}
-            stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this);
+            if (timeSpec != util::TimeSpec::Zero) {
+                tcpSocket->SetReadTimeout (timeSpec);
+                tcpSocket->SetWriteTimeout (timeSpec);
+            }
+            stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this, 0);
             tcpSocket->Connect (address);
         }
 
