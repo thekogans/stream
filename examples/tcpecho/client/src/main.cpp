@@ -152,7 +152,7 @@ namespace {
             receivedBytes += buffer.GetDataAvailableForReading ();
             totalBytes += buffer.GetDataAvailableForReading ();
             if (receivedBytes == roundBytes) {
-                if (++round < rounds) {
+                if (round++ < rounds) {
                     roundBytes = (std::size_t)(a * roundBytes + b);
                     receivedBytes = 0;
                     stream.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
