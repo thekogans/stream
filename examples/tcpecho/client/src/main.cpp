@@ -96,8 +96,18 @@ namespace {
         }
 
         void TestBandwidth (const stream::Address &address) {
+            struct MyTCPSocket : public stream::TCPSocket {
+                MyTCPSocket (
+                    int family,
+                    int type,
+                    int protocol) :
+                    stream::TCPSocket (family, type, protocol) {}
+                virtual ~MyTCPSocket () {
+                    util::MainRunLoop::Instance ().Stop ();
+                }
+            };
             stream::TCPSocket::Ptr tcpSocket (
-                new stream::TCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
+                new MyTCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
             //if (timeSpec != util::TimeSpec::Zero) {
             //    tcpSocket->SetReadTimeout (timeSpec);
             //    tcpSocket->SetWriteTimeout (timeSpec);
@@ -120,7 +130,6 @@ namespace {
                 const util::Exception &exception) throw () {
             THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
             stream::GlobalAsyncIoEventQueue::Instance ().DeleteStream (stream);
-            util::MainRunLoop::Instance ().Stop ();
         }
 
         virtual void HandleTCPSocketConnected (stream::TCPSocket &tcpSocket) throw () {
@@ -135,7 +144,6 @@ namespace {
 
         virtual void HandleStreamDisconnect (stream::Stream &stream) throw () {
             stream::GlobalAsyncIoEventQueue::Instance ().DeleteStream (stream);
-            util::MainRunLoop::Instance ().Stop ();
         }
 
         virtual void HandleStreamRead (
