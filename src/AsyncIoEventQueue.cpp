@@ -237,6 +237,8 @@ namespace thekogans {
                         util::LockGuard<util::SpinLock> guard (spinLock);
                         deletedStreamsList.push_back (&stream);
                     }
+                    // Kick WaitForEvents to get it clean up the mess.
+                    Break ();
                 }
             }
             else {
