@@ -19,12 +19,14 @@
 #define __thekogans_stream_Stream_h
 
 #include <memory>
+#include <utility>
 #include <string>
 #include <map>
 #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #include <pugixml.hpp>
 #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/IntrusiveList.h"
@@ -297,6 +299,21 @@ namespace thekogans {
             /// \return true = async, false = blocking.
             inline bool IsAsync () const {
                 return asyncInfo.get () != 0;
+            }
+
+            /// \brief
+            /// Use this method if you need framework interoperability.
+            /// IMPORTANT: Stream owns the handle and will close it in it's dtor.
+            /// \return Native OS stream handle.
+            inline THEKOGANS_UTIL_HANDLE GetHandle () const {
+                return handle;
+            }
+            /// \brief
+            /// Use this method if you need framework interoperability.
+            /// IMPORTANT: You now own the handle and it's lifetime.
+            /// \return Native OS stream handle.
+            inline THEKOGANS_UTIL_HANDLE ReleaseHandle () {
+                return util::EXCHANGE (handle, THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
             }
 
             /// \brief
