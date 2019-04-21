@@ -68,6 +68,11 @@ namespace thekogans {
                 int protocol) :
                 Socket (family, type, protocol) {}
 
+            // Stream
+            /// \brief
+            /// Disconnect the stream from it's peer.
+            virtual void Disconnect ();
+
             /// \brief
             /// Read bytes from the stream.
             /// \param[out] buffer Where to place the bytes.

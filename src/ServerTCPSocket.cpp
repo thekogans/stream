@@ -15,10 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <sstream>
-    #include "thekogans/util/XMLUtils.h"
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include <sstream>
+#include "thekogans/util/XMLUtils.h"
+#include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
@@ -29,7 +28,6 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerTCPSocket)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const ServerTCPSocket::Context::VALUE_SERVER_TCP_SOCKET = "ServerTCPSocket";
         const char * const ServerTCPSocket::Context::TAG_REUSE_ADDRESS = "ReuseAddress";
         const char * const ServerTCPSocket::Context::TAG_MAX_PENDING_CONNECTIONS = "MaxPendingConnections";
@@ -80,7 +78,6 @@ namespace thekogans {
             return Stream::Ptr (
                 new ServerTCPSocket (address, reuseAddress, maxPendingConnections));
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         ServerTCPSocket::ServerTCPSocket (
                 const Address &address,
@@ -90,7 +87,10 @@ namespace thekogans {
             if (reuseAddress) {
             #if !defined (TOOLCHAIN_OS_Windows)
                 if (address.GetFamily () == AF_LOCAL) {
-                    unlink (address.GetPath ().c_str ());
+                    util::Path path (address.GetPath ());
+                    if (path.Exists ()) {
+                        path.Delete ();
+                    }
                 }
                 else {
             #endif // !define (TOOLCHAIN_OS_Windows)

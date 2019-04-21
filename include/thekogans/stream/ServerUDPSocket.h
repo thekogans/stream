@@ -20,9 +20,7 @@
 
 #include <memory>
 #include <string>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/UDPSocket.h"
@@ -78,14 +76,12 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<Context>.
                 typedef std::unique_ptr<Context> UniquePtr;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ServerUDPSocket"
                 static const char * const VALUE_SERVER_UDP_SOCKET;
                 /// \brief
                 /// "MaxMessageLength"
                 static const char * const TAG_MAX_MESSAGE_LENGTH;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Address to listen on.
@@ -99,7 +95,6 @@ namespace thekogans {
                 /// receive buffer to some multiple of this value.
                 std::size_t maxMessageLength;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
                 /// UDPSocket::Context.
@@ -111,7 +106,6 @@ namespace thekogans {
                         maxMessageLength (0) {
                     Parse (node);
                 }
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] address_ Address to listen on.
@@ -122,7 +116,6 @@ namespace thekogans {
                     address (address_),
                     maxMessageLength (maxMessageLength_) {}
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a
                 /// UDPSocket::Context.
@@ -140,7 +133,6 @@ namespace thekogans {
                 virtual std::string ToString (
                     std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a UDPSocket based on the address.

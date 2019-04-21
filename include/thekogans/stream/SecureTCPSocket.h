@@ -199,6 +199,10 @@ namespace thekogans {
 
             // Stream
             /// \brief
+            /// Disconnect the stream from it's peer.
+            virtual void Disconnect ();
+
+            /// \brief
             /// Read bytes from the stream.
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Buffer length.

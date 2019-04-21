@@ -185,6 +185,10 @@ namespace thekogans {
                 inRunTLS.TryAcquire ();
         }
 
+        void SecureTCPSocket::Disconnect () {
+            ShutdownSession ();
+        }
+
         std::size_t SecureTCPSocket::Read (
                 void *buffer,
                 std::size_t count) {

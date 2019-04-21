@@ -25,9 +25,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <cassert>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include "thekogans/util/XMLUtils.h"
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
@@ -36,7 +34,6 @@
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Stream.h"
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #if defined (THEKOGANS_STREAM_TYPE_Static)
     #include "thekogans/stream/Pipe.h"
     #if defined (TOOLCHAIN_OS_Windows)
@@ -54,12 +51,10 @@
         #include "thekogans/stream/ServerSecureUDPSocket.h"
     #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 #endif // defined (THEKOGANS_STREAM_TYPE_Static)
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
 namespace thekogans {
     namespace stream {
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const Stream::Context::TAG_CONTEXT = "Context";
         const char * const Stream::Context::ATTR_TYPE = "Type";
 
@@ -97,7 +92,6 @@ namespace thekogans {
                     "Duplicate Stream type: '%s'", type.c_str ());
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         Stream::~Stream () {
             THEKOGANS_UTIL_TRY {
@@ -106,16 +100,13 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
         }
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         Stream::Context::UniquePtr Stream::GetContext (const pugi::xml_node &node) {
             Map::iterator it = GetMap ().find (
                 util::Decodestring (node.attribute (Context::ATTR_TYPE).value ()));
             return it != GetMap ().end () ?
                 it->second (node) : Stream::Context::UniquePtr ();
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
     #if defined (THEKOGANS_STREAM_TYPE_Static)
         void Stream::StaticInit () {
             static volatile bool registered = false;
@@ -140,7 +131,15 @@ namespace thekogans {
             }
         }
     #endif // defined (THEKOGANS_STREAM_TYPE_Static)
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+
+        void Stream::Disconnect () {
+            if (IsAsync ()) {
+                asyncInfo->eventQueue.DeleteStream (*this);
+            }
+            else {
+                Close ();
+            }
+        }
 
         void Stream::ReadFullBuffer (
                 void *buffer,

@@ -20,9 +20,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/NamedPipe.h"
 #include "thekogans/stream/Address.h"
@@ -71,7 +69,6 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<Context>.
                 typedef std::unique_ptr<Context> UniquePtr;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ClientNamedPipe"
                 static const char * const VALUE_CLIENT_NAMED_PIPE;
@@ -87,7 +84,6 @@ namespace thekogans {
                 /// \brief
                 /// "Timeout"
                 static const char * const TAG_TIMEOUT;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Address of ServerNamedPipe to connect to.
@@ -99,7 +95,6 @@ namespace thekogans {
                 /// Connection timeout.
                 DWORD timeout;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
                 /// ClientNamedPipe::Context.
@@ -112,7 +107,6 @@ namespace thekogans {
                         timeout (ClientNamedPipe::DEFAULT_TIMEOUT) {
                     Parse (node);
                 }
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] address_ Address of ServerNamedPipe to connect to.
@@ -126,7 +120,6 @@ namespace thekogans {
                     pipeType (pipeType_),
                     timeout (timeout_) {}
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a
                 /// ClientNamedPipe::Context.
@@ -144,7 +137,6 @@ namespace thekogans {
                 virtual std::string ToString (
                     std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ClientNamedPipe based on the Context parameters.

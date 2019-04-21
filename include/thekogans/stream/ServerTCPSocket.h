@@ -20,9 +20,7 @@
 
 #include <memory>
 #include <string>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/TCPSocket.h"
@@ -33,7 +31,7 @@ namespace thekogans {
         /// \struct ServerTCPSocket ServerTCPSocket.h thekogans/stream/ServerTCPSocket.h
         ///
         /// \brief
-        /// ServerTCPSocket is used to listen for connections from ClientTCPSockets.
+        /// ServerTCPSocket is used to listen for connections from \see{ClientTCPSockets}.
 
         struct _LIB_THEKOGANS_STREAM_DECL ServerTCPSocket : public TCPSocket {
             /// \brief
@@ -69,7 +67,6 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<Context>.
                 typedef std::unique_ptr<Context> UniquePtr;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ServerTCPSocket"
                 static const char * const VALUE_SERVER_TCP_SOCKET;
@@ -79,7 +76,6 @@ namespace thekogans {
                 /// \brief
                 /// "MaxPendingConnections"
                 static const char * const TAG_MAX_PENDING_CONNECTIONS;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Listening address.
@@ -91,7 +87,6 @@ namespace thekogans {
                 /// Max pending connection requests.
                 util::i32 maxPendingConnections;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
                 /// ServerTCPSocket::Context.
@@ -104,7 +99,6 @@ namespace thekogans {
                         maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS) {
                     Parse (node);
                 }
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] address Listening address.
@@ -119,7 +113,6 @@ namespace thekogans {
                     reuseAddress (reuseAddress_),
                     maxPendingConnections (maxPendingConnections_) {}
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a
                 /// ServerTCPSocket::Context.
@@ -137,7 +130,6 @@ namespace thekogans {
                 virtual std::string ToString (
                     std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ServerTCPSocket based on the address and maxPendingConnections.
@@ -170,6 +162,13 @@ namespace thekogans {
                 const Address &address,
                 bool reuseAddress = false,
                 util::ui32 maxPendingConnections = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS);
+
+            // Stream
+            /// \brief
+            /// Stop listenning for connection requests.
+            virtual void Disconnect () {
+                Stream::Disconnect ();
+            }
 
             /// \brief
             /// Wait for connections.

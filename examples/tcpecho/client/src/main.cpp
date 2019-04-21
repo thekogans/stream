@@ -168,7 +168,7 @@ namespace {
                         util::ui64 time = util::HRTimer::Click () - start;
                         bandwidth = (util::f32)((util::f64)util::HRTimer::GetFrequency () *
                             totalBytes * 8 / time / (1024 * 1024));
-                        ((stream::TCPSocket *)&stream)->Shutdown ();
+                        stream.Disconnect ();
                     }
                 }
             }

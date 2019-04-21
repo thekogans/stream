@@ -39,9 +39,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include "thekogans/util/XMLUtils.h"
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/crypto/OpenSSLException.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 
@@ -103,7 +101,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (SessionInfo, util::SpinLock)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const SessionInfo::TAG_SESSION_INFO =
             "SessionInfo";
         const char * const SessionInfo::ATTR_SERVER_NAME =
@@ -114,7 +111,6 @@ namespace thekogans {
             "BidirectionalShutdown";
         const char * const SessionInfo::ATTR_COUNT_TRANSFERED =
             "CountTransfered";
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         const SessionInfo SessionInfo::Empty;
 
@@ -144,7 +140,6 @@ namespace thekogans {
             return *this;
         }
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void SessionInfo::Parse (const pugi::xml_node &node) {
             serverName = util::Decodestring (node.attribute (ATTR_SERVER_NAME).value ());
             renegotiationFrequency = util::stringToui32 (node.attribute (ATTR_RENEGOTIATION_FREQUENCY).value ());
@@ -180,7 +175,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         _LIB_THEKOGANS_STREAM_DECL extern const char * const OPENSSL_TLS_1_0 = "1.0";
         _LIB_THEKOGANS_STREAM_DECL extern const char * const OPENSSL_TLS_1_1 = "1.1";

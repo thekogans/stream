@@ -48,19 +48,23 @@ namespace thekogans {
                             std::string path;
                             bool archive;
                             util::ui32 maxLogFileSize;
+
                             FileLogger () :
                                 archive (true),
                                 maxLogFileSize (util::FileLogger::DEFAULT_MAX_LOG_FILE_SIZE) {}
+
                             void Reset () {
                                 path.clear ();
                                 archive = true;
                                 maxLogFileSize = util::FileLogger::DEFAULT_MAX_LOG_FILE_SIZE;
                             }
                         } fileLogger;
+
                         LoggerMgr () :
                             level (util::LoggerMgr::Info),
                             decorations (util::LoggerMgr::All),
                             consoleLogger (false) {}
+
                         void Reset () {
                             level = util::LoggerMgr::Info;
                             decorations = util::LoggerMgr::All;
@@ -77,7 +81,9 @@ namespace thekogans {
                     Options ();
 
                     // util::CommandLineOptions
-                    virtual void DoOption (char option, const std::string &value);
+                    virtual void DoOption (
+                        char option,
+                        const std::string &value);
                     virtual void Epilog ();
 
                     // util::Directory::Watcher::EventSink

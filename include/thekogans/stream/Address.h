@@ -54,9 +54,7 @@
     #include <vector>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 
@@ -409,7 +407,6 @@ namespace thekogans {
             static const char * const ATTR_ADAPTER_NAME;
         #endif // defined (TOOLCHAIN_OS_Linux)
 
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \brief
             /// Convert a string returned by \see{ToString} (below) back to address.
             /// \param[in] addressString String returned by \see{ToString}.
@@ -444,7 +441,6 @@ namespace thekogans {
             ///          Addr = ""/>
             /// \param[in] node XML representation of an address.
             void Parse (const pugi::xml_node &node);
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \brief
             /// Return the XML representation of an address.
             /// \param[in] indentationLevel How far to indent the leading tag.

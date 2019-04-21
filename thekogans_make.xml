@@ -7,22 +7,11 @@
                 guid = "5e33fdb222451ad9697ca87aec9de144"
                 schema_version = "2">
   <features>
-    <feature>THEKOGANS_STREAM_HAVE_PUGIXML</feature>
     <feature>THEKOGANS_STREAM_HAVE_OPENSSL</feature>
   </features>
   <dependencies>
     <dependency organization = "thekogans"
-                name = "util">
-      <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
-        <features>
-          <feature>THEKOGANS_UTIL_HAVE_PUGIXML</feature>
-        </features>
-      </if>
-    </dependency>
-    <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
-      <toolchain organization = "thekogans"
-                 name = "pugixml"/>
-    </if>
+                name = "util"/>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
       <dependency organization = "thekogans"
                   name = "crypto"/>
@@ -75,9 +64,7 @@
       <cpp_header>$(organization)/$(project_directory)/NamedPipe.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/ServerNamedPipe.h</cpp_header>
     </if>
-    <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
-      <cpp_header>$(organization)/$(project_directory)/StreamLogger.h</cpp_header>
-    </if>
+    <cpp_header>$(organization)/$(project_directory)/StreamLogger.h</cpp_header>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
       <cpp_header>$(organization)/$(project_directory)/ClientSecureTCPSocket.h</cpp_header>
       <cpp_header>$(organization)/$(project_directory)/ClientSecureUDPSocket.h</cpp_header>
@@ -110,9 +97,7 @@
       <cpp_source>NamedPipe.cpp</cpp_source>
       <cpp_source>ServerNamedPipe.cpp</cpp_source>
     </if>
-    <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_PUGIXML)">
-      <cpp_source>StreamLogger.cpp</cpp_source>
-    </if>
+    <cpp_source>StreamLogger.cpp</cpp_source>
     <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
       <cpp_source>ClientSecureTCPSocket.cpp</cpp_source>
       <cpp_source>ClientSecureUDPSocket.cpp</cpp_source>

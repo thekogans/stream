@@ -17,10 +17,8 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <sstream>
-    #include "thekogans/util/XMLUtils.h"
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include <sstream>
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerNamedPipe.h"
@@ -30,7 +28,6 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerNamedPipe)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const ServerNamedPipe::Context::VALUE_SERVER_NAMED_PIPE =
             "ServerNamedPipe";
         const char * const ServerNamedPipe::Context::TAG_PIPE_TYPE = "PipeType";
@@ -90,7 +87,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         ServerNamedPipe::ServerNamedPipe (
                 const Address &address_,

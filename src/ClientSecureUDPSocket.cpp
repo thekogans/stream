@@ -29,10 +29,8 @@
     #endif // !defined (_WINDOWS_)
     #include <winsock2.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <sstream>
-    #include "thekogans/util/XMLUtils.h"
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include <sstream>
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/crypto/SystemCACertificates.h"
 #include "thekogans/crypto/OpenSSLException.h"
@@ -43,7 +41,6 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientSecureUDPSocket)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_DTLS_CONTEXT =
             "DTLSContext";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::ATTR_PROTOCOL_VERSION =
@@ -64,7 +61,6 @@ namespace thekogans {
             "VerifyServer";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_MAX_SERVER_CERTIFICATE_CHAIN_DEPTH =
             "MaxServerCertificateChainDepth";
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         const ClientSecureUDPSocket::Context::DTLSContext ClientSecureUDPSocket::Context::DTLSContext::Empty;
 
@@ -102,7 +98,6 @@ namespace thekogans {
             return *this;
         }
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void ClientSecureUDPSocket::Context::DTLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
@@ -177,7 +172,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         void ClientSecureUDPSocket::Context::DTLSContext::PrepareSSL_CTX () {
             ctx.reset (SSL_CTX_new (GetDTLSMethod (protocolVersion)));
@@ -213,7 +207,6 @@ namespace thekogans {
             return ctx.get ();
         }
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void ClientSecureUDPSocket::Context::DTLSContext::ParseCertificates (
                 const pugi::xml_node &node,
                 Certificates &certificates) {
@@ -286,7 +279,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         Stream::Ptr ClientSecureUDPSocket::Context::CreateStream () const {
             return Stream::Ptr (

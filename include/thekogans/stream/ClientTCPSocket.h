@@ -19,9 +19,7 @@
 #define __thekogans_stream_ClientTCPSocket_h
 
 #include <string>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/TCPSocket.h"
@@ -70,17 +68,14 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<Context>.
                 typedef std::unique_ptr<Context> UniquePtr;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ClientTCPSocket".
                 static const char * const VALUE_CLIENT_TCP_SOCKET;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// \see{Address} to connect to.
                 Address address;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a ClientTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
@@ -90,14 +85,12 @@ namespace thekogans {
                         address (Address::Empty) {
                     Parse (node);
                 }
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor.
                 /// \param[in] address_ \see{Address} to connect to.
                 explicit Context (const Address &address_) :
                     address (address_) {}
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// Parse the node representing a ClientTCPSocket::Context.
                 /// \param[in] node pugi::xml_node representing
@@ -114,7 +107,6 @@ namespace thekogans {
                 virtual std::string ToString (
                     std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a \see{TCPSocket} based on address.GetFamily ().

@@ -631,7 +631,6 @@ namespace thekogans {
         const char * const Address::ATTR_ADAPTER_NAME = "AdapterName";
     #endif // defined (TOOLCHAIN_OS_Linux)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void Address::FromString (const std::string &addressString) {
             pugi::xml_document document;
             pugi::xml_parse_result result =
@@ -719,7 +718,6 @@ namespace thekogans {
                     "Invalid family (%s).", family.c_str ());
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         std::string Address::ToString (
                 std::size_t indentationLevel,

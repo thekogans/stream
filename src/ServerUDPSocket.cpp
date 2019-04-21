@@ -16,10 +16,8 @@
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
 #include <algorithm>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <sstream>
-    #include "thekogans/util/XMLUtils.h"
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include <sstream>
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
@@ -32,7 +30,6 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerUDPSocket)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const ServerUDPSocket::Context::VALUE_SERVER_UDP_SOCKET = "ServerUDPSocket";
         const char * const ServerUDPSocket::Context::TAG_MAX_MESSAGE_LENGTH = "MaxMessageLength";
 
@@ -75,7 +72,6 @@ namespace thekogans {
         Stream::Ptr ServerUDPSocket::Context::CreateStream () const {
             return Stream::Ptr (new ServerUDPSocket (address, maxMessageLength));
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         ServerUDPSocket::ServerUDPSocket (
                 const Address &address,

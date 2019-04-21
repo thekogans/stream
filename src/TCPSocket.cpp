@@ -98,6 +98,10 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
+        void TCPSocket::Disconnect () {
+            Shutdown ();
+        }
+
         std::size_t TCPSocket::Read (
                 void *buffer,
                 std::size_t count) {

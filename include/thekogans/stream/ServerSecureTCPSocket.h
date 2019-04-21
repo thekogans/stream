@@ -23,9 +23,7 @@
 #include <memory>
 #include <string>
 #include <list>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/TCPSocket.h"
@@ -127,7 +125,6 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<Context>.
                 typedef std::unique_ptr<Context> UniquePtr;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ServerSecureTCPSocket"
                 static const char * const VALUE_SERVER_SECURE_TCP_SOCKET;
@@ -137,7 +134,6 @@ namespace thekogans {
                 /// \brief
                 /// "MaxPendingConnections"
                 static const char * const TAG_MAX_PENDING_CONNECTIONS;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Listening address.
@@ -154,7 +150,6 @@ namespace thekogans {
                 /// \brief
                 /// TLSContext aggregates parameters necessary to create a server side SSL_CTX.
                 struct _LIB_THEKOGANS_STREAM_DECL TLSContext {
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// "TLSContext"
                     static const char * const TAG_TLS_CONTEXT;
@@ -206,7 +201,6 @@ namespace thekogans {
                     /// \brief
                     /// "CachedSessionTTL"
                     static const char * const TAG_CACHED_SESSION_TTL;
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     enum {
                         /// \brief
@@ -283,7 +277,6 @@ namespace thekogans {
                         maxClientCertificateChainDepth (
                             DEFAULT_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH),
                         cachedSessionTTL (DEFAULT_CACHED_SESSION_TTL) {}
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// ctor. Parse the node representing a
                     /// ServerSecureTCPSocket::Context::TlSContext.
@@ -297,7 +290,6 @@ namespace thekogans {
                             cachedSessionTTL (DEFAULT_CACHED_SESSION_TTL) {
                         Parse (node);
                     }
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Copy ctor.
                     /// \param[in] connect TLSContext to copy.
@@ -359,7 +351,6 @@ namespace thekogans {
                     /// \return *this.
                     TLSContext &operator = (const TLSContext &context);
 
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Parse the node representing a
                     /// ServerSecureTCPSocket::Context::TLSContext.
@@ -377,7 +368,6 @@ namespace thekogans {
                     virtual std::string ToString (
                         std::size_t indentationLevel = 0,
                         const char *tagName = TAG_CONTEXT) const;
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     void PrepareSSL_CTX ();
 
@@ -386,7 +376,6 @@ namespace thekogans {
                     /// \return SSL_CTX based on the values in TLSContext.
                     SSL_CTX *GetSSL_CTX () const;
 
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 private:
                     /// \brief
                     /// Helper used to parse the certificate list.
@@ -404,7 +393,6 @@ namespace thekogans {
                     std::string FormatCertificates (
                         std::size_t indentationLevel,
                         const Certificates &certificates) const;
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
                 /// \brief
                 /// Extended session info.
@@ -426,7 +414,6 @@ namespace thekogans {
                     maxPendingConnections (maxPendingConnections_),
                     context (context_),
                     sessionInfo (sessionInfo_) {}
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
                 /// ServerSecureTCPSocket::Context.
@@ -459,7 +446,6 @@ namespace thekogans {
                 virtual std::string ToString (
                     std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ServerSecureTCPSocket.
@@ -504,6 +490,13 @@ namespace thekogans {
                 util::ui32 maxPendingConnections,
                 SSL_CTX *ctx_,
                 const SessionInfo &sessionInfo_);
+
+            // Stream
+            /// \brief
+            /// Stop listenning for connection requests.
+            virtual void Disconnect () {
+                Stream::Disconnect ();
+            }
 
             /// \brief
             /// Wait for connections.

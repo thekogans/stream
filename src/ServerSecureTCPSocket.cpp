@@ -31,10 +31,8 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
 #include <algorithm>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <sstream>
-    #include "thekogans/util/XMLUtils.h"
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include <sstream>
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/crypto/SystemCACertificates.h"
@@ -48,7 +46,6 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerSecureTCPSocket)
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_TLS_CONTEXT =
             "TLSContext";
         const char * const ServerSecureTCPSocket::Context::TLSContext::ATTR_PROTOCOL_VERSION =
@@ -81,7 +78,6 @@ namespace thekogans {
             "Type";
         const char * const ServerSecureTCPSocket::Context::TLSContext::TAG_CACHED_SESSION_TTL =
             "CachedSessionTTL";
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         const ServerSecureTCPSocket::Context::TLSContext ServerSecureTCPSocket::Context::TLSContext::Empty;
 
@@ -131,7 +127,6 @@ namespace thekogans {
             return *this;
         }
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void ServerSecureTCPSocket::Context::TLSContext::Parse (const pugi::xml_node &node) {
             protocolVersion = node.attribute (ATTR_PROTOCOL_VERSION).value ();
             for (pugi::xml_node child = node.first_child ();
@@ -243,7 +238,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         void ServerSecureTCPSocket::Context::TLSContext::PrepareSSL_CTX () {
             ctx.reset (SSL_CTX_new (GetTLSMethod (protocolVersion)));
@@ -299,7 +293,6 @@ namespace thekogans {
             return ctx.get ();
         }
 
-    #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         void ServerSecureTCPSocket::Context::TLSContext::ParseCertificates (
                 const pugi::xml_node &node,
                 Certificates &certificates) {
@@ -390,7 +383,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
-    #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
         Stream::Ptr ServerSecureTCPSocket::Context::CreateStream () const {
             return Stream::Ptr (

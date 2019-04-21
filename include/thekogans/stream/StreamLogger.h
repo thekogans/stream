@@ -18,10 +18,8 @@
 #if !defined (__thekogans_stream_StreamLogger_h)
 #define __thekogans_stream_StreamLogger_h
 
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-
 #include <string>
-#include <pugixml.hpp>
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Logger.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/Stream.h"
@@ -157,7 +155,5 @@ namespace thekogans {
 
     } // namespace stream
 } // namespace thekogans
-
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
 #endif // !defined (__thekogans_stream_StreamLogger_h)

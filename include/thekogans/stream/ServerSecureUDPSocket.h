@@ -23,9 +23,7 @@
 #include <memory>
 #include <string>
 #include <list>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/UDPSocket.h"
@@ -122,11 +120,9 @@ namespace thekogans {
                 /// Convenient typedef for std::unique_ptr<Context>.
                 typedef std::unique_ptr<Context> UniquePtr;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// "ServerSecureUDPSocket"
                 static const char * const VALUE_SERVER_SECURE_UDP_SOCKET;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Listening address.
@@ -137,7 +133,6 @@ namespace thekogans {
                 /// \brief
                 /// DTLSContext aggregates parameters necessary to create a server side SSL_CTX.
                 struct _LIB_THEKOGANS_STREAM_DECL DTLSContext {
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// "DTLSContext"
                     static const char * const TAG_DTLS_CONTEXT;
@@ -186,7 +181,6 @@ namespace thekogans {
                     /// \brief
                     /// "CachedSessionTTL"
                     static const char * const TAG_CACHED_SESSION_TTL;
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     enum {
                         /// \brief
@@ -263,7 +257,6 @@ namespace thekogans {
                         maxClientCertificateChainDepth (
                             DEFAULT_MAX_CLIENT_CERTIFICATE_CHAIN_DEPTH),
                         cachedSessionTTL (DEFAULT_CACHED_SESSION_TTL) {}
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// ctor. Parse the node representing a
                     /// ServerSecureUDPSocket::Context::DtlsContext.
@@ -277,7 +270,6 @@ namespace thekogans {
                             cachedSessionTTL (DEFAULT_CACHED_SESSION_TTL) {
                         Parse (node);
                     }
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Copy ctor.
                     /// \param[in] connect DTLSContext to copy.
@@ -289,7 +281,6 @@ namespace thekogans {
                     /// \return *this.
                     DTLSContext &operator = (const DTLSContext &context);
 
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                     /// \brief
                     /// Parse the node representing a
                     /// ServerSecureUDPSocket::Context::DTLSContext.
@@ -307,7 +298,6 @@ namespace thekogans {
                     virtual std::string ToString (
                         std::size_t indentationLevel = 0,
                         const char *tagName = TAG_CONTEXT) const;
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                     /// \brief
                     /// Construct an SSL_CTX from the values provided.
@@ -318,7 +308,6 @@ namespace thekogans {
                     /// \return SSL_CTX based on the values in DTLSContext.
                     SSL_CTX *GetSSL_CTX () const;
 
-                #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 private:
                     /// \brief
                     /// Helper used to parse the list of certificates.
@@ -336,13 +325,11 @@ namespace thekogans {
                     std::string FormatCertificates (
                         std::size_t indentationLevel,
                         const Certificates &certificates) const;
-                #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 } context;
                 /// \brief
                 /// Extended session info.
                 SessionInfo sessionInfo;
 
-            #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
                 /// \brief
                 /// ctor. Parse the node representing a
                 /// ServerSecureUDPSocket::Context.
@@ -373,7 +360,6 @@ namespace thekogans {
                 virtual std::string ToString (
                     std::size_t indentationLevel = 0,
                     const char *tagName = TAG_CONTEXT) const;
-            #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 
                 /// \brief
                 /// Create a ServerSecureUDPSocket.

@@ -15,8 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-
 #include <sstream>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/XMLUtils.h"
@@ -83,5 +81,3 @@ namespace thekogans {
 
     } // namespace stream
 } // namespace thekogans
-
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)

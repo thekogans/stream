@@ -35,11 +35,9 @@
 #include <memory>
 #include <string>
 #include <list>
-#if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
-    #include <pugixml.hpp>
-#endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
 #include <openssl/ssl.h>
 #include <openssl/pem.h>
+#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
@@ -210,7 +208,6 @@ namespace thekogans {
                 renegotiationFrequency (renegotiationFrequency_),
                 bidirectionalShutdown (bidirectionalShutdown_),
                 countTransfered (countTransfered_) {}
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \brief
             /// ctor.
             /// \param[in] node pugi::xml_node representing
@@ -221,7 +218,6 @@ namespace thekogans {
                     countTransfered (0) {
                 Parse (node);
             }
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \brief
             /// Copy ctor.
             /// \param[in] sessionInfo SessionInfo to copy.
@@ -233,7 +229,6 @@ namespace thekogans {
             /// \return *this.
             SessionInfo &operator = (const SessionInfo &sessionInfo);
 
-        #if defined (THEKOGANS_STREAM_HAVE_PUGIXML)
             /// \brief
             /// Parse a node representing a SecureTCPSocket::SessionInfo:
             /// <tagName ServerName = ""
@@ -254,7 +249,6 @@ namespace thekogans {
             std::string ToString (
                 std::size_t indentationLevel = 0,
                 const char *tagName = TAG_SESSION_INFO) const;
-        #endif // defined (THEKOGANS_STREAM_HAVE_PUGIXML)
         };
 
         /// \brief
