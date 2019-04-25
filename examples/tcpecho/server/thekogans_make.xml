@@ -11,8 +11,6 @@
                 name = "util"/>
     <dependency organization = "thekogans"
                 name = "stream"/>
-    <toolchain organization = "thekogans"
-               name = "pugixml"/>
     <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
       <framework>Foundation</framework>
     </if>

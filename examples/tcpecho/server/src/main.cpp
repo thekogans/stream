@@ -39,7 +39,7 @@ namespace {
         std::string logLevelList;
         {
             std::list<util::ui32> levels;
-            util::LoggerMgr::GetLogLevels (levels);
+            util::LoggerMgr::GetLevels (levels);
             if (!levels.empty ()) {
                 std::list<util::ui32>::const_iterator it = levels.begin ();
                 logLevelList = util::LoggerMgr::levelTostring (*it++);

@@ -22,7 +22,7 @@
 
 #include <string>
 #include <list>
-#include <pugixml.hpp>
+#include <pugixml/pugixml.hpp>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/CommandLineOptions.h"

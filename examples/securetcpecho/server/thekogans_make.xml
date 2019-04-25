@@ -13,8 +13,6 @@
                 name = "crypto"/>
     <dependency organization = "thekogans"
                 name = "stream"/>
-    <toolchain organization = "thekogans"
-               name = "pugixml"/>
   </dependencies>
   <cpp_headers prefix = "include">
     <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>

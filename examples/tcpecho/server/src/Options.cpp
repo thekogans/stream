@@ -56,7 +56,9 @@ namespace thekogans {
                 #pragma warning (pop)
             #endif // defined (_MSC_VER)
 
-                void Options::DoOption (char option, const std::string &value) {
+                void Options::DoOption (
+                        char option,
+                        const std::string &value) {
                     switch (option) {
                         case 'h':
                             help = true;

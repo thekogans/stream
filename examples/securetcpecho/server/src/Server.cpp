@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include <pugixml.hpp>
+#include <pugixml/pugixml.hpp>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/ServerSecureTCPSocket.h"
