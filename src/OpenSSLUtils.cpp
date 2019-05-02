@@ -82,7 +82,9 @@ namespace thekogans {
         OpenSSLInit::OpenSSLInit (
                 bool multiThreaded,
                 util::ui32 entropyNeeded,
-                util::ui64 workingSetSize) :
+                util::ui64 workingSetSize,
+                bool loadSystemCACertificates,
+                bool loadSystemRootCACertificatesOnly) :
                 crypto::OpenSSLInit (
                     multiThreaded,
                     entropyNeeded,
@@ -96,6 +98,9 @@ namespace thekogans {
                 SSL_SESSION_get_ex_new_index (0, 0, 0, 0, DeleteSessionInfo);
             if (SSL_SESSIONSessionInfoIndex == -1) {
                 THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
+            }
+            if (loadSystemCACertificates) {
+                crypto::SystemCACertificates::Load (loadSystemRootCACertificatesOnly);
             }
         }
 

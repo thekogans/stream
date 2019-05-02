@@ -110,10 +110,17 @@ namespace thekogans {
             /// Initialize the Open SSL library.
             /// \param[in] multiThreaded true = initialize thread support.
             /// \param[in] entropyNeeded Number of entropy bytes to use to seed the PRNG.
+            /// \param[in] workingSetSize Physical pages to reserve.
+            /// \param[in] loadSystemCACertificates true == Call
+            /// crypto::SystemCACertificates::Load (loadSystemRootCACertificatesOnly);
+            /// \param[in] loadSystemRootCACertificatesOnly true == load only
+            /// root CA (self signed) certificates.
             OpenSSLInit (
                 bool multiThreaded = true,
                 util::ui32 entropyNeeded = DEFAULT_ENTROPY_NEEDED,
-                util::ui64 workingSetSize = DEFAULT_WORKING_SET_SIZE);
+                util::ui64 workingSetSize = DEFAULT_WORKING_SET_SIZE,
+                bool loadSystemCACertificates = true,
+                bool loadSystemRootCACertificatesOnly = true);
 
             /// \brief
             /// OpenSSLInit is neither copy constructable, nor assignable.
