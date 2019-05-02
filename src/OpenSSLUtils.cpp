@@ -40,6 +40,7 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
+#include "thekogans/crypto/SystemCACertificates.h"
 #include "thekogans/crypto/OpenSSLException.h"
 #include "thekogans/stream/OpenSSLUtils.h"
 
@@ -100,7 +101,7 @@ namespace thekogans {
                 THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
             }
             if (loadSystemCACertificates) {
-                crypto::SystemCACertificates::Load (loadSystemRootCACertificatesOnly);
+                crypto::SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);
             }
         }
 
