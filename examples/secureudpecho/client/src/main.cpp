@@ -37,7 +37,7 @@ using namespace thekogans;
 using namespace thekogans::stream::secureudpecho;
 
 namespace {
-    std::string GetLogLevelList (const std::string &separator) {
+    std::string GetLevelsList (const std::string &separator) {
         std::string logLevelList;
         {
             std::list<util::ui32> levels;
@@ -128,7 +128,7 @@ int main (
             "t - Socket send/receive timeout (default is 3 seconds).\n"
             "path - Path to client.xml configuration file\n",
             argv[0],
-            GetLogLevelList (" | ").c_str ());
+            GetLevelsList (" | ").c_str ());
     }
     else if (client::Options::Instance ().version) {
         THEKOGANS_UTIL_LOG_INFO (

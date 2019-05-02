@@ -36,7 +36,7 @@ using namespace thekogans;
 using namespace thekogans::stream;
 
 namespace {
-    std::string GetLogLevelList (const std::string &separator) {
+    std::string GetLevelsList (const std::string &separator) {
         std::string logLevelList;
         {
             std::list<util::ui32> levels;
@@ -91,7 +91,7 @@ int main (
             "p - Port to listen for clients on.\n"
             "a - Address to listen for clients on (can be repeated).\n",
             argv[0],
-            GetLogLevelList (" | ").c_str ());
+            GetLevelsList (" | ").c_str ());
     }
     else if (loggermgr::Options::Instance ().version) {
         THEKOGANS_UTIL_LOG_INFO (

@@ -34,7 +34,7 @@ using namespace thekogans;
 using namespace thekogans::stream::serverudpecho;
 
 namespace {
-    std::string GetLogLevelList (const std::string &separator) {
+    std::string GetLevelsList (const std::string &separator) {
         std::string logLevelList;
         {
             std::list<util::ui32> levels;
@@ -113,7 +113,7 @@ int main (
             "s - Seed (default is 64).\n"
             "t - Socket send/receive timeout (default is 3 seconds).\n",
             argv[0],
-            GetLogLevelList (" | ").c_str ());
+            GetLevelsList (" | ").c_str ());
     }
     else if (client::Options::Instance ().version) {
         THEKOGANS_UTIL_LOG_INFO (

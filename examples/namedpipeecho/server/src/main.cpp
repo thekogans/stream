@@ -38,7 +38,7 @@ using namespace thekogans;
 using namespace thekogans::stream::namedpipeecho;
 
 namespace {
-    std::string GetLogLevelList (const std::string &separator) {
+    std::string GetLevelsList (const std::string &separator) {
         std::string logLevelList;
         {
             std::list<util::ui32> levels;
@@ -91,7 +91,7 @@ int main (
             "k - Use lock file to prevent multiple instances (path - Path to lock file).\n"
             "a - Address to listen for clients on (can be repeated).\n",
             argv[0],
-            GetLogLevelList (" | ").c_str ());
+            GetLevelsList (" | ").c_str ());
     }
     else if (server::Options::Instance ().version) {
         THEKOGANS_UTIL_LOG_INFO (
