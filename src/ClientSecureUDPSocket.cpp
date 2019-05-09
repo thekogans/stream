@@ -53,6 +53,8 @@ namespace thekogans {
             "CertificateChain";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_CERTIFICATE =
             "Certificate";
+        const char * const ClientSecureUDPSocket::Context::DTLSContext::ATTR_ENCODING =
+            "Encoding";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_PRIVATE_KEY =
             "PrivateKey";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_CIPHER_LIST =
@@ -215,9 +217,16 @@ namespace thekogans {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
                     if (childName == TAG_CERTIFICATE) {
+                        std::string encoding = child.attribute (ATTR_ENCODING).value ();
                         std::string certificate = util::Decodestring (child.text ().get ());
-                        if (!certificate.empty ()) {
-                            certificates.push_back (certificate);
+                        if (!encoding.empty () && !certificate.empty ()) {
+                            certificates.push_back (Certificate (encoding, certificate));
+                        }
+                        else {
+                            THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
+                                THEKOGANS_STREAM,
+                                "Encountered malformed %s tag.\n",
+                                TAG_CERTIFICATE_CHAIN);
                         }
                     }
                 }
@@ -231,9 +240,14 @@ namespace thekogans {
             for (Certificates::const_iterator
                     it = certificates.begin (),
                     end = certificates.end (); it != end; ++it) {
+                util::Attributes attributes;
+                attributes.push_back (
+                    util::Attribute (
+                        ATTR_ENCODING,
+                        util::Encodestring (it->first)));
                 stream <<
-                    util::OpenTag (indentationLevel, TAG_CERTIFICATE) <<
-                        util::Encodestring (*it) <<
+                    util::OpenTag (indentationLevel, TAG_CERTIFICATE, attributes) <<
+                        util::Encodestring (it->second) <<
                     util::CloseTag (indentationLevel, TAG_CERTIFICATE);
             }
             return stream.str ();

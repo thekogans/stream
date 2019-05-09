@@ -65,6 +65,9 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_STREAM_DECL const char * const DER_ENCODING = "DER";
+        _LIB_THEKOGANS_STREAM_DECL const char * const PEM_ENCODING = "PEM";
+
         namespace {
             void DeleteSessionInfo (
                     void *parent,
@@ -182,9 +185,9 @@ namespace thekogans {
             }
         }
 
-        _LIB_THEKOGANS_STREAM_DECL extern const char * const OPENSSL_TLS_1_0 = "1.0";
-        _LIB_THEKOGANS_STREAM_DECL extern const char * const OPENSSL_TLS_1_1 = "1.1";
-        _LIB_THEKOGANS_STREAM_DECL extern const char * const OPENSSL_TLS_1_2 = "1.2";
+        _LIB_THEKOGANS_STREAM_DECL const char * const OPENSSL_TLS_1_0 = "1.0";
+        _LIB_THEKOGANS_STREAM_DECL const char * const OPENSSL_TLS_1_1 = "1.1";
+        _LIB_THEKOGANS_STREAM_DECL const char * const OPENSSL_TLS_1_2 = "1.2";
 
         _LIB_THEKOGANS_STREAM_DECL const SSL_METHOD * _LIB_THEKOGANS_STREAM_API
         GetTLSMethod (const std::string &version) {
@@ -201,8 +204,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
         }
 
-        _LIB_THEKOGANS_STREAM_DECL extern const char * const OPENSSL_DTLS_1_0 = "1.0";
-        _LIB_THEKOGANS_STREAM_DECL extern const char * const OPENSSL_DTLS_1_2 = "1.2";
+        _LIB_THEKOGANS_STREAM_DECL const char * const OPENSSL_DTLS_1_0 = "1.0";
+        _LIB_THEKOGANS_STREAM_DECL const char * const OPENSSL_DTLS_1_2 = "1.2";
 
         _LIB_THEKOGANS_STREAM_DECL const SSL_METHOD * _LIB_THEKOGANS_STREAM_API
         GetDTLSMethod (const std::string &version) {
@@ -344,7 +347,7 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         LoadCACertificates (
                 SSL_CTX *ctx,
-                const std::list<std::string> &caCertificates,
+                const Certificates &caCertificates,
                 pem_password_cb *passwordCallback,
                 void *userData) {
             if (ctx != 0 && !caCertificates.empty ()) {
@@ -359,12 +362,16 @@ namespace thekogans {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                 }
-                for (std::list<std::string>::const_iterator
+                for (Certificates::const_iterator
                         it = caCertificates.begin (),
                         end = caCertificates.end (); it != end; ++it) {
                     if (X509_STORE_add_cert (store,
-                            ParsePEMCertificate ((*it).c_str (), (*it).size (),
-                                passwordCallback, userData).get ()) != 1) {
+                            ParseCertificate (
+                                it->first,
+                                it->second.c_str (),
+                                it->second.size (),
+                                passwordCallback,
+                                userData).get ()) != 1) {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                 }
@@ -381,22 +388,30 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         LoadCertificateChain (
                 SSL_CTX *ctx,
-                const std::list<std::string> &certificateChain,
+                const Certificates &certificateChain,
                 pem_password_cb *passwordCallback,
                 void *userData) {
             if (ctx != 0 && !certificateChain.empty ()) {
-                std::list<std::string>::const_iterator it = certificateChain.begin ();
-                const std::string &certificate = *it++;
+                Certificates::const_iterator it = certificateChain.begin ();
+                const Certificate &certificate = *it++;
                 if (SSL_CTX_use_certificate (ctx,
-                        ParsePEMCertificate (&certificate[0], certificate.size (),
-                            passwordCallback, userData).get ()) == 1) {
+                        ParseCertificate (
+                            certificate.first,
+                            certificate.second.data (),
+                            certificate.second.size (),
+                            passwordCallback,
+                            userData).get ()) == 1) {
                     SSL_CTX_clear_chain_certs (ctx);
-                    for (std::list<std::string>::const_iterator
+                    for (Certificates::const_iterator
                             end = certificateChain.end (); it != end; ++it) {
-                        const std::string &certificate = *it;
+                        const Certificate &certificate = *it;
                         if (SSL_CTX_add1_chain_cert (ctx,
-                                ParsePEMCertificate (&certificate[0], certificate.size (),
-                                    passwordCallback, userData).get ()) != 1) {
+                                ParseCertificate (
+                                    certificate.first,
+                                    certificate.second.data (),
+                                    certificate.second.size (),
+                                    passwordCallback,
+                                    userData).get ()) != 1) {
                             THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                         }
                     }
@@ -419,7 +434,7 @@ namespace thekogans {
                 void *userData) {
             if (ctx != 0 && !privateKey.empty ()) {
                 if (SSL_CTX_use_PrivateKey (ctx,
-                        ParsePrivateKey (&privateKey[0], privateKey.size (),
+                        ParsePrivateKey (privateKey.data (), privateKey.size (),
                             passwordCallback, userData).get ()) != 1) {
                     THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
@@ -457,7 +472,7 @@ namespace thekogans {
                 if (!dhParams.empty ()) {
                     SSL_CTX_set_options (ctx, SSL_CTX_get_options (ctx) | SSL_OP_SINGLE_DH_USE);
                     if (SSL_CTX_set_tmp_dh (ctx,
-                            ParseDHParams (&dhParams[0], dhParams.size (),
+                            ParseDHParams (dhParams.data (), dhParams.size (),
                                 passwordCallback, userData).get ()) != 1) {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
@@ -489,7 +504,7 @@ namespace thekogans {
                     }
                 }
                 else if (ecdhParamsType == "pem") {
-                    crypto::EVP_PKEYPtr key = ParsePUBKEY (&ecdhParams[0],
+                    crypto::EVP_PKEYPtr key = ParsePUBKEY (ecdhParams.data (),
                         ecdhParams.size (), passwordCallback, userData);
                     if (key.get () != 0) {
                         crypto::EC_KEYPtr ecdh (EVP_PKEY_get1_EC_KEY (key.get ()));
@@ -513,7 +528,8 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t length) {
             if (buffer != 0 && length > 0) {
-                crypto::X509Ptr certificate (d2i_X509 (0, (const unsigned char **)&buffer, (long)length));
+                crypto::X509Ptr certificate (
+                    d2i_X509 (0, (const util::ui8 **)&buffer, (long)length));
                 if (certificate.get () != 0) {
                     return certificate;
                 }
@@ -556,6 +572,19 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+
+        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
+        ParseCertificate (
+                const std::string &encoding,
+                const void *buffer,
+                std::size_t length,
+                pem_password_cb *passwordCallback,
+                void *userData) {
+            return encoding == DER_ENCODING ? ParseDERCertificate (buffer, length) :
+                encoding == PEM_ENCODING ? ParsePEMCertificate (buffer, length, passwordCallback, userData) :
+                crypto::X509Ptr ();
         }
 
         _LIB_THEKOGANS_STREAM_DECL crypto::EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API

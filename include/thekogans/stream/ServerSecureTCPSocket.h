@@ -172,6 +172,9 @@ namespace thekogans {
                     /// "Certificate"
                     static const char * const TAG_CERTIFICATE;
                     /// \brief
+                    /// "Encoding"
+                    static const char * const ATTR_ENCODING;
+                    /// \brief
                     /// "PrivateKeyRSA"
                     static const char * const TAG_PRIVATE_KEY_RSA;
                     /// \brief
@@ -217,9 +220,6 @@ namespace thekogans {
                     /// \brief
                     /// true = Load system CA certificates.
                     bool loadSystemCACertificates;
-                    /// \brief
-                    /// Convenient typedef for std::list<std::string>.
-                    typedef std::list<std::string> Certificates;
                     /// \brief
                     /// CA certificates used to validate client certificates.
                     Certificates caCertificates;
