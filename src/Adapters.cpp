@@ -80,13 +80,13 @@ namespace thekogans {
             else if (family == AF_PACKET) {
                 std::vector<util::ui8> addr = address.GetAddrPacket ();
                 return addr.size () == MAC_LENGTH &&
-                    memcmp (mac, &addr[0], addr.size ()) == 0;
+                    memcmp (mac, addr.data (), addr.size ()) == 0;
             }
         #elif defined (TOOLCHAIN_OS_OSX)
             else if (family == AF_LINK) {
                 std::vector<util::ui8> addr = address.GetAddrLink ();
                 return addr.size () == MAC_LENGTH &&
-                    memcmp (mac, &addr[0], addr.size ()) == 0;
+                    memcmp (mac, addr.data (), addr.size ()) == 0;
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
             return false;
@@ -380,13 +380,13 @@ namespace thekogans {
                     GAA_FLAG_SKIP_MULTICAST |
                     GAA_FLAG_SKIP_DNS_SERVER,
                     0,
-                    (PIP_ADAPTER_ADDRESSES)(size > 0 ? &buffer[0] : 0),
+                    (PIP_ADAPTER_ADDRESSES)(size > 0 ? buffer.data () : 0),
                     &size);
             } while (rc == ERROR_BUFFER_OVERFLOW && size > 0);
             if (rc == ERROR_SUCCESS) {
                 if (size > 0) {
                     for (PIP_ADAPTER_ADDRESSES
-                            ipAdapterAddresses = (PIP_ADAPTER_ADDRESSES)&buffer[0];
+                            ipAdapterAddresses = (PIP_ADAPTER_ADDRESSES)buffer.data ();
                             ipAdapterAddresses != 0; ipAdapterAddresses = ipAdapterAddresses->Next) {
                         AdapterInfo adapterInfo (ipAdapterAddresses->IfIndex);
                         if (adapterInfo.IsConnected ()) {

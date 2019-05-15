@@ -288,11 +288,11 @@ namespace thekogans {
                 }
                 if (!certificateChainRSA.empty ()) {
                     LoadCertificateChain (ctx.get (), certificateChainRSA);
-                    LoadPrivateKey (ctx.get (), privateKeyRSA);
+                    LoadPrivateKey (ctx.get (), crypto::OPENSSL_PKEY_RSA, privateKeyRSA);
                 }
                 if (!certificateChainDSA.empty ()) {
                     LoadCertificateChain (ctx.get (), certificateChainDSA);
-                    LoadPrivateKey (ctx.get (), privateKeyDSA);
+                    LoadPrivateKey (ctx.get (), crypto::OPENSSL_PKEY_DSA, privateKeyDSA);
                 }
                 int mode = SSL_VERIFY_PEER;
                 if (requireClientCertificate) {
@@ -336,16 +336,15 @@ namespace thekogans {
 
         void ServerSecureUDPSocket::Context::DTLSContext::ParseCertificates (
                 const pugi::xml_node &node,
-                Certificates &certificates) {
+                std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
                     if (childName == TAG_CERTIFICATE) {
-                        std::string encoding = child.attribute (ATTR_ENCODING).value ();
                         std::string certificate = util::Decodestring (child.text ().get ());
-                        if (!encoding.empty () && !certificate.empty ()) {
-                            certificates.push_back (Certificate (encoding, certificate));
+                        if (!certificate.empty ()) {
+                            certificates.push_back (certificate);
                         }
                         else {
                             THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
@@ -360,18 +359,13 @@ namespace thekogans {
 
         std::string ServerSecureUDPSocket::Context::DTLSContext::FormatCertificates (
                 std::size_t indentationLevel,
-                const Certificates &certificateChain) const {
+                const std::list<std::string> &certificateChain) const {
             std::ostringstream stream;
-            for (Certificates::const_iterator it = certificateChain.begin (),
+            for (std::list<std::string>::const_iterator it = certificateChain.begin (),
                     end = certificateChain.end (); it != end; ++it) {
-                util::Attributes attributes;
-                attributes.push_back (
-                    util::Attribute (
-                        ATTR_ENCODING,
-                        util::Encodestring (it->first)));
                 stream <<
                     util::OpenTag (indentationLevel, TAG_CERTIFICATE) <<
-                        util::Encodestring (it->second) <<
+                        util::Encodestring (*it) <<
                     util::CloseTag (indentationLevel, TAG_CERTIFICATE);
             }
             return stream.str ();

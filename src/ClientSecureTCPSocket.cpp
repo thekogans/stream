@@ -53,10 +53,10 @@ namespace thekogans {
             "CertificateChain";
         const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_CERTIFICATE =
             "Certificate";
-        const char * const ClientSecureTCPSocket::Context::TLSContext::ATTR_ENCODING =
-            "Encoding";
         const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_PRIVATE_KEY =
             "PrivateKey";
+        const char * const ClientSecureTCPSocket::Context::TLSContext::ATTR_PRIVATE_KEY_TYPE =
+            "Type";
         const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_CIPHER_LIST =
             "CipherList";
         const char * const ClientSecureTCPSocket::Context::TLSContext::TAG_VERIFY_SERVER =
@@ -71,6 +71,7 @@ namespace thekogans {
                 loadSystemCACertificates (context.loadSystemCACertificates),
                 caCertificates (context.caCertificates),
                 certificateChain (context.certificateChain),
+                privateKeyType (context.privateKeyType),
                 privateKey (context.privateKey),
                 cipherList (context.cipherList),
                 verifyServer (context.verifyServer),
@@ -88,6 +89,7 @@ namespace thekogans {
                 loadSystemCACertificates = context.loadSystemCACertificates;
                 caCertificates = context.caCertificates;
                 certificateChain = context.certificateChain;
+                privateKeyType = context.privateKeyType;
                 privateKey = context.privateKey;
                 cipherList = context.cipherList;
                 verifyServer = context.verifyServer;
@@ -117,6 +119,7 @@ namespace thekogans {
                         ParseCertificates (child, certificateChain);
                     }
                     else if (childName == TAG_PRIVATE_KEY) {
+                        privateKeyType = child.attribute (ATTR_PRIVATE_KEY_TYPE).value ();
                         privateKey = util::Decodestring (child.text ().get ());
                     }
                     else if (childName == TAG_CIPHER_LIST) {
@@ -188,7 +191,7 @@ namespace thekogans {
                     LoadCertificateChain (ctx.get (), certificateChain);
                 }
                 if (!privateKey.empty ()) {
-                    LoadPrivateKey (ctx.get (), privateKey);
+                    LoadPrivateKey (ctx.get (), privateKeyType, privateKey);
                 }
                 if (!cipherList.empty ()) {
                     LoadCipherList (ctx.get (), cipherList);
@@ -210,16 +213,15 @@ namespace thekogans {
 
         void ClientSecureTCPSocket::Context::TLSContext::ParseCertificates (
                 const pugi::xml_node &node,
-                Certificates &certificates) {
+                std::list<std::string> &certificates) {
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
                     if (childName == TAG_CERTIFICATE) {
-                        std::string encoding = child.attribute (ATTR_ENCODING).value ();
                         std::string certificate = util::Decodestring (child.text ().get ());
-                        if (!encoding.empty () && !certificate.empty ()) {
-                            certificates.push_back (Certificate (encoding, certificate));
+                        if (!certificate.empty ()) {
+                            certificates.push_back (certificate);
                         }
                         else {
                             THEKOGANS_UTIL_LOG_SUBSYSTEM_WARNING (
@@ -234,19 +236,14 @@ namespace thekogans {
 
         std::string ClientSecureTCPSocket::Context::TLSContext::FormatCertificates (
                 std::size_t indentationLevel,
-                const Certificates &certificates) const {
+                const std::list<std::string> &certificates) const {
             std::ostringstream stream;
-            for (Certificates::const_iterator
+            for (std::list<std::string>::const_iterator
                     it = certificates.begin (),
                     end = certificates.end (); it != end; ++it) {
-                util::Attributes attributes;
-                attributes.push_back (
-                    util::Attribute (
-                        ATTR_ENCODING,
-                        util::Encodestring (it->first)));
                 stream <<
-                    util::OpenTag (indentationLevel, TAG_CERTIFICATE, attributes) <<
-                        util::Encodestring (it->second) <<
+                    util::OpenTag (indentationLevel, TAG_CERTIFICATE) <<
+                        util::Encodestring (*it) <<
                     util::CloseTag (indentationLevel, TAG_CERTIFICATE);
             }
             return stream.str ();

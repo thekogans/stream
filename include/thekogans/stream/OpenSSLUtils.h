@@ -90,20 +90,6 @@ namespace thekogans {
         /// Convenient typedef for std::unique_ptr<SSL_SESSION, SSL_SESSIONDeleter>.
         typedef std::unique_ptr<SSL_SESSION, SSL_SESSIONDeleter> SSL_SESSIONPtr;
 
-        /// \brief
-        /// "DER"
-        _LIB_THEKOGANS_STREAM_DECL extern const char * const DER_ENCODING;
-        /// \brief
-        /// "PEM"
-        _LIB_THEKOGANS_STREAM_DECL extern const char * const PEM_ENCODING;
-
-        /// \brief
-        /// Convenient typedef for std::pair<std::string, std::string>.
-        typedef std::pair<std::string, std::string> Certificate;
-        /// \brief
-        /// Convenient typedef for std::list<std::pair<std::string, std::string>>.
-        typedef std::list<Certificate> Certificates;
-
         /// \struct OpenSSLInit OpenSSLUtils.h thekogans/stream/OpenSSLUtils.h
         ///
         /// \brief
@@ -337,7 +323,7 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
             LoadCACertificates (
                 SSL_CTX *ctx,
-                const Certificates &caCertificates,
+                const std::list<std::string> &caCertificates,
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
         /// \brief
@@ -350,18 +336,21 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
             LoadCertificateChain (
                 SSL_CTX *ctx,
-                const Certificates &certificateChain,
+                const std::list<std::string> &certificateChain,
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
         /// \brief
         /// Load a PEM encoded private key from a string.
         /// \param[in] ctx SSL_CTX to load the private key in to.
+        /// \param[in] privateKeyType Type of private key
+        /// (crypto::OPENSSL_PKEY_RSA or crypto::OPENSSL_PKEY_DSA).
         /// \param[in] privateKey String representing a private key.
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
             LoadPrivateKey (
                 SSL_CTX *ctx,
+                const std::string &privateKeyType,
                 const std::string &privateKey,
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
@@ -399,95 +388,6 @@ namespace thekogans {
                 SSL_CTX *ctx,
                 const std::string &ecdhParamsType,
                 const std::string &ecdhParams,
-                pem_password_cb *passwordCallback = 0,
-                void *userData = 0);
-        /// \brief
-        /// Parse a DER encoded certificate.
-        /// \param[in] buffer Buffer containing the DER encoded certificate.
-        /// \param[in] length Length of buffer.
-        /// \return Parsed certificate.
-        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
-            ParseDERCertificate (
-                const void *buffer,
-                std::size_t length);
-        /// \brief
-        /// Parse a PEM encoded certificate.
-        /// \param[in] buffer Buffer containing the PEM encoded certificate.
-        /// \param[in] length Length of buffer.
-        /// \param[in] passwordCallback Provide a password if PEM is encrypted.
-        /// \param[in] userData User data for passwordCallback.
-        /// \return Parsed certificate.
-        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
-            ParsePEMCertificate (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback = 0,
-                void *userData = 0);
-        /// \brief
-        /// Parse an encoded certificate.
-        /// \param[in] encoding DER_ENCODING or PEM_ENCODING.
-        /// \param[in] buffer Buffer containing the encoded certificate.
-        /// \param[in] length Length of buffer.
-        /// \param[in] passwordCallback Provide a password if PEM is encrypted.
-        /// \param[in] userData User data for passwordCallback.
-        /// \return Parsed certificate.
-        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
-        ParseCertificate (
-                const std::string &encoding,
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback,
-                void *userData);
-        /// \brief
-        /// Parse a PEM encoded public key.
-        /// \param[in] buffer Buffer containing the PEM encoded public key.
-        /// \param[in] length Length of buffer.
-        /// \param[in] passwordCallback Provide a password if PEM is encrypted.
-        /// \param[in] userData User data for passwordCallback.
-        /// \return Parsed public key.
-        _LIB_THEKOGANS_STREAM_DECL crypto::EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-            ParsePUBKEY (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback = 0,
-                void *userData = 0);
-        /// \brief
-        /// Parse a PEM encoded private key.
-        /// \param[in] buffer Buffer containing the PEM encoded private key.
-        /// \param[in] length Length of buffer.
-        /// \param[in] passwordCallback Provide a password if PEM is encrypted.
-        /// \param[in] userData User data for passwordCallback.
-        /// \return Parsed private key.
-        _LIB_THEKOGANS_STREAM_DECL crypto::EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-            ParsePrivateKey (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback = 0,
-                void *userData = 0);
-        /// \brief
-        /// Parse a PEM encoded DH parameters.
-        /// \param[in] buffer Buffer containing the PEM encoded DH parameters.
-        /// \param[in] length Length of buffer.
-        /// \param[in] passwordCallback Provide a password if PEM is encrypted.
-        /// \param[in] userData User data for passwordCallback.
-        /// \return Parsed DH parameters.
-        _LIB_THEKOGANS_STREAM_DECL crypto::DHPtr _LIB_THEKOGANS_STREAM_API
-            ParseDHParams (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback = 0,
-                void *userData = 0);
-        /// \brief
-        /// Parse a PEM encoded DSA parameters.
-        /// \param[in] buffer Buffer containing the PEM encoded DSA parameters.
-        /// \param[in] length Length of buffer.
-        /// \param[in] passwordCallback Provide a password if PEM is encrypted.
-        /// \param[in] userData User data for passwordCallback.
-        /// \return Parsed DSA parameters.
-        _LIB_THEKOGANS_STREAM_DECL crypto::DSAPtr _LIB_THEKOGANS_STREAM_API
-            ParseDSAParams (
-                const void *buffer,
-                std::size_t length,
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
 

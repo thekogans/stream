@@ -202,16 +202,16 @@ namespace thekogans {
                     bool loadSystemCACertificates;
                     /// \brief
                     /// CA certificates used to validate client certificates.
-                    Certificates caCertificates;
+                    std::list<std::string> caCertificates;
                     /// \brief
                     /// Server RSA certificate chain.
-                    Certificates certificateChainRSA;
+                    std::list<std::string> certificateChainRSA;
                     /// \brief
                     /// Server RSA private key.
                     std::string privateKeyRSA;
                     /// \brief
                     /// Server DSA certificate chain.
-                    Certificates certificateChainDSA;
+                    std::list<std::string> certificateChainDSA;
                     /// \brief
                     /// Server DSA private key.
                     std::string privateKeyDSA;
@@ -315,7 +315,7 @@ namespace thekogans {
                     /// \param[out] certificates List of parsed certificates.
                     void ParseCertificates (
                         const pugi::xml_node &node,
-                        Certificates &certificateChain);
+                        std::list<std::string> &certificateChain);
                     /// \brief
                     /// Helper used to format a list of certificates to form a chain.
                     /// \param[in] indentationLevel Pretty print parameter.
@@ -324,7 +324,7 @@ namespace thekogans {
                     /// \return A string representing an XML structure of a certificate chain.
                     std::string FormatCertificates (
                         std::size_t indentationLevel,
-                        const Certificates &certificates) const;
+                        const std::list<std::string> &certificates) const;
                 } context;
                 /// \brief
                 /// Extended session info.

@@ -276,7 +276,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
                 ULONG count = 0;
-                if (!GetQueuedCompletionStatusEx (handle, &iocpEvents[0],
+                if (!GetQueuedCompletionStatusEx (handle, iocpEvents.data (),
                         (ULONG)maxEventsBatch, &count, (DWORD)timeSpec.ToMilliseconds (), FALSE)) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode != WAIT_TIMEOUT) {
@@ -343,7 +343,7 @@ namespace thekogans {
                 }
             #elif defined (TOOLCHAIN_OS_Linux)
                 std::vector<epoll_event> epollEvents (maxEventsBatch);
-                int count = epoll_wait (handle, &epollEvents[0], maxEventsBatch,
+                int count = epoll_wait (handle, epollEvents.data (), maxEventsBatch,
                     timeSpec == util::TimeSpec::Infinite ? -1 : timeSpec.ToMilliseconds ());
                 if (count < 0) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -364,7 +364,7 @@ namespace thekogans {
                             std::size_t bufferSize = readPipe.GetDataAvailable ();
                             if (bufferSize != 0) {
                                 std::vector<util::ui8> buffer (bufferSize);
-                                readPipe.Read (&buffer[0], bufferSize);
+                                readPipe.Read (buffer.data (), bufferSize);
                             }
                         }
                         else if (epollEvents[i].events & EPOLLERR) {
@@ -449,7 +449,7 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 timespec timespec = timeSpec.Totimespec ();
                 std::vector<keventStruct> kqueueEvents (maxEventsBatch);
-                int count = keventFunc (handle, 0, 0, &kqueueEvents[0], maxEventsBatch,
+                int count = keventFunc (handle, 0, 0, kqueueEvents.data (), maxEventsBatch,
                     timeSpec == util::TimeSpec::Infinite ? 0 : &timespec);
                 if (count < 0) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -470,7 +470,7 @@ namespace thekogans {
                             std::size_t bufferSize = readPipe.GetDataAvailable ();
                             if (bufferSize != 0) {
                                 std::vector<util::ui8> buffer (bufferSize);
-                                readPipe.Read (&buffer[0], bufferSize);
+                                readPipe.Read (buffer.data (), bufferSize);
                             }
                         }
                         else if (kqueueEvents[i].flags & EV_ERROR) {

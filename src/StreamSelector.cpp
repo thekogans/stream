@@ -85,7 +85,7 @@ namespace thekogans {
                 std::size_t bufferSize = readPipe.GetDataAvailable ();
                 if (bufferSize != 0) {
                     std::vector<util::ui8> buffer (bufferSize);
-                    if (readPipe.Read (&buffer[0], bufferSize) != bufferSize) {
+                    if (readPipe.Read (buffer.data (), bufferSize) != bufferSize) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
@@ -109,7 +109,7 @@ namespace thekogans {
                 std::size_t bufferSize = readPipe.GetDataAvailable ();
                 if (bufferSize != 0) {
                     std::vector<util::ui8> buffer (bufferSize);
-                    if (readPipe.Read (&buffer[0], bufferSize) != bufferSize) {
+                    if (readPipe.Read (buffer.data (), bufferSize) != bufferSize) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }

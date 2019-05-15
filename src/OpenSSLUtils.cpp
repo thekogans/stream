@@ -65,9 +65,6 @@ namespace thekogans {
             }
         }
 
-        _LIB_THEKOGANS_STREAM_DECL const char * const DER_ENCODING = "DER";
-        _LIB_THEKOGANS_STREAM_DECL const char * const PEM_ENCODING = "PEM";
-
         namespace {
             void DeleteSessionInfo (
                     void *parent,
@@ -347,7 +344,7 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         LoadCACertificates (
                 SSL_CTX *ctx,
-                const Certificates &caCertificates,
+                const std::list<std::string> &caCertificates,
                 pem_password_cb *passwordCallback,
                 void *userData) {
             if (ctx != 0 && !caCertificates.empty ()) {
@@ -362,14 +359,14 @@ namespace thekogans {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                 }
-                for (Certificates::const_iterator
+                for (std::list<std::string>::const_iterator
                         it = caCertificates.begin (),
                         end = caCertificates.end (); it != end; ++it) {
                     if (X509_STORE_add_cert (store,
-                            ParseCertificate (
-                                it->first,
-                                it->second.c_str (),
-                                it->second.size (),
+                            crypto::ParseCertificate (
+                                crypto::PEM_ENCODING,
+                                it->data (),
+                                it->size (),
                                 passwordCallback,
                                 userData).get ()) != 1) {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -388,28 +385,28 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         LoadCertificateChain (
                 SSL_CTX *ctx,
-                const Certificates &certificateChain,
+                const std::list<std::string> &certificateChain,
                 pem_password_cb *passwordCallback,
                 void *userData) {
             if (ctx != 0 && !certificateChain.empty ()) {
-                Certificates::const_iterator it = certificateChain.begin ();
-                const Certificate &certificate = *it++;
+                std::list<std::string>::const_iterator it = certificateChain.begin ();
+                const std::string &certificate = *it++;
                 if (SSL_CTX_use_certificate (ctx,
-                        ParseCertificate (
-                            certificate.first,
-                            certificate.second.data (),
-                            certificate.second.size (),
+                        crypto::ParseCertificate (
+                            crypto::PEM_ENCODING,
+                            certificate.data (),
+                            certificate.size (),
                             passwordCallback,
                             userData).get ()) == 1) {
                     SSL_CTX_clear_chain_certs (ctx);
-                    for (Certificates::const_iterator
+                    for (std::list<std::string>::const_iterator
                             end = certificateChain.end (); it != end; ++it) {
-                        const Certificate &certificate = *it;
+                        const std::string &certificate = *it;
                         if (SSL_CTX_add1_chain_cert (ctx,
-                                ParseCertificate (
-                                    certificate.first,
-                                    certificate.second.data (),
-                                    certificate.second.size (),
+                                crypto::ParseCertificate (
+                                    crypto::PEM_ENCODING,
+                                    certificate.data (),
+                                    certificate.size (),
                                     passwordCallback,
                                     userData).get ()) != 1) {
                             THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -429,13 +426,19 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         LoadPrivateKey (
                 SSL_CTX *ctx,
+                const std::string &privateKeyType,
                 const std::string &privateKey,
                 pem_password_cb *passwordCallback,
                 void *userData) {
             if (ctx != 0 && !privateKey.empty ()) {
                 if (SSL_CTX_use_PrivateKey (ctx,
-                        ParsePrivateKey (privateKey.data (), privateKey.size (),
-                            passwordCallback, userData).get ()) != 1) {
+                        crypto::ParsePrivateKey (
+                            crypto::PEM_ENCODING,
+                            privateKeyType,
+                            privateKey.data (),
+                            privateKey.size (),
+                            passwordCallback,
+                            userData).get ()) != 1) {
                     THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
             }
@@ -472,8 +475,12 @@ namespace thekogans {
                 if (!dhParams.empty ()) {
                     SSL_CTX_set_options (ctx, SSL_CTX_get_options (ctx) | SSL_OP_SINGLE_DH_USE);
                     if (SSL_CTX_set_tmp_dh (ctx,
-                            ParseDHParams (dhParams.data (), dhParams.size (),
-                                passwordCallback, userData).get ()) != 1) {
+                            crypto::ParseDHParams (
+                                crypto::PEM_ENCODING,
+                                dhParams.data (),
+                                dhParams.size (),
+                                passwordCallback,
+                                userData).get ()) != 1) {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                 }
@@ -503,9 +510,13 @@ namespace thekogans {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
                 }
-                else if (ecdhParamsType == "pem") {
-                    crypto::EVP_PKEYPtr key = ParsePUBKEY (ecdhParams.data (),
-                        ecdhParams.size (), passwordCallback, userData);
+                else if (ecdhParamsType == crypto::PEM_ENCODING) {
+                    crypto::EVP_PKEYPtr key = crypto::ParsePUBKEY (
+                        crypto::PEM_ENCODING,
+                        ecdhParams.data (),
+                        ecdhParams.size (),
+                        passwordCallback,
+                        userData);
                     if (key.get () != 0) {
                         crypto::EC_KEYPtr ecdh (EVP_PKEY_get1_EC_KEY (key.get ()));
                         if (ecdh.get () == 0 || SSL_CTX_set_tmp_ecdh (ctx, ecdh.get ()) != 1) {
@@ -515,194 +526,6 @@ namespace thekogans {
                     else {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                     }
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
-        ParseDERCertificate (
-                const void *buffer,
-                std::size_t length) {
-            if (buffer != 0 && length > 0) {
-                crypto::X509Ptr certificate (
-                    d2i_X509 (0, (const util::ui8 **)&buffer, (long)length));
-                if (certificate.get () != 0) {
-                    return certificate;
-                }
-                else {
-                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
-        ParsePEMCertificate (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback,
-                void *userData) {
-            if (buffer != 0 && length > 0) {
-                // NOTE: I hate casting away constness, but thankfully,
-                // in this case it's harmless. Even though BIO_new_mem_buf
-                // wants an util::ui8 *, it marks the bio as read only,
-                // and therefore will not alter the buffer.
-                crypto::BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
-                if (bio.get () != 0) {
-                    crypto::X509Ptr certificate (PEM_read_bio_X509 (bio.get (), 0, passwordCallback, userData));
-                    if (certificate.get () != 0) {
-                        return certificate;
-                    }
-                    else {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                    }
-                }
-                else {
-                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-
-        _LIB_THEKOGANS_STREAM_DECL crypto::X509Ptr _LIB_THEKOGANS_STREAM_API
-        ParseCertificate (
-                const std::string &encoding,
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback,
-                void *userData) {
-            return encoding == DER_ENCODING ? ParseDERCertificate (buffer, length) :
-                encoding == PEM_ENCODING ? ParsePEMCertificate (buffer, length, passwordCallback, userData) :
-                crypto::X509Ptr ();
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL crypto::EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-        ParsePUBKEY (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback,
-                void *userData) {
-            if (buffer != 0 && length > 0) {
-                // NOTE: I hate casting away constness, but thankfully,
-                // in this case it's harmless. Even though BIO_new_mem_buf
-                // wants an util::ui8 *, it marks the bio as read only,
-                // and therefore will not alter the buffer.
-                crypto::BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
-                if (bio.get () != 0) {
-                    crypto::EVP_PKEYPtr key (PEM_read_bio_PUBKEY (bio.get (), 0, passwordCallback, userData));
-                    if (key.get () != 0) {
-                        return key;
-                    }
-                    else {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                    }
-                }
-                else {
-                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL crypto::EVP_PKEYPtr _LIB_THEKOGANS_STREAM_API
-        ParsePrivateKey (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback,
-                void *userData) {
-            if (buffer != 0 && length > 0) {
-                // NOTE: I hate casting away constness, but thankfully,
-                // in this case it's harmless. Even though BIO_new_mem_buf
-                // wants an util::ui8 *, it marks the bio as read only,
-                // and therefore will not alter the buffer.
-                crypto::BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
-                if (bio.get () != 0) {
-                    crypto::EVP_PKEYPtr key (PEM_read_bio_PrivateKey (bio.get (), 0, passwordCallback, userData));
-                    if (key.get () != 0) {
-                        return key;
-                    }
-                    else {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                    }
-                }
-                else {
-                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL crypto::DHPtr _LIB_THEKOGANS_STREAM_API
-        ParseDHParams (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback,
-                void *userData) {
-            if (buffer != 0 && length > 0) {
-                // NOTE: I hate casting away constness, but thankfully,
-                // in this case it's harmless. Even though BIO_new_mem_buf
-                // wants an util::ui8 *, it marks the bio as read only,
-                // and therefore will not alter the buffer.
-                crypto::BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
-                if (bio.get () != 0) {
-                    crypto::DHPtr dh (PEM_read_bio_DHparams (bio.get (), 0, passwordCallback, userData));
-                    if (dh.get () != 0) {
-                        return dh;
-                    }
-                    else {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                    }
-                }
-                else {
-                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        _LIB_THEKOGANS_STREAM_DECL crypto::DSAPtr _LIB_THEKOGANS_STREAM_API
-        ParseDSAParams (
-                const void *buffer,
-                std::size_t length,
-                pem_password_cb *passwordCallback,
-                void *userData) {
-            if (buffer != 0 && length > 0) {
-                // NOTE: I hate casting away constness, but thankfully,
-                // in this case it's harmless. Even though BIO_new_mem_buf
-                // wants an util::ui8 *, it marks the bio as read only,
-                // and therefore will not alter the buffer.
-                crypto::BIOPtr bio (BIO_new_mem_buf ((util::ui8 *)buffer, (int)length));
-                if (bio.get () != 0) {
-                    crypto::DSAPtr dsa (PEM_read_bio_DSAparams (bio.get (), 0, passwordCallback, userData));
-                    if (dsa.get () != 0) {
-                        return dsa;
-                    }
-                    else {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                    }
-                }
-                else {
-                    THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
                 }
             }
             else {

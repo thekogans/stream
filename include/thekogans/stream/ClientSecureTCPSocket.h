@@ -71,7 +71,7 @@ namespace thekogans {
             ///             </Certificate>
             ///             ...
             ///         </CertificateChain>
-            ///         <PrivateKey>
+            ///         <PrivateKey Type = "RSA or DSA">
             ///             Private key associated with this certificate.
             ///         </PrivateKey>
             ///         <CipherList>':' separated cipher list.</CipherList>
@@ -131,11 +131,11 @@ namespace thekogans {
                     /// "Certificate"
                     static const char * const TAG_CERTIFICATE;
                     /// \brief
-                    /// "Encoding"
-                    static const char * const ATTR_ENCODING;
-                    /// \brief
                     /// "PrivateKey"
                     static const char * const TAG_PRIVATE_KEY;
+                    /// \brief
+                    /// "Type"
+                    static const char * const ATTR_PRIVATE_KEY_TYPE;
                     /// \brief
                     /// "CipherList"
                     static const char * const TAG_CIPHER_LIST;
@@ -160,10 +160,13 @@ namespace thekogans {
                     bool loadSystemCACertificates;
                     /// \brief
                     /// CA certificates used to validate client certificates.
-                    Certificates caCertificates;
+                    std::list<std::string> caCertificates;
                     /// \brief
                     /// Client certificate chain.
-                    Certificates certificateChain;
+                    std::list<std::string> certificateChain;
+                    /// \brief
+                    /// Client private key type (RSA or DSA).
+                    std::string privateKeyType;
                     /// \brief
                     /// Client private key.
                     std::string privateKey;
@@ -213,6 +216,7 @@ namespace thekogans {
                     /// \param[in] loadSystemCACertificates_ true = load system CA certificates.
                     /// \param[in] caCertificates_ CA certificates used to validate client certificates.
                     /// \param[in] certificateChain_ Client certificate chain.
+                    /// \param[in] privateKeyType_ Client private key type (RSA or DSA).
                     /// \param[in] privateKey_ Client private key.
                     /// \param[in] cipherList_ Cipher list the client supports.
                     /// \param[in] verifyServer_ true = Verify server certificate.
@@ -220,8 +224,9 @@ namespace thekogans {
                     TLSContext (
                             const std::string &protocolVersion_,
                             bool loadSystemCACertificates_,
-                            const Certificates &caCertificates_,
-                            const Certificates &certificateChain_,
+                            const std::list<std::string> &caCertificates_,
+                            const std::list<std::string> &certificateChain_,
+                            const std::string &privateKeyType_,
                             const std::string &privateKey_,
                             const std::string &cipherList_,
                             bool verifyServer_ = true,
@@ -230,6 +235,7 @@ namespace thekogans {
                             loadSystemCACertificates (loadSystemCACertificates_),
                             caCertificates (caCertificates_),
                             certificateChain (certificateChain_),
+                            privateKeyType (privateKeyType_),
                             privateKey (privateKey_),
                             cipherList (cipherList_),
                             verifyServer (verifyServer_),
@@ -276,7 +282,7 @@ namespace thekogans {
                     /// \param[out] certificate List of parsed certificates.
                     void ParseCertificates (
                         const pugi::xml_node &node,
-                        Certificates &certificates);
+                        std::list<std::string> &certificates);
                     /// \brief
                     /// Format an XML string containing the certificate chain.
                     /// \param[in] indentationLevel Pretty print parameter.
@@ -284,7 +290,7 @@ namespace thekogans {
                     /// \return An XML string containing the certificate chain.
                     std::string FormatCertificates (
                         std::size_t indentationLevel,
-                        const Certificates &certificates) const;
+                        const std::list<std::string> &certificates) const;
                 } context;
                 /// \brief
                 /// Extended session info.

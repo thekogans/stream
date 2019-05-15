@@ -530,7 +530,7 @@ namespace thekogans {
             if (addr.size () > 0 && addr.size () <= 8) {
                 if (GetFamily () == AF_PACKET) {
                     ll.sll_halen = (util::ui8)addr.size ();
-                    memcpy (ll.sll_addr, &addr[0], addr.size ());
+                    memcpy (ll.sll_addr, addr.data (), addr.size ());
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -568,7 +568,7 @@ namespace thekogans {
             if (GetFamily () == AF_LINK) {
                 dl.sdl_nlen = name.size ();
                 if (dl.sdl_nlen > 0) {
-                    memcpy (dl.sdl_data, &name[0], name.size ());
+                    memcpy (dl.sdl_data, name.data (), name.size ());
                 }
             }
             else {
@@ -590,7 +590,7 @@ namespace thekogans {
             if (addr.size () > 0 && addr.size () <= 8) {
                 if (GetFamily () == AF_LINK) {
                     dl.sdl_alen = (util::ui8)addr.size ();
-                    memcpy (dl.sdl_data + dl.sdl_nlen, &addr[0], addr.size ());
+                    memcpy (dl.sdl_data + dl.sdl_nlen, addr.data (), addr.size ());
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
