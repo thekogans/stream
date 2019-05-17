@@ -364,9 +364,9 @@ namespace thekogans {
                         end = caCertificates.end (); it != end; ++it) {
                     if (X509_STORE_add_cert (store,
                             crypto::ParseCertificate (
-                                crypto::PEM_ENCODING,
                                 it->data (),
                                 it->size (),
+                                crypto::PEM_ENCODING,
                                 passwordCallback,
                                 userData).get ()) != 1) {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -393,9 +393,9 @@ namespace thekogans {
                 const std::string &certificate = *it++;
                 if (SSL_CTX_use_certificate (ctx,
                         crypto::ParseCertificate (
-                            crypto::PEM_ENCODING,
                             certificate.data (),
                             certificate.size (),
+                            crypto::PEM_ENCODING,
                             passwordCallback,
                             userData).get ()) == 1) {
                     SSL_CTX_clear_chain_certs (ctx);
@@ -404,9 +404,9 @@ namespace thekogans {
                         const std::string &certificate = *it;
                         if (SSL_CTX_add1_chain_cert (ctx,
                                 crypto::ParseCertificate (
-                                    crypto::PEM_ENCODING,
                                     certificate.data (),
                                     certificate.size (),
+                                    crypto::PEM_ENCODING,
                                     passwordCallback,
                                     userData).get ()) != 1) {
                             THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -426,17 +426,15 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
         LoadPrivateKey (
                 SSL_CTX *ctx,
-                const std::string &privateKeyType,
                 const std::string &privateKey,
                 pem_password_cb *passwordCallback,
                 void *userData) {
             if (ctx != 0 && !privateKey.empty ()) {
                 if (SSL_CTX_use_PrivateKey (ctx,
                         crypto::ParsePrivateKey (
-                            crypto::PEM_ENCODING,
-                            privateKeyType,
                             privateKey.data (),
                             privateKey.size (),
+                            crypto::PEM_ENCODING,
                             passwordCallback,
                             userData).get ()) != 1) {
                     THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -476,9 +474,9 @@ namespace thekogans {
                     SSL_CTX_set_options (ctx, SSL_CTX_get_options (ctx) | SSL_OP_SINGLE_DH_USE);
                     if (SSL_CTX_set_tmp_dh (ctx,
                             crypto::ParseDHParams (
-                                crypto::PEM_ENCODING,
                                 dhParams.data (),
                                 dhParams.size (),
+                                crypto::PEM_ENCODING,
                                 passwordCallback,
                                 userData).get ()) != 1) {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -512,9 +510,9 @@ namespace thekogans {
                 }
                 else if (ecdhParamsType == crypto::PEM_ENCODING) {
                     crypto::EVP_PKEYPtr key = crypto::ParsePUBKEY (
-                        crypto::PEM_ENCODING,
                         ecdhParams.data (),
                         ecdhParams.size (),
+                        crypto::PEM_ENCODING,
                         passwordCallback,
                         userData);
                     if (key.get () != 0) {

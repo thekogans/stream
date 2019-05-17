@@ -165,9 +165,6 @@ namespace thekogans {
                     /// Client certificate chain.
                     std::list<std::string> certificateChain;
                     /// \brief
-                    /// Client private key type (RSA or DSA).
-                    std::string privateKeyType;
-                    /// \brief
                     /// Client private key.
                     std::string privateKey;
                     /// \brief
@@ -216,7 +213,6 @@ namespace thekogans {
                     /// \param[in] loadSystemCACertificates_ true = load system CA certificates.
                     /// \param[in] caCertificates_ CA certificates used to validate client certificates.
                     /// \param[in] certificateChain_ Client certificate chain.
-                    /// \param[in] privateKeyType_ Client private key type (RSA or DSA).
                     /// \param[in] privateKey_ Client private key.
                     /// \param[in] cipherList_ Cipher list the client supports.
                     /// \param[in] verifyServer_ true = Verify server certificate.
@@ -226,7 +222,6 @@ namespace thekogans {
                             bool loadSystemCACertificates_,
                             const std::list<std::string> &caCertificates_,
                             const std::list<std::string> &certificateChain_,
-                            const std::string &privateKeyType_,
                             const std::string &privateKey_,
                             const std::string &cipherList_,
                             bool verifyServer_ = true,
@@ -235,7 +230,6 @@ namespace thekogans {
                             loadSystemCACertificates (loadSystemCACertificates_),
                             caCertificates (caCertificates_),
                             certificateChain (certificateChain_),
-                            privateKeyType (privateKeyType_),
                             privateKey (privateKey_),
                             cipherList (cipherList_),
                             verifyServer (verifyServer_),

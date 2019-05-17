@@ -252,11 +252,11 @@ namespace thekogans {
                 }
                 if (!certificateChainRSA.empty ()) {
                     LoadCertificateChain (ctx.get (), certificateChainRSA);
-                    LoadPrivateKey (ctx.get (), crypto::OPENSSL_PKEY_RSA, privateKeyRSA);
+                    LoadPrivateKey (ctx.get (), privateKeyRSA);
                 }
                 if (!certificateChainDSA.empty ()) {
                     LoadCertificateChain (ctx.get (), certificateChainDSA);
-                    LoadPrivateKey (ctx.get (), crypto::OPENSSL_PKEY_DSA, privateKeyDSA);
+                    LoadPrivateKey (ctx.get (), privateKeyDSA);
                 }
                 int mode = SSL_VERIFY_PEER;
                 if (requireClientCertificate) {

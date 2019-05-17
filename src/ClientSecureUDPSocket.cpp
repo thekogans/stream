@@ -55,8 +55,6 @@ namespace thekogans {
             "Certificate";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_PRIVATE_KEY =
             "PrivateKey";
-        const char * const ClientSecureUDPSocket::Context::DTLSContext::ATTR_PRIVATE_KEY_TYPE =
-            "Type";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_CIPHER_LIST =
             "CipherList";
         const char * const ClientSecureUDPSocket::Context::DTLSContext::TAG_VERIFY_SERVER =
@@ -71,7 +69,6 @@ namespace thekogans {
                 loadSystemCACertificates (context.loadSystemCACertificates),
                 caCertificates (context.caCertificates),
                 certificateChain (context.certificateChain),
-                privateKeyType (context.privateKeyType),
                 privateKey (context.privateKey),
                 cipherList (context.cipherList),
                 verifyServer (context.verifyServer),
@@ -89,7 +86,6 @@ namespace thekogans {
                 loadSystemCACertificates = context.loadSystemCACertificates;
                 caCertificates = context.caCertificates;
                 certificateChain = context.certificateChain;
-                privateKeyType = context.privateKeyType;
                 privateKey = context.privateKey;
                 cipherList = context.cipherList;
                 verifyServer = context.verifyServer;
@@ -119,7 +115,6 @@ namespace thekogans {
                         ParseCertificates (child, certificateChain);
                     }
                     else if (childName == TAG_PRIVATE_KEY) {
-                        privateKeyType = child.attribute (ATTR_PRIVATE_KEY_TYPE).value ();
                         privateKey = util::Decodestring (child.text ().get ());
                     }
                     else if (childName == TAG_CIPHER_LIST) {
@@ -191,7 +186,7 @@ namespace thekogans {
                     LoadCertificateChain (ctx.get (), certificateChain);
                 }
                 if (!privateKey.empty ()) {
-                    LoadPrivateKey (ctx.get (), privateKeyType, privateKey);
+                    LoadPrivateKey (ctx.get (), privateKey);
                 }
                 if (!cipherList.empty ()) {
                     LoadCipherList (ctx.get (), cipherList);

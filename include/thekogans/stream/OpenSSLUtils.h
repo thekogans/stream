@@ -342,15 +342,12 @@ namespace thekogans {
         /// \brief
         /// Load a PEM encoded private key from a string.
         /// \param[in] ctx SSL_CTX to load the private key in to.
-        /// \param[in] privateKeyType Type of private key
-        /// (crypto::OPENSSL_PKEY_RSA or crypto::OPENSSL_PKEY_DSA).
         /// \param[in] privateKey String representing a private key.
         /// \param[in] passwordCallback Provide a password if PEM is encrypted.
         /// \param[in] userData User data for passwordCallback.
         _LIB_THEKOGANS_STREAM_DECL void _LIB_THEKOGANS_STREAM_API
             LoadPrivateKey (
                 SSL_CTX *ctx,
-                const std::string &privateKeyType,
                 const std::string &privateKey,
                 pem_password_cb *passwordCallback = 0,
                 void *userData = 0);
