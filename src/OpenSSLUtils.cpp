@@ -270,7 +270,7 @@ namespace thekogans {
                     }
                     return std::regex_match (serverName, std::regex (patern));
                 }
-                return strcasecmp (serverName.c_str (), certificateName.c_str ()) == 0;
+                return util::StringCompareIgnoreCase (serverName.c_str (), certificateName.c_str ()) == 0;
             }
 
             bool CheckSubjectName (
