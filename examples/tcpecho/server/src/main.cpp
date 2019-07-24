@@ -111,8 +111,7 @@ int main (
                     util::MainRunLoopCreateInstance::Parameterize (
                         "MainRunLoop",
                         util::RunLoop::TYPE_FIFO,
-                        util::UI32_MAX,
-                        true);
+                        SIZE_T_MAX);
                     server::Server::Instance ().Start (
                         server::Options::Instance ().addresses);
                     util::MainRunLoop::Instance ().Start ();
