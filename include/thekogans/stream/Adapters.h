@@ -43,6 +43,7 @@
 #include <map>
 #include <ostream>
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/RefCounted.h"
@@ -128,27 +129,16 @@ namespace thekogans {
                 /// List of IPV6 addresses. If the adapter was not
                 /// configured for IPV6 it will be empty.
                 IPV6Addresses ipv6;
-                /// \enum
-                /// Adapter MAC address length.
-                enum {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    MAC_LENGTH = MAX_ADAPTER_ADDRESS_LENGTH
-                #elif defined (TOOLCHAIN_OS_Linux)
-                    MAC_LENGTH = ETH_ALEN
-                #elif defined (TOOLCHAIN_OS_OSX)
-                    MAC_LENGTH = ETHER_ADDR_LEN
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                };
                 /// \brief
                 /// Adapter MAC address.
-                util::ui8 mac[MAC_LENGTH];
+                util::ui8 mac[util::MAC_LENGTH];
 
                 /// \brief
                 /// ctor.
                 Addresses () :
                         index (0),
                         multicast (false) {
-                    memset (mac, 0, MAC_LENGTH);
+                    memset (mac, 0, util::MAC_LENGTH);
                 }
                 /// \brief
                 /// ctor.
@@ -162,7 +152,7 @@ namespace thekogans {
                         name (name_),
                         index (index_),
                         multicast (multicast_) {
-                    memset (mac, 0, MAC_LENGTH);
+                    memset (mac, 0, util::MAC_LENGTH);
                 }
 
                 /// \brief

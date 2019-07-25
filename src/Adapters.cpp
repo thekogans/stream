@@ -79,13 +79,13 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Linux)
             else if (family == AF_PACKET) {
                 std::vector<util::ui8> addr = address.GetAddrPacket ();
-                return addr.size () == MAC_LENGTH &&
+                return addr.size () == util::MAC_LENGTH &&
                     memcmp (mac, addr.data (), addr.size ()) == 0;
             }
         #elif defined (TOOLCHAIN_OS_OSX)
             else if (family == AF_LINK) {
                 std::vector<util::ui8> addr = address.GetAddrLink ();
-                return addr.size () == MAC_LENGTH &&
+                return addr.size () == util::MAC_LENGTH &&
                     memcmp (mac, addr.data (), addr.size ()) == 0;
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
@@ -111,7 +111,7 @@ namespace thekogans {
                     end = ipv6.end (); it != end; ++it) {
                 stream << (*it).ToString (1);
             }
-            stream << "MAC: " << util::HexEncodeBuffer (mac, MAC_LENGTH) << std::endl;
+            stream << "MAC: " << util::HexEncodeBuffer (mac, util::MAC_LENGTH) << std::endl;
         }
 
         Adapters::Adapters () :
@@ -223,7 +223,7 @@ namespace thekogans {
                     item1.index != item2.index ||
                     item1.ipv4 != item2.ipv4 ||
                     item1.ipv6 != item2.ipv6 ||
-                    memcmp (item1.mac, item2.mac, Adapters::Addresses::MAC_LENGTH) != 0;
+                    memcmp (item1.mac, item2.mac, util::MAC_LENGTH) != 0;
             }
 
             struct DiffProcessor {
@@ -432,7 +432,7 @@ namespace thekogans {
                                     addresses.ipv6.push_back (ipv6);
                                 }
                             }
-                            if (ipAdapterAddresses->PhysicalAddressLength == Addresses::MAC_LENGTH) {
+                            if (ipAdapterAddresses->PhysicalAddressLength == util::MAC_LENGTH) {
                                 memcpy (
                                     addresses.mac,
                                     ipAdapterAddresses->PhysicalAddress,
@@ -509,14 +509,14 @@ namespace thekogans {
                     #if defined (TOOLCHAIN_OS_Linux)
                         else if (curr->ifa_addr->sa_family == AF_PACKET) {
                             const sockaddr_ll *addr = (const sockaddr_ll *)curr->ifa_addr;
-                            if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == Addresses::MAC_LENGTH) {
+                            if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == util::MAC_LENGTH) {
                                 memcpy (it->second.mac, addr->sll_addr, addr->sll_halen);
                             }
                         }
                     #else // defined (TOOLCHAIN_OS_Linux)
                         else if (curr->ifa_addr->sa_family == AF_LINK) {
                             const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
-                            if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == Addresses::MAC_LENGTH) {
+                            if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == util::MAC_LENGTH) {
                                 memcpy (it->second.mac, LLADDR (addr), addr->sdl_alen);
                             }
                         }
