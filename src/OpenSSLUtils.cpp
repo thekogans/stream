@@ -36,6 +36,7 @@
     #include "thekogans/util/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
@@ -79,6 +80,7 @@ namespace thekogans {
 
         int OpenSSLInit::SSLSecureSocketIndex = -1;
         int OpenSSLInit::SSL_SESSIONSessionInfoIndex = -1;
+        util::SpinLock OpenSSLInit::spinLock;
 
         OpenSSLInit::OpenSSLInit (
                 bool multiThreaded,
@@ -90,15 +92,21 @@ namespace thekogans {
                     multiThreaded,
                     entropyNeeded,
                     workingSetSize) {
-            SSLSecureSocketIndex =
-                SSL_get_ex_new_index (0, 0, 0, 0, 0);
-            if (SSLSecureSocketIndex == -1) {
-                THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-            }
-            SSL_SESSIONSessionInfoIndex =
-                SSL_SESSION_get_ex_new_index (0, 0, 0, 0, DeleteSessionInfo);
-            if (SSL_SESSIONSessionInfoIndex == -1) {
-                THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
+            {
+                util::LockGuard<util::SpinLock> guard (spinLock);
+                if (SSLSecureSocketIndex == -1) {
+                    SSLSecureSocketIndex = SSL_get_ex_new_index (0, 0, 0, 0, 0);
+                    if (SSLSecureSocketIndex == -1) {
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
+                    }
+                }
+                if (SSL_SESSIONSessionInfoIndex == -1) {
+                    SSL_SESSIONSessionInfoIndex =
+                        SSL_SESSION_get_ex_new_index (0, 0, 0, 0, DeleteSessionInfo);
+                    if (SSL_SESSIONSessionInfoIndex == -1) {
+                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
+                    }
+                }
             }
             if (loadSystemCACertificates) {
                 crypto::SystemCACertificates::Instance ().Load (loadSystemRootCACertificatesOnly);

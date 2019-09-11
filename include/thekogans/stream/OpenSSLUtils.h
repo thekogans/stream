@@ -98,12 +98,15 @@ namespace thekogans {
         /// the library proper.
         struct _LIB_THEKOGANS_STREAM_DECL OpenSSLInit : public crypto::OpenSSLInit {
             /// \brief
-            /// Used by Secure[TCP | UDP]Socket to associate a it's pointer with SSL.
+            /// Used by Secure[TCP | UDP]Socket to associate it's pointer with SSL.
             static int SSLSecureSocketIndex;
             /// \brief
-            /// Used by SecureTCPSocket to a SecureTCPSocket::SessionInfo
+            /// Used by SecureTCPSocket to associate it's SecureTCPSocket::SessionInfo
             /// pointer with SSL_SESSION.
             static int SSL_SESSIONSessionInfoIndex;
+            /// \brief
+            /// Synchronization lock.
+            static util::SpinLock spinLock;
 
             /// \brief
             /// ctor.
