@@ -141,9 +141,8 @@ int main (
                     stream::Stream::StaticInit ();
                 #endif // defined (TOOLCHAIN_TYPE_Static)
                     util::MainRunLoopCreateInstance::Parameterize (
-                        "MainRunLoop",
-                        util::RunLoop::TYPE_FIFO,
-                        SIZE_T_MAX);
+                        util::MainRunLoopCreateInstance::MAIN_RUN_LOOP_NAME,
+                        util::RunLoop::JobExecutionPolicy::Ptr (new util::RunLoop::FIFOJobExecutionPolicy));
                     server::Server::Instance ().Start (
                         server::Options::Instance ().path,
                         util::Thread::stringToPriority (server::Options::Instance ().priority),

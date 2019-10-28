@@ -109,9 +109,8 @@ int main (
                         util::SystemInfo::Instance ().GetProcessPath ().c_str ());
                     util::LockFile lockFile (server::Options::Instance ().lockFilePath);
                     util::MainRunLoopCreateInstance::Parameterize (
-                        "MainRunLoop",
-                        util::RunLoop::TYPE_FIFO,
-                        SIZE_T_MAX);
+                        util::MainRunLoopCreateInstance::MAIN_RUN_LOOP_NAME,
+                        util::RunLoop::JobExecutionPolicy::Ptr (new util::RunLoop::FIFOJobExecutionPolicy));
                     server::Server::Instance ().Start (
                         server::Options::Instance ().addresses);
                     util::MainRunLoop::Instance ().Start ();
