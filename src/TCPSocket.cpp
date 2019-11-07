@@ -496,11 +496,11 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
-        #elseif // defined (TOOLCHAIN_OS_Windows)
+        #else // defined (TOOLCHAIN_OS_Windows)
             if (IsAsync ()) {
                 asyncInfo->EnqBufferBack (
                     AsyncInfo::BufferInfo::UniquePtr (
-                        new AsyncInfo::ShutdownBufferInfo (*this, shutdownType)));
+                        new ShutdownBufferInfo (*this, shutdownType)));
             }
             else {
                 int how;

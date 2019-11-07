@@ -208,7 +208,7 @@ namespace thekogans {
 
             /// \brief
             /// Return the last error that ocured on this socket.
-            /// This api should only be used by AsyncIoEventQueue.
+            /// This api should only be used by \see{AsyncIoEventQueue}.
             /// \return Last error that ocured on this socket.
             THEKOGANS_UTIL_ERROR_CODE GetErrorCode () const;
 
