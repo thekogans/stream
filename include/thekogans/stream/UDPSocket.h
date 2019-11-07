@@ -543,7 +543,7 @@ namespace thekogans {
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \struct Stream::AsyncInfo::WriteToBufferInfo Stream.h thekogans/stream/Stream.h
+            /// \struct UDPSocket::WriteToBufferInfo UDPSocket.h thekogans/stream/UDPSocket.h
             ///
             /// \brief
             /// Uses sendto to write the buffer to the stream.
@@ -606,7 +606,7 @@ namespace thekogans {
                 /// WriteToBufferInfo is neither copy constructable, nor assignable.
                 THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteToBufferInfo)
             };
-            /// \struct Stream::AsyncInfo::WriteMsgBufferInfo Stream.h thekogans/stream/Stream.h
+            /// \struct UDPSocket::WriteMsgBufferInfo UDPSocket.h thekogans/stream/UDPSocket.h
             ///
             /// \brief
             /// Uses sendmsg to write the buffer to the stream.

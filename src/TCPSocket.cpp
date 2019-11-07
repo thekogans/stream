@@ -474,9 +474,9 @@ namespace thekogans {
         }
 
         void TCPSocket::Shutdown (ShutdownType shutdownType) {
+        #if defined (TOOLCHAIN_OS_Windows)
             int how;
             switch (shutdownType) {
-            #if defined (TOOLCHAIN_OS_Windows)
                 case ShutdownRead:
                     how = SD_RECEIVE;
                     break;
@@ -486,17 +486,6 @@ namespace thekogans {
                 case ShutdownBoth:
                     how = SD_BOTH;
                     break;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                case ShutdownRead:
-                    how = SHUT_RD;
-                    break;
-                case ShutdownWrite:
-                    how = SHUT_WR;
-                    break;
-                case ShutdownBoth:
-                    how = SHUT_RDWR;
-                    break;
-            #endif // defined (TOOLCHAIN_OS_Windows)
                 default:
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -507,6 +496,36 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
+        #elseif // defined (TOOLCHAIN_OS_Windows)
+            if (IsAsync ()) {
+                asyncInfo->EnqBufferBack (
+                    AsyncInfo::BufferInfo::UniquePtr (
+                        new AsyncInfo::ShutdownBufferInfo (*this, shutdownType)));
+            }
+            else {
+                int how;
+                switch (shutdownType) {
+                    case ShutdownRead:
+                        how = SHUT_RD;
+                        break;
+                    case ShutdownWrite:
+                        how = SHUT_WR;
+                        break;
+                    case ShutdownBoth:
+                        how = SHUT_RDWR;
+                        break;
+                    default:
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                        break;
+                }
+                if (shutdown ((THEKOGANS_STREAM_SOCKET)handle, how) ==
+                        THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                }
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         THEKOGANS_STREAM_SOCKET TCPSocket::Accept () {
@@ -681,6 +700,31 @@ namespace thekogans {
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (TCPSocket::ShutdownBufferInfo, util::SpinLock)
+
+        ssize_t TCPSocket::ShutdownBufferInfo::Write () {
+            int how;
+            switch (shutdownType) {
+                case ShutdownRead:
+                    how = SHUT_RD;
+                    break;
+                case ShutdownWrite:
+                    how = SHUT_WR;
+                    break;
+                case ShutdownBoth:
+                    how = SHUT_RDWR;
+                    break;
+                default:
+                    errno = EINVAL;
+                    return -1;
+            }
+            return shutdown ((THEKOGANS_STREAM_SOCKET)tcpSocket.handle, how) == 0 ? 1 : -1;
+        }
+
+        bool TCPSocket::ShutdownBufferInfo::Notify () {
+            return true;
+        }
+
         void TCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventConnect) {
                 THEKOGANS_UTIL_TRY {

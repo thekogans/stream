@@ -379,6 +379,51 @@ namespace thekogans {
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
         #else // defined (TOOLCHAIN_OS_Windows)
+            /// \struct TCPSocket::ShutdownBufferInfo TCPSocket.h thekogans/stream/TCPSocket.h
+            ///
+            /// \brief
+            /// Shutdown the socket after all async writes have completed.
+            struct ShutdownBufferInfo : public AsyncInfo::BufferInfo {
+                /// \brief
+                /// ShutdownBufferInfo has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ShutdownBufferInfo, util::SpinLock)
+
+                /// \brief
+                /// \see{TCPSocket} to shutdown.
+                TCPSocket &tcpSocket;
+                /// \brief
+                /// One of ShutdownRead, ShutdownWrite or ShutdownBoth.
+                ShutdownType shutdownType;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] tcpSocket_ \see{TCPSocket} to shutdown.
+                /// \param[in] shutdownType One of ShutdownRead,
+                /// ShutdownWrite or ShutdownBoth.
+                ShutdownBufferInfo (
+                    TCPSocket &tcpSocket_,
+                    ShutdownType shutdownType_) :
+                    BufferInfo (0),
+                    tcpSocket (tcpSocket_),
+                    shutdownType (shutdownType_) {}
+
+                /// \brief
+                /// Used by \see{AsyncInfo::WriteBuffers} to write
+                /// the buffer to the given stream.
+                /// \return Count of bytes written.
+                virtual ssize_t Write ();
+                /// \brief
+                /// Used by \see{AsyncInfo::WriteBuffers} to complete
+                /// the write operation and notify \see{AsyncIoEventSink}.
+                /// \return true = \see{AsyncIoEventSink} was notified,
+                /// false = \see{AsyncIoEventSink} was not notified.
+                virtual bool Notify ();
+
+                /// \brief
+                /// ShutdownBufferInfo is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ShutdownBufferInfo)
+            };
             /// \brief
             /// Used by \see{AsyncIoEventQueue::WaitForEvents} to notify the
             /// stream of pending io events.
