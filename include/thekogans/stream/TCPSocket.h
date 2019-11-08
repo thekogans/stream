@@ -404,7 +404,7 @@ namespace thekogans {
                 ShutdownBufferInfo (
                     TCPSocket &tcpSocket_,
                     ShutdownType shutdownType_) :
-                    BufferInfo (0),
+                    BufferInfo (AsyncInfo::EventWrite),
                     tcpSocket (tcpSocket_),
                     shutdownType (shutdownType_) {}
 
