@@ -409,9 +409,6 @@ namespace thekogans {
                     asyncInfo->eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (overlapped.event == AsyncInfo::EventDisconnect) {
-                asyncInfo->eventSink.HandleStreamDisconnect (*this);
-            }
             else if (overlapped.event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
                     AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
@@ -438,12 +435,8 @@ namespace thekogans {
                     asyncInfo->eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (overlapped.event == AsyncInfo::EventWrite) {
-                AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
-                    (AsyncInfo::ReadWriteOverlapped &)overlapped;
-                assert (readWriteOverlapped.buffer.IsEmpty ());
-                asyncInfo->eventSink.HandleStreamWrite (
-                    *this, std::move (readWriteOverlapped.buffer));
+            else {
+                TCPSocket::HandleOverlapped (overlapped);
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
@@ -457,9 +450,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
                     asyncInfo->eventSink.HandleStreamError (*this, exception);
                 }
-            }
-            else if (event == AsyncInfo::EventDisconnect) {
-                asyncInfo->eventSink.HandleStreamDisconnect (*this);
             }
             else if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
@@ -480,8 +470,8 @@ namespace thekogans {
                     asyncInfo->eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (event == AsyncInfo::EventWrite) {
-                asyncInfo->WriteBuffers ();
+            else {
+                TCPSocket::HandleAsyncEvent (event);
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

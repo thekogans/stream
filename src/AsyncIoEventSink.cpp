@@ -79,6 +79,14 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
+        void AsyncIoEventSink::HandleTCPSocketShutdown (
+                TCPSocket &tcpSocket,
+                TCPSocket::ShutdownType shutdownType) throw () {
+            if (next.Get () != 0) {
+                next->HandleTCPSocketShutdown (tcpSocket, shutdownType);
+            }
+        }
+
         void AsyncIoEventSink::HandleServerTCPSocketConnection (
                 ServerTCPSocket &serverTCPSocket,
                 TCPSocket::Ptr connection) throw () {

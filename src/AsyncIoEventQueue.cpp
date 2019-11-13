@@ -294,6 +294,7 @@ namespace thekogans {
                             Stream::AsyncInfo::Overlapped::UniquePtr overlapped (
                                 (Stream::AsyncInfo::Overlapped *)iocpEvents[i].lpOverlapped);
                             assert ((Stream *)iocpEvents[i].lpCompletionKey == overlapped->stream.Get ());
+                            overlapped->Prolog ();
                             THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped->GetError ();
                             if (errorCode != ERROR_SUCCESS) {
                                 // This check is very important as it will be returned
@@ -319,7 +320,10 @@ namespace thekogans {
                                     }
                                 }
                             }
-                            else if (!overlapped->TimedOut (currentTime)) {
+                            else if (overlapped->TimedOut (currentTime)) {
+                                overlapped->stream->HandleTimedOutOverlapped (*overlapped);
+                            }
+                            else {
                                 overlapped->Epilog ();
                                 overlapped->stream->HandleOverlapped (*overlapped);
                                 // Overlapped dtor performs a timed check on it's stream.
@@ -327,9 +331,6 @@ namespace thekogans {
                                 // do it's thing.
                                 stream = overlapped->stream;
                                 event = overlapped->event;
-                            }
-                            else {
-                                overlapped->stream->HandleTimedOutOverlapped (*overlapped);
                             }
                         }
                         // Now that overlapped dtor is done with it's timed check,
@@ -420,6 +421,8 @@ namespace thekogans {
                                 util::ui32 event =
                                     util::Flags32 (stream->asyncInfo->events).Test (
                                         Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
+                                    util::Flags32 (stream->asyncInfo->events).Test (
+                                        Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
                                     util::Flags32 (stream->asyncInfo->events).Test (
                                         Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
                                     util::Flags32 (stream->asyncInfo->events).Test (
@@ -517,6 +520,8 @@ namespace thekogans {
                                 util::Flags32 (stream->asyncInfo->events).Test (
                                     Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
                                 util::Flags32 (stream->asyncInfo->events).Test (
+                                    Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
+                                util::Flags32 (stream->asyncInfo->events).Test (
                                     Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
                                 util::Flags32 (stream->asyncInfo->events).Test (
                                     Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
@@ -595,6 +600,7 @@ namespace thekogans {
                 }
                 if (util::Flags32 (newEvents).TestAny (
                         Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
                         Stream::AsyncInfo::EventWrite |
                         Stream::AsyncInfo::EventWriteTo |
                         Stream::AsyncInfo::EventWriteMsg)) {
@@ -632,6 +638,7 @@ namespace thekogans {
                     }
                     if (util::Flags32 (newEvents).TestAny (
                             Stream::AsyncInfo::EventConnect |
+                            Stream::AsyncInfo::EventShutdown |
                             Stream::AsyncInfo::EventWrite |
                             Stream::AsyncInfo::EventWriteTo |
                             Stream::AsyncInfo::EventWriteMsg)) {
@@ -650,6 +657,7 @@ namespace thekogans {
                 stream.asyncInfo->events = newEvents;
                 if (!util::Flags32 (stream.asyncInfo->events).TestAny (
                         Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
                         Stream::AsyncInfo::EventRead |
                         Stream::AsyncInfo::EventReadFrom |
                         Stream::AsyncInfo::EventReadMsg |
@@ -680,6 +688,7 @@ namespace thekogans {
                 }
                 if (util::Flags32 (newEvents).TestAny (
                         Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
                         Stream::AsyncInfo::EventWrite |
                         Stream::AsyncInfo::EventWriteTo |
                         Stream::AsyncInfo::EventWriteMsg)) {
@@ -714,6 +723,7 @@ namespace thekogans {
                 }
                 if (util::Flags32 (newEvents).TestAny (
                         Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
                         Stream::AsyncInfo::EventWrite |
                         Stream::AsyncInfo::EventWriteTo |
                         Stream::AsyncInfo::EventWriteMsg)) {
@@ -727,6 +737,7 @@ namespace thekogans {
                 stream.asyncInfo->events &= ~newEvents;
                 if (!util::Flags32 (stream.asyncInfo->events).TestAny (
                         Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
                         Stream::AsyncInfo::EventRead |
                         Stream::AsyncInfo::EventReadFrom |
                         Stream::AsyncInfo::EventReadMsg |
@@ -778,11 +789,13 @@ namespace thekogans {
                     }
                     if (util::Flags32 (events).TestAny (
                             Stream::AsyncInfo::EventConnect |
+                            Stream::AsyncInfo::EventShutdown |
                             Stream::AsyncInfo::EventWrite |
                             Stream::AsyncInfo::EventWriteTo |
                             Stream::AsyncInfo::EventWriteMsg)) {
                         if (util::Flags32 (overlapped->event).TestAny (
                                 Stream::AsyncInfo::EventConnect |
+                                Stream::AsyncInfo::EventShutdown |
                                 Stream::AsyncInfo::EventWrite |
                                 Stream::AsyncInfo::EventWriteTo |
                                 Stream::AsyncInfo::EventWriteMsg)) {
@@ -818,11 +831,13 @@ namespace thekogans {
             }
             if (util::Flags32 (events).TestAny (
                     Stream::AsyncInfo::EventConnect |
+                    Stream::AsyncInfo::EventShutdown |
                     Stream::AsyncInfo::EventWrite |
                     Stream::AsyncInfo::EventWriteTo |
                     Stream::AsyncInfo::EventWriteMsg)) {
                 if (util::Flags32 (stream.asyncInfo->events).TestAny (
                         Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
                         Stream::AsyncInfo::EventWrite |
                         Stream::AsyncInfo::EventWriteTo |
                         Stream::AsyncInfo::EventWriteMsg)) {
@@ -919,6 +934,8 @@ namespace thekogans {
                             util::ui32 event =
                                 util::Flags32 (stream->asyncInfo->events).Test (
                                     Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
+                                util::Flags32 (stream->asyncInfo->events).Test (
+                                    Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
                                 util::Flags32 (stream->asyncInfo->events).Test (
                                     Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
                                 util::Flags32 (stream->asyncInfo->events).Test (

@@ -888,7 +888,7 @@ namespace thekogans {
             wsaBuf.buf = (char *)buffer.GetReadPtr ();
         }
 
-        void UDPSocket::ReadFromWriteToOverlapped::Epilog () {
+        void UDPSocket::ReadFromWriteToOverlapped::Epilog () throw () {
             switch (event) {
                 case Stream::AsyncInfo::EventReadFrom: {
                     buffer.AdvanceWriteOffset (GetCount ());
@@ -940,7 +940,7 @@ namespace thekogans {
             to (to_),
             msgHdr (buffer.GetReadPtr (), buffer.GetDataAvailableForReading (), from, to) {}
 
-        void UDPSocket::ReadMsgWriteMsgOverlapped::Epilog () {
+        void UDPSocket::ReadMsgWriteMsgOverlapped::Epilog () throw () {
             switch (event) {
                 case Stream::AsyncInfo::EventReadMsg: {
                     buffer.AdvanceWriteOffset (GetCount ());

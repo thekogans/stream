@@ -472,32 +472,36 @@ namespace thekogans {
                     /// Invalid event.
                     EventInvalid = 0,
                     /// \brief
-                    /// Stream has connected to the peer (TCPSocket and friends).
-                    /// Or a connection has arrived on ServerTCPSocket or
-                    /// ServerSecureTCPSocket.
+                    /// Stream has connected to the peer (\see{TCPSocket} and friends).
+                    /// Or a connection has arrived on \see{ServerTCPSocket} or
+                    /// \see{ServerSecureTCPSocket}.
                     EventConnect = 1,
                     /// \brief
                     /// Stream has been disconnected
-                    /// from by the peer (TCPSocket and friends).
+                    /// from by the peer (\see{TCPSocket} and friends).
                     EventDisconnect = 2,
                     /// \brief
-                    /// Data is available for reading.
-                    EventRead = 4,
-                    /// \brief
-                    /// Stream is ready for writing.
-                    EventWrite = 8,
+                    /// Stream has been shutdown
+                    /// from by the peer (\see{TCPSocket} and friends).
+                    EventShutdown = 4,
                     /// \brief
                     /// Data is available for reading.
-                    EventReadFrom = 16,
+                    EventRead = 8,
                     /// \brief
                     /// Stream is ready for writing.
-                    EventWriteTo = 32,
+                    EventWrite = 16,
                     /// \brief
                     /// Data is available for reading.
-                    EventReadMsg = 64,
+                    EventReadFrom = 32,
                     /// \brief
                     /// Stream is ready for writing.
-                    EventWriteMsg = 128
+                    EventWriteTo = 64,
+                    /// \brief
+                    /// Data is available for reading.
+                    EventReadMsg = 128,
+                    /// \brief
+                    /// Stream is ready for writing.
+                    EventWriteMsg = 256
                 };
 
                 /// \brief
@@ -509,6 +513,9 @@ namespace thekogans {
                 /// \brief
                 /// "EventDisconnect"
                 static const char * const EVENT_DISCONNECT;
+                /// \brief
+                /// "EventShutdown"
+                static const char * const EVENT_SHUTDOWN;
                 /// \brief
                 /// "EventRead"
                 static const char * const EVENT_READ;
@@ -655,8 +662,16 @@ namespace thekogans {
 
                     /// \brief
                     /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                    /// the Overlapped to perform post op housekeeping.
-                    virtual void Epilog () {}
+                    /// the Overlapped to perform post op housekeeping prior to calling
+                    /// GetError.
+                    virtual void Prolog () throw () {}
+                    /// \brief
+                    /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
+                    /// the Overlapped to perform post op housekeeping after calling
+                    /// GetError.
+                    /// NOTE: Epiplog will not be called if GetError returns with
+                    /// anything other then ERROR_SUCCESS.
+                    virtual void Epilog () throw () {}
 
                     /// \brief
                     /// Overlapped is neither copy constructable, nor assignable.
@@ -716,7 +731,7 @@ namespace thekogans {
                     /// \brief
                     /// ctor.
                     /// \param[in] stream Stream that created this WriteOverlapped.
-                    /// \param[in] buffer Buffer to write.
+                    /// \param[in] buffer_ Buffer to write.
                     /// \param[in] count Lenght of buffer.
                     /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
                     ReadWriteOverlapped (
@@ -741,7 +756,7 @@ namespace thekogans {
                     /// \brief
                     /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
                     /// the ReadWriteOverlapped to perform post op housekeeping.
-                    virtual void Epilog ();
+                    virtual void Epilog () throw ();
 
                     /// \brief
                     /// ReadWriteOverlapped is neither copy constructable, nor assignable.

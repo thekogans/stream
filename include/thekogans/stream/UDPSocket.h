@@ -388,7 +388,7 @@ namespace thekogans {
                 /// \brief
                 /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
                 /// the ReadFromWriteToOverlapped to perform post op housekeeping.
-                virtual void Epilog ();
+                virtual void Epilog () throw ();
 
                 /// \brief
                 /// ReadFromWriteToOverlapped is neither copy constructable, nor assignable.
@@ -487,7 +487,7 @@ namespace thekogans {
                 /// \brief
                 /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
                 /// the ReadMsgWriteMsgOverlapped to perform post op housekeeping.
-                virtual void Epilog ();
+                virtual void Epilog () throw ();
 
                 /// \brief
                 /// ReadMsgWriteMsgOverlapped is neither copy constructable, nor assignable.

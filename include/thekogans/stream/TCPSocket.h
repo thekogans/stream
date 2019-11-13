@@ -336,6 +336,67 @@ namespace thekogans {
                 /// AcceptOverlapped is neither copy constructable, nor assignable.
                 THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (AcceptOverlapped)
             };
+            /// \struct TCPSocket::ShutdownOverlapped TCPSocket.h thekogans/stream/TCPSocket.h
+            ///
+            /// \brief
+            /// ShutdownOverlapped is a helper class. It reduces code clutter and makes
+            /// instantiating Overlapped used by \see{TCPSocket::Shutdown} easier.
+            struct ShutdownOverlapped : public AsyncInfo::Overlapped {
+                /// \struct TCPSocket::ShutdownOverlapped::Deleter
+                /// Stream.h thekogans/stream/Stream.h
+                ///
+                /// \brief
+                /// Custom deleter for ShutdownOverlapped. This class is
+                /// necessary to shutup msvc.
+                struct Deleter {
+                    /// \brief
+                    /// Called by unique_ptr::~unique_ptr.
+                    /// \param[in] shutdownOverlapped ShutdownOverlapped to delete.
+                    void operator () (ShutdownOverlapped *shutdownOverlapped) {
+                        if (shutdownOverlapped != 0) {
+                            delete shutdownOverlapped;
+                        }
+                    }
+                };
+                /// \brief
+                /// Convenient typedef for std::unique_ptr<ShutdownOverlapped, Deleter>.
+                typedef std::unique_ptr<ShutdownOverlapped, Deleter> UniquePtr;
+
+                /// \brief
+                /// ShutdownOverlapped has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ShutdownOverlapped, util::SpinLock)
+
+                /// \brief
+                /// TCPSocket to shutdown.
+                TCPSocket &tcpSocket
+                /// \brief
+                /// Type of shutdown performed on (Secure)TCPSocket.
+                ShutdownType shutdownType;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] stream Stream that created this ShutdownOverlapped.
+                /// \param[in] family Address family specification.
+                /// \param[in] type Socket type specification.
+                /// \param[in] protocol Socket protocol specification.
+                ShutdownOverlapped (
+                    TCPSocket &tcpSocket_,
+                    ShutdownType shutdownType_) :
+                    Overlapped (tcpSocket, Stream::AsyncInfo::EventShutdown),
+                    tcpSocket (tcpSocket_),
+                    shutdownType (shutdownType_) {}
+
+                /// \brief
+                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
+                /// the Overlapped to perform post op housekeeping prior to
+                /// calling GetError.
+                virtual void Prolog () throw ();
+
+                /// \brief
+                /// ShutdownOverlapped is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ShutdownOverlapped)
+            };
             /// \brief
             /// Windows helper used by (Secure)TCPSocket.
             void UpdateConnectContext ();
@@ -358,14 +419,18 @@ namespace thekogans {
             /// \return true if client socket is bound.
             bool IsBound () const;
             /// \brief
+            /// Initiate an overlapped Shutdown.
+            /// \param[in] shutdownType ShutdownRead, ShutdownWrite or ShutdownBoth.
+            void PostAsyncShutdown (ShutdownType shutdownType);
+            /// \brief
             /// Initiate an overlapped WSARecv.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
+            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}.
             void PostAsyncRead (bool useGetBuffer = true);
             /// \brief
             /// Initiate an overlapped WSASend.
             /// \param[in] buffer Buffer to send.
             /// \param[in] count Length of buffer.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
+            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}.
             void PostAsyncWrite (
                 const void *buffer,
                 std::size_t count,
@@ -404,7 +469,7 @@ namespace thekogans {
                 ShutdownBufferInfo (
                     TCPSocket &tcpSocket_,
                     ShutdownType shutdownType_) :
-                    BufferInfo (AsyncInfo::EventWrite),
+                    BufferInfo (AsyncInfo::EventShutdown),
                     tcpSocket (tcpSocket_),
                     shutdownType (shutdownType_) {}
 
@@ -430,6 +495,12 @@ namespace thekogans {
             /// \param[in] event \see{AsyncIoEventQueue} events enum.
             virtual void HandleAsyncEvent (util::ui32 event) throw ();
         #endif // defined (TOOLCHAIN_OS_Windows)
+
+            /// \brief
+            /// Used by sync and async shutdown.
+            /// \param[in] shutdownType One of ShutdownRead, ShutdownWrite or ShutdownBoth.
+            /// \return Result of calling shutdown.
+            THEKOGANS_UTIL_ERROR_CODE ShutdownHelper (ShutdownType shutdownType);
 
             /// \brief
             /// \see{ServerTCPSocket} needs access to UpdateAcceptContext.

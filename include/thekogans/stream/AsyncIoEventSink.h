@@ -203,6 +203,13 @@ namespace thekogans {
                 return TCPSocket::Ptr (new TCPSocket (handle));
             }
             /// \brief
+            /// Called to report that the given \see{TCPSocket} has been shutdown.
+            /// \param[in] tcpSocket \see{TCPSocket} that was shutdown.
+            /// \param[in] shutdownType One of \see{TCPSocket::ShutdownType}.
+            virtual void HandleTCPSocketShutdown (
+                TCPSocket &tcpSocket,
+                TCPSocket::ShutdownType shutdownType) throw ();
+            /// \brief
             /// Called to report a new connection on a \see{ServerTCPSocket}.
             /// \param[in] serverTCPSocket \see{ServerTCPSocket} on which the
             /// new connection occurred.

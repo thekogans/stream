@@ -222,6 +222,7 @@ namespace thekogans {
         const char * const Stream::AsyncInfo::EVENT_INVALID = "EventInvalid";
         const char * const Stream::AsyncInfo::EVENT_CONNECT = "EventConnect";
         const char * const Stream::AsyncInfo::EVENT_DISCONNECT = "EventDisconnect";
+        const char * const Stream::AsyncInfo::EVENT_SHUTDOWN = "EventShutdown";
         const char * const Stream::AsyncInfo::EVENT_READ = "EventRead";
         const char * const Stream::AsyncInfo::EVENT_WRITE = "EventWrite";
         const char * const Stream::AsyncInfo::EVENT_READ_FROM = "EventReadFrom";
@@ -233,6 +234,7 @@ namespace thekogans {
             return
                 event == EventConnect ? EVENT_CONNECT :
                 event == EventDisconnect ? EVENT_DISCONNECT :
+                event == EventShutdown ? EVENT_SHUTDOWN :
                 event == EventRead ? EVENT_READ :
                 event == EventWrite ? EVENT_WRITE :
                 event == EventReadFrom ? EVENT_READ_FROM :
@@ -245,6 +247,7 @@ namespace thekogans {
             return
                 event == EVENT_CONNECT ? EventConnect :
                 event == EVENT_DISCONNECT ? EventDisconnect :
+                event == EVENT_SHUTDOWN ? EventShutdown :
                 event == EVENT_READ ? EventRead :
                 event == EVENT_WRITE ? EventWrite :
                 event == EVENT_READ_FROM ? EventReadFrom :
@@ -316,6 +319,7 @@ namespace thekogans {
             }
             else if (util::Flags32 (event).TestAny (
                     Stream::AsyncInfo::EventConnect |
+                    Stream::AsyncInfo::EventShutdown |
                     Stream::AsyncInfo::EventWrite |
                     Stream::AsyncInfo::EventWriteTo |
                     Stream::AsyncInfo::EventWriteMsg)) {
@@ -405,7 +409,7 @@ namespace thekogans {
             wsaBuf.buf = (char *)buffer.GetReadPtr ();
         }
 
-        void Stream::AsyncInfo::ReadWriteOverlapped::Epilog () {
+        void Stream::AsyncInfo::ReadWriteOverlapped::Epilog () throw () {
             switch (event) {
                 case Stream::AsyncInfo::EventRead: {
                     buffer.AdvanceWriteOffset (GetCount ());
@@ -542,7 +546,12 @@ namespace thekogans {
                 bufferInfo.reset (bufferInfoList.pop_front ());
                 if (bufferInfoList.empty ()) {
                     eventQueue.DeleteStreamForEvents (
-                        stream, EventWrite | EventWriteTo | EventWriteMsg);
+                        stream,
+                        EventConnect |
+                        EventShutdown |
+                        EventWrite |
+                        EventWriteTo |
+                        EventWriteMsg);
                 }
             }
             return bufferInfo;
