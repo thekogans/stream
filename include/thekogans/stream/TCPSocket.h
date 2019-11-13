@@ -369,7 +369,7 @@ namespace thekogans {
 
                 /// \brief
                 /// TCPSocket to shutdown.
-                TCPSocket &tcpSocket
+                TCPSocket &tcpSocket;
                 /// \brief
                 /// Type of shutdown performed on (Secure)TCPSocket.
                 ShutdownType shutdownType;
@@ -391,7 +391,14 @@ namespace thekogans {
                 /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
                 /// the Overlapped to perform post op housekeeping prior to
                 /// calling GetError.
-                virtual void Prolog () throw ();
+                virtual void Prolog () throw () {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        tcpSocket.ShutdownHelper (shutdownType);
+                    SetError (
+                        errorCode == THEKOGANS_STREAM_SOCKET_ERROR ?
+                        THEKOGANS_STREAM_SOCKET_ERROR_CODE :
+                        ERROR_SUCCESS);
+                }
 
                 /// \brief
                 /// ShutdownOverlapped is neither copy constructable, nor assignable.

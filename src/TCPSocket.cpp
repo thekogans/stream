@@ -534,6 +534,7 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (TCPSocket::ConnectOverlapped, util::SpinLock)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (TCPSocket::AcceptOverlapped, util::SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (TCPSocket::ShutdownOverlapped, util::SpinLock)
 
         void TCPSocket::UpdateConnectContext () {
             if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
@@ -564,18 +565,10 @@ namespace thekogans {
                 (sockaddr *)&address.storage, &address.length) == 0;
         }
 
-        void TCPSocket::ShutdownOverlapped::Prolog () throw () {
-            THEKOGANS_UTIL_ERROR_CODE errorCode = tcpSocket.ShutdownHelper (shutdownType);
-            SetError (
-                errorCode == THEKOGANS_STREAM_SOCKET_ERROR ?
-                THEKOGANS_STREAM_SOCKET_ERROR_CODE :
-                ERROR_SUCCESS);
-        }
-
         void TCPSocket::PostAsyncShutdown (ShutdownType shutdownType) {
             ShutdownOverlapped::UniquePtr overlapped (
                 new ShutdownOverlapped (*this, shutdownType));
-            if (!PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)&tcpSocket, overlapped.get ())) {
+            if (!PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)this, overlapped.get ())) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
