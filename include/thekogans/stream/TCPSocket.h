@@ -376,14 +376,12 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] stream Stream that created this ShutdownOverlapped.
-                /// \param[in] family Address family specification.
-                /// \param[in] type Socket type specification.
-                /// \param[in] protocol Socket protocol specification.
+                /// \param[in] tcpSocket_ TCPSocket to shutdown.
+                /// \param[in] shutdownType_ Type of shutdown performed on (Secure)TCPSocket.
                 ShutdownOverlapped (
                     TCPSocket &tcpSocket_,
                     ShutdownType shutdownType_) :
-                    Overlapped (tcpSocket, Stream::AsyncInfo::EventShutdown),
+                    Overlapped (tcpSocket, AsyncInfo::EventShutdown),
                     tcpSocket (tcpSocket_),
                     shutdownType (shutdownType_) {}
 
