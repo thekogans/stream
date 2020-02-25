@@ -381,7 +381,7 @@ namespace thekogans {
                 ShutdownOverlapped (
                     TCPSocket &tcpSocket_,
                     ShutdownType shutdownType_) :
-                    Overlapped (tcpSocket, AsyncInfo::EventShutdown),
+                    Overlapped (tcpSocket_, AsyncInfo::EventShutdown),
                     tcpSocket (tcpSocket_),
                     shutdownType (shutdownType_) {}
 
