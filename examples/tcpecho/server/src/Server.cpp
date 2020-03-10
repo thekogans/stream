@@ -37,9 +37,7 @@
 #include <list>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#if defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/ChildProcess.h"
-#endif // defined (TOOLCHAIN_OS_OSX)
+#include "thekogans/util/ChildProcess.h"
 #include "thekogans/stream/ServerTCPSocket.h"
 #include "thekogans/stream/tcpecho/server/Server.h"
 
