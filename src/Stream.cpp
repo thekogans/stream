@@ -111,23 +111,25 @@ namespace thekogans {
         void Stream::StaticInit () {
             static volatile bool registered = false;
             static util::SpinLock spinLock;
-            util::LockGuard<util::SpinLock> guard (spinLock);
             if (!registered) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                ClientNamedPipe::StaticInit ();
-                ServerNamedPipe::StaticInit ();
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                ClientTCPSocket::StaticInit ();
-                ServerTCPSocket::StaticInit ();
-                ClientUDPSocket::StaticInit ();
-                ServerUDPSocket::StaticInit ();
-            #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-                ClientSecureTCPSocket::StaticInit ();
-                ServerSecureTCPSocket::StaticInit ();
-                ClientSecureUDPSocket::StaticInit ();
-                ServerSecureUDPSocket::StaticInit ();
-            #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
-                registered = true;
+                util::LockGuard<util::SpinLock> guard (spinLock);
+                if (!registered) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    ClientNamedPipe::StaticInit ();
+                    ServerNamedPipe::StaticInit ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    ClientTCPSocket::StaticInit ();
+                    ServerTCPSocket::StaticInit ();
+                    ClientUDPSocket::StaticInit ();
+                    ServerUDPSocket::StaticInit ();
+                #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+                    ClientSecureTCPSocket::StaticInit ();
+                    ServerSecureTCPSocket::StaticInit ();
+                    ClientSecureUDPSocket::StaticInit ();
+                    ServerSecureUDPSocket::StaticInit ();
+                #endif // defined (THEKOGANS_STREAM_HAVE_OPENSSL)
+                    registered = true;
+                }
             }
         }
     #endif // defined (THEKOGANS_STREAM_TYPE_Static)
