@@ -110,7 +110,7 @@ namespace thekogans {
                 do {
                     util::Buffer buffer =
                         secureTCPSocket.asyncInfo->eventSink.GetBuffer (
-                            secureTCPSocket, util::HostEndian, TLS_MAX_RECORD_LENGTH);
+                            secureTCPSocket, util::NetworkEndian, TLS_MAX_RECORD_LENGTH);
                     bytesRead = SSL_read (secureTCPSocket.ssl.get (),
                         buffer.GetWritePtr (),
                         (int)buffer.GetDataAvailableForWriting ());
@@ -155,7 +155,7 @@ namespace thekogans {
                 // it on the wire.
                 std::size_t bytesAvailable = BIO_ctrl_pending (outBIO.get ());
                 if (bytesAvailable > 0) {
-                    util::Buffer buffer (util::HostEndian, bytesAvailable);
+                    util::Buffer buffer (util::NetworkEndian, bytesAvailable);
                     int bytesRead = BIO_read (outBIO.get (),
                         buffer.GetWritePtr (),
                         (int)buffer.GetDataAvailableForWriting ());
@@ -214,7 +214,7 @@ namespace thekogans {
                 if (IsAsync ()) {
                     asyncInfoEx->AddEncryptBuffer (
                         asyncInfo->eventSink.GetBuffer (
-                            *this, util::HostEndian, buffer, count));
+                            *this, util::NetworkEndian, buffer, count));
                 }
                 else {
                     bytesWritten = SSL_write (ssl.get (), buffer, (int)count);
@@ -417,7 +417,7 @@ namespace thekogans {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
-                                util::Buffer (util::HostEndian, bufferLength);
+                                util::Buffer (util::NetworkEndian, bufferLength);
                             readWriteOverlapped.buffer.AdvanceWriteOffset (
                                 Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
@@ -455,7 +455,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
-                        util::Buffer buffer (util::HostEndian, bufferLength);
+                        util::Buffer buffer (util::NetworkEndian, bufferLength);
                         if (buffer.AdvanceWriteOffset (
                                 TCPSocket::Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             asyncInfoEx->AddDecryptBuffer (std::move (buffer));

@@ -50,7 +50,7 @@ namespace thekogans {
             /// Socket type specification.
             int type;
             /// \brief
-            //. Socket protocol specification.
+            /// Socket protocol specification.
             int protocol;
 
         public:

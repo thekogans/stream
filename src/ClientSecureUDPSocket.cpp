@@ -288,7 +288,7 @@ namespace thekogans {
 
         Stream::Ptr ClientSecureUDPSocket::Context::CreateStream () const {
             return Stream::Ptr (
-                new SecureUDPSocket (address.GetFamily (), SOCK_DGRAM, IPPROTO_UDP));
+                new SecureUDPSocket (address.GetFamily (), SOCK_DGRAM, 0));
         }
 
     } // namespace stream

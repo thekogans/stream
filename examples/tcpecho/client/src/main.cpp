@@ -140,7 +140,7 @@ namespace {
                 receivedBytes = 0;
                 totalBytes = 0;
                 bandwidth = 0.0f;
-                tcpSocket.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
+                tcpSocket.WriteBuffer (util::Buffer (util::NetworkEndian, roundBytes, 0, roundBytes));
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
@@ -162,7 +162,7 @@ namespace {
                     if (round++ < rounds) {
                         roundBytes = (std::size_t)(a * roundBytes + b);
                         receivedBytes = 0;
-                        stream.WriteBuffer (util::Buffer (util::HostEndian, roundBytes, 0, roundBytes));
+                        stream.WriteBuffer (util::Buffer (util::NetworkEndian, roundBytes, 0, roundBytes));
                     }
                     else {
                         util::ui64 time = util::HRTimer::Click () - start;
@@ -203,11 +203,11 @@ namespace {
         for (util::ui32 i = 0; i < rounds; ++i) {
             THEKOGANS_UTIL_TRY {
                 {
-                    util::Buffer buffer (util::HostEndian, seed, 0, seed);
+                    util::Buffer buffer (util::NetworkEndian, seed, 0, seed);
                     socket.WriteFullBuffer (buffer.GetReadPtr (), buffer.GetDataAvailableForReading ());
                 }
                 {
-                    util::Buffer buffer (util::HostEndian, seed);
+                    util::Buffer buffer (util::NetworkEndian, seed);
                     socket.ReadFullBuffer (buffer.GetWritePtr (), buffer.GetDataAvailableForWriting ());
                 }
                 bytes += seed + seed;

@@ -76,7 +76,7 @@ namespace thekogans {
         ServerUDPSocket::ServerUDPSocket (
                 const Address &address,
                 std::size_t maxMessageLength_) :
-                UDPSocket (address.GetFamily (), SOCK_DGRAM, IPPROTO_UDP),
+                UDPSocket (address.GetFamily (), SOCK_DGRAM, 0),
                 maxMessageLength (maxMessageLength_) {
             SetReuseAddress (true);
         #if defined (SO_REUSEPORT) || defined (SO_REUSE_UNICASTPORT)
@@ -92,10 +92,10 @@ namespace thekogans {
                 util::Buffer buffer;
                 if (IsAsync ()) {
                     buffer = asyncInfo->eventSink.GetBuffer (
-                        *this, util::HostEndian, maxMessageLength);
+                        *this, util::NetworkEndian, maxMessageLength);
                 }
                 else {
-                    buffer = util::Buffer (util::HostEndian, maxMessageLength);
+                    buffer = util::Buffer (util::NetworkEndian, maxMessageLength);
                 }
                 Address from;
                 Address to;
@@ -130,7 +130,7 @@ namespace thekogans {
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
-                                    *this, util::HostEndian, bufferLength);
+                                    *this, util::NetworkEndian, bufferLength);
                             readMsgWriteMsgOverlapped.buffer.AdvanceWriteOffset (
                                 ReadMsg (
                                     readMsgWriteMsgOverlapped.buffer.GetWritePtr (),

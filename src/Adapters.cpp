@@ -115,13 +115,17 @@ namespace thekogans {
         }
 
         Adapters::Adapters () :
+            #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+                Thread ("Adapters"),
+            #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
             #if defined (TOOLCHAIN_OS_Windows)
-                handle (0) {
+                handle (0),
             #elif defined (TOOLCHAIN_OS_Linux)
-                socket (0) {
+                socket (0),
             #elif defined (TOOLCHAIN_OS_OSX)
-                runLoop (0) {
+                runLoop (0),
             #endif // defined (TOOLCHAIN_OS_Windows)
+                jobQueue ("Adapters") {
             GetAddressesMap (addressesMap);
         }
 

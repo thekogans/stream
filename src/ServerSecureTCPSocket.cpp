@@ -408,7 +408,7 @@ namespace thekogans {
                 util::ui32 maxPendingConnections,
                 SSL_CTX *ctx_,
                 const SessionInfo &sessionInfo_) :
-                TCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP),
+                TCPSocket (address.GetFamily (), SOCK_STREAM, 0),
                 ctx (ctx_),
                 sessionInfo (sessionInfo_) {
             if (ctx.get () != 0) {

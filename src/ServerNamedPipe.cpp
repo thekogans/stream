@@ -100,8 +100,8 @@ namespace thekogans {
             SetSecurityDescriptorDacl (&sd, TRUE, 0, FALSE);
             SECURITY_ATTRIBUTES sa;
             sa.nLength = sizeof (SECURITY_ATTRIBUTES);
-            sa.bInheritHandle = FALSE;
             sa.lpSecurityDescriptor = &sd;
+            sa.bInheritHandle = FALSE;
             DWORD dwPipeMode = PIPE_WAIT;
             if (pipeType == Byte) {
                 dwPipeMode |= PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;

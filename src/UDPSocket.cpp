@@ -102,7 +102,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         UDPSocket::UDPSocket (const Address &address) :
-                Socket (address.GetFamily (), SOCK_DGRAM, IPPROTO_UDP) {
+                Socket (address.GetFamily (), SOCK_DGRAM, 0) {
             Bind (address);
         }
 
@@ -857,9 +857,9 @@ namespace thekogans {
                 buffer (useGetBuffer ?
                     udpSocket.asyncInfo->eventSink.GetBuffer (
                         udpSocket,
-                        util::HostEndian,
+                        util::NetworkEndian,
                         count) :
-                    util::Buffer (util::HostEndian, count)),
+                    util::Buffer (util::NetworkEndian, count)),
                 flags (0) {
             wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
             wsaBuf.buf = (char *)buffer.GetWritePtr ();
@@ -875,11 +875,11 @@ namespace thekogans {
                 buffer (useGetBuffer ?
                     udpSocket.asyncInfo->eventSink.GetBuffer (
                         udpSocket,
-                        util::HostEndian,
+                        util::NetworkEndian,
                         buffer_,
                         count) :
                     util::Buffer (
-                        util::HostEndian,
+                        util::NetworkEndian,
                         (const util::ui8 *)buffer_,
                         (const util::ui8 *)buffer_ + count)),
                 address (address_),
@@ -910,9 +910,9 @@ namespace thekogans {
             Overlapped (udpSocket, Stream::AsyncInfo::EventReadMsg),
             buffer (useGetBuffer ?
                 udpSocket.asyncInfo->eventSink.GetBuffer (
-                    udpSocket, util::HostEndian,
+                    udpSocket, util::NetworkEndian,
                     count) :
-                util::Buffer (util::HostEndian, count)),
+                util::Buffer (util::NetworkEndian, count)),
             msgHdr (
                 count > 0 ? buffer.GetWritePtr () : 0,
                 count > 0 ? buffer.GetDataAvailableForWriting () : 0,
@@ -929,11 +929,11 @@ namespace thekogans {
             buffer (useGetBuffer ?
                 udpSocket.asyncInfo->eventSink.GetBuffer (
                     udpSocket,
-                    util::HostEndian,
+                    util::NetworkEndian,
                     buffer_,
                     count) :
                 util::Buffer (
-                    util::HostEndian,
+                    util::NetworkEndian,
                     (const util::ui8 *)buffer_,
                     (const util::ui8 *)buffer_ + count)),
             from (from_),
@@ -1077,7 +1077,7 @@ namespace thekogans {
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
-                                    *this, util::HostEndian, bufferLength);
+                                    *this, util::NetworkEndian, bufferLength);
                             readWriteOverlapped.buffer.AdvanceWriteOffset (
                                 Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
@@ -1109,7 +1109,7 @@ namespace thekogans {
                         if (bufferLength != 0) {
                             readFromWriteToOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
-                                    *this, util::HostEndian, bufferLength);
+                                    *this, util::NetworkEndian, bufferLength);
                             readFromWriteToOverlapped.buffer.AdvanceWriteOffset (
                                 ReadFrom (
                                     readFromWriteToOverlapped.buffer.GetWritePtr (),
@@ -1146,7 +1146,7 @@ namespace thekogans {
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
-                                    *this, util::HostEndian, bufferLength);
+                                    *this, util::NetworkEndian, bufferLength);
                             readMsgWriteMsgOverlapped.buffer.AdvanceWriteOffset (
                                 ReadMsg (
                                     readMsgWriteMsgOverlapped.buffer.GetWritePtr (),
@@ -1191,11 +1191,11 @@ namespace thekogans {
             buffer (useGetBuffer ?
                 udpSocket.asyncInfo->eventSink.GetBuffer (
                     udpSocket,
-                    util::HostEndian,
+                    util::NetworkEndian,
                     buffer_,
                     count) :
                 util::Buffer (
-                    util::HostEndian,
+                    util::NetworkEndian,
                     (const util::ui8 *)buffer_,
                     (const util::ui8 *)buffer_ + count)),
             address (address_) {}
@@ -1233,11 +1233,11 @@ namespace thekogans {
             buffer (useGetBuffer ?
                 udpSocket.asyncInfo->eventSink.GetBuffer (
                     udpSocket,
-                    util::HostEndian,
+                    util::NetworkEndian,
                     buffer_,
                     count) :
                 util::Buffer (
-                    util::HostEndian,
+                    util::NetworkEndian,
                     (const util::ui8 *)buffer_,
                     (const util::ui8 *)buffer_ + count)),
             from (from_),
@@ -1268,7 +1268,7 @@ namespace thekogans {
                     if (bufferLength != 0) {
                         util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
-                                *this, util::HostEndian, bufferLength);
+                                *this, util::NetworkEndian, bufferLength);
                         if (buffer.AdvanceWriteOffset (
                                 Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             asyncInfo->eventSink.HandleStreamRead (
@@ -1290,7 +1290,7 @@ namespace thekogans {
                     if (bufferLength != 0) {
                         util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
-                                *this, util::HostEndian, bufferLength);
+                                *this, util::NetworkEndian, bufferLength);
                         Address address;
                         if (buffer.AdvanceWriteOffset (
                                 ReadFrom (buffer.GetWritePtr (), bufferLength, address)) > 0) {
@@ -1313,7 +1313,7 @@ namespace thekogans {
                     if (bufferLength != 0) {
                         util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
-                                *this, util::HostEndian, bufferLength);
+                                *this, util::NetworkEndian, bufferLength);
                         Address from;
                         Address to;
                         if (buffer.AdvanceWriteOffset (

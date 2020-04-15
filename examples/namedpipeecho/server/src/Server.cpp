@@ -33,7 +33,7 @@ namespace thekogans {
                         util::i32 priority) {
                     if (done) {
                         if (!addresses.empty ()) {
-                            eventQueue.reset (new stream::AsyncIoEventQueue ());
+                            eventQueue.reset (new stream::AsyncIoEventQueue);
                             for (std::list<stream::Address>::const_iterator
                                     it = addresses.begin (),
                                     end = addresses.end (); it != end; ++it) {
@@ -79,7 +79,8 @@ namespace thekogans {
                         }
                         THEKOGANS_UTIL_CATCH_AND_LOG
                     }
-                    THEKOGANS_UTIL_LOG_INFO ("%s\n", "Server thread is exiting.");
+                    THEKOGANS_UTIL_LOG_INFO (
+                        "%s\n", "Server thread is exiting.");
                 }
 
                 void Server::HandleStreamError (

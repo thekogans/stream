@@ -342,7 +342,7 @@ namespace thekogans {
                     if (bufferLength != 0) {
                         util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
-                                *this, util::HostEndian, bufferLength);
+                                *this, util::NetworkEndian, bufferLength);
                         if (buffer.AdvanceWriteOffset (
                                 Read (
                                     buffer.GetWritePtr (),

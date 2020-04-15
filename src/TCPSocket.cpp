@@ -650,7 +650,7 @@ namespace thekogans {
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
-                                    *this, util::HostEndian, bufferLength);
+                                    *this, util::NetworkEndian, bufferLength);
                             readWriteOverlapped.buffer.AdvanceWriteOffset (
                                 Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
@@ -716,7 +716,7 @@ namespace thekogans {
                     if (bufferLength != 0) {
                         util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
-                                *this, util::HostEndian, bufferLength);
+                                *this, util::NetworkEndian, bufferLength);
                         if (buffer.AdvanceWriteOffset (Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             asyncInfo->eventSink.HandleStreamRead (*this, std::move (buffer));
                         }
