@@ -426,7 +426,7 @@ namespace thekogans {
                 const Address &address_,
                 SSL_CTX *ctx_,
                 const SessionInfo &sessionInfo_) :
-                UDPSocket (address_.GetFamily (), SOCK_DGRAM, IPPROTO_UDP),
+                UDPSocket (address_.GetFamily (), SOCK_DGRAM, 0),
                 address (address_),
                 ctx (ctx_),
                 sessionInfo (sessionInfo_) {
@@ -451,10 +451,10 @@ namespace thekogans {
                 util::Buffer buffer;
                 if (IsAsync ()) {
                     buffer = asyncInfo->eventSink.GetBuffer (
-                        *this, util::HostEndian, TLS_MAX_RECORD_LENGTH);
+                        *this, util::NetworkEndian, TLS_MAX_RECORD_LENGTH);
                 }
                 else {
-                    buffer = util::Buffer (util::HostEndian, TLS_MAX_RECORD_LENGTH);
+                    buffer = util::Buffer (util::NetworkEndian, TLS_MAX_RECORD_LENGTH);
                 }
                 Address from;
                 Address to;
@@ -487,7 +487,7 @@ namespace thekogans {
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
                                 asyncInfo->eventSink.GetBuffer (
-                                    *this, util::HostEndian, bufferLength);
+                                    *this, util::NetworkEndian, bufferLength);
                             readMsgWriteMsgOverlapped.buffer.AdvanceWriteOffset (
                                 ReadMsg (
                                     readMsgWriteMsgOverlapped.buffer.GetWritePtr (),
@@ -542,7 +542,7 @@ namespace thekogans {
                 const Address &from,
                 const Address &to) const {
             SecureUDPSocket::Ptr connection (
-                new SecureUDPSocket (from.GetFamily (), SOCK_DGRAM, IPPROTO_UDP));
+                new SecureUDPSocket (from.GetFamily (), SOCK_DGRAM, 0));
             connection->SetReuseAddress (true);
         #if defined (SO_REUSEPORT) || defined (SO_REUSE_UNICASTPORT)
             connection->SetReusePort (true);

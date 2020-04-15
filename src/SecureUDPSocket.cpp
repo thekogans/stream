@@ -59,7 +59,7 @@ namespace thekogans {
                         util::LockGuard<util::SpinLock> guard (spinLock);
                         encryptList.push_back (
                             asyncInfo->eventSink.GetBuffer (
-                                *this, util::HostEndian, buffer, count));
+                                *this, util::NetworkEndian, buffer, count));
                     }
                     RunDTLS ();
                 }
@@ -299,7 +299,7 @@ namespace thekogans {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
-                                util::Buffer (util::HostEndian, bufferLength);
+                                util::Buffer (util::NetworkEndian, bufferLength);
                             readWriteOverlapped.buffer.AdvanceWriteOffset (
                                 Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
@@ -335,7 +335,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
-                        util::Buffer buffer (util::HostEndian, bufferLength);
+                        util::Buffer buffer (util::NetworkEndian, bufferLength);
                         if (buffer.AdvanceWriteOffset (
                                 UDPSocket::Read (buffer.GetWritePtr (), bufferLength)) > 0) {
                             {
@@ -514,7 +514,7 @@ namespace thekogans {
                     do {
                         util::Buffer buffer =
                             asyncInfo->eventSink.GetBuffer (
-                                *this, util::HostEndian, TLS_MAX_RECORD_LENGTH);
+                                *this, util::NetworkEndian, TLS_MAX_RECORD_LENGTH);
                         bytesRead = SSL_read (ssl.get (),
                             buffer.GetWritePtr (),
                             (int)buffer.GetDataAvailableForWriting ());
@@ -559,7 +559,7 @@ namespace thekogans {
                     // it on the wire.
                     std::size_t bytesAvailable = BIO_ctrl_pending (outBIO.get ());
                     if (bytesAvailable > 0) {
-                        util::Buffer buffer (util::HostEndian, bytesAvailable);
+                        util::Buffer buffer (util::NetworkEndian, bytesAvailable);
                         int bytesRead = BIO_read (outBIO.get (),
                             buffer.GetWritePtr (),
                             (int)buffer.GetDataAvailableForWriting ());

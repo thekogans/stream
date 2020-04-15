@@ -83,13 +83,15 @@ namespace thekogans {
                 const Address &address,
                 bool reuseAddress,
                 util::ui32 maxPendingConnections) :
-                TCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP) {
+                TCPSocket (address.GetFamily (), SOCK_STREAM, 0) {
             if (reuseAddress) {
             #if !defined (TOOLCHAIN_OS_Windows)
                 if (address.GetFamily () == AF_LOCAL) {
                     util::Path path (address.GetPath ());
                     if (path.Exists ()) {
-                        path.Delete ();
+                        // Can't use Path::Delete here as the file is a device and
+                        // Path only supports directories and files.
+                        unlink (address.GetPath ().c_str ());
                     }
                 }
                 else {

@@ -382,9 +382,9 @@ namespace thekogans {
                 buffer (useGetBuffer ?
                     stream.asyncInfo->eventSink.GetBuffer (
                         stream,
-                        util::HostEndian,
+                        util::NetworkEndian,
                         count) :
-                    util::Buffer (util::HostEndian, count)),
+                    util::Buffer (util::NetworkEndian, count)),
                 flags (0) {
             wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
             wsaBuf.buf = (char *)buffer.GetWritePtr ();
@@ -399,11 +399,11 @@ namespace thekogans {
                 buffer (useGetBuffer ?
                     stream.asyncInfo->eventSink.GetBuffer (
                         stream,
-                        util::HostEndian,
+                        util::NetworkEndian,
                         buffer_,
                         count) :
                     util::Buffer (
-                        util::HostEndian,
+                        util::NetworkEndian,
                         (const util::ui8 *)buffer_,
                         (const util::ui8 *)buffer_ + count)),
                 flags (0) {
@@ -495,11 +495,11 @@ namespace thekogans {
             buffer (useGetBuffer ?
                 stream.asyncInfo->eventSink.GetBuffer (
                     stream,
-                    util::HostEndian,
+                    util::NetworkEndian,
                     buffer_,
                     count) :
                 util::Buffer (
-                    util::HostEndian,
+                    util::NetworkEndian,
                     (const util::ui8 *)buffer_,
                     (const util::ui8 *)buffer_ + count)) {}
 

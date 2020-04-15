@@ -287,7 +287,7 @@ namespace thekogans {
 
         Stream::Ptr ClientSecureTCPSocket::Context::CreateStream () const {
             return Stream::Ptr (
-                new SecureTCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
+                new SecureTCPSocket (address.GetFamily (), SOCK_STREAM, 0));
         }
 
     } // namespace stream

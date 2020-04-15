@@ -59,7 +59,7 @@ namespace thekogans {
 
         Stream::Ptr ClientTCPSocket::Context::CreateStream () const {
             return Stream::Ptr (
-                new TCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
+                new TCPSocket (address.GetFamily (), SOCK_STREAM, 0));
         }
 
     } // namespace stream

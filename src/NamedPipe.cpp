@@ -38,7 +38,7 @@ namespace thekogans {
                         handle,
                         buffer,
                         (DWORD)count,
-                        overlapped.get () == 0 ? 0 : &numberOfBytesRead,
+                        overlapped.get () != 0 ? 0 : &numberOfBytesRead,
                         overlapped.get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode == ERROR_IO_PENDING) {
@@ -95,7 +95,7 @@ namespace thekogans {
                             handle,
                             buffer,
                             (DWORD)count,
-                            overlapped.get () == 0 ? 0 : &numberOfBytesWriten,
+                            overlapped.get () != 0 ? 0 : &numberOfBytesWriten,
                             overlapped.get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode == ERROR_IO_PENDING) {
