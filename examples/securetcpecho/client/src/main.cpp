@@ -77,7 +77,7 @@ namespace {
                     util::ui64 start = util::HRTimer::Click ();
                     {
                         stream::SecureTCPSocket socket (
-                            context.address.GetFamily (), SOCK_STREAM, IPPROTO_TCP);
+                            context.address.GetFamily (), SOCK_STREAM, 0);
                         if (timeSpec != util::TimeSpec::Zero) {
                             socket.SetReadTimeout (timeSpec);
                             socket.SetWriteTimeout (timeSpec);

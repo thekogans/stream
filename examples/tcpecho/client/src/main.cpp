@@ -107,7 +107,7 @@ namespace {
                 }
             };
             stream::TCPSocket::Ptr tcpSocket (
-                new MyTCPSocket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP));
+                new MyTCPSocket (address.GetFamily (), SOCK_STREAM, 0));
             stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this, 0);
             if (timeSpec != util::TimeSpec::Zero) {
                 tcpSocket->SetReadTimeout (timeSpec);
@@ -192,7 +192,7 @@ namespace {
             util::f32 a = 2.0f,
             util::f32 b = 0.0f,
             const util::TimeSpec &timeSpec = util::TimeSpec::FromSeconds (3)) {
-        stream::TCPSocket socket (address.GetFamily (), SOCK_STREAM, IPPROTO_TCP);
+        stream::TCPSocket socket (address.GetFamily (), SOCK_STREAM, 0);
         if (timeSpec != util::TimeSpec::Zero) {
             socket.SetReadTimeout (timeSpec);
             socket.SetWriteTimeout (timeSpec);
