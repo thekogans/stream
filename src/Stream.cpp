@@ -134,6 +134,16 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_TYPE_Static)
 
+        void Stream::ChainAsyncIoEventSink (AsyncIoEventSink &next) {
+            if (IsAsync ()) {
+                asyncInfo->eventSink.SetNext (next);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "%s is not async.", typeid (*this).name ());
+            }
+        }
+
         void Stream::Disconnect () {
             if (IsAsync ()) {
                 asyncInfo->eventQueue.DeleteStream (*this);

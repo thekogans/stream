@@ -98,6 +98,13 @@ namespace thekogans {
             virtual ~AsyncIoEventSink () {}
 
             /// \brief
+            /// Chain unimplemented callbacks to the given handler.
+            /// \param[in] next_ Handler to be called for all unimplemented callbacks.
+            inline void SetNext (AsyncIoEventSink &next_) {
+                next.Reset (&next_);
+            }
+
+            /// \brief
             /// Called to initiate stream error processing.
             /// \param[in] stream \see{Stream} on which an error occurred.
             /// \param[in] exception \see{util::Exception} representing the error.

@@ -288,6 +288,10 @@ namespace thekogans {
             inline bool IsAsync () const {
                 return asyncInfo.get () != 0;
             }
+            /// \brief
+            /// Chain unimplemented callbacks to the given handler.
+            /// \param[in] next Handler to be called for all unimplemented callbacks.
+            void ChainAsyncIoEventSink (AsyncIoEventSink &next);
 
             /// \brief
             /// Use this method if you need framework interoperability.
