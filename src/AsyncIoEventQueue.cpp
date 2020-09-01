@@ -228,11 +228,13 @@ namespace thekogans {
                 // a noop.
                 if (registryList.contains (&stream) &&
                         !deletedStreamsList.contains (&stream)) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    CancelIoEx (stream.handle, 0);
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    DeleteStreamForEvents (stream, stream.asyncInfo->events);
-                #endif // defined (TOOLCHAIN_OS_Windows)
+                    if (stream.handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                    #if defined (TOOLCHAIN_OS_Windows)
+                        CancelIoEx (stream.handle, 0);
+                    #else // defined (TOOLCHAIN_OS_Windows)
+                        DeleteStreamForEvents (stream, stream.asyncInfo->events);
+                    #endif // defined (TOOLCHAIN_OS_Windows)
+                    }
                     {
                         util::LockGuard<util::SpinLock> guard (spinLock);
                         deletedStreamsList.push_back (&stream);

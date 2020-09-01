@@ -69,7 +69,7 @@ namespace thekogans {
                 DEFAULT_BUFFER_SIZE = 32768
             };
 
-        private:
+        protected:
             /// \struct ServerNamedPipe::Context ServerNamedPipe.h thekogans/stream/ServerNamedPipe.h
             ///
             /// \brief
@@ -204,10 +204,6 @@ namespace thekogans {
                 const Address &address_,
                 PipeType pipeType_ = Byte,
                 DWORD bufferSize_ = DEFAULT_BUFFER_SIZE);
-            /// \brief
-            /// dtor.
-            /// ServerNamedPipe has special Close semantics.
-            ~ServerNamedPipe ();
 
             /// \brief
             /// Listen for an incoming connection.
@@ -219,17 +215,16 @@ namespace thekogans {
             void Connect ();
 
             /// \brief
+            /// Disconnect the client end of the named pipe.
+            /// \param[in] flushBuffers Call FlushFileBuffers before disconnecting.
+            void Disconnect (bool flushBuffers = true);
+
+            /// \brief
             /// Clone this ServerNamedPipe.
             /// \return Cloned ServerNamedPipe.
-            ServerNamedPipe::Ptr Clone () const;
+            virtual ServerNamedPipe::Ptr Clone () const;
 
         protected:
-            // Stream
-            /// \brief
-            /// Close the stream. ServerNamedPipe has special close
-            /// semantics.
-            virtual void Close ();
-
             /// \brief
             /// Used by the \see{AsyncIoEventQueue} to allow the stream to
             /// initialize itself. When this function is called, the
