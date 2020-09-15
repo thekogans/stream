@@ -86,8 +86,8 @@ namespace thekogans {
             SetRecvPktInfo (true);
         }
 
-        ServerUDPSocket::Connection::UniquePtr ServerUDPSocket::Accept () {
-            Connection::UniquePtr connection;
+        ServerUDPSocket::Connection::Ptr ServerUDPSocket::Accept () {
+            Connection::Ptr connection;
             {
                 util::Buffer buffer;
                 if (IsAsync ()) {
@@ -101,7 +101,7 @@ namespace thekogans {
                 Address to;
                 if (buffer.AdvanceWriteOffset (
                         ReadMsg (buffer.GetWritePtr (), maxMessageLength, from, to)) > 0) {
-                    connection.reset (
+                    connection.Reset (
                         new Connection (
                             std::move (buffer), from, to, maxMessageLength));
                 }
@@ -140,14 +140,14 @@ namespace thekogans {
                         }
                     }
                     if (!readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
-                        Connection::UniquePtr connection (
-                            new Connection (
-                                std::move (readMsgWriteMsgOverlapped.buffer),
-                                readMsgWriteMsgOverlapped.from,
-                                readMsgWriteMsgOverlapped.to,
-                                maxMessageLength));
                         asyncInfo->eventSink.HandleServerUDPSocketConnection (
-                            *this, std::move (connection));
+                            *this,
+                            Connection::Ptr (
+                                new Connection (
+                                    std::move (readMsgWriteMsgOverlapped.buffer),
+                                    readMsgWriteMsgOverlapped.from,
+                                    readMsgWriteMsgOverlapped.to,
+                                    maxMessageLength)));
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -162,7 +162,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferSize = GetDataAvailable ();
                     if (bufferSize != 0) {
-                        Connection::UniquePtr connection = Accept ();
+                        Connection::Ptr connection = Accept ();
                         // Connections inherit the listening socket's
                         // non-blocking state. Since we handle all
                         // async io through AsyncIoEventQueue, set the
@@ -172,7 +172,7 @@ namespace thekogans {
                         // explicitly.
                         connection->udpSocket->SetBlocking (true);
                         asyncInfo->eventSink.HandleServerUDPSocketConnection (
-                            *this, std::move (connection));
+                            *this, connection);
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {

@@ -62,10 +62,10 @@ namespace thekogans {
             /// recreate a ServerTCPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Context>.
-                typedef std::unique_ptr<Context> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
+                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
 
                 /// \brief
                 /// "ServerTCPSocket"

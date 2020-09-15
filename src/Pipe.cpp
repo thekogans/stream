@@ -67,12 +67,12 @@ namespace thekogans {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD countRead = 0;
-                TimedOverlapped::UniquePtr overlapped;
+                TimedOverlapped::Ptr overlapped;
                 if (readTimeout != util::TimeSpec::Zero) {
-                    overlapped.reset (new TimedOverlapped);
+                    overlapped.Reset (new TimedOverlapped);
                 }
                 if (!ReadFile (handle, buffer, (DWORD)count,
-                        overlapped.get () == 0 ? 0 : &countRead, overlapped.get ())) {
+                        overlapped.get () == 0 ? 0 : &countRead, overlapped.Get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode == ERROR_IO_PENDING) {
                         countRead = overlapped->Wait (handle, readTimeout);
@@ -81,8 +81,8 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-                else if (overlapped.get () != 0 &&
-                       !GetOverlappedResult (handle, overlapped.get (), &countRead, FALSE)) {
+                else if (overlapped.Get () != 0 &&
+                       !GetOverlappedResult (handle, overlapped.Get (), &countRead, FALSE)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -117,26 +117,28 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD countWritten = 0;
                 if (IsAsync ()) {
-                    AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, buffer, count));
-                    if (!WriteFile (handle,
+                    if (!WriteFile (
+                            handle,
                             overlapped->buffer.GetReadPtr (),
                             (DWORD)overlapped->buffer.GetDataAvailableForReading (),
-                            0, overlapped.get ())) {
+                            0,
+                            overlapped.Get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode != ERROR_IO_PENDING) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
-                    overlapped.release ();
+                    overlapped.Release ();
                 }
                 else {
-                    TimedOverlapped::UniquePtr overlapped;
+                    TimedOverlapped::Ptr overlapped;
                     if (writeTimeout != util::TimeSpec::Zero) {
-                        overlapped.reset (new TimedOverlapped);
+                        overlapped.Reset (new TimedOverlapped);
                     }
                     if (!WriteFile (handle, buffer, (DWORD)count,
-                            overlapped.get () == 0 ? 0 : &countWritten, overlapped.get ())) {
+                            overlapped.Get () == 0 ? 0 : &countWritten, overlapped.Get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode == ERROR_IO_PENDING) {
                             countWritten = overlapped->Wait (handle, writeTimeout);
@@ -145,8 +147,8 @@ namespace thekogans {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
-                    else if (overlapped.get () != 0 &&
-                            !GetOverlappedResult (handle, overlapped.get (), &countWritten, FALSE)) {
+                    else if (overlapped.Get () != 0 &&
+                            !GetOverlappedResult (handle, overlapped.Get (), &countWritten, FALSE)) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
@@ -156,7 +158,7 @@ namespace thekogans {
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
                     asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
+                        AsyncInfo::BufferInfo::Ptr (
                             new AsyncInfo::WriteBufferInfo (*this, buffer, count)));
                 }
                 else {
@@ -186,21 +188,23 @@ namespace thekogans {
             if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
-                    if (!WriteFile (handle,
+                    if (!WriteFile (
+                            handle,
                             overlapped->buffer.GetReadPtr (),
                             (ULONG)overlapped->buffer.GetDataAvailableForReading (),
-                            0, overlapped.get ())) {
+                            0,
+                            overlapped.Get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode != ERROR_IO_PENDING) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
-                    overlapped.release ();
+                    overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
                     asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
+                        AsyncInfo::BufferInfo::Ptr (
                             new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -271,18 +275,20 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         void Pipe::PostAsyncRead () {
             if (asyncInfo->bufferLength != 0) {
-                AsyncInfo::ReadWriteOverlapped::UniquePtr overlapped (
+                AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
                     new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength));
-                if (!ReadFile (handle,
+                if (!ReadFile (
+                        handle,
                         overlapped->buffer.GetWritePtr (),
                         (DWORD)overlapped->buffer.GetDataAvailableForWriting (),
-                        0, overlapped.get ())) {
+                        0,
+                        overlapped.Get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode != ERROR_IO_PENDING) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-                overlapped.release ();
+                overlapped.Release ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

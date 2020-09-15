@@ -402,12 +402,12 @@ namespace thekogans {
                 if (IsSessionReused ()) {
                     SSL_SESSION *session = SSL_get0_session (ssl.get ());
                     if (session != 0) {
-                        SessionInfo::UniquePtr savedSessionInfo (
+                        SessionInfo::Ptr savedSessionInfo (
                             (SessionInfo *)SSL_SESSION_get_ex_data (session,
                                 OpenSSLInit::SSL_SESSIONSessionInfoIndex));
                         SSL_SESSION_set_ex_data (session,
                             OpenSSLInit::SSL_SESSIONSessionInfoIndex, 0);
-                        if (savedSessionInfo.get () != 0) {
+                        if (savedSessionInfo.Get () != 0) {
                             sessionInfo = *savedSessionInfo;
                         }
                     }
@@ -450,12 +450,12 @@ namespace thekogans {
             if (SSL_is_server (ssl.get ()) == 1) {
                 SSL_SESSION *session = SSL_get0_session (ssl.get ());
                 if (session != 0) {
-                    SessionInfo::UniquePtr savedSessionInfo (new SessionInfo (sessionInfo));
+                    SessionInfo::Ptr savedSessionInfo (new SessionInfo (sessionInfo));
                     if (SSL_SESSION_set_ex_data (
                             session,
                             OpenSSLInit::SSL_SESSIONSessionInfoIndex,
-                            savedSessionInfo.get ()) == 1) {
-                        savedSessionInfo.release ();
+                            savedSessionInfo.Get ()) == 1) {
+                        savedSessionInfo.Release ();
                     }
                 }
             }

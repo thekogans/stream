@@ -76,10 +76,10 @@ namespace thekogans {
         /// UDPSocket (especially SecureUDPSocket). Take a look at
         /// serverudpecho for an example on how to do that.
 
-        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue {
+        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue : public util::ThreadSafeRefCounted {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<AsyncIoEventQueue>.
-            typedef std::unique_ptr<AsyncIoEventQueue> UniquePtr;
+            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncIoEventQueue>.
+            typedef util::ThreadSafeRefCounted::Ptr<AsyncIoEventQueue> Ptr;
 
             /// \struct AsyncIoEventQueue::TimeoutPolicy AsyncIoEventQueue.h
             /// thekogans/stream/AsyncIoEventQueue.h
@@ -105,10 +105,10 @@ namespace thekogans {
             /// architect to make the best choice for their particular situation.
             /// To go one step further, the choice doesn't have to be a static one.
             /// You can easily swap out policies based on runtime needs.
-            struct _LIB_THEKOGANS_STREAM_DECL TimeoutPolicy {
+            struct _LIB_THEKOGANS_STREAM_DECL TimeoutPolicy : public util::ThreadSafeRefCounted {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<TimeoutPolicy>.
-                typedef std::unique_ptr<TimeoutPolicy> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<TimeoutPolicy>.
+                typedef util::ThreadSafeRefCounted::Ptr<TimeoutPolicy> Ptr;
 
                 /// \brief
                 /// dtor.
@@ -218,7 +218,7 @@ namespace thekogans {
             THEKOGANS_UTIL_HANDLE handle;
             /// \brief
             /// The timed stream timeout policy currently in force.
-            TimeoutPolicy::UniquePtr timeoutPolicy;
+            TimeoutPolicy::Ptr timeoutPolicy;
             /// \brief
             /// Last io event batch time.
             util::TimeSpec lastEventBatchTime;
@@ -242,17 +242,8 @@ namespace thekogans {
             /// in flight.
             AsyncIoEventQueueTimedStreamsList timedStreamsList;
             /// \brief
-            /// Stream deletion has to be differed until it's safe.
-            /// This list will hold zombie streams until it's safe
-            /// to delete them (right before \see{WaitForEvents} returns).
-            AsyncIoEventQueueDeletedStreamsList deletedStreamsList;
-            /// \brief
-            /// Synchronization SpinLock for registryList,
-            /// timedStreamsList and deletedStreamsList.
+            /// Synchronization SpinLock for registryList, timedStreamsList.
             util::SpinLock spinLock;
-            /// \brief
-            /// Internal class used to help with Stream lifetime management.
-            struct StreamDeleter;
             /// \brief
             /// Internal class used to help with timed Stream management.
             struct TimeoutPolicyController;
@@ -311,7 +302,7 @@ namespace thekogans {
             /// \brief
             /// Set the current timed stream timeout policy.
             /// \param[in] timeoutPolicy_ TimeoutPolicy to set.
-            void SetTimeoutPolicy (TimeoutPolicy::UniquePtr timeoutPolicy_);
+            void SetTimeoutPolicy (TimeoutPolicy::Ptr timeoutPolicy_);
 
             /// \brief
             /// Add a given stream to the queue.
@@ -334,11 +325,7 @@ namespace thekogans {
                 AsyncIoEventSink &eventSink,
                 std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
             /// \brief
-            /// Adds the given stream to the deletedStreams list.
-            /// Streams are aggregated for deletion so as not to
-            /// interfere with WaitForEvents. They get flushed as
-            /// soon as WaitForEvents is done processing an event
-            /// batch.
+            /// Delete a given stream from the queue.
             /// \param[in] stream Stream to delete.
             void DeleteStream (Stream &stream);
 
@@ -363,11 +350,6 @@ namespace thekogans {
             void Break ();
 
         private:
-            /// \brief
-            /// Flush the deleteStreams list. It will also remove the
-            /// stream from the registry and the timedStreams lists.
-            void FlushDeletedStreams ();
-
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Used internally by epoll and kqueue variants to

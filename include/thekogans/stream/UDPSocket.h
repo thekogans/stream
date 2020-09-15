@@ -308,25 +308,9 @@ namespace thekogans {
             /// makes instantiating Overlapped used by \see{UDPSocket::ReadFrom} and
             /// \see{UDPSocket::WriteTo} easier.
             struct ReadFromWriteToOverlapped : public AsyncInfo::Overlapped {
-                /// \struct UDPSocket::ReadFromWriteToOverlapped::Deleter
-                /// UDPSocket.h thekogans/stream/UDPSocket.h
-                ///
                 /// \brief
-                /// Custom deleter for ReadFromWriteToOverlapped. This class is
-                /// necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] readFromWriteToOverlapped ReadFromWriteToOverlapped to delete.
-                    void operator () (ReadFromWriteToOverlapped *readFromWriteToOverlapped) {
-                        if (readFromWriteToOverlapped != 0) {
-                            delete readFromWriteToOverlapped;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<ReadFromWriteToOverlapped, Deleter>.
-                typedef std::unique_ptr<ReadFromWriteToOverlapped, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ReadFromWriteToOverlapped>.
+                typedef util::ThreadSafeRefCounted::Ptr<ReadFromWriteToOverlapped> Ptr;
 
                 /// \brief
                 /// ReadFromWriteToOverlapped has a private heap to help with memory
@@ -401,25 +385,9 @@ namespace thekogans {
             /// makes instantiating Overlapped used by \see{UDPSocket::PostAsyncReadMsg}
             /// easier.
             struct ReadMsgWriteMsgOverlapped : public AsyncInfo::Overlapped {
-                /// \struct UDPSocket::ReadMsgWriteMsgOverlapped::Deleter
-                /// UDPSocket.h thekogans/stream/UDPSocket.h
-                ///
                 /// \brief
-                /// Custom deleter for ReadMsgWriteMsgOverlapped.
-                /// This class is necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] readMsgWriteMsgInfo ReadMsgWriteMsgOverlapped to delete.
-                    void operator () (ReadMsgWriteMsgOverlapped *readMsgWriteMsgOverlapped) {
-                        if (readMsgWriteMsgOverlapped != 0) {
-                            delete readMsgWriteMsgOverlapped;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<ReadMsgWriteMsgOverlapped, Deleter>.
-                typedef std::unique_ptr<ReadMsgWriteMsgOverlapped, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ReadMsgWriteMsgOverlapped>.
+                typedef util::ThreadSafeRefCounted::Ptr<ReadMsgWriteMsgOverlapped> Ptr;
 
                 /// \brief
                 /// ReadMsgWriteMsgOverlapped has a private heap to help with memory
@@ -585,7 +553,7 @@ namespace thekogans {
                     UDPSocket &udpSocket_,
                     util::Buffer buffer_,
                     const Address &address_) :
-                    BufferInfo (AsyncInfo::EventWriteTo),
+                    BufferInfo (udpSocket_, AsyncInfo::EventWriteTo),
                     udpSocket (udpSocket_),
                     buffer (std::move (buffer_)),
                     address (address_) {}
@@ -655,7 +623,7 @@ namespace thekogans {
                     util::Buffer buffer_,
                     const Address &from_,
                     const Address &to_) :
-                    BufferInfo (AsyncInfo::EventWriteMsg),
+                    BufferInfo (udpSocket_, AsyncInfo::EventWriteMsg),
                     udpSocket (udpSocket_),
                     buffer (std::move (buffer_)),
                     from (from_),

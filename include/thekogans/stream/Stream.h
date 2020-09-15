@@ -59,9 +59,6 @@ namespace thekogans {
             /// \brief
             /// AsyncIoEventQueueTimedStreamsList list id.
             ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID,
-            /// \brief
-            /// AsyncIoEventQueueDeletedStreamsList list id.
-            ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID
         };
 
         /// \brief
@@ -72,10 +69,6 @@ namespace thekogans {
         /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>.
         typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>
             AsyncIoEventQueueTimedStreamsList;
-        /// \brief
-        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>.
-        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>
-            AsyncIoEventQueueDeletedStreamsList;
 
         // Did I mention M$ is a brain dead company? Here's another
         // example of their stupidity and the hoops we have to jump
@@ -137,8 +130,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_STREAM_DECL Stream :
                 public virtual util::ThreadSafeRefCounted,
                 public AsyncIoEventQueueRegistryList::Node,
-                public AsyncIoEventQueueTimedStreamsList::Node,
-                public AsyncIoEventQueueDeletedStreamsList::Node {
+                public AsyncIoEventQueueTimedStreamsList::Node {
             /// \brief
             /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Stream>.
             typedef util::ThreadSafeRefCounted::Ptr<Stream> Ptr;
@@ -152,10 +144,10 @@ namespace thekogans {
             /// suitable for storage. Later you can use Stream::GetContext
             /// to recreate it. From there, you can call Context::CreateStream
             /// to create a fully initialized stream from the parameters.
-            struct _LIB_THEKOGANS_STREAM_DECL Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public util::ThreadSafeRefCounted {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Context>.
-                typedef std::unique_ptr<Context> UniquePtr;
+                /// Convenient typedef for <Context>.
+                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
 
                 /// \brief
                 /// "Context"
@@ -207,7 +199,7 @@ namespace thekogans {
             /// Typedef for Context factory method. A method of this type will
             /// create a correct Context from the values found in the XML node.
             /// \param[in] node XML node that will contain the Context.
-            typedef Context::UniquePtr (*ContextFactory) (const pugi::xml_node &node);
+            typedef Context::Ptr (*ContextFactory) (const pugi::xml_node &node);
             /// \brief
             /// Typedef for an Context/Stream factories map. This map
             /// is populated at initialization time by the MapInitializer
@@ -262,7 +254,7 @@ namespace thekogans {
             /// type.
             /// \param[in] node XML node representing an Context of a particular type.
             /// \return A fully parsed and populated Context of that type.
-            static Context::UniquePtr GetContext (const pugi::xml_node &node);
+            static Context::Ptr GetContext (const pugi::xml_node &node);
         #if defined (THEKOGANS_STREAM_TYPE_Static)
             /// \brief
             /// Because the stream library uses dynamic initialization,
@@ -286,7 +278,7 @@ namespace thekogans {
             /// was called on the stream).
             /// \return true = async, false = blocking.
             inline bool IsAsync () const {
-                return asyncInfo.get () != 0;
+                return asyncInfo.Get () != 0;
             }
             /// \brief
             /// Chain unimplemented callbacks to the given handler.
@@ -444,25 +436,10 @@ namespace thekogans {
             /// \brief
             /// AsyncInfo holds the async state and is created when you
             /// call \see{AsyncIoEventQueue::AddStream}.
-            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfo {
-                /// \struct Stream::AsyncInfo::Deleter Stream.h thekogans/stream/Stream.h
-                ///
+            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfo : public util::ThreadSafeRefCounted {
                 /// \brief
-                /// Custom deleter for AsyncInfo. This class is
-                /// necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] asyncInfo AsyncInfo to delete.
-                    void operator () (AsyncInfo *asyncInfo) {
-                        if (asyncInfo != 0) {
-                            delete asyncInfo;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<AsyncInfo, Deleter>.
-                typedef std::unique_ptr<AsyncInfo, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncInfo>.
+                typedef util::ThreadSafeRefCounted::Ptr<AsyncInfo> Ptr;
 
                 /// \brief
                 /// AsyncInfo has a private heap to help with memory
@@ -580,25 +557,11 @@ namespace thekogans {
                 /// Overlapped extends a Windows WSAOVERLAPPED.
                 struct Overlapped :
                         public WSAOVERLAPPED,
-                        public OverlappedList::Node {
-                    /// \struct Stream::AsyncInfo::Overlapped::Deleter Stream.h thekogans/stream/Stream.h
-                    ///
+                        public OverlappedList::Node,
+                        public util::ThreadSafeRefCounted {
                     /// \brief
-                    /// Custom deleter for Overlapped. This class is
-                    /// necessary to shutup msvc.
-                    struct Deleter {
-                        /// \brief
-                        /// Called by unique_ptr::~unique_ptr.
-                        /// \param[in] overlapped Overlapped to delete.
-                        void operator () (Overlapped *overlapped) {
-                            if (overlapped != 0) {
-                                delete overlapped;
-                            }
-                        }
-                    };
-                    /// \brief
-                    /// Convenient typedef for std::unique_ptr<Overlapped, Deleter>.
-                    typedef std::unique_ptr<Overlapped, Deleter> UniquePtr;
+                    /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Overlapped>.
+                    typedef util::ThreadSafeRefCounted::Ptr<Overlapped> Ptr;
 
                     /// \brief
                     /// Stream that created this Overlapped.
@@ -688,25 +651,9 @@ namespace thekogans {
                 /// makes instantiating Overlapped used by \see{Stream::Read} and
                 /// \see{Stream::Write} easier.
                 struct ReadWriteOverlapped : public Overlapped {
-                    /// \struct Stream::AsyncInfo::ReadWriteOverlapped::Deleter
-                    /// Stream.h thekogans/stream/Stream.h
-                    ///
                     /// \brief
-                    /// Custom deleter for ReadWriteOverlapped. This class is
-                    /// necessary to shutup msvc.
-                    struct Deleter {
-                        /// \brief
-                        /// Called by unique_ptr::~unique_ptr.
-                        /// \param[in] readWriteInfo ReadWriteOverlapped to delete.
-                        void operator () (ReadWriteOverlapped *readWriteOverlapped) {
-                            if (readWriteOverlapped != 0) {
-                                delete readWriteOverlapped;
-                            }
-                        }
-                    };
-                    /// \brief
-                    /// Convenient typedef for std::unique_ptr<ReadWriteOverlapped, Deleter>.
-                    typedef std::unique_ptr<ReadWriteOverlapped, Deleter> UniquePtr;
+                    /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ReadWriteOverlapped>.
+                    typedef util::ThreadSafeRefCounted::Ptr<ReadWriteOverlapped> Ptr;
 
                     /// \brief
                     /// ReadWriteOverlapped has a private heap to help with memory
@@ -791,19 +738,28 @@ namespace thekogans {
                 /// BufferInfo is a virtual base for buffers used for async
                 /// Stream::Write. Various derivatives represent concrete
                 /// BufferInfo for Write, WriteTo and WriteMsg.
-                struct BufferInfo : public BufferInfoList::Node {
+                struct BufferInfo :
+                        public BufferInfoList::Node,
+                        public util::ThreadSafeRefCounted {
                     /// \brief
-                    /// Convenient typedef for std::unique_ptr<BufferInfo>.
-                    typedef std::unique_ptr<BufferInfo> UniquePtr;
+                    /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<BufferInfo>.
+                    typedef util::ThreadSafeRefCounted::Ptr<BufferInfo> Ptr;
 
+                    /// \brief
+                    /// Stream that created this BufferInfo.
+                    Stream::Ptr stream;
                     /// \brief
                     /// Write event associated with this buffer.
                     util::ui32 event;
 
                     /// \brief
                     /// ctor.
+                    /// \param[in] stream_ Stream that created this BufferInfo.
                     /// \param[in] event_ Write event associated with this buffer.
-                    explicit BufferInfo (util::ui32 event_) :
+                    BufferInfo (
+                        Stream &stream_,
+                        util::ui32 event_) :
+                        stream (&stream_),
                         event (event_) {}
                     /// \brief
                     /// Virtual dtor.
@@ -832,20 +788,17 @@ namespace thekogans {
                     THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteBufferInfo, util::SpinLock)
 
                     /// \brief
-                    /// Stream to write to.
-                    Stream &stream;
-                    /// \brief
                     /// Buffer to write.
                     util::Buffer buffer;
 
                     /// \brief
                     /// ctor.
-                    /// \param[in] stream_ Stream to write the buffer to.
+                    /// \param[in] stream Stream to write the buffer to.
                     /// \param[in] buffer_ Buffer to write.
                     /// \param[in] count Length of buffer.
                     /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
                     WriteBufferInfo (
-                        Stream &stream_,
+                        Stream &stream,
                         const void *buffer_,
                         std::size_t count,
                         bool useGetBuffer = true);
@@ -854,10 +807,9 @@ namespace thekogans {
                     /// \param[in] stream_ Stream to write the buffer to.
                     /// \param[in] buffer_ Buffer to write.
                     WriteBufferInfo (
-                        Stream &stream_,
+                        Stream &stream,
                         util::Buffer buffer_) :
-                        BufferInfo (AsyncInfo::EventWrite),
-                        stream (stream_),
+                        BufferInfo (stream, AsyncInfo::EventWrite),
                         buffer (std::move (buffer_)) {}
 
                     /// \brief
@@ -914,6 +866,12 @@ namespace thekogans {
                 /// dtor.
                 ~AsyncInfo ();
 
+                /// \brief
+                /// Relase all resources (\see{BufferInfo}, \see{AsyncIoEventQueue},
+                /// \see{Stream}, \see{AsyncIoEventSink}) associated with this \see{AsyncInfo}.
+                /// NOTE: This method is called by the \see{AsyncIoEventQueue}::DeleteStream.
+                void ReleaseResources ();
+
             #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// Add an Overlapped to the overlappedList.
@@ -939,17 +897,17 @@ namespace thekogans {
                 /// Used by an async Stream::Write to put a
                 /// partially written buffer back on the queue.
                 /// \param[in] buffer Buffer to queue.
-                void EnqBufferFront (BufferInfo::UniquePtr buffer);
+                void EnqBufferFront (BufferInfo::Ptr buffer);
                 /// \brief
                 /// When a user calls Stream::Write, if the stream
                 /// is async, to queue the buffer for writing.
                 /// \param[in] buffer Buffer to queue.
-                void EnqBufferBack (BufferInfo::UniquePtr buffer);
+                void EnqBufferBack (BufferInfo::Ptr buffer);
                 /// \brief
                 /// Called by Stream::Write to remove the head
                 /// buffer from the queue and put it on the wire
                 /// \return Head buffer.
-                BufferInfo::UniquePtr DeqBuffer ();
+                BufferInfo::Ptr DeqBuffer ();
                 /// \brief
                 /// Called by \see{Stream::HandleAsyncEvent} when processing
                 /// the EventWrite, EventWriteTo and EventWriteMsg events.
@@ -988,7 +946,7 @@ namespace thekogans {
             };
             /// \brief
             /// Async state.
-            AsyncInfo::UniquePtr asyncInfo;
+            AsyncInfo::Ptr asyncInfo;
 
             /// \brief
             /// Used by the \see{AsyncIoEventQueue} to allow the stream
@@ -1008,25 +966,12 @@ namespace thekogans {
             /// \brief
             /// TimedOverlapped provides the mechanism by which named pipes
             /// do timed synchronous io.
-            struct TimedOverlapped : public OVERLAPPED {
-                /// \struct Stream::TimedOverlapped::Deleter Stream.h thekogans/stream/Stream.h
-                ///
+            struct TimedOverlapped :
+                    public OVERLAPPED,
+                    public util::ThreadSafeRefCounted {
                 /// \brief
-                /// Custom deleter for TimedOverlapped. This class is
-                /// necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] timedOverlapped TimedOverlapped to delete.
-                    void operator () (TimedOverlapped *timedOverlapped) {
-                        if (timedOverlapped != 0) {
-                            delete timedOverlapped;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<TimedOverlapped, Deleter>.
-                typedef std::unique_ptr<TimedOverlapped, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<TimedOverlapped>.
+                typedef util::ThreadSafeRefCounted::Ptr<TimedOverlapped> Ptr;
 
                 /// \brief
                 /// TimedOverlapped has a private heap to help with memory
@@ -1137,9 +1082,9 @@ namespace thekogans {
             typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
         public:\
-            static thekogans::stream::Stream::Context::UniquePtr CreateContext (\
+            static thekogans::stream::Stream::Context::Ptr CreateContext (\
                     const pugi::xml_node &node) {\
-                return thekogans::stream::Stream::Context::UniquePtr (\
+                return thekogans::stream::Stream::Context::Ptr (\
                     new type::Context (node));\
             }
 

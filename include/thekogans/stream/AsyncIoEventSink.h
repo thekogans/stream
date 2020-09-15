@@ -233,7 +233,7 @@ namespace thekogans {
             /// NOTE: The new connection will be sync (blocking).
             virtual void HandleServerUDPSocketConnection (
                 ServerUDPSocket &serverUDPSocket,
-                ServerUDPSocket::Connection::UniquePtr connection) throw ();
+                ServerUDPSocket::Connection::Ptr connection) throw ();
 
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
             /// \brief

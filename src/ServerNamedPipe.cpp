@@ -120,18 +120,18 @@ namespace thekogans {
         }
 
         void ServerNamedPipe::Connect () {
-            AsyncInfo::Overlapped::UniquePtr overlapped;
+            AsyncInfo::Overlapped::Ptr overlapped;
             if (IsAsync ()) {
-                overlapped.reset (
+                overlapped.Reset (
                     new AsyncInfo::Overlapped (*this, AsyncInfo::EventConnect));
             }
-            if (!ConnectNamedPipe (handle, overlapped.get ())) {
+            if (!ConnectNamedPipe (handle, overlapped.Get ())) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                 if (errorCode != ERROR_IO_PENDING) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
-            overlapped.release ();
+            overlapped.Release ();
         }
 
         void ServerNamedPipe::Disconnect (bool flushBuffers) {

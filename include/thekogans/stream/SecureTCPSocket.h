@@ -77,25 +77,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Encapsulates extended async info.
-            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfoEx {
-                /// \struct SecureTCPSocket::AsyncInfoEx::Deleter SecureTCPSocket.h thekogans/stream/SecureTCPSocket.h
-                ///
+            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfoEx : public util::ThreadSafeRefCounted {
                 /// \brief
-                /// Custom deleter for AsyncInfoEx. This class is
-                /// necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] asyncInfo AsyncInfoEx to delete.
-                    void operator () (AsyncInfoEx *asyncInfoEx) {
-                        if (asyncInfoEx != 0) {
-                            delete asyncInfoEx;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<AsyncInfoEx> UniquePtr.
-                typedef std::unique_ptr<AsyncInfoEx, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncInfoEx>.
+                typedef util::ThreadSafeRefCounted::Ptr<AsyncInfoEx> Ptr;
 
                 /// \brief
                 /// AsyncInfoEx has a private heap to help with memory
@@ -175,7 +160,7 @@ namespace thekogans {
             };
             /// \brief
             /// \see{Stream::AsyncInfo} extensions.
-            AsyncInfoEx::UniquePtr asyncInfoEx;
+            AsyncInfoEx::Ptr asyncInfoEx;
 
         public:
             /// \brief

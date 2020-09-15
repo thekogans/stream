@@ -144,10 +144,10 @@ namespace thekogans {
         /// the currently negotiated session state \see{SecureTCPSocket::GetSessionInfo}
         /// to be later passed back in to SecureTCPSocket::SessionConnect
         /// to attempt session resumption.
-        struct _LIB_THEKOGANS_STREAM_DECL SessionInfo {
+        struct _LIB_THEKOGANS_STREAM_DECL SessionInfo : public util::ThreadSafeRefCounted {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<SessionInfo>.
-            typedef std::unique_ptr<SessionInfo> UniquePtr;
+            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<SessionInfo>.
+            typedef util::ThreadSafeRefCounted::Ptr<SessionInfo> Ptr;
 
             /// \brief
             /// SessionInfo has a private heap to help with memory

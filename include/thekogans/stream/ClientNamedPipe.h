@@ -64,10 +64,10 @@ namespace thekogans {
             /// to: thekogans::stream::Stream::GetContext (), and it will
             /// return back to you a properly constructed, initialized and
             /// connected ClientNamedPipe.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Context>.
-                typedef std::unique_ptr<Context> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
+                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
 
                 /// \brief
                 /// "ClientNamedPipe"

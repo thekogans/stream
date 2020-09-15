@@ -71,10 +71,10 @@ namespace thekogans {
             /// ServerUDPSocket::Context. Call Context::CreateStream () to recreate a
             /// ServerUDPSocket from rest. Where you go with it from there is entirely
             /// up to you, but may I recommend: \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Context>.
-                typedef std::unique_ptr<Context> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
+                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
 
                 /// \brief
                 /// "ServerUDPSocket"
@@ -192,10 +192,10 @@ namespace thekogans {
             /// Connection encapsulates the new connection data. Since ServerUDPSocket
             /// has no idea what you're planning to do with the first dgram, it sends
             /// it along with the new socket.
-            struct _LIB_THEKOGANS_STREAM_DECL Connection {
+            struct _LIB_THEKOGANS_STREAM_DECL Connection : public util::ThreadSafeRefCounted {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Connection>.
-                typedef std::unique_ptr<Connection> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Connection>.
+                typedef util::ThreadSafeRefCounted::Ptr<Connection> Ptr;
 
                 /// \brief
                 /// Connection has a private heap to help with memory
@@ -240,7 +240,7 @@ namespace thekogans {
             /// an AsyncIoEventQueue, and return new connections through
             /// \see{AsyncIoEventSink::HandleServerUDPSocketConnection}.
             /// \return The new connection info.
-            Connection::UniquePtr Accept ();
+            Connection::Ptr Accept ();
 
         protected:
             // Stream

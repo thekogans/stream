@@ -43,10 +43,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a serialized LoggerMgr entry.
-            struct _LIB_THEKOGANS_STREAM_DECL Entry {
+            struct _LIB_THEKOGANS_STREAM_DECL Entry : public util::ThreadSafeRefCounted {
                 /// \brief
-                /// Convenient typedef for std::unique_ptr<Entry>.
-                typedef std::unique_ptr<Entry> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Entry>.
+                typedef util::ThreadSafeRefCounted::Ptr<Entry> Ptr;
 
                 /// \brief
                 /// "Entry"

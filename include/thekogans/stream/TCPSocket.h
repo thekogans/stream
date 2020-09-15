@@ -221,24 +221,9 @@ namespace thekogans {
             /// ConnectOverlapped is a helper class. It reduces code clutter and makes
             /// instantiating Overlapped used by \see{TCPSocket::Connect} easier.
             struct ConnectOverlapped : public AsyncInfo::Overlapped {
-                /// \struct TCPSocket::ConnectOverlapped::Deleter TCPSocket.h thekogans/stream/TCPSocket.h
-                ///
                 /// \brief
-                /// Custom deleter for ConnectOverlapped. This class is
-                /// necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] connectOverlapped ConnectOverlapped to delete.
-                    void operator () (ConnectOverlapped *connectOverlapped) {
-                        if (connectOverlapped != 0) {
-                            delete connectOverlapped;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<ConnectOverlapped, Deleter>.
-                typedef std::unique_ptr<ConnectOverlapped, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ConnectOverlapped>.
+                typedef util::ThreadSafeRefCounted::Ptr<ConnectOverlapped> Ptr;
 
                 /// \brief
                 /// ConnectOverlapped has a private heap to help with memory
@@ -269,25 +254,9 @@ namespace thekogans {
             /// AcceptOverlapped is a helper class. It reduces code clutter and makes
             /// instantiating Overlapped used by \see{TCPSocket::Accept} easier.
             struct AcceptOverlapped : public AsyncInfo::Overlapped {
-                /// \struct TCPSocket::AcceptOverlapped::Deleter
-                /// Stream.h thekogans/stream/Stream.h
-                ///
                 /// \brief
-                /// Custom deleter for AcceptOverlapped. This class is
-                /// necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] acceptOverlapped AcceptOverlapped to delete.
-                    void operator () (AcceptOverlapped *acceptOverlapped) {
-                        if (acceptOverlapped != 0) {
-                            delete acceptOverlapped;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<AcceptOverlapped, Deleter>.
-                typedef std::unique_ptr<AcceptOverlapped, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AcceptOverlapped>.
+                typedef util::ThreadSafeRefCounted::Ptr<AcceptOverlapped> Ptr;
 
                 /// \brief
                 /// AcceptOverlapped has a private heap to help with memory
@@ -342,25 +311,9 @@ namespace thekogans {
             /// ShutdownOverlapped is a helper class. It reduces code clutter and makes
             /// instantiating Overlapped used by \see{TCPSocket::Shutdown} easier.
             struct ShutdownOverlapped : public AsyncInfo::Overlapped {
-                /// \struct TCPSocket::ShutdownOverlapped::Deleter
-                /// Stream.h thekogans/stream/Stream.h
-                ///
                 /// \brief
-                /// Custom deleter for ShutdownOverlapped. This class is
-                /// necessary to shutup msvc.
-                struct Deleter {
-                    /// \brief
-                    /// Called by unique_ptr::~unique_ptr.
-                    /// \param[in] shutdownOverlapped ShutdownOverlapped to delete.
-                    void operator () (ShutdownOverlapped *shutdownOverlapped) {
-                        if (shutdownOverlapped != 0) {
-                            delete shutdownOverlapped;
-                        }
-                    }
-                };
-                /// \brief
-                /// Convenient typedef for std::unique_ptr<ShutdownOverlapped, Deleter>.
-                typedef std::unique_ptr<ShutdownOverlapped, Deleter> UniquePtr;
+                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ShutdownOverlapped>.
+                typedef util::ThreadSafeRefCounted::Ptr<ShutdownOverlapped> Ptr;
 
                 /// \brief
                 /// ShutdownOverlapped has a private heap to help with memory
@@ -474,7 +427,7 @@ namespace thekogans {
                 ShutdownBufferInfo (
                     TCPSocket &tcpSocket_,
                     ShutdownType shutdownType_) :
-                    BufferInfo (AsyncInfo::EventShutdown),
+                    BufferInfo (tcpSocket_, AsyncInfo::EventShutdown),
                     tcpSocket (tcpSocket_),
                     shutdownType (shutdownType_) {}
 

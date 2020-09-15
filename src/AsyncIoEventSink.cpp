@@ -97,11 +97,11 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleServerUDPSocketConnection (
                 ServerUDPSocket &serverUDPSocket,
-                ServerUDPSocket::Connection::UniquePtr connection) throw () {
+                ServerUDPSocket::Connection::Ptr connection) throw () {
             if (next.Get () != 0) {
                 next->HandleServerUDPSocketConnection (
                     serverUDPSocket,
-                    std::move (connection));
+                    connection);
             }
         }
 
