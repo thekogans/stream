@@ -950,14 +950,14 @@ namespace thekogans {
             /// the stream to initialize itself. When this function is called,
             /// the stream is already async, and Stream::AsyncInfo has been
             /// created. At this point the stream should do whatever
-            /// stream specific initialization it needs to do.
+            /// stream specific initialization it needs to.
             virtual void InitAsyncIo () = 0;
             /// \brief
             /// Used by the \see{AsyncIoEventQueue::DeleteStream} to allow
-            /// the stream to cleanup itself. When this function is called,
-            /// the stream is no longer async, and Stream::AsyncInfo has been
-            /// created. At this point the stream should do whatever
-            /// stream specific deinitialization it needs to do.
+            /// the stream to cleanup after itself. When this function is
+            /// called, the stream is no longer async. At this point the
+            /// stream should do whatever stream specific deinitialization
+            /// it needs to.
             virtual void TerminateAsyncIo () {}
             /// \brief
             /// Used by the \see{AsyncIoEventQueue} to notify the stream

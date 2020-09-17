@@ -122,7 +122,7 @@ namespace thekogans {
             if (next.Get () != 0) {
                 next->HandleServerSecureUDPSocketConnection (
                     serverSecureUDPSocket,
-                    std::move (connection));
+                    connection);
             }
         }
 
