@@ -35,7 +35,7 @@ namespace thekogans {
                             pugi::xml_parse_result result =
                                 document.load_file (path.c_str ());
                             if (result) {
-                                eventQueue.reset (new stream::AsyncIoEventQueue ());
+                                eventQueue.Reset (new stream::AsyncIoEventQueue);
                                 eventQueue->AddStream (
                                     *stream::ServerSecureUDPSocket::Context (
                                         document.document_element ()).CreateStream (),
@@ -65,7 +65,7 @@ namespace thekogans {
                         jobQueue.Stop ();
                         eventQueue->Break ();
                         Wait ();
-                        eventQueue.reset ();
+                        eventQueue.Reset ();
                     }
                     else {
                         THEKOGANS_UTIL_LOG_WARNING (

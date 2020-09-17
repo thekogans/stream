@@ -33,7 +33,7 @@ namespace thekogans {
                     if (!addresses.empty ()) {
                         if (maxPacketSize > 0 && maxPacketSize <= DEFAULT_MAX_PACKET_SIZE) {
                             if (done) {
-                                eventQueue.reset (new AsyncIoEventQueue ());
+                                eventQueue.Reset (new AsyncIoEventQueue);
                                 for (std::list<Address>::const_iterator
                                         it = addresses.begin (),
                                         end = addresses.end (); it != end; ++it) {
@@ -73,7 +73,7 @@ namespace thekogans {
                         jobQueue.Stop ();
                         eventQueue->Break ();
                         Wait ();
-                        eventQueue.reset ();
+                        eventQueue.Reset ();
                     }
                     else {
                         THEKOGANS_UTIL_LOG_WARNING (

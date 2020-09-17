@@ -758,12 +758,10 @@ namespace thekogans {
                     /// \param[in] event_ Write event associated with this buffer.
                     BufferInfo (
                         Stream &stream_,
-                        util::ui32 event_) :
-                        stream (&stream_),
-                        event (event_) {}
+                        util::ui32 event_);
                     /// \brief
                     /// Virtual dtor.
-                    virtual ~BufferInfo () {}
+                    virtual ~BufferInfo ();
 
                     /// \brief
                     /// Used by \see{AsyncInfo::WriteBuffers} to write the
@@ -878,10 +876,19 @@ namespace thekogans {
                 /// \param[in] overlapped Overlapped to add.
                 void AddOverlapped (Overlapped *overlapped);
                 /// \brief
-                /// Delete an overlapped from the overlappedList.
+                /// Delete an Overlapped from the overlappedList.
                 /// \param[in] overlapped Overlapped to delete.
                 void DeleteOverlapped (Overlapped *overlapped);
             #else // defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// Add an BufferInfo to the bufferInfoList.
+                /// \param[in] bufferInfo BufferInfo to add.
+                void AddBufferInfo (BufferInfo *bufferInfo);
+                /// \brief
+                /// Delete an BufferInfo from the overlappedList.
+                /// \param[in] bufferInfo BufferInfo to delete.
+                void DeleteBufferInfo (BufferInfo *bufferInfo);
+
                 /// \brief
                 /// Adds \see{AsyncIoEventQueue} events the stream is
                 /// interested in.
@@ -894,20 +901,10 @@ namespace thekogans {
                 /// longer interested in.
                 void DeleteStreamForEvents (util::ui32 events);
                 /// \brief
-                /// Used by an async Stream::Write to put a
-                /// partially written buffer back on the queue.
-                /// \param[in] buffer Buffer to queue.
-                void EnqBufferFront (BufferInfo::Ptr buffer);
-                /// \brief
                 /// When a user calls Stream::Write, if the stream
-                /// is async, to queue the buffer for writing.
+                /// is async, queue the buffer for writing.
                 /// \param[in] buffer Buffer to queue.
-                void EnqBufferBack (BufferInfo::Ptr buffer);
-                /// \brief
-                /// Called by Stream::Write to remove the head
-                /// buffer from the queue and put it on the wire
-                /// \return Head buffer.
-                BufferInfo::Ptr DeqBuffer ();
+                void EnqBuffer (BufferInfo::Ptr buffer);
                 /// \brief
                 /// Called by \see{Stream::HandleAsyncEvent} when processing
                 /// the EventWrite, EventWriteTo and EventWriteMsg events.

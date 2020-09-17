@@ -33,7 +33,7 @@ namespace thekogans {
                         util::i32 priority) {
                     if (done) {
                         if (!addresses.empty ()) {
-                            eventQueue.reset (new stream::AsyncIoEventQueue);
+                            eventQueue.Reset (new stream::AsyncIoEventQueue);
                             for (std::list<stream::Address>::const_iterator
                                     it = addresses.begin (),
                                     end = addresses.end (); it != end; ++it) {
@@ -64,7 +64,7 @@ namespace thekogans {
                         jobQueue.Stop ();
                         eventQueue->Break ();
                         Wait ();
-                        eventQueue.reset ();
+                        eventQueue.Reset ();
                     }
                     else {
                         THEKOGANS_UTIL_LOG_WARNING (

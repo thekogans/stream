@@ -72,7 +72,7 @@ namespace thekogans {
                     overlapped.Reset (new TimedOverlapped);
                 }
                 if (!ReadFile (handle, buffer, (DWORD)count,
-                        overlapped.get () == 0 ? 0 : &countRead, overlapped.Get ())) {
+                        overlapped.Get () == 0 ? 0 : &countRead, overlapped.Get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode == ERROR_IO_PENDING) {
                         countRead = overlapped->Wait (handle, readTimeout);
@@ -157,7 +157,7 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
+                    asyncInfo->EnqBuffer (
                         AsyncInfo::BufferInfo::Ptr (
                             new AsyncInfo::WriteBufferInfo (*this, buffer, count)));
                 }
@@ -203,7 +203,7 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
+                    asyncInfo->EnqBuffer (
                         AsyncInfo::BufferInfo::Ptr (
                             new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
                 #endif // defined (TOOLCHAIN_OS_Windows)

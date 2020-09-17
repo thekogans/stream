@@ -90,7 +90,7 @@ namespace {
                 totalBytes (0),
                 bandwidth (0.0f) {
             stream::GlobalAsyncIoEventQueue::Instance ().SetTimeoutPolicy (
-                stream::AsyncIoEventQueue::TimeoutPolicy::UniquePtr (
+                stream::AsyncIoEventQueue::TimeoutPolicy::Ptr (
                     new stream::AsyncIoEventQueue::DefaultTimeoutPolicy (
                         stream::GlobalAsyncIoEventQueue::Instance ())));
         }

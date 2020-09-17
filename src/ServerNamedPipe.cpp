@@ -127,7 +127,11 @@ namespace thekogans {
             }
             if (!ConnectNamedPipe (handle, overlapped.Get ())) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                if (errorCode != ERROR_IO_PENDING) {
+                if (errorCode == ERROR_PIPE_CONNECTED) {
+                    HandleOverlapped (*overlapped);
+                    return;
+                }
+                else if (errorCode != ERROR_IO_PENDING) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }

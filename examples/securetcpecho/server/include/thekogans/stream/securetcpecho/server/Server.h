@@ -39,7 +39,7 @@ namespace thekogans {
                 private:
                     bool useWriteQueue;
                     util::JobQueue jobQueue;
-                    stream::AsyncIoEventQueue::UniquePtr eventQueue;
+                    stream::AsyncIoEventQueue::Ptr eventQueue;
                     volatile bool done;
 
                 public:

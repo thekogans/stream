@@ -184,7 +184,6 @@ namespace thekogans {
                 Stream &stream,
                 AsyncIoEventSink &eventSink,
                 std::size_t bufferLength) {
-            util::LockGuard<util::SpinLock> guard (spinLock);
             if (stream.IsOpen () && !stream.IsAsync ()) {
                 // Adding the same stream to the queue is stupid but harmless.
                 if (!registryList.contains (&stream)) {
@@ -195,11 +194,14 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                    stream.asyncInfo.Reset (
+                    {
+                        util::LockGuard<util::SpinLock> guard (spinLock);
+                        registryList.push_back (&stream);
+                    }
+                    stream.AddRef ();
+                    stream.asyncInfo.Reset(
                         new Stream::AsyncInfo (*this, stream, eventSink, bufferLength));
                     stream.InitAsyncIo ();
-                    stream.AddRef ();
-                    registryList.push_back (&stream);
                 }
             }
             else {
@@ -209,7 +211,6 @@ namespace thekogans {
         }
 
         void AsyncIoEventQueue::DeleteStream (Stream &stream) {
-            util::LockGuard<util::SpinLock> guard (spinLock);
             if (stream.IsAsync () && &stream.asyncInfo->eventQueue == this) {
                 // This check alows you to call DeleteStream
                 // multiple times with all but the first time
@@ -222,10 +223,12 @@ namespace thekogans {
                         DeleteStreamForEvents (stream, stream.asyncInfo->events);
                     #endif // defined (TOOLCHAIN_OS_Windows)
                     }
-                    registryList.erase (&stream);
-                    timedStreamsList.erase (&stream);
+                    {
+                        util::LockGuard<util::SpinLock> guard (spinLock);
+                        registryList.erase (&stream);
+                        timedStreamsList.erase (&stream);
+                    }
                     stream.asyncInfo->ReleaseResources ();
-                    stream.asyncInfo.Reset ();
                     stream.Release ();
                 }
             }

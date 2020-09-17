@@ -153,7 +153,7 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
+                    asyncInfo->EnqBuffer (
                         AsyncInfo::BufferInfo::Ptr (
                             new AsyncInfo::WriteBufferInfo (*this, buffer, count)));
                 }
@@ -192,9 +192,9 @@ namespace thekogans {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
-                    overlapped.release ();
+                    overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
+                    asyncInfo->EnqBuffer (
                         AsyncInfo::BufferInfo::Ptr (
                             new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
                 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -285,7 +285,7 @@ namespace thekogans {
         void TCPSocket::Disconnect (bool reuseSocket) {
             AsyncInfo::Overlapped::Ptr overlapped;
             if (IsAsync ()) {
-                overlapped.reset (new AsyncInfo::Overlapped (*this, AsyncInfo::EventDisconnect));
+                overlapped.Reset (new AsyncInfo::Overlapped (*this, AsyncInfo::EventDisconnect));
             }
             if (!WindowsFunctions::Instance ().DisconnectEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
@@ -488,7 +488,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 PostAsyncShutdown (shutdownType);
             #else // defined (TOOLCHAIN_OS_Windows)
-                asyncInfo->EnqBufferBack (
+                asyncInfo->EnqBuffer (
                     AsyncInfo::BufferInfo::Ptr (
                         new ShutdownBufferInfo (*this, shutdownType)));
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -582,7 +582,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-            overlapped.release ();
+            overlapped.Release ();
         }
 
         void TCPSocket::PostAsyncRead (bool useGetBuffer) {

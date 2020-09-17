@@ -54,7 +54,7 @@ namespace thekogans {
                         util::ui32 affinity) {
                     if (done) {
                         if (!addresses.empty ()) {
-                            eventQueue.reset (new AsyncIoEventQueue ());
+                            eventQueue.Reset (new AsyncIoEventQueue);
                             for (std::list<Address>::const_iterator
                                     it = addresses.begin (),
                                     end = addresses.end (); it != end; ++it) {
@@ -86,7 +86,7 @@ namespace thekogans {
                         jobQueue.Stop ();
                         eventQueue->Break ();
                         Wait ();
-                        eventQueue.reset ();
+                        eventQueue.Reset ();
                     }
                     else {
                         THEKOGANS_UTIL_LOG_WARNING (

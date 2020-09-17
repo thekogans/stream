@@ -289,6 +289,8 @@ namespace thekogans {
         }
 
         Stream::AsyncInfo::~AsyncInfo () {
+            // NOTE: If these asserts fire, it's because
+            // ReleaseResources (below) was not called.
         #if defined (TOOLCHAIN_OS_Windows)
             assert (overlappedList.empty ());
         #else // defined (TOOLCHAIN_OS_Windows)
@@ -346,10 +348,10 @@ namespace thekogans {
                 stream->asyncInfo->eventQueue.AddTimedStream (*stream);
             }
             stream->asyncInfo->AddOverlapped (this);
+            stream->asyncInfo->AddRef ();
         }
 
         Stream::AsyncInfo::Overlapped::~Overlapped () {
-            stream->asyncInfo->DeleteOverlapped (this);
             if (deadline != util::TimeSpec::Zero) {
                 bool timed = false;
                 {
@@ -368,6 +370,8 @@ namespace thekogans {
                     stream->asyncInfo->eventQueue.DeleteTimedStream (*stream);
                 }
             }
+            stream->asyncInfo->DeleteOverlapped (this);
+            stream->asyncInfo->Release ();
         }
 
         util::ui64 Stream::AsyncInfo::Overlapped::GetOffset () const {
@@ -506,6 +510,20 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT));
         }
     #else // defined (TOOLCHAIN_OS_Windows)
+        Stream::AsyncInfo::BufferInfo::BufferInfo (
+                Stream &stream_,
+                util::ui32 event_) :
+                stream (&stream_),
+                event (event_) {
+            stream->asyncInfo->AddBufferInfo (this);
+            stream->asyncInfo->AddRef ();
+        }
+
+        Stream::AsyncInfo::BufferInfo::~BufferInfo () {
+            stream->asyncInfo->DeleteBufferInfo (this);
+            stream->asyncInfo->Release ();
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (
             Stream::AsyncInfo::WriteBufferInfo, util::SpinLock)
 
@@ -544,6 +562,30 @@ namespace thekogans {
             return false;
         }
 
+        void Stream::AsyncInfo::AddBufferInfo (BufferInfo *bufferInfo) {
+            if (bufferInfo != 0) {
+                util::LockGuard<util::SpinLock> guard (spinLock);
+                assert (!bufferInfoList.contains (bufferInfo));
+                bufferInfoList.push_back (bufferInfo);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void Stream::AsyncInfo::DeleteBufferInfo (BufferInfo *bufferInfo) {
+            if (bufferInfo != 0) {
+                util::LockGuard<util::SpinLock> guard (spinLock);
+                assert (bufferInfoList.contains (bufferInfo));
+                bufferInfoList.erase (bufferInfo);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         void Stream::AsyncInfo::AddStreamForEvents (util::ui32 events) {
             eventQueue.AddStreamForEvents (stream, events);
         }
@@ -552,11 +594,12 @@ namespace thekogans {
             eventQueue.DeleteStreamForEvents (stream, events);
         }
 
-        void Stream::AsyncInfo::EnqBufferFront (BufferInfo::Ptr bufferInfo) {
+        void Stream::AsyncInfo::EnqBuffer (BufferInfo::Ptr bufferInfo) {
             if (bufferInfo.Get () != 0) {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 eventQueue.AddStreamForEvents (stream, bufferInfo->event);
-                bufferInfoList.push_front (bufferInfo.Release ());
+                // We take ownership of the BufferInfo.
+                bufferInfo.Release ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -564,24 +607,35 @@ namespace thekogans {
             }
         }
 
-        void Stream::AsyncInfo::EnqBufferBack (BufferInfo::Ptr bufferInfo) {
-            if (bufferInfo.Get () != 0) {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                eventQueue.AddStreamForEvents (stream, bufferInfo->event);
-                bufferInfoList.push_back (bufferInfo.Release ());
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        Stream::AsyncInfo::BufferInfo::Ptr Stream::AsyncInfo::DeqBuffer () {
-            util::LockGuard<util::SpinLock> guard (spinLock);
-            BufferInfo::Ptr bufferInfo;
-            if (!bufferInfoList.empty ()) {
-                bufferInfo.Reset (bufferInfoList.pop_front ());
-                if (bufferInfoList.empty ()) {
+        void Stream::AsyncInfo::WriteBuffers () {
+            while (1) {
+                BufferInfo *bufferInfo = 0;
+                {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    bufferInfo = bufferInfoList.front ();
+                }
+                if (bufferInfo != 0) {
+                    ssize_t countWritten = bufferInfo->Write ();
+                    if (countWritten > 0) {
+                        if (bufferInfo->Notify ()) {
+                            // We're done writing this buffer.
+                            bufferInfo->Release ();
+                        }
+                    }
+                    else if (countWritten == 0) {
+                        eventSink.HandleStreamDisconnect (stream);
+                        break;
+                    }
+                    else {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                        if (errorCode != EAGAIN && errorCode != EWOULDBLOCK) {
+                            eventSink.HandleStreamError (stream,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                        }
+                        break;
+                    }
+                }
+                else {
                     eventQueue.DeleteStreamForEvents (
                         stream,
                         EventConnect |
@@ -589,36 +643,7 @@ namespace thekogans {
                         EventWrite |
                         EventWriteTo |
                         EventWriteMsg);
-                }
-            }
-            return bufferInfo;
-        }
-
-        void Stream::AsyncInfo::WriteBuffers () {
-            for (BufferInfo::Ptr bufferInfo = DeqBuffer ();
-                    bufferInfo.Get () != 0; bufferInfo = DeqBuffer ()) {
-                while (1) {
-                    ssize_t countWritten = bufferInfo->Write ();
-                    if (countWritten > 0) {
-                        if (bufferInfo->Notify ()) {
-                            break;
-                        }
-                    }
-                    else if (countWritten == 0) {
-                        eventSink.HandleStreamDisconnect (stream);
-                        return;
-                    }
-                    else {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                        if (errorCode == EAGAIN || errorCode == EWOULDBLOCK) {
-                            EnqBufferFront (bufferInfo);
-                        }
-                        else {
-                            eventSink.HandleStreamError (stream,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                        }
-                        return;
-                    }
+                    break;
                 }
             }
         }
