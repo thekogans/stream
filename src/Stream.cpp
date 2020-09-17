@@ -352,6 +352,7 @@ namespace thekogans {
         }
 
         Stream::AsyncInfo::Overlapped::~Overlapped () {
+            stream->asyncInfo->DeleteOverlapped (this);
             if (deadline != util::TimeSpec::Zero) {
                 bool timed = false;
                 {
@@ -370,7 +371,6 @@ namespace thekogans {
                     stream->asyncInfo->eventQueue.DeleteTimedStream (*stream);
                 }
             }
-            stream->asyncInfo->DeleteOverlapped (this);
             stream->asyncInfo->Release ();
         }
 

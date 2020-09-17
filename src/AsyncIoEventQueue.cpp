@@ -229,6 +229,7 @@ namespace thekogans {
                         timedStreamsList.erase (&stream);
                     }
                     stream.asyncInfo->ReleaseResources ();
+                    stream.TerminateAsyncIo ();
                     stream.Release ();
                 }
             }
