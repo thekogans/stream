@@ -157,8 +157,8 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBuffer (
-                        AsyncInfo::BufferInfo::Ptr (
+                    asyncInfo->EnqBufferBack (
+                        AsyncInfo::BufferInfo::UniquePtr (
                             new AsyncInfo::WriteBufferInfo (*this, buffer, count)));
                 }
                 else {
@@ -193,8 +193,8 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBuffer (
-                        AsyncInfo::BufferInfo::Ptr (
+                    asyncInfo->EnqBufferBack (
+                        AsyncInfo::BufferInfo::UniquePtr (
                             new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -265,8 +265,8 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBuffer (
-                        AsyncInfo::BufferInfo::Ptr (
+                    asyncInfo->EnqBufferBack (
+                        AsyncInfo::BufferInfo::UniquePtr (
                             new WriteToBufferInfo (
                                 *this, buffer, count, address)));
                 }
@@ -308,8 +308,8 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBuffer (
-                        AsyncInfo::BufferInfo::Ptr (
+                    asyncInfo->EnqBufferBack (
+                        AsyncInfo::BufferInfo::UniquePtr (
                             new WriteToBufferInfo (
                                 *this, std::move (buffer), address)));
                 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -399,8 +399,8 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBuffer (
-                        AsyncInfo::BufferInfo::Ptr (
+                    asyncInfo->EnqBufferBack (
+                        AsyncInfo::BufferInfo::UniquePtr (
                             new WriteMsgBufferInfo (
                                 *this, buffer, count, from, to)));
                 }
@@ -442,8 +442,8 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBuffer (
-                        AsyncInfo::BufferInfo::Ptr (
+                    asyncInfo->EnqBufferBack (
+                        AsyncInfo::BufferInfo::UniquePtr (
                             new WriteMsgBufferInfo (
                                 *this, std::move (buffer), from, to)));
                 #endif // defined (TOOLCHAIN_OS_Windows)

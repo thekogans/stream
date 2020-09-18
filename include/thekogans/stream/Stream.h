@@ -738,12 +738,14 @@ namespace thekogans {
                 /// BufferInfo is a virtual base for buffers used for async
                 /// Stream::Write. Various derivatives represent concrete
                 /// BufferInfo for Write, WriteTo and WriteMsg.
+                /// NOTE: Unlike Windows Overlapped (above), BufferInfo is
+                /// entirely owned by AsyncInfo and does not need to be
+                /// reference counted.
                 struct BufferInfo :
-                        public BufferInfoList::Node,
-                        public util::ThreadSafeRefCounted {
+                        public BufferInfoList::Node {
                     /// \brief
-                    /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<BufferInfo>.
-                    typedef util::ThreadSafeRefCounted::Ptr<BufferInfo> Ptr;
+                    /// Convenient typedef for std::unique_ptr<BufferInfo>.
+                    typedef std::unique_ptr<BufferInfo> UniquePtr;
 
                     /// \brief
                     /// Stream that created this BufferInfo.
@@ -758,10 +760,12 @@ namespace thekogans {
                     /// \param[in] event_ Write event associated with this buffer.
                     BufferInfo (
                         Stream &stream_,
-                        util::ui32 event_);
+                        util::ui32 event_) :
+                        stream (&stream_),
+                        event (event_) {}
                     /// \brief
                     /// Virtual dtor.
-                    virtual ~BufferInfo ();
+                    virtual ~BufferInfo () {}
 
                     /// \brief
                     /// Used by \see{AsyncInfo::WriteBuffers} to write the
@@ -881,15 +885,6 @@ namespace thekogans {
                 void DeleteOverlapped (Overlapped *overlapped);
             #else // defined (TOOLCHAIN_OS_Windows)
                 /// \brief
-                /// Add an BufferInfo to the bufferInfoList.
-                /// \param[in] bufferInfo BufferInfo to add.
-                void AddBufferInfo (BufferInfo *bufferInfo);
-                /// \brief
-                /// Delete an BufferInfo from the overlappedList.
-                /// \param[in] bufferInfo BufferInfo to delete.
-                void DeleteBufferInfo (BufferInfo *bufferInfo);
-
-                /// \brief
                 /// Adds \see{AsyncIoEventQueue} events the stream is
                 /// interested in.
                 /// \param[in] events Events the stream is interested in.
@@ -901,10 +896,20 @@ namespace thekogans {
                 /// longer interested in.
                 void DeleteStreamForEvents (util::ui32 events);
                 /// \brief
-                /// When a user calls Stream::Write, if the stream
-                /// is async, queue the buffer for writing.
+                /// Used by an async Stream::Write to put a
+                /// partially written buffer back on the queue.
                 /// \param[in] buffer Buffer to queue.
-                void EnqBuffer (BufferInfo::Ptr buffer);
+                void EnqBufferFront (BufferInfo::UniquePtr buffer);
+                /// \brief
+                /// When a user calls Stream::Write, if the stream
+                /// is async, to queue the buffer for writing.
+                /// \param[in] buffer Buffer to queue.
+                void EnqBufferBack (BufferInfo::UniquePtr buffer);
+                /// \brief
+                /// Called by Stream::Write to remove the head
+                /// buffer from the queue and put it on the wire
+                /// \return Head buffer.
+                BufferInfo::UniquePtr DeqBuffer ();
                 /// \brief
                 /// Called by \see{Stream::HandleAsyncEvent} when processing
                 /// the EventWrite, EventWriteTo and EventWriteMsg events.
