@@ -270,6 +270,9 @@ namespace thekogans {
                         THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                     if (errorCode != EINPROGRESS) {
+                        if (IsAsync ()) {
+                            asyncInfo->DeleteStreamForEvents (AsyncInfo::EventConnect);
+                        }
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }

@@ -373,7 +373,7 @@ namespace thekogans {
                     stream->asyncInfo->eventQueue.DeleteTimedStream (*stream);
                 }
             }
-            stream->asyncInfo->Release ();
+            stream->Release ();
         }
 
         util::ui64 Stream::AsyncInfo::Overlapped::GetOffset () const {
