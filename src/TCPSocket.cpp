@@ -344,9 +344,9 @@ namespace thekogans {
 
                 Registry (
                         HKEY root,
-                        const char *subKey) :
+                        const wchar_t *subKey) :
                         key (0) {
-                    if (RegOpenKeyEx (root, subKey, 0, KEY_READ, &key) != ERROR_SUCCESS) {
+                    if (RegOpenKeyExW (root, subKey, 0, KEY_READ, &key) != ERROR_SUCCESS) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
@@ -356,11 +356,11 @@ namespace thekogans {
                 }
 
                 DWORD GetDWORD (
-                        const char *valueName,
+                        const wchar_t *valueName,
                         DWORD valueDefault) const {
                     DWORD value = 0;
                     DWORD valueSize = sizeof (DWORD);
-                    if (RegQueryValueEx (key, valueName, 0, 0,
+                    if (RegQueryValueExW (key, valueName, 0, 0,
                             (LPBYTE)&value, &valueSize) != ERROR_SUCCESS) {
                         value = valueDefault;
                     }
@@ -373,8 +373,8 @@ namespace thekogans {
                     idleTime *= 1000 :
                     Registry (
                         HKEY_LOCAL_MACHINE,
-                        "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters").GetDWORD (
-                            "KeepAliveTime",
+                        L"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters").GetDWORD (
+                            L"KeepAliveTime",
                             DEFAULT_KEEPALIVE_TIME);
             }
 
@@ -383,8 +383,8 @@ namespace thekogans {
                     interval *= 1000 :
                     Registry (
                         HKEY_LOCAL_MACHINE,
-                        "SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters").GetDWORD (
-                            "KeepAliveInterval",
+                        L"SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters").GetDWORD (
+                            L"KeepAliveInterval",
                             DEFAULT_KEEPALIVE_INTERVAL);
             }
         }

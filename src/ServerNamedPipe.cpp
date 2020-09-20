@@ -20,6 +20,7 @@
 #include <sstream>
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/WindowsUtils.h"
 #include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerNamedPipe.h"
 
@@ -109,10 +110,15 @@ namespace thekogans {
             else {
                 dwPipeMode |= PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE;
             }
-            handle = CreateNamedPipe (address.GetPath ().c_str (),
+            handle = CreateNamedPipeW (
+                util::UTF8ToUTF16 (address.GetPath ()).c_str (),
                 PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
-                dwPipeMode, PIPE_UNLIMITED_INSTANCES,
-                bufferSize, bufferSize, INFINITE, &sa);
+                dwPipeMode,
+                PIPE_UNLIMITED_INSTANCES,
+                bufferSize,
+                bufferSize,
+                INFINITE,
+                &sa);
             if (!IsOpen ()) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);

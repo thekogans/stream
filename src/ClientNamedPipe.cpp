@@ -20,6 +20,7 @@
 #include <sstream>
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/WindowsUtils.h"
 #include "thekogans/stream/ClientNamedPipe.h"
 
 namespace thekogans {
@@ -91,11 +92,18 @@ namespace thekogans {
                 const Address &address,
                 PipeType pipeType,
                 DWORD timeout) {
+            std::wstring path = util::UTF8ToUTF16 (address.GetPath ());
             while (!IsOpen ()) {
-                handle = CreateFile (address.GetPath ().c_str (), GENERIC_READ | GENERIC_WRITE,
-                    0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, 0);
+                handle = CreateFileW (
+                    path.c_str (),
+                    GENERIC_READ | GENERIC_WRITE,
+                    0,
+                    0,
+                    OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
+                    0);
                 if (IsOpen () || THEKOGANS_UTIL_OS_ERROR_CODE != ERROR_PIPE_BUSY ||
-                        !WaitNamedPipe (address.GetPath ().c_str (), timeout)) {
+                        !WaitNamedPipeW (path.c_str (), timeout)) {
                     break;
                 }
             }
