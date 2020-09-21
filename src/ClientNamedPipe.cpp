@@ -33,7 +33,6 @@ namespace thekogans {
         const char * const ClientNamedPipe::Context::TAG_PIPE_TYPE = "PipeType";
         const char * const ClientNamedPipe::Context::VALUE_BYTE = "byte";
         const char * const ClientNamedPipe::Context::VALUE_MESSAGE = "message";
-        const char * const ClientNamedPipe::Context::TAG_TIMEOUT = "Timeout";
 
         void ClientNamedPipe::Context::Parse (const pugi::xml_node &node) {
             Stream::Context::Parse (node);
@@ -50,9 +49,6 @@ namespace thekogans {
                         else if (childName == TAG_PIPE_TYPE) {
                             pipeType = std::string (child.text ().get ()) == VALUE_BYTE ?
                                 NamedPipe::Byte : NamedPipe::Message;
-                        }
-                        else if (childName == TAG_TIMEOUT) {
-                            timeout = util::stringToui32 (child.text ().get ());
                         }
                     }
                 }
@@ -76,9 +72,6 @@ namespace thekogans {
                         util::OpenTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
                             (pipeType == NamedPipe::Byte ? VALUE_BYTE : VALUE_MESSAGE) <<
                         util::CloseTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
-                        util::OpenTag (indentationLevel + 1, TAG_TIMEOUT) <<
-                            util::ui32Tostring (timeout) <<
-                        util::CloseTag (indentationLevel + 1, TAG_TIMEOUT) <<
                     util::CloseTag (indentationLevel, tagName);
                 return stream.str ();
             }
