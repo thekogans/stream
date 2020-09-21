@@ -293,6 +293,13 @@ namespace thekogans {
             /// dtor. Close the queue handle.
             virtual ~AsyncIoEventQueue ();
 
+            /// \brief
+            /// Return the queue handle.
+            /// \return Queue handle.
+            inline THEKOGANS_UTIL_HANDLE GetHandle () const {
+                return handle;
+            }
+
             enum {
                 /// \brief
                 /// Default buffer length for async WSARecv[From | Msg].

@@ -36,6 +36,7 @@ namespace thekogans {
     namespace stream {
 
     #if defined (TOOLCHAIN_OS_Windows)
+        struct ClientNamedPipe;
         struct ServerNamedPipe;
     #endif // defined (TOOLCHAIN_OS_Windows)
         struct ServerTCPSocket;
@@ -167,6 +168,12 @@ namespace thekogans {
                 util::Buffer buffer) throw ();
 
         #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Called to report a connection on a \see{ServerNamedPipe}.
+            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
+            /// the connection occurred.
+            virtual void HandleClientNamedPipeConnected (
+                ClientNamedPipe &clientNamedPipe) throw ();
             /// \brief
             /// Called to report a connection on a \see{ServerNamedPipe}.
             /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which

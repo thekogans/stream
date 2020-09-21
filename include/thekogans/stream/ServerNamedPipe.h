@@ -179,7 +179,7 @@ namespace thekogans {
             Address address;
             /// \brief
             /// Pipe type (Byte/Message).
-            NamedPipe::PipeType pipeType;
+            PipeType pipeType;
             /// \brief
             /// Size of receive buffer.
             DWORD bufferSize;

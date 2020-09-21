@@ -59,7 +59,6 @@ namespace thekogans {
             ///     <Address Family = "local"
             ///              Path = "Properly formated named pipe address."/>
             ///     <PipeType>byte or message</PipeType>
-            ///     <Timeout>How long to wait for connection (default: 30 seconds)</Timeout>
             /// </tagName>
             /// to: thekogans::stream::Stream::GetContext (), and it will
             /// return back to you a properly constructed, initialized and
@@ -81,9 +80,6 @@ namespace thekogans {
                 /// \brief
                 /// "message"
                 static const char * const VALUE_MESSAGE;
-                /// \brief
-                /// "Timeout"
-                static const char * const TAG_TIMEOUT;
 
                 /// \brief
                 /// Address of ServerNamedPipe to connect to.
@@ -91,9 +87,6 @@ namespace thekogans {
                 /// \brief
                 /// Pipe type (Byte or Message).
                 PipeType pipeType;
-                /// \brief
-                /// Connection timeout.
-                DWORD timeout;
 
                 /// \brief
                 /// ctor. Parse the node representing a
@@ -103,22 +96,18 @@ namespace thekogans {
                 explicit Context (const pugi::xml_node &node) :
                         Stream::Context (VALUE_CLIENT_NAMED_PIPE),
                         address (Address::Empty),
-                        pipeType (NamedPipe::Byte),
-                        timeout (ClientNamedPipe::DEFAULT_TIMEOUT) {
+                        pipeType (NamedPipe::Byte) {
                     Parse (node);
                 }
                 /// \brief
                 /// ctor.
                 /// \param[in] address_ Address of ServerNamedPipe to connect to.
                 /// \param[in] pipeType_ Pipe type (Byte or Message).
-                /// \param[in] timeout_ Connection timeout.
                 Context (
                     const Address &address_,
-                    PipeType pipeType_,
-                    DWORD timeout_) :
+                    PipeType pipeType_) :
                     address (address_),
-                    pipeType (pipeType_),
-                    timeout (timeout_) {}
+                    pipeType (pipeType_) {}
 
                 /// \brief
                 /// Parse the node representing a
@@ -143,9 +132,16 @@ namespace thekogans {
                 /// \return ClientNamedPipe based on the Context parameters.
                 virtual Stream::Ptr CreateStream () const {
                     return Stream::Ptr (
-                        new ClientNamedPipe (address, pipeType, timeout));
+                        new ClientNamedPipe (address, pipeType));
                 }
             };
+
+            /// \brief
+            /// Address to listen on.
+            Address address;
+            /// \brief
+            /// Pipe type (Byte/Message).
+            PipeType pipeType;
 
         public:
             /// \brief
@@ -160,11 +156,40 @@ namespace thekogans {
             /// ServerNamedPipe at the other end of the address.
             /// \param[in] address Address of ServerNamedPipe to connect to.
             /// \param[in] pipeType Byte/Message (similar to Socket/UDPSocket).
-            /// \param[in] timeout How long to wait for connection before giving up.
             ClientNamedPipe (
-                const Address &address,
-                PipeType pipeType = Byte,
-                DWORD timeout = DEFAULT_TIMEOUT);
+                const Address &address_,
+                PipeType pipeType_ = Byte) :
+                address (address_),
+                pipeType (pipeType_) {}
+
+            /// \brief
+            /// Wait for a server side instance of the pipe to become available for connecting.
+            /// \param[in] timeout How long to wait for connection before giving up.
+            bool Wait (DWORD timeout);
+
+            /// \brief
+            /// Connect to the ServerNamedPipe at the other end of the address.
+            /// NOTE: Client named pipes cannot connect to the server asynchronously.
+            /// Therefore you must call this function before calling \see{AsyncIoEventQueue::AddStream}.
+            /// If you do make the pipe async after calling Connect, the pipe will deliver
+            /// an \see{AsyncIoEventSink::HandleClientNamedPipeConnected} to simulate an
+            /// async connection.
+            void Connect ();
+
+        protected:
+            /// \brief
+            /// Used by the \see{AsyncIoEventQueue} to allow the stream to
+            /// initialize itself. When this function is called, the
+            /// stream is already async, and Stream::AsyncInfo has
+            /// been created. At this point the stream should do
+            /// whatever stream specific initialization it needs to
+            /// do.
+            virtual void InitAsyncIo ();
+            /// \brief
+            /// Used by \see{AsyncIoEventQueue} to notify the stream that
+            /// an overlapped operation has completed successfully.
+            /// \param[in] overlapped Overlapped that completed successfully.
+            virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
 
             /// \brief
             /// Streams are neither copy constructable, nor assignable.

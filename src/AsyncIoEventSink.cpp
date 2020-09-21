@@ -51,6 +51,13 @@ namespace thekogans {
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
+        void AsyncIoEventSink::HandleClientNamedPipeConnected (
+                ClientNamedPipe &clientNamedPipe) throw () {
+            if (next.Get () != 0) {
+                next->HandleClientNamedPipeConnected (clientNamedPipe);
+            }
+        }
+
         void AsyncIoEventSink::HandleServerNamedPipeConnection (
                 ServerNamedPipe &serverNamedPipe) throw () {
             if (next.Get () != 0) {

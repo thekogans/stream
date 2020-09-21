@@ -88,35 +88,65 @@ namespace thekogans {
             }
         }
 
-        ClientNamedPipe::ClientNamedPipe (
-                const Address &address,
-                PipeType pipeType,
-                DWORD timeout) {
-            std::wstring path = util::UTF8ToUTF16 (address.GetPath ());
-            while (!IsOpen ()) {
+        bool ClientNamedPipe::Wait (DWORD timeout) {
+            return WaitNamedPipeW (
+                util::UTF8ToUTF16 (address.GetPath ()).c_str (),
+                timeout) == TRUE;
+        }
+
+        void ClientNamedPipe::Connect () {
+            if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 handle = CreateFileW (
-                    path.c_str (),
+                    util::UTF8ToUTF16 (address.GetPath ()).c_str (),
                     GENERIC_READ | GENERIC_WRITE,
                     0,
                     0,
                     OPEN_EXISTING,
                     FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
                     0);
-                if (IsOpen () || THEKOGANS_UTIL_OS_ERROR_CODE != ERROR_PIPE_BUSY ||
-                        !WaitNamedPipeW (path.c_str (), timeout)) {
-                    break;
+                if (IsOpen ()) {
+                    if (pipeType == Message) {
+                        DWORD dwMode = PIPE_READMODE_MESSAGE;
+                        if (!SetNamedPipeHandleState (handle, &dwMode, 0, 0)) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                THEKOGANS_UTIL_OS_ERROR_CODE);
+                        }
+                    }
                 }
-            }
-            if (!IsOpen ()) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            if (pipeType == Message) {
-                DWORD dwMode = PIPE_READMODE_MESSAGE;
-                if (!SetNamedPipeHandleState (handle, &dwMode, 0, 0)) {
+                else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
+            }
+        }
+
+        void ClientNamedPipe::InitAsyncIo () {
+            AsyncInfo::Overlapped::Ptr overlapped (
+                new AsyncInfo::Overlapped (*this, AsyncInfo::EventConnect));
+            if (!PostQueuedCompletionStatus (
+                    asyncInfo->eventQueue.GetHandle (),
+                    0,
+                    (ULONG_PTR)this,
+                    overlapped.Get ())) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            overlapped.Release ();
+        }
+
+        void ClientNamedPipe::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
+            if (overlapped.event == AsyncInfo::EventConnect) {
+                THEKOGANS_UTIL_TRY {
+                    PostAsyncRead ();
+                    asyncInfo->eventSink.HandleClinetNamedPipeConnected (*this);
+                }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                }
+            }
+            else {
+                NamedPipe::HandleOverlapped (overlapped);
             }
         }
 
