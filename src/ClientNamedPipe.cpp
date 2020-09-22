@@ -21,6 +21,7 @@
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/WindowsUtils.h"
+#include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/ClientNamedPipe.h"
 
 namespace thekogans {
@@ -131,7 +132,7 @@ namespace thekogans {
             if (overlapped.event == AsyncInfo::EventConnect) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncRead ();
-                    asyncInfo->eventSink.HandleClinetNamedPipeConnected (*this);
+                    asyncInfo->eventSink.HandleClientNamedPipeConnected (*this);
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
