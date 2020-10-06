@@ -294,25 +294,19 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             assert (overlappedList.empty ());
         #else // defined (TOOLCHAIN_OS_Windows)
-            assert (bufferInfoList.empty ());
+            struct Callback : public BufferInfoList::Callback {
+                typedef BufferInfoList::Callback::result_type result_type;
+                typedef BufferInfoList::Callback::argument_type argument_type;
+                virtual result_type operator () (argument_type bufferInfo) {
+                    delete bufferInfo;
+                    return true;
+                }
+            } callback;
+            bufferInfoList.clear (callback);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         void Stream::AsyncInfo::ReleaseResources () {
-            {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-            #if !defined (TOOLCHAIN_OS_Windows)
-                struct Callback : public BufferInfoList::Callback {
-                    typedef BufferInfoList::Callback::result_type result_type;
-                    typedef BufferInfoList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type bufferInfo) {
-                        delete bufferInfo;
-                        return true;
-                    }
-                } callback;
-                bufferInfoList.clear (callback);
-            #endif // !defined (TOOLCHAIN_OS_Windows)
-            }
             eventQueue.Release ();
             stream.Release ();
             eventSink.Release ();
@@ -533,7 +527,7 @@ namespace thekogans {
                     (const util::ui8 *)buffer_ + count)) {}
 
         ssize_t Stream::AsyncInfo::WriteBufferInfo::Write () {
-            ssize_t countWritten = send (stream->handle,
+            ssize_t countWritten = send (stream.GetHandle (),
                 buffer.GetReadPtr (), buffer.GetDataAvailableForReading (), 0);
             if (countWritten > 0) {
                 buffer.AdvanceReadOffset ((std::size_t)countWritten);
@@ -543,8 +537,8 @@ namespace thekogans {
 
         bool Stream::AsyncInfo::WriteBufferInfo::Notify () {
             if (buffer.IsEmpty ()) {
-                stream->asyncInfo->eventSink.HandleStreamWrite (
-                    *stream, std::move (buffer));
+                stream.asyncInfo->eventSink.HandleStreamWrite (
+                    stream, std::move (buffer));
                 return true;
             }
             return false;

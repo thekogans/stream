@@ -194,7 +194,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// Create a server side named pipe.
-            /// \param[in] address_ Address to listen on.
+            /// \param[in] address_ \see{Address} to listen on.
             /// \param[in] pipeType_ Byte/Message (similar to Socket/ServerNamedPipe).
             /// \param[in] bufferSize_ Size of receive buffer.
             /// NOTE: If you plan on using the ServerNamedPipe asynchronously,

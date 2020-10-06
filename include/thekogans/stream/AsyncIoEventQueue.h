@@ -242,8 +242,17 @@ namespace thekogans {
             /// in flight.
             AsyncIoEventQueueTimedStreamsList timedStreamsList;
             /// \brief
-            /// Synchronization SpinLock for registryList, timedStreamsList.
+            /// Stream deletion has to be differed until it's safe.
+            /// This list will hold zombie streams until it's safe
+            /// to delete them (right before \see{WaitForEvents} returns).
+            AsyncIoEventQueueDeletedStreamsList deletedStreamsList;
+            /// \brief
+            /// Synchronization SpinLock for registryList,
+            /// timedStreamsList and deletedStreamsList.
             util::SpinLock spinLock;
+            /// \brief
+            /// Internal class used to help with Stream lifetime management.
+            struct StreamDeleter;
             /// \brief
             /// Internal class used to help with timed Stream management.
             struct TimeoutPolicyController;
@@ -332,7 +341,11 @@ namespace thekogans {
                 AsyncIoEventSink &eventSink,
                 std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
             /// \brief
-            /// Delete a given stream from the queue.
+            /// Adds the given stream to the deletedStreams list.
+            /// Streams are aggregated for deletion so as not to
+            /// interfere with WaitForEvents. They get flushed as
+            /// soon as WaitForEvents is done processing an event
+            /// batch.
             /// \param[in] stream Stream to delete.
             void DeleteStream (Stream &stream);
 
@@ -357,6 +370,10 @@ namespace thekogans {
             void Break ();
 
         private:
+            /// \brief
+            /// Flush the deleteStreams list.
+            void ReleaseDeletedStreams ();
+
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Used internally by epoll and kqueue variants to
@@ -517,6 +534,10 @@ namespace thekogans {
                 util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
 
         private:
+            // util::ThreadSafeRefCounted
+            /// \brief
+            /// We're a singleton. We don't die.
+            virtual void Harakiri () {}
             // util::Thread
             /// \brief
             /// GlobalAsyncIoEventQueue thread.

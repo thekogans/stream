@@ -59,6 +59,9 @@ namespace thekogans {
             /// \brief
             /// AsyncIoEventQueueTimedStreamsList list id.
             ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID,
+            /// \brief
+            /// AsyncIoEventQueueDeletedStreamsList list id.
+            ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID
         };
 
         /// \brief
@@ -69,6 +72,10 @@ namespace thekogans {
         /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>.
         typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>
             AsyncIoEventQueueTimedStreamsList;
+        /// \brief
+        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>.
+        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>
+            AsyncIoEventQueueDeletedStreamsList;
 
         // Did I mention M$ is a brain dead company? Here's another
         // example of their stupidity and the hoops we have to jump
@@ -130,7 +137,8 @@ namespace thekogans {
         struct _LIB_THEKOGANS_STREAM_DECL Stream :
                 public virtual util::ThreadSafeRefCounted,
                 public AsyncIoEventQueueRegistryList::Node,
-                public AsyncIoEventQueueTimedStreamsList::Node {
+                public AsyncIoEventQueueTimedStreamsList::Node,
+                public AsyncIoEventQueueDeletedStreamsList::Node {
             /// \brief
             /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Stream>.
             typedef util::ThreadSafeRefCounted::Ptr<Stream> Ptr;
@@ -741,15 +749,14 @@ namespace thekogans {
                 /// NOTE: Unlike Windows Overlapped (above), BufferInfo is
                 /// entirely owned by AsyncInfo and does not need to be
                 /// reference counted.
-                struct BufferInfo :
-                        public BufferInfoList::Node {
+                struct BufferInfo : public BufferInfoList::Node {
                     /// \brief
                     /// Convenient typedef for std::unique_ptr<BufferInfo>.
                     typedef std::unique_ptr<BufferInfo> UniquePtr;
 
                     /// \brief
                     /// Stream that created this BufferInfo.
-                    Stream::Ptr stream;
+                    Stream &stream;
                     /// \brief
                     /// Write event associated with this buffer.
                     util::ui32 event;
@@ -761,7 +768,7 @@ namespace thekogans {
                     BufferInfo (
                         Stream &stream_,
                         util::ui32 event_) :
-                        stream (&stream_),
+                        stream (stream_),
                         event (event_) {}
                     /// \brief
                     /// Virtual dtor.
