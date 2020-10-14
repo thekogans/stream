@@ -28,7 +28,7 @@ namespace thekogans {
             "ClientTCPSocket";
 
         void ClientTCPSocket::Context::Parse (const pugi::xml_node &node) {
-            Stream::Context::Parse (node);
+            Socket::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -46,7 +46,7 @@ namespace thekogans {
             if (tagName != 0) {
                 std::ostringstream stream;
                 stream <<
-                    Stream::Context::ToString (indentationLevel, tagName) <<
+                    Socket::Context::ToString (indentationLevel, tagName) <<
                         address.ToString (indentationLevel + 1) <<
                     util::CloseTag (indentationLevel, tagName);
                 return stream.str ();
@@ -58,8 +58,7 @@ namespace thekogans {
         }
 
         Stream::Ptr ClientTCPSocket::Context::CreateStream () const {
-            return Stream::Ptr (
-                new TCPSocket (address.GetFamily (), SOCK_STREAM, 0));
+            return Stream::Ptr (new TCPSocket (family, type, protocol));
         }
 
     } // namespace stream

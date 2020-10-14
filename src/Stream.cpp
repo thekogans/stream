@@ -56,10 +56,10 @@ namespace thekogans {
     namespace stream {
 
         const char * const Stream::Context::TAG_CONTEXT = "Context";
-        const char * const Stream::Context::ATTR_TYPE = "Type";
+        const char * const Stream::Context::ATTR_STREAM_TYPE = "StreamType";
 
         void Stream::Context::Parse (const pugi::xml_node &node) {
-            type = util::Decodestring (node.attribute (ATTR_TYPE).value ());
+            streamType = util::Decodestring (node.attribute (ATTR_STREAM_TYPE).value ());
         }
 
         std::string Stream::Context::ToString (
@@ -67,7 +67,7 @@ namespace thekogans {
                 const char *tagName) const {
             if (tagName != 0) {
                 util::Attributes attributes;
-                attributes.push_back (util::Attribute (ATTR_TYPE, util::Encodestring (type)));
+                attributes.push_back (util::Attribute (ATTR_STREAM_TYPE, util::Encodestring (streamType)));
                 return util::OpenTag (indentationLevel, tagName, attributes, false, true);
             }
             else {
@@ -77,8 +77,8 @@ namespace thekogans {
         }
 
         Stream::Map &Stream::GetMap () {
-            static Map map;
-            return map;
+            static Map *map = new Map;
+            return *map;
         }
 
         Stream::MapInitializer::MapInitializer (
@@ -102,7 +102,7 @@ namespace thekogans {
 
         Stream::Context::Ptr Stream::GetContext (const pugi::xml_node &node) {
             Map::iterator it = GetMap ().find (
-                util::Decodestring (node.attribute (Context::ATTR_TYPE).value ()));
+                util::Decodestring (node.attribute (Context::ATTR_STREAM_TYPE).value ()));
             return it != GetMap ().end () ?
                 it->second (node) : Stream::Context::Ptr ();
         }

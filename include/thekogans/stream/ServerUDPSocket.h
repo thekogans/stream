@@ -54,10 +54,10 @@ namespace thekogans {
             /// of a ServerUDPSocket at rest. At any time you want
             /// to reconstitute a ServerUDPSocket from rest,
             /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName Type = "ServerUDPSocket">
-            ///     <Socket Family = "inet | inet6 | local"
-            ///             Type = "dgram"
-            ///             Protocol = "udp"/>
+            /// <tagName StreamType = "ServerUDPSocket"
+            ///          Family = "inet | inet6 | local"
+            ///          Type = "dgram"
+            ///          Protocol = "udp">
             ///     <Address Family = "inet | inet6"
             ///              Port = ""
             ///              Addr = "an inet or inet6 formated address, or host name"/>
@@ -71,7 +71,7 @@ namespace thekogans {
             /// ServerUDPSocket::Context. Call Context::CreateStream () to recreate a
             /// ServerUDPSocket from rest. Where you go with it from there is entirely
             /// up to you, but may I recommend: \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
                 /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
                 typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
@@ -101,18 +101,25 @@ namespace thekogans {
                 /// \param[in] node pugi::xml_node representing
                 /// a UDPSocket::Context.
                 explicit Context (const pugi::xml_node &node) :
-                        Stream::Context (VALUE_SERVER_UDP_SOCKET),
+                        Socket::Context (VALUE_SERVER_UDP_SOCKET, 0, 0, 0),
                         address (Address::Empty),
                         maxMessageLength (0) {
                     Parse (node);
                 }
                 /// \brief
                 /// ctor.
+                /// \param[in] family Socket family specification.
+                /// \param[in] type Socket type specification.
+                /// \param[in] protocol Socket protocol specification.
                 /// \param[in] address_ Address to listen on.
                 /// \param[in] maxMessageLength_ Maximum length of initiating message.
                 Context (
+                    int family,
+                    int type,
+                    int protocol,
                     const Address &address_,
                     std::size_t maxMessageLength_) :
+                    Socket::Context (VALUE_SERVER_UDP_SOCKET, family, type, protocol),
                     address (address_),
                     maxMessageLength (maxMessageLength_) {}
 

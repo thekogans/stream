@@ -33,7 +33,7 @@ namespace thekogans {
         const char * const ServerTCPSocket::Context::TAG_MAX_PENDING_CONNECTIONS = "MaxPendingConnections";
 
         void ServerTCPSocket::Context::Parse (const pugi::xml_node &node) {
-            Stream::Context::Parse (node);
+            Socket::Context::Parse (node);
             for (pugi::xml_node child = node.first_child ();
                     !child.empty (); child = child.next_sibling ()) {
                 if (child.type () == pugi::node_element) {
@@ -57,7 +57,7 @@ namespace thekogans {
             if (tagName != 0) {
                 std::ostringstream stream;
                 stream <<
-                    Stream::Context::ToString (indentationLevel, tagName) <<
+                    Socket::Context::ToString (indentationLevel, tagName) <<
                         address.ToString (indentationLevel + 1) <<
                         util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
                             util::boolTostring (reuseAddress) <<

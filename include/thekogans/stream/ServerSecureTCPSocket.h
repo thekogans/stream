@@ -52,7 +52,10 @@ namespace thekogans {
             /// a ServerSecureTCPSocket at rest. At any time you want to
             /// reconstitute a ServerSecureTCPSocket from rest, feed a
             /// parsed (pugi::xml_node) one of:
-            /// <tagName Type = "ServerSecureTCPSocket">
+            /// <tagName StreamType = "ServerSecureTCPSocket"
+            ///          Family = ""
+            ///          Type = ""
+            ///          Protocol = "">
             ///     <Address Family = "inet | inet6"
             ///              Port = ""
             ///              Addr = "an inet or inet6 formated address, or host name"/>
@@ -120,7 +123,7 @@ namespace thekogans {
             /// recreate a ServerSecureTCPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
                 /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
                 typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
@@ -399,35 +402,42 @@ namespace thekogans {
                 SessionInfo sessionInfo;
 
                 /// \brief
-                /// ctor. Parse the node representing a
-                /// ServerSecureTCPSocket::Context.
-                /// \param[in] node pugi::xml_node representing
-                /// a ServerSecureTCPSocket::Context.
+                /// ctor. Parse the node representing a ServerSecureTCPSocket::Context.
+                /// \param[in] node pugi::xml_node representing a ServerSecureTCPSocket::Context.
+                explicit Context (const pugi::xml_node &node) :
+                        Socket::Context (VALUE_SERVER_SECURE_TCP_SOCKET, 0, 0, 0),
+                        address (Address::Empty),
+                        reuseAddress (false),
+                        maxPendingConnections (0),
+                        context (TLSContext::Empty),
+                        sessionInfo (SessionInfo::Empty) {
+                    Parse (node);
+                }
+                /// \brief
+                /// ctor.
+                /// \param[in] family Socket family specification.
+                /// \param[in] type Socket type specification.
+                /// \param[in] protocol Socket protocol specification.
+                /// \param[in] address_ Address to listen on.
+                /// \param[in] reuseAddress_ Call \see{Socket::SetReuseAddress} with this parameter.
+                /// \param[in] maxPendingConnections_ Max pending connection requests.
+                /// \param[in] context_ TLSContext containing security parameters.
+                /// \param[in] sessionInfo_ Extended session info.
                 Context (
-                    const Address &address_ = Address::Empty,
-                    bool reuseAddress_ = false,
-                    util::ui32 maxPendingConnections_ = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS,
-                    const TLSContext &context_ = TLSContext::Empty,
-                    const SessionInfo &sessionInfo_ = SessionInfo::Empty) :
+                    int family,
+                    int type,
+                    int protocol,
+                    const Address &address_,
+                    bool reuseAddress_,
+                    util::ui32 maxPendingConnections_,
+                    const TLSContext &context_,
+                    const SessionInfo &sessionInfo_) :
+                    Socket::Context (VALUE_SERVER_SECURE_TCP_SOCKET, family, type, protocol),
                     address (address_),
                     reuseAddress (reuseAddress_),
                     maxPendingConnections (maxPendingConnections_),
                     context (context_),
                     sessionInfo (sessionInfo_) {}
-                /// \brief
-                /// ctor. Parse the node representing a
-                /// ServerSecureTCPSocket::Context.
-                /// \param[in] node pugi::xml_node representing
-                /// a ServerSecureTCPSocket::Context.
-                explicit Context (const pugi::xml_node &node) :
-                        Stream::Context (VALUE_SERVER_SECURE_TCP_SOCKET),
-                        address (Address::Empty),
-                        reuseAddress (false),
-                        maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS),
-                        context (TLSContext::Empty),
-                        sessionInfo (SessionInfo::Empty) {
-                    Parse (node);
-                }
 
                 /// \brief
                 /// Parse the node representing a

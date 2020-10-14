@@ -52,7 +52,10 @@ namespace thekogans {
             /// a ServerSecureUDPSocket at rest. At any time you want to
             /// reconstitute a ServerSecureUDPSocket from rest, feed a
             /// parsed (pugi::xml_node) one of:
-            /// <tagName Type = "ServerSecureUDPSocket">
+            /// <tagName StreamType = "ServerSecureUDPSocket"
+            ///          Family = ""
+            ///          Type = ""
+            ///          Protocol = "">
             ///     <Address Family = "inet | inet6"
             ///              Port = ""
             ///              Addr = "an inet or inet6 formated address, or host name"/>
@@ -115,7 +118,7 @@ namespace thekogans {
             /// recreate a ServerSecureUDPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
                 /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
                 typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
@@ -331,12 +334,10 @@ namespace thekogans {
                 SessionInfo sessionInfo;
 
                 /// \brief
-                /// ctor. Parse the node representing a
-                /// ServerSecureUDPSocket::Context.
-                /// \param[in] node pugi::xml_node representing
-                /// a ServerSecureUDPSocket::Context.
+                /// ctor. Parse the node representing a ServerSecureUDPSocket::Context.
+                /// \param[in] node pugi::xml_node representing a ServerSecureUDPSocket::Context.
                 explicit Context (const pugi::xml_node &node) :
-                        Stream::Context (VALUE_SERVER_SECURE_UDP_SOCKET),
+                        Socket::Context (VALUE_SERVER_SECURE_UDP_SOCKET, 0, 0, 0),
                         address (Address::Empty),
                         context (DTLSContext::Empty),
                         sessionInfo (SessionInfo::Empty) {

@@ -169,8 +169,8 @@ namespace thekogans {
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Called to report a connection on a \see{ServerNamedPipe}.
-            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
+            /// Called to report a connection on a \see{ClientNamedPipe}.
+            /// \param[in] clientNamedPipe \see{ClientNamedPipe} on which
             /// the connection occurred.
             virtual void HandleClientNamedPipeConnected (
                 ClientNamedPipe &clientNamedPipe) throw ();

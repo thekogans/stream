@@ -77,7 +77,7 @@ namespace thekogans {
             /// of a ServerNamedPipe at rest. At any time you want
             /// to reconstitute a ServerNamedPipe from rest,
             /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName Type = "ServerNamedPipe">
+            /// <tagName StreamType = "ServerNamedPipe">
             ///     <Address Family = "local"
             ///              Path = "Properly formatted named pipe address"/>
             ///     <PipeType>Byte/Message</PipeType>

@@ -72,7 +72,10 @@ namespace thekogans {
             /// \brief
             /// We need a bunch of notifications to do our job.
             /// Chain the old callback in case it was specified in SSL_CTX.
-            void (*oldInfoCallback) (const SSL *ssl, int type, int val);
+            void (*oldInfoCallback) (
+                const SSL *ssl,
+                int type,
+                int val);
             // Async info.
             /// \brief
             /// Input side of the async connection.

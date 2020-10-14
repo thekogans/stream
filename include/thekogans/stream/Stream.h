@@ -161,21 +161,21 @@ namespace thekogans {
                 /// "Context"
                 static const char * const TAG_CONTEXT;
                 /// \brief
-                /// "Type"
-                static const char * const ATTR_TYPE;
+                /// "StreamType"
+                static const char * const ATTR_STREAM_TYPE;
 
                 /// \brief
                 /// Stream type (it's class name).
-                std::string type;
+                std::string streamType;
 
                 /// \brief
                 /// ctor.
                 Context () {}
                 /// \brief
                 /// ctor.
-                /// param[in] type_ Type this Context represents.
-                explicit Context (const std::string type_) :
-                    type (type_) {}
+                /// param[in] streamType_ Type this Context represents.
+                explicit Context (const std::string streamType_) :
+                    streamType (streamType_) {}
                 /// \brief
                 /// dtor.
                 virtual ~Context () {}
@@ -1118,7 +1118,7 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
-            THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
+            THEKOGANS_STREAM_DECLARE_STREAM_COMMON (type)\
             static void StaticInit () {\
                 static volatile bool registered = false;\
                 static thekogans::util::SpinLock spinLock;\
@@ -1142,7 +1142,7 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON (type)
     #else // defined (THEKOGANS_STREAM_TYPE_Static)
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
         /// This macro is used in a stream declaration file (.h).
@@ -1150,7 +1150,7 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
-            THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
+            THEKOGANS_STREAM_DECLARE_STREAM_COMMON (type)\
             static const thekogans::stream::Stream::MapInitializer mapInitializer;
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
@@ -1159,7 +1159,7 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)\
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON (type)\
             const thekogans::stream::Stream::MapInitializer type::mapInitializer (\
                 #type, type::CreateContext);
     #endif // defined (THEKOGANS_STREAM_TYPE_Static)

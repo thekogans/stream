@@ -46,7 +46,10 @@ namespace thekogans {
             /// of a ServerTCPSocket at rest. At any time you want
             /// to reconstitute a ServerTCPSocket from rest,
             /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName Type = "ServerTCPSocket">
+            /// <tagName StreamType = "ServerTCPSocket"
+            ///          Family = ""
+            ///          Type = ""
+            ///          Protocol = "">
             ///     <Address Family = "inet | inet6"
             ///              Port = ""
             ///              Addr = "an inet or inet6 formated address, or host name"/>
@@ -62,7 +65,7 @@ namespace thekogans {
             /// recreate a ServerTCPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
                 /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
                 typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
@@ -93,7 +96,7 @@ namespace thekogans {
                 /// \param[in] node pugi::xml_node representing
                 /// a ServerTCPSocket::Context.
                 explicit Context (const pugi::xml_node &node) :
-                        Stream::Context (VALUE_SERVER_TCP_SOCKET),
+                        Socket::Context (VALUE_SERVER_TCP_SOCKET, 0, 0, 0),
                         address (Address::Empty),
                         reuseAddress (false),
                         maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS) {
@@ -101,14 +104,21 @@ namespace thekogans {
                 }
                 /// \brief
                 /// ctor.
+                /// \param[in] family Socket family specification.
+                /// \param[in] type Socket type specification.
+                /// \param[in] protocol Socket protocol specification.
                 /// \param[in] address Listening address.
                 /// \param[in] reuseAddress If true, call \see{Socket::SetReuseAddress}
                 /// before calling \see{Socket::Bind}.
                 /// \param[in] maxPendingConnections Max pending connection requests.
                 Context (
+                    int family,
+                    int type,
+                    int protocol,
                     const Address &address_,
                     bool reuseAddress_,
                     util::i32 maxPendingConnections_) :
+                    Socket::Context (VALUE_SERVER_TCP_SOCKET, family, type, protocol),
                     address (address_),
                     reuseAddress (reuseAddress_),
                     maxPendingConnections (maxPendingConnections_) {}

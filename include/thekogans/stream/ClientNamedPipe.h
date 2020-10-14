@@ -55,7 +55,7 @@ namespace thekogans {
             /// of a ClientNamedPipe at rest. At any time you want
             /// to reconstitute a ClientNamedPipe from rest,
             /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName Type = "ClientNamedPipe">
+            /// <tagName StreamType = "ClientNamedPipe">
             ///     <Address Family = "local"
             ///              Path = "Properly formated named pipe address."/>
             ///     <PipeType>byte or message</PipeType>

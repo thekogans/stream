@@ -48,7 +48,10 @@ namespace thekogans {
             /// of a ClientUDPSocket at rest. At any time you want
             /// to reconstitute a ClientUDPSocket from rest,
             /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName Type = "ClientUDPSocket">
+            /// <tagName StreamType = "ClientUDPSocket"
+            ///          Family = ""
+            ///          Type = ""
+            ///          Protocol = "">
             ///     <Address Family = "inet | inet6"
             ///              Port = ""
             ///              Addr = "an inet or inet6 formated address, or host name"/>
@@ -62,7 +65,7 @@ namespace thekogans {
             /// recreate a ClientUDPSocket from rest. Where you go with
             /// it from there is entirely up to you, but may I recommend:
             /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
                 /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
                 typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
@@ -80,14 +83,22 @@ namespace thekogans {
                 /// \param[in] node pugi::xml_node representing
                 /// a ClientUDPSocket::Context.
                 explicit Context (const pugi::xml_node &node) :
-                        Stream::Context (VALUE_CLIENT_UDP_SOCKET),
+                        Socket::Context (VALUE_CLIENT_UDP_SOCKET, 0, 0, 0),
                         address (Address::Empty) {
                     Parse (node);
                 }
                 /// \brief
                 /// ctor.
+                /// \param[in] family Socket family specification.
+                /// \param[in] type Socket type specification.
+                /// \param[in] protocol Socket protocol specification.
                 /// \param[in] address_ \see{Address} to connect to.
-                explicit Context (const Address &address_) :
+                Context (
+                    int family,
+                    int type,
+                    int protocol,
+                    const Address &address_) :
+                    Socket::Context (VALUE_CLIENT_UDP_SOCKET, family, type, protocol),
                     address (address_) {}
 
                 /// \brief

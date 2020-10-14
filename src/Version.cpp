@@ -21,11 +21,11 @@ namespace thekogans {
     namespace stream {
 
         _LIB_THEKOGANS_STREAM_DECL const util::Version & _LIB_THEKOGANS_STREAM_API GetVersion () {
-            static const util::Version version (
+            static const util::Version *version = new util::Version (
                 THEKOGANS_STREAM_MAJOR_VERSION,
                 THEKOGANS_STREAM_MINOR_VERSION,
                 THEKOGANS_STREAM_PATCH_VERSION);
-            return version;
+            return *version;
         }
 
     } // namespace stream

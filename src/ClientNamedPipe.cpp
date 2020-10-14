@@ -37,8 +37,8 @@ namespace thekogans {
 
         void ClientNamedPipe::Context::Parse (const pugi::xml_node &node) {
             Stream::Context::Parse (node);
-            assert (type == VALUE_CLIENT_NAMED_PIPE);
-            if (type == VALUE_CLIENT_NAMED_PIPE) {
+            assert (streamType == VALUE_CLIENT_NAMED_PIPE);
+            if (streamType == VALUE_CLIENT_NAMED_PIPE) {
                 for (pugi::xml_node child = node.first_child ();
                         !child.empty (); child = child.next_sibling ()) {
                     if (child.type () == pugi::node_element) {
@@ -57,7 +57,7 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Unexpected context type: %s (%s)",
-                    type.c_str (),
+                    streamType.c_str (),
                     VALUE_CLIENT_NAMED_PIPE);
             }
         }

@@ -39,6 +39,8 @@
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
+#include "thekogans/util/StringUtils.h"
+#include "thekogans/util/XMLUtils.h"
 #include "thekogans/stream/Socket.h"
 
 namespace thekogans {
@@ -61,6 +63,35 @@ namespace thekogans {
             } winSockInit;
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
+
+        const char * const Socket::Context::VALUE_SOCKET = "Socket";
+        const char * const Socket::Context::ATTR_FAMILY = "Family";
+        const char * const Socket::Context::ATTR_TYPE = "Type";
+        const char * const Socket::Context::ATTR_PROTOCOL = "Protocol";
+
+        void Socket::Context::Parse (const pugi::xml_node &node) {
+            Stream::Context::Parse (node);
+            family = util::stringToi32 (node.attribute (ATTR_FAMILY).value ());
+            type = util::stringToi32 (node.attribute (ATTR_TYPE).value ());
+            protocol = util::stringToi32 (node.attribute (ATTR_PROTOCOL).value ());
+        }
+
+        std::string Socket::Context::ToString (
+                std::size_t indentationLevel,
+                const char *tagName) const {
+            if (tagName != 0) {
+                util::Attributes attributes;
+                attributes.push_back (util::Attribute (ATTR_STREAM_TYPE, util::Encodestring (VALUE_SOCKET)));
+                attributes.push_back (util::Attribute (ATTR_FAMILY, util::i32Tostring (family)));
+                attributes.push_back (util::Attribute (ATTR_TYPE, util::i32Tostring (type)));
+                attributes.push_back (util::Attribute (ATTR_PROTOCOL, util::i32Tostring (protocol)));
+                return util::OpenTag (indentationLevel, tagName, attributes, false, true);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
 
         Socket::Socket (THEKOGANS_UTIL_HANDLE handle) :
                 Stream (handle) {
