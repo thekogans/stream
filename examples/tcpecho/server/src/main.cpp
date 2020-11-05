@@ -108,19 +108,19 @@ int main (
                     THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
                         util::SystemInfo::Instance ().GetProcessPath ().c_str ());
                     util::LockFile lockFile (server::Options::Instance ().lockFilePath);
-                    util::MainRunLoopCreateInstance::Parameterize (
-                        util::MainRunLoopCreateInstance::MAIN_RUN_LOOP_NAME,
-                        util::RunLoop::JobExecutionPolicy::Ptr (new util::RunLoop::FIFOJobExecutionPolicy));
                     server::Server::Instance ().Start (
                         server::Options::Instance ().addresses);
-                    util::MainRunLoop::Instance ().Start ();
                 }
                 ~App () {
                     server::Server::Instance ().Stop ();
                     THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",
                         util::SystemInfo::Instance ().GetProcessPath ().c_str ());
                 }
+                void Run () {
+                    util::MainRunLoop::Instance ().Start ();
+                }
             } app;
+            app.Run ();
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

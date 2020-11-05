@@ -981,36 +981,14 @@ namespace thekogans {
             return count;
         }
 
-    #if defined (TOOLCHAIN_OS_Windows)
-        util::ui32 GlobalAsyncIoEventQueueCreateInstance::concurrentThreads =
-            AsyncIoEventQueue::DEFAULT_CONCURRENT_THREADS;
-    #elif defined (TOOLCHAIN_OS_Linux)
-        util::ui32 GlobalAsyncIoEventQueueCreateInstance::maxSize =
-            AsyncIoEventQueue::DEFAULT_MAX_SIZE;
-    #endif // defined (TOOLCHAIN_OS_Windows)
-        util::i32 GlobalAsyncIoEventQueueCreateInstance::priority =
-            THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY;
-        util::ui32 GlobalAsyncIoEventQueueCreateInstance::affinity =
-            util::UI32_MAX;
-
-        void GlobalAsyncIoEventQueueCreateInstance::Parameterize (
+        GlobalAsyncIoEventQueue *GlobalAsyncIoEventQueueCreateInstance::operator () (
             #if defined (TOOLCHAIN_OS_Windows)
-                util::ui32 concurrentThreads_,
+                util::ui32 concurrentThreads,
             #elif defined (TOOLCHAIN_OS_Linux)
-                util::ui32 maxSize_,
+                util::ui32 maxSize_SIZE,
             #endif // defined (TOOLCHAIN_OS_Windows)
-                util::i32 priority_,
-                util::ui32 affinity_) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            concurrentThreads = concurrentThreads_;
-        #elif defined (TOOLCHAIN_OS_Linux)
-            maxSize = maxSize_;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            priority = priority_;
-            affinity = affinity_;
-        }
-
-        GlobalAsyncIoEventQueue *GlobalAsyncIoEventQueueCreateInstance::operator () () {
+                util::i32 priority,
+                util::ui32 affinity) {
             return new GlobalAsyncIoEventQueue (
             #if defined (TOOLCHAIN_OS_Windows)
                 concurrentThreads,

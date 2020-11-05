@@ -449,48 +449,25 @@ namespace thekogans {
         /// GlobalAsyncIoEventQueue::Instance to supply custom arguments to GlobalAsyncIoEventQueue ctor.
 
         struct GlobalAsyncIoEventQueueCreateInstance {
-        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// The maximum number of threads that the operating
-            /// system can allow to concurrently process I/O
-            /// completion packets for the I/O completion port.
-            static util::ui32 concurrentThreads;
-        #elif defined (TOOLCHAIN_OS_Linux)
-            /// \brief
-            /// Provided for completeness only.
-            /// This parameter is ignored by epoll_create.
-            static util::ui32 maxSize;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Thread priority.
-            static util::i32 priority;
-            /// \brief
-            /// Thread affinity.
-            static util::ui32 affinity;
-
-            /// \brief
-            /// Call before the first use of GlobalAsyncIoEventQueue::Instance.
-            /// \param[in] concurrentThreads_ The maximum number
+            /// Create a global async io event queue with custom ctor arguments.
+            /// \param[in] concurrentThreads The maximum number
             /// of threads that the operating system can allow
             /// to concurrently process I/O completion packets
             /// for the I/O completion port.
-            /// \param[in] maxSize_ Provided for completeness only.
+            /// \param[in] maxSize Provided for completeness only.
             /// This parameter is ignored by epoll_create.
-            /// \param[in] priority_ Thread priority.
-            /// \param[in] affinity_ Thread affinity.
-            static void Parameterize (
-            #if defined (TOOLCHAIN_OS_Windows)
-                util::ui32 concurrentThreads_ = AsyncIoEventQueue::DEFAULT_CONCURRENT_THREADS,
-            #elif defined (TOOLCHAIN_OS_Linux)
-                util::ui32 maxSize_ = AsyncIoEventQueue::DEFAULT_MAX_SIZE,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                util::i32 priority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                util::ui32 affinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
-
-            /// \brief
-            /// Create a global async io event queue with custom ctor arguments.
+            /// \param[in] priority Thread priority.
+            /// \param[in] affinity Thread affinity.
             /// \return A global async io event queue with custom ctor arguments.
-            GlobalAsyncIoEventQueue *operator () ();
+            GlobalAsyncIoEventQueue *operator () (
+            #if defined (TOOLCHAIN_OS_Windows)
+                util::ui32 concurrentThreads = AsyncIoEventQueue::DEFAULT_CONCURRENT_THREADS,
+            #elif defined (TOOLCHAIN_OS_Linux)
+                util::ui32 maxSize = AsyncIoEventQueue::DEFAULT_MAX_SIZE,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
         };
 
         /// \struct GlobalAsyncIoEventQueue AsyncIoEventQueue.h thekogans/stream/AsyncIoEventQueue.h
