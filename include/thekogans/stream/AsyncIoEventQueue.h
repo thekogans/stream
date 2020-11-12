@@ -440,36 +440,6 @@ namespace thekogans {
             THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (AsyncIoEventQueue)
         };
 
-        struct _LIB_THEKOGANS_STREAM_DECL GlobalAsyncIoEventQueue;
-
-        /// \struct GlobalAsyncIoEventQueueCreateInstance AsyncIoEventQueue.h thekogans/stream/AsyncIoEventQueue.h
-        ///
-        /// \brief
-        /// Call GlobalAsyncIoEventQueueCreateInstance::Parameterize before the first use of
-        /// GlobalAsyncIoEventQueue::Instance to supply custom arguments to GlobalAsyncIoEventQueue ctor.
-
-        struct GlobalAsyncIoEventQueueCreateInstance {
-            /// \brief
-            /// Create a global async io event queue with custom ctor arguments.
-            /// \param[in] concurrentThreads The maximum number
-            /// of threads that the operating system can allow
-            /// to concurrently process I/O completion packets
-            /// for the I/O completion port.
-            /// \param[in] maxSize Provided for completeness only.
-            /// This parameter is ignored by epoll_create.
-            /// \param[in] priority Thread priority.
-            /// \param[in] affinity Thread affinity.
-            /// \return A global async io event queue with custom ctor arguments.
-            GlobalAsyncIoEventQueue *operator () (
-            #if defined (TOOLCHAIN_OS_Windows)
-                util::ui32 concurrentThreads = AsyncIoEventQueue::DEFAULT_CONCURRENT_THREADS,
-            #elif defined (TOOLCHAIN_OS_Linux)
-                util::ui32 maxSize = AsyncIoEventQueue::DEFAULT_MAX_SIZE,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
-        };
-
         /// \struct GlobalAsyncIoEventQueue AsyncIoEventQueue.h thekogans/stream/AsyncIoEventQueue.h
         ///
         /// \brief
@@ -486,10 +456,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL GlobalAsyncIoEventQueue :
                 public AsyncIoEventQueue,
-                public util::Singleton<
-                    GlobalAsyncIoEventQueue,
-                    util::SpinLock,
-                    GlobalAsyncIoEventQueueCreateInstance>,
+                public util::Singleton<GlobalAsyncIoEventQueue, util::SpinLock>,
                 public util::Thread {
             /// \brief
             /// ctor.

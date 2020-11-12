@@ -981,24 +981,6 @@ namespace thekogans {
             return count;
         }
 
-        GlobalAsyncIoEventQueue *GlobalAsyncIoEventQueueCreateInstance::operator () (
-            #if defined (TOOLCHAIN_OS_Windows)
-                util::ui32 concurrentThreads,
-            #elif defined (TOOLCHAIN_OS_Linux)
-                util::ui32 maxSize_SIZE,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                util::i32 priority,
-                util::ui32 affinity) {
-            return new GlobalAsyncIoEventQueue (
-            #if defined (TOOLCHAIN_OS_Windows)
-                concurrentThreads,
-            #elif defined (TOOLCHAIN_OS_Linux)
-                maxSize,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                priority,
-                affinity);
-        }
-
     #if defined (TOOLCHAIN_OS_Windows)
         GlobalAsyncIoEventQueue::GlobalAsyncIoEventQueue (
                 util::ui32 concurrentThreads,
