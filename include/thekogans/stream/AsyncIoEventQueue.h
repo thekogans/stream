@@ -460,11 +460,14 @@ namespace thekogans {
                 public util::Thread {
             /// \brief
             /// ctor.
+        #if defined (TOOLCHAIN_OS_Windows)
             /// \param[in] concurrentThreads The maximum number
             /// of threads that the operating system can allow
             /// to concurrently process I/O completion packets
             /// for the I/O completion port.
+        #elif defined (TOOLCHAIN_OS_Linux)
             /// \param[in] maxSize Provided for completeness only.
+        #endif // defined (TOOLCHAIN_OS_Windows)
             /// This parameter is ignored by epoll_create.
             /// \param[in] priority Thread priority.
             /// \param[in] affinity Thread affinity.
