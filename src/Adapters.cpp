@@ -53,7 +53,9 @@
 namespace thekogans {
     namespace stream {
 
-        bool Adapters::Addresses::Contains (const Address &address) const {
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (AdapterAddresses, util::SpinLock)
+
+        bool AdapterAddresses::Contains (const Address &address) const {
             util::ui16 family = address.GetFamily ();
             if (family == AF_INET) {
                 const std::string addressString = address.AddrToString ();
@@ -92,7 +94,7 @@ namespace thekogans {
             return false;
         }
 
-        void Adapters::Addresses::Dump (std::ostream &stream) const {
+        void AdapterAddresses::Dump (std::ostream &stream) const {
             stream <<
                 "Name: " << name << std::endl <<
                 "Index: " << index << std::endl <<
@@ -125,45 +127,12 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 runLoop (0),
             #endif // defined (TOOLCHAIN_OS_Windows)
-                jobQueue ("Adapters") {
-            GetAddressesMap (addressesMap);
-        }
+                addressesMap (GetAddressesMap ()) {}
 
-        void Adapters::RegisterEventHandler (EventHandler &eventHandler) {
+        AdapterAddressesList Adapters::GetAddressesList () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            for (EventHandlers::iterator
-                    it = eventHandlers.begin (),
-                    end = eventHandlers.end (); it != end; ++it) {
-                if ((*it).Get () == &eventHandler) {
-                    return;
-                }
-            }
-            eventHandlers.push_back (EventHandler::Ptr (&eventHandler));
-            if (eventHandlers.size () == 1) {
-                GetAddressesMap (addressesMap);
-                StartListening ();
-            }
-        }
-
-        void Adapters::UnregisterEventHandler (EventHandler &eventHandler) {
-            util::LockGuard<util::SpinLock> guard (spinLock);
-            for (EventHandlers::iterator
-                    it = eventHandlers.begin (),
-                    end = eventHandlers.end (); it != end; ++it) {
-                if ((*it).Get () == &eventHandler) {
-                    eventHandlers.erase (it);
-                    if (eventHandlers.empty ()) {
-                        StopListening ();
-                    }
-                    return;
-                }
-            }
-        }
-
-        Adapters::AddressesList Adapters::GetAddressesList () {
-            util::LockGuard<util::SpinLock> guard (spinLock);
-            AddressesList addressesList;
-            for (AddressesMap::const_iterator
+            AdapterAddressesList addressesList;
+            for (AdapterAddressesMap::const_iterator
                     it = addressesMap.begin (),
                     end = addressesMap.end (); it != end; ++it) {
                 addressesList.push_back (it->second);
@@ -173,23 +142,23 @@ namespace thekogans {
 
         namespace {
             inline bool operator < (
-                    const Adapters::Addresses &item1,
-                    const Adapters::Addresses &item2) {
+                    const AdapterAddresses &item1,
+                    const AdapterAddresses &item2) {
                 return item1.name < item2.name;
             }
 
             inline bool operator != (
-                    const Adapters::Addresses::IPV4Addresses &item1,
-                    const Adapters::Addresses::IPV4Addresses &item2) {
+                    const AdapterAddresses::IPV4Addresses &item1,
+                    const AdapterAddresses::IPV4Addresses &item2) {
                 if (item1.size () == item2.size ()) {
                     std::set<std::string> ipv41;
-                    for (Adapters::Addresses::IPV4Addresses::const_iterator
+                    for (AdapterAddresses::IPV4Addresses::const_iterator
                             it = item1.begin (),
                             end = item1.end (); it != end; ++it) {
                         ipv41.insert ((*it).unicast.AddrToString ());
                     }
                     std::set<std::string> ipv42;
-                    for (Adapters::Addresses::IPV4Addresses::const_iterator
+                    for (AdapterAddresses::IPV4Addresses::const_iterator
                             it = item2.begin (),
                             end = item2.end (); it != end; ++it) {
                         ipv42.insert ((*it).unicast.AddrToString ());
@@ -200,17 +169,17 @@ namespace thekogans {
             }
 
             inline bool operator != (
-                    const Adapters::Addresses::IPV6Addresses &item1,
-                    const Adapters::Addresses::IPV6Addresses &item2) {
+                    const AdapterAddresses::IPV6Addresses &item1,
+                    const AdapterAddresses::IPV6Addresses &item2) {
                 if (item1.size () == item2.size ()) {
                     std::set<std::string> ipv61;
-                    for (Adapters::Addresses::IPV6Addresses::const_iterator
+                    for (AdapterAddresses::IPV6Addresses::const_iterator
                             it = item1.begin (),
                             end = item1.end (); it != end; ++it) {
                         ipv61.insert ((*it).AddrToString ());
                     }
                     std::set<std::string> ipv62;
-                    for (Adapters::Addresses::IPV6Addresses::const_iterator
+                    for (AdapterAddresses::IPV6Addresses::const_iterator
                             it = item2.begin (),
                             end = item2.end (); it != end; ++it) {
                         ipv62.insert ((*it).AddrToString ());
@@ -221,8 +190,8 @@ namespace thekogans {
             }
 
             inline bool operator != (
-                    const Adapters::Addresses &item1,
-                    const Adapters::Addresses &item2) {
+                    const AdapterAddresses &item1,
+                    const AdapterAddresses &item2) {
                 return item1.name != item2.name ||
                     item1.index != item2.index ||
                     item1.ipv4 != item2.ipv4 ||
@@ -231,9 +200,9 @@ namespace thekogans {
             }
 
             struct DiffProcessor {
-                Adapters::AddressesList added;
-                Adapters::AddressesList deleted;
-                std::list<std::pair<Adapters::Addresses, Adapters::Addresses> > changed;
+                AdapterAddressesList added;
+                AdapterAddressesList deleted;
+                std::list<std::pair<AdapterAddresses::Ptr, AdapterAddresses::Ptr>> changed;
 
                 inline bool IsEmpty () const {
                     return added.empty () && deleted.empty () && changed.empty ();
@@ -243,22 +212,22 @@ namespace thekogans {
                 // are related. Since the two maps are snapshots in time of the state
                 // of adapters in the system, the assumption is satisfied.
                 void Diff (
-                        const Adapters::AddressesMap &original,
-                        const Adapters::AddressesMap &current) {
-                    Adapters::AddressesMap::const_iterator originalBegin = original.begin ();
-                    Adapters::AddressesMap::const_iterator originalEnd = original.end ();
-                    Adapters::AddressesMap::const_iterator currentBegin = current.begin ();
-                    Adapters::AddressesMap::const_iterator currentEnd = current.end ();
+                        const AdapterAddressesMap &original,
+                        const AdapterAddressesMap &current) {
+                    AdapterAddressesMap::const_iterator originalBegin = original.begin ();
+                    AdapterAddressesMap::const_iterator originalEnd = original.end ();
+                    AdapterAddressesMap::const_iterator currentBegin = current.begin ();
+                    AdapterAddressesMap::const_iterator currentEnd = current.end ();
                     while (originalBegin != originalEnd && currentBegin != currentEnd) {
-                        if (originalBegin->second < currentBegin->second) {
+                        if (*originalBegin->second < *currentBegin->second) {
                             deleted.push_back ((originalBegin++)->second);
                         }
-                        else if (currentBegin->second < originalBegin->second) {
+                        else if (*currentBegin->second < *originalBegin->second) {
                             added.push_back ((currentBegin++)->second);
                         }
-                        else if (originalBegin->second != currentBegin->second) {
+                        else if (*originalBegin->second != *currentBegin->second) {
                             changed.push_back (
-                                std::pair<Adapters::Addresses, Adapters::Addresses> (
+                                std::pair<AdapterAddresses::Ptr, AdapterAddresses::Ptr> (
                                     (originalBegin++)->second, (currentBegin++)->second));
                         }
                         else {
@@ -266,66 +235,55 @@ namespace thekogans {
                             ++currentBegin;
                         }
                     }
-                    assert (originalBegin == originalEnd || currentBegin == currentEnd);
-                    while (originalBegin != originalEnd) {
+                    assert (*originalBegin == *originalEnd || *currentBegin == *currentEnd);
+                    while (*originalBegin != *originalEnd) {
                         deleted.push_back ((originalBegin++)->second);
                     }
-                    while (currentBegin != currentEnd) {
+                    while (*currentBegin != *currentEnd) {
                         added.push_back ((currentBegin++)->second);
-                    }
-                }
-
-                void NotifyEventHandler (Adapters::EventHandler &eventHandler) {
-                    for (Adapters::AddressesList::const_iterator
-                            it = added.begin (),
-                            end = added.end (); it != end; ++it) {
-                        eventHandler.HandleAdapterAdded (*it);
-                    }
-                    for (Adapters::AddressesList::const_iterator
-                            it = deleted.begin (),
-                            end = deleted.end (); it != end; ++it) {
-                        eventHandler.HandleAdapterDeleted (*it);
-                    }
-                    for (std::list<std::pair<Adapters::Addresses, Adapters::Addresses> >::const_iterator
-                            it = changed.begin (),
-                            end = changed.end (); it != end; ++it) {
-                        eventHandler.HandleAdapterChanged ((*it).first, (*it).second);
                     }
                 }
             };
         }
 
-        void Adapters::NotifyEventHandlers () {
-            struct NotifyEventHandlersJob : public util::RunLoop::Job {
-                // util::RunLoop::Job
-                virtual void Execute (const std::atomic<bool> &done) throw () {
-                    if (!ShouldStop (done)) {
-                        THEKOGANS_UTIL_TRY {
-                            DiffProcessor diffProcessor;
-                            EventHandlers eventHandlers;
-                            {
-                                Adapters::AddressesMap newAddressesMap;
-                                Adapters::Instance ().GetAddressesMap (newAddressesMap);
-                                diffProcessor.Diff (Adapters::Instance ().addressesMap, newAddressesMap);
-                                if (!diffProcessor.IsEmpty ()) {
-                                    util::LockGuard<util::SpinLock> guard (Adapters::Instance ().spinLock);
-                                    Adapters::Instance ().addressesMap.swap (newAddressesMap);
-                                    eventHandlers = Adapters::Instance ().eventHandlers;
-                                }
-                            }
-                            for (EventHandlers::iterator
-                                    it = eventHandlers.begin (),
-                                    end = eventHandlers.end (); it != end; ++it) {
-                                diffProcessor.NotifyEventHandler (**it);
-                            }
-                        }
-                        THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
-
-                    }
+        void Adapters::NotifySubscribers () {
+            AdapterAddressesMap newAddressesMap = GetAddressesMap ();
+            DiffProcessor diffProcessor;
+            diffProcessor.Diff (addressesMap, newAddressesMap);
+            if (!diffProcessor.IsEmpty ()) {
+                {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    addressesMap = newAddressesMap;
                 }
-            };
-            jobQueue.EnqJob (
-                util::RunLoop::Job::Ptr (new NotifyEventHandlersJob));
+                for (AdapterAddressesList::const_iterator
+                        it = diffProcessor.added.begin (),
+                        end = diffProcessor.added.end (); it != end; ++it) {
+                    util::Producer<AdaptersEvents>::Produce (
+                        std::bind (
+                            &AdaptersEvents::OnAdapterAdded,
+                            std::placeholders::_1,
+                            *it));
+                }
+                for (AdapterAddressesList::const_iterator
+                         it = diffProcessor.deleted.begin (),
+                         end = diffProcessor.deleted.end (); it != end; ++it) {
+                    util::Producer<AdaptersEvents>::Produce (
+                        std::bind (
+                            &AdaptersEvents::OnAdapterDeleted,
+                            std::placeholders::_1,
+                            *it));
+                }
+                for (std::list<std::pair<AdapterAddresses::Ptr, AdapterAddresses::Ptr>>::const_iterator
+                         it = diffProcessor.changed.begin (),
+                         end = diffProcessor.changed.end (); it != end; ++it) {
+                    util::Producer<AdaptersEvents>::Produce (
+                        std::bind (
+                            &AdaptersEvents::OnAdapterChanged,
+                            std::placeholders::_1,
+                            (*it).first,
+                            (*it).second));
+                }
+            }
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -366,8 +324,8 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        void Adapters::GetAddressesMap (AddressesMap &addressesMap) const {
-            AddressesMap newAddressesMap;
+        AdapterAddressesMap Adapters::GetAddressesMap () const {
+            AdapterAddressesMap newAddressesMap;
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD size = 0;
             std::vector<util::ui8> buffer;
@@ -394,10 +352,11 @@ namespace thekogans {
                             ipAdapterAddresses != 0; ipAdapterAddresses = ipAdapterAddresses->Next) {
                         AdapterInfo adapterInfo (ipAdapterAddresses->IfIndex);
                         if (adapterInfo.IsConnected ()) {
-                            Addresses addresses (
-                                ipAdapterAddresses->AdapterName,
-                                ipAdapterAddresses->IfIndex,
-                                adapterInfo.IsMulticast ());
+                            AdapterAddresses::Ptr addresses (
+                                new AdapterAddresses (
+                                    ipAdapterAddresses->AdapterName,
+                                    ipAdapterAddresses->IfIndex,
+                                    adapterInfo.IsMulticast ()));
                             for (PIP_ADAPTER_UNICAST_ADDRESS
                                     unicastAddress = ipAdapterAddresses->FirstUnicastAddress;
                                     unicastAddress != 0; unicastAddress = unicastAddress->Next) {
@@ -424,7 +383,7 @@ namespace thekogans {
                                             htonl (ntohl (ipv4.unicast.in.sin_addr.s_addr) | mask);
                                         ipv4.broadcast.length = sizeof (sockaddr_in);
                                     }
-                                    addresses.ipv4.push_back (ipv4);
+                                    addresses->ipv4.push_back (ipv4);
                                 }
                                 else if (unicastAddress->Address.lpSockaddr->sa_family == AF_INET6) {
                                     assert (unicastAddress->Address.iSockaddrLength == sizeof (sockaddr_in6));
@@ -433,17 +392,17 @@ namespace thekogans {
                                         unicastAddress->Address.lpSockaddr,
                                         unicastAddress->Address.iSockaddrLength);
                                     ipv6.length = sizeof (sockaddr_in6);
-                                    addresses.ipv6.push_back (ipv6);
+                                    addresses->ipv6.push_back (ipv6);
                                 }
                             }
                             if (ipAdapterAddresses->PhysicalAddressLength == util::MAC_LENGTH) {
                                 memcpy (
-                                    addresses.mac,
+                                    addresses->mac,
                                     ipAdapterAddresses->PhysicalAddress,
                                     ipAdapterAddresses->PhysicalAddressLength);
                             }
-                            if (!addresses.ipv4.empty () || !addresses.ipv6.empty ()) {
-                                newAddressesMap.insert (AddressesMap::value_type (addresses.name, addresses));
+                            if (!addresses->ipv4.empty () || !addresses->ipv6.empty ()) {
+                                newAddressesMap.insert (AddressesMap::value_type (addresses->name, addresses));
                             }
                         }
                     }
@@ -476,16 +435,17 @@ namespace thekogans {
                             util::Flags32 (curr->ifa_flags).Test (IFF_UP) &&
                             util::Flags32 (curr->ifa_flags).Test (IFF_RUNNING) &&
                             !util::Flags32 (curr->ifa_flags).Test (IFF_LOOPBACK)) {
-                        AddressesMap::iterator it = newAddressesMap.find (curr->ifa_name);
+                        AdapterAddressesMap::iterator it = newAddressesMap.find (curr->ifa_name);
                         if (it == newAddressesMap.end ()) {
-                            std::pair<AddressesMap::iterator, bool> result =
+                            std::pair<AdapterAddressesMap::iterator, bool> result =
                                 newAddressesMap.insert (
-                                    AddressesMap::value_type (
+                                    AdapterAddressesMap::value_type (
                                         curr->ifa_name,
-                                        Addresses (
-                                            curr->ifa_name,
-                                            if_nametoindex (curr->ifa_name),
-                                            util::Flags32 (curr->ifa_flags).Test (IFF_MULTICAST))));
+                                        AdapterAddresses::Ptr (
+                                            new AdapterAddresses (
+                                                curr->ifa_name,
+                                                if_nametoindex (curr->ifa_name),
+                                                util::Flags32 (curr->ifa_flags).Test (IFF_MULTICAST)))));
                             if (result.second) {
                                 it = result.first;
                             }
@@ -495,33 +455,33 @@ namespace thekogans {
                             }
                         }
                         if (curr->ifa_addr->sa_family == AF_INET) {
-                            Addresses::IPV4 ipv4;
+                            AdapterAddresses::IPV4 ipv4;
                             memcpy (&ipv4.unicast.in, curr->ifa_addr, sizeof (sockaddr_in));
                             ipv4.unicast.length = sizeof (sockaddr_in);
                             if (util::Flags32 (curr->ifa_flags).Test (IFF_BROADCAST)) {
                                 memcpy (&ipv4.broadcast.in, curr->ifa_broadaddr, sizeof (sockaddr_in));
                                 ipv4.broadcast.length = sizeof (sockaddr_in);
                             }
-                            it->second.ipv4.push_back (ipv4);
+                            it->second->ipv4.push_back (ipv4);
                         }
                         else if (curr->ifa_addr->sa_family == AF_INET6) {
                             Address ipv6;
                             memcpy (&ipv6.in6, curr->ifa_addr, sizeof (sockaddr_in6));
                             ipv6.length = sizeof (sockaddr_in6);
-                            it->second.ipv6.push_back (ipv6);
+                            it->second->ipv6.push_back (ipv6);
                         }
                     #if defined (TOOLCHAIN_OS_Linux)
                         else if (curr->ifa_addr->sa_family == AF_PACKET) {
                             const sockaddr_ll *addr = (const sockaddr_ll *)curr->ifa_addr;
                             if (addr->sll_hatype == ARPHRD_ETHER && addr->sll_halen == util::MAC_LENGTH) {
-                                memcpy (it->second.mac, addr->sll_addr, addr->sll_halen);
+                                memcpy (it->second->mac, addr->sll_addr, addr->sll_halen);
                             }
                         }
                     #else // defined (TOOLCHAIN_OS_Linux)
                         else if (curr->ifa_addr->sa_family == AF_LINK) {
                             const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
                             if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == util::MAC_LENGTH) {
-                                memcpy (it->second.mac, LLADDR (addr), addr->sdl_alen);
+                                memcpy (it->second->mac, LLADDR (addr), addr->sdl_alen);
                             }
                         }
                     #endif // defined (TOOLCHAIN_OS_Linux)
@@ -533,7 +493,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
-            newAddressesMap.swap (addressesMap);
+            return addressesMap;
         }
 
     #if defined (TOOLCHAIN_OS_OSX)
@@ -579,7 +539,7 @@ namespace thekogans {
                 SCDynamicStoreRef /*store*/,
                 CFArrayRef /*changedKeys*/,
                 void * /*info*/) {
-            Adapters::Instance ().NotifyEventHandlers ();
+            Adapters::Instance ().NotifySubscribers ();
         }
     #endif // defined (TOOLCHAIN_OS_OSX)
 
@@ -593,7 +553,7 @@ namespace thekogans {
                 socket->Bind (address);
                 char buffer[4096];
                 while (socket->Read (buffer, 4096) > 0) {
-                    NotifyEventHandlers ();
+                    NotifySubscribers ();
                 }
                 socket.Reset ();
             #else // defined (TOOLCHAIN_OS_Linux)
@@ -811,68 +771,61 @@ namespace thekogans {
         #if defined (THEKOGANS_STREAM_CONFIG_Debug)
             LogMIB_IPINTERFACE_ROW (*(PMIB_IPINTERFACE_ROW)Row);
         #endif // defined (THEKOGANS_STREAM_CONFIG_Debug)
-            Adapters::Instance ().NotifyEventHandlers ();
+            Adapters::Instance ().NotifySubscribers ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        // NOTE: There exists a race between StartListening and
-        // StopListening on Linux and OS X. If you call StartListening
-        // followed by StopListening before the thread had a
-        // chance to initialize the socket (Linux) or the runLoop (OS X),
-        // the thread will not be stopped. I could have synchronized
-        // access to the shared resources by having StartListening
-        // wait on an event that would be signaled by the thread at an
-        // appropriate time. I decided against it for the following
-        // reasons; 1) It's too big a price to pay for the benefit,
-        // and 2) [Start | Stop]Listening are private controlled by
-        // [Register | Unregister]EventHandler. Access to those
-        // APIs is serialized. So, effectively, there is no race (as
-        // far as the user can tell).
-
-        void Adapters::StartListening () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (handle == 0) {
-                typedef VOID (NETIOAPI_API_ *INTERFACE_CHANGE_CALLBACK) (
-                    PVOID,
-                    PMIB_IPINTERFACE_ROW,
-                    MIB_NOTIFICATION_TYPE);
-                DWORD rc = NotifyIpInterfaceChange (AF_UNSPEC,
-                    (INTERFACE_CHANGE_CALLBACK)InterfaceChangeCallback, 0, FALSE, &handle);
-                if (rc != NO_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (rc);
+        void Adapters::OnSubscribe (
+                util::Subscriber<AdaptersEvents> & /*subscriber*/,
+                util::Producer<AdaptersEvents>::EventDeliveryPolicy::Ptr /*eventDeliveryPolicy*/) {
+            if (util::Producer<AdaptersEvents>::GetSubscriberCount () == 1) {
+                addressesMap = GetAddressesMap ();
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (handle == 0) {
+                    typedef VOID (NETIOAPI_API_ *INTERFACE_CHANGE_CALLBACK) (
+                        PVOID,
+                        PMIB_IPINTERFACE_ROW,
+                        MIB_NOTIFICATION_TYPE);
+                    DWORD rc = NotifyIpInterfaceChange (AF_UNSPEC,
+                        (INTERFACE_CHANGE_CALLBACK)InterfaceChangeCallback, 0, FALSE, &handle);
+                    if (rc != NO_ERROR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (rc);
+                    }
                 }
+            #elif defined (TOOLCHAIN_OS_Linux)
+                if (socket.Get () == 0) {
+                    Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+                }
+            #elif defined (TOOLCHAIN_OS_OSX)
+                if (runLoop == 0) {
+                    Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-        #elif defined (TOOLCHAIN_OS_Linux)
-            if (socket.Get () == 0) {
-                Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-            }
-        #elif defined (TOOLCHAIN_OS_OSX)
-            if (runLoop == 0) {
-                Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void Adapters::StopListening () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (handle != 0) {
-                if (CancelMibChangeNotify2 (handle) != NO_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+        void Adapters::OnUnsubscribe (util::Subscriber<AdaptersEvents> & /*subscriber*/) {
+            if (util::Producer<AdaptersEvents>::GetSubscriberCount () == 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (handle != 0) {
+                    if (CancelMibChangeNotify2 (handle) != NO_ERROR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                    handle = 0;
                 }
-                handle = 0;
+            #elif defined (TOOLCHAIN_OS_Linux)
+                if (socket.Get () != 0) {
+                    socket->Close ();
+                    Wait ();
+                }
+            #elif defined (TOOLCHAIN_OS_OSX)
+                if (runLoop != 0) {
+                    CFRunLoopStop (runLoop);
+                    Wait ();
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-        #elif defined (TOOLCHAIN_OS_Linux)
-            if (socket.Get () != 0) {
-                socket->Close ();
-                Wait ();
-            }
-        #elif defined (TOOLCHAIN_OS_OSX)
-            if (runLoop != 0) {
-                CFRunLoopStop (runLoop);
-                Wait ();
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     } // namespace stream

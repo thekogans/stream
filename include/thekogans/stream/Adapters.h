@@ -47,7 +47,8 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/RefCounted.h"
-#include "thekogans/util/JobQueue.h"
+#include "thekogans/util/Producer.h"
+#include "thekogans/util/Subscriber.h"
 #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
     #include "thekogans/util/Thread.h"
 #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
@@ -59,6 +60,141 @@
 
 namespace thekogans {
     namespace stream {
+
+        /// \struct AdapterAddresses Adapters.h thekogans/stream/Adapters.h
+        ///
+        /// \brief
+        /// Contains adapter addresses returned by \see{Adapters::GetAddressesMap}.
+
+        struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses : public virtual util::ThreadSafeRefCounted {
+            /// \brief
+            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AdapterAddresses>.
+            typedef util::ThreadSafeRefCounted::Ptr<AdapterAddresses> Ptr;
+
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AdapterAddresses, util::SpinLock);
+
+            /// \brief
+            /// Name of adapter.
+            std::string name;
+            /// \brief
+            /// Adapter index.
+            util::ui32 index;
+            /// \brief
+            /// true = adapter supports multicast.
+            bool multicast;
+            /// \struct Adapters::IPV4 Adapters.h thekogans/stream/Adapters.h
+            ///
+            /// \brief
+            /// IPV4 unicast and broadcast addresses.
+            struct IPV4 {
+                /// \brief
+                /// IPV4 unicast address.
+                Address unicast;
+                /// \brief
+                /// IPV4 broadcast address.
+                Address broadcast;
+
+                /// \brief
+                /// ctor.
+                IPV4 () {}
+                /// \brief
+                /// ctor.
+                /// \param[in] unicast_ IPV4 unicast address.
+                /// \param[in] broadcast_ IPV4 broadcast address.
+                IPV4 (
+                    const Address &unicast_,
+                    const Address &broadcast_) :
+                    unicast (unicast_),
+                    broadcast (broadcast_) {}
+            };
+            /// \brief
+            /// Convenient typedef for std::list<IPV4>.
+            typedef std::list<IPV4> IPV4Addresses;
+            /// \brief
+            /// List of IPV4 addresses. If the adapter was not
+            /// configured for IPV4 it will be empty.
+            IPV4Addresses ipv4;
+            /// \brief
+            /// Convenient typedef for std::list<Address>.
+            typedef std::list<Address> IPV6Addresses;
+            /// \brief
+            /// List of IPV6 addresses. If the adapter was not
+            /// configured for IPV6 it will be empty.
+            IPV6Addresses ipv6;
+            /// \brief
+            /// Adapter MAC address.
+            util::ui8 mac[util::MAC_LENGTH];
+
+            /// \brief
+            /// ctor.
+            AdapterAddresses () :
+                    index (0),
+                    multicast (false) {
+                memset (mac, 0, util::MAC_LENGTH);
+            }
+            /// \brief
+            /// ctor.
+            /// \param[in] name_ Name of adapter.
+            /// \param[in] index_ Adapter index.
+            /// \param[in] multicast_ true = adapter supports multicast.
+            AdapterAddresses (
+                    const std::string &name_,
+                    util::ui32 index_,
+                    bool multicast_) :
+                    name (name_),
+                    index (index_),
+                    multicast (multicast_) {
+                memset (mac, 0, util::MAC_LENGTH);
+            }
+
+            /// \brief
+            /// Check if a given address belongs to this adapter.
+            /// \param[in] address Address to check.
+            /// \return true = address belongs to this adapter.
+            bool Contains (const Address &address) const;
+
+            /// \brief
+            /// Dump the contents of Addresses to a given stream.
+            /// \param[in] stream Stream to dump the contents to.
+            void Dump (std::ostream &stream) const;
+        };
+
+        /// \brief
+        /// Convenient typedef for std::list<AdapterAddresses>.
+        typedef std::list<AdapterAddresses::Ptr> AdapterAddressesList;
+        /// \brief
+        /// Convenient typedef for std::map<std::string, AdapterAddresses>.
+        typedef std::map<std::string, AdapterAddresses::Ptr> AdapterAddressesMap;
+
+        /// \struct AdaptersEvents Adapters.h thekogans/stream/Adapters.h
+        ///
+        /// \brief
+        /// Network change notification events. See \see{util::Subscriber} for an
+        /// example on how to use this class.
+
+        struct _LIB_THEKOGANS_STREAM_DECL AdaptersEvents {
+            /// \brief
+            /// dtor.
+            virtual ~AdaptersEvents () {}
+
+            /// \brief
+            /// Called when a new adapter was added to the network.
+            /// \param[in] addresses New adapter addresses.
+            virtual void OnAdapterAdded (
+                AdapterAddresses::Ptr /*addresses*/) throw () {}
+            /// \brief
+            /// Called when an existing adapter was removed from the network.
+            /// \param[in] addresses Deleted adapter addresses.
+            virtual void OnAdapterDeleted (
+                AdapterAddresses::Ptr /*addresses*/) throw () {}
+            /// \brief
+            /// Called when an existing adapter was modified.
+            /// \param[in] oldAddresses Old adapter addresses.
+            /// \param[in] newAddresses New adapter addresses.
+            virtual void OnAdapterChanged (
+                AdapterAddresses::Ptr /*oldAddresses*/,
+                AdapterAddresses::Ptr /*newAddresses*/) throw () {}
+        };
 
         /// \struct Adapters Adapters.h thekogans/stream/Adapters.h
         ///
@@ -75,152 +211,9 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
                 public util::Thread,
             #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-                public util::Singleton<Adapters, util::SpinLock> {
-            /// \struct Adapters::Addresses Adapters.h thekogans/stream/Adapters.h
-            ///
-            /// \brief
-            /// Contains adapter addresses returned by GetAddressesMap.
-            struct _LIB_THEKOGANS_STREAM_DECL Addresses {
-                /// \brief
-                /// Name of adapter.
-                std::string name;
-                /// \brief
-                /// Adapter index.
-                util::ui32 index;
-                /// \brief
-                /// true = adapter supports multicast.
-                bool multicast;
-                /// \struct Adapters::IPV4 Adapters.h thekogans/stream/Adapters.h
-                ///
-                /// \brief
-                /// IPV4 unicast and broadcast addresses.
-                struct IPV4 {
-                    /// \brief
-                    /// IPV4 unicast address.
-                    Address unicast;
-                    /// \brief
-                    /// IPV4 broadcast address.
-                    Address broadcast;
-
-                    /// \brief
-                    /// ctor.
-                    IPV4 () {}
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] unicast_ IPV4 unicast address.
-                    /// \param[in] broadcast_ IPV4 broadcast address.
-                    IPV4 (
-                        const Address &unicast_,
-                        const Address &broadcast_) :
-                        unicast (unicast_),
-                        broadcast (broadcast_) {}
-                };
-                /// \brief
-                /// Convenient typedef for std::list<IPV4>.
-                typedef std::list<IPV4> IPV4Addresses;
-                /// \brief
-                /// List of IPV4 addresses. If the adapter was not
-                /// configured for IPV4 it will be empty.
-                IPV4Addresses ipv4;
-                /// \brief
-                /// Convenient typedef for std::list<Address>.
-                typedef std::list<Address> IPV6Addresses;
-                /// \brief
-                /// List of IPV6 addresses. If the adapter was not
-                /// configured for IPV6 it will be empty.
-                IPV6Addresses ipv6;
-                /// \brief
-                /// Adapter MAC address.
-                util::ui8 mac[util::MAC_LENGTH];
-
-                /// \brief
-                /// ctor.
-                Addresses () :
-                        index (0),
-                        multicast (false) {
-                    memset (mac, 0, util::MAC_LENGTH);
-                }
-                /// \brief
-                /// ctor.
-                /// \param[in] name_ Name of adapter.
-                /// \param[in] index_ Adapter index.
-                /// \param[in] multicast_ true = adapter supports multicast.
-                Addresses (
-                        const std::string &name_,
-                        util::ui32 index_,
-                        bool multicast_) :
-                        name (name_),
-                        index (index_),
-                        multicast (multicast_) {
-                    memset (mac, 0, util::MAC_LENGTH);
-                }
-
-                /// \brief
-                /// Check if a given address belongs to this adapter.
-                /// \param[in] address Address to check.
-                /// \return true = address belongs to this adapter.
-                bool Contains (const Address &address) const;
-
-                /// \brief
-                /// Dump the contents of Addresses to a given stream.
-                /// \param[in] stream Stream to dump the contents to.
-                void Dump (std::ostream &stream) const;
-            };
-            /// \brief
-            /// Convenient typedef for std::list<Addresses>.
-            typedef std::list<Addresses> AddressesList;
-            /// \brief
-            /// Convenient typedef for std::map<std::string, Addresses>.
-            typedef std::map<std::string, Addresses> AddressesMap;
-
-            /// \struct Adapters::Addresses Adapters.h thekogans/stream/Adapters.h
-            ///
-            /// \brief
-            /// Network change notification event handler. Derive from this
-            /// class and call RegisterEventHandler to be notified when network
-            /// changes occur.
-            struct _LIB_THEKOGANS_STREAM_DECL EventHandler :
-                    public virtual util::ThreadSafeRefCounted {
-                /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<EventHandler>.
-                typedef util::ThreadSafeRefCounted::Ptr<EventHandler> Ptr;
-
-                /// \brief
-                /// dtor.
-                virtual ~EventHandler () {}
-
-                /// \brief
-                /// Called when a new adapter was added to the network.
-                /// \param[in] addresses New adapter addresses.
-                virtual void HandleAdapterAdded (
-                    const Addresses & /*addresses*/) throw () {}
-                /// \brief
-                /// Called when an existing adapter was removed from the network.
-                /// \param[in] addresses Deleted adapter addresses.
-                virtual void HandleAdapterDeleted (
-                    const Addresses & /*addresses*/) throw () {}
-                /// \brief
-                /// Called when an existing adapter was modified.
-                /// \param[in] oldAddresses Old adapter addresses.
-                /// \param[in] newAddresses New adapter addresses.
-                virtual void HandleAdapterChanged (
-                    const Addresses & /*oldAddresses*/,
-                    const Addresses & /*newAddresses*/) throw () {}
-            };
-
+                public util::Singleton<Adapters, util::SpinLock>,
+                public util::Producer<AdaptersEvents> {
         private:
-            /// \brief
-            /// Map of current network adapter addresses.
-            AddressesMap addressesMap;
-            /// \brief
-            /// Convenient typedef for std::list<EventHandler::Ptr>.
-            typedef std::list<EventHandler::Ptr> EventHandlers;
-            /// \brief
-            /// List of event handlers to be notied when the network changes.
-            EventHandlers eventHandlers;
-            /// \brief
-            /// Adapters is a global singleton. Access to it must be serialized.
-            util::SpinLock spinLock;
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Returned by NotifyIpInterfaceChange to be used with CancelMibChangeNotify2.
@@ -235,8 +228,11 @@ namespace thekogans {
             CFRunLoopRef runLoop;
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Used to serialize delivery of network change events.
-            util::JobQueue jobQueue;
+            /// Map of current network adapter addresses.
+            AdapterAddressesMap addressesMap;
+            /// \brief
+            /// Adapters is a global singleton. Access to it must be serialized.
+            util::SpinLock spinLock;
 
         public:
             /// \brief
@@ -244,23 +240,14 @@ namespace thekogans {
             Adapters ();
 
             /// \brief
-            /// Register a network change listener.
-            /// \param[in] eventHandler Listener to register.
-            void RegisterEventHandler (EventHandler &eventHandler);
-            /// \brief
-            /// Unregister a network change listener.
-            /// \param[in] eventHandler Listener to unregister.
-            void UnregisterEventHandler (EventHandler &eventHandler);
-
-            /// \brief
             /// Return a list of current adapter addresses.
             /// \return A list of current adapter addresses.
-            AddressesList GetAddressesList ();
+            AdapterAddressesList GetAddressesList ();
 
         private:
             /// \brief
             /// Used internally to notify listeners of network change events.
-            void NotifyEventHandlers ();
+            void NotifySubscribers ();
 
         #if defined (TOOLCHAIN_OS_Windows)
             static VOID NETIOAPI_API_ InterfaceChangeCallback (
@@ -276,8 +263,8 @@ namespace thekogans {
 
             /// \brief
             /// Get all interface addresses.
-            /// \param[out] addressesMap Map of addresses to return.
-            void GetAddressesMap (AddressesMap &addressesMap) const;
+            /// \return \see{AdapterAddressesMap} of all interface addresses.
+            AdapterAddressesMap GetAddressesMap () const;
 
         #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
             // util::Thread
@@ -286,12 +273,18 @@ namespace thekogans {
             virtual void Run () throw ();
         #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 
+            // public util::Producer<AdaptersEvents>.
             /// \brief
-            /// Start listening for network change events.
-            void StartListening ();
+            /// Overide this methid to react to a new \see{Subscriber.
+            /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
+            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
+            virtual void OnSubscribe (
+                util::Subscriber<AdaptersEvents> & /*subscriber*/,
+                util::Producer<AdaptersEvents>::EventDeliveryPolicy::Ptr /*eventDeliveryPolicy*/);
             /// \brief
-            /// Stop listening for network change events.
-            void StopListening ();
+            /// Overide this methid to react to a \see{Subscriber being removed.
+            /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
+            virtual void OnUnsubscribe (util::Subscriber<AdaptersEvents> & /*subscriber*/);
 
             /// \brief
             /// Adapters is neither copy constructable, nor assignable.
