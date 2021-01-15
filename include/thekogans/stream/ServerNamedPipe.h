@@ -91,8 +91,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
-                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::Ptr<Context>.
+                typedef util::RefCounted::Ptr<Context> Ptr;
 
                 /// \brief
                 /// "ServerNamedPipe"

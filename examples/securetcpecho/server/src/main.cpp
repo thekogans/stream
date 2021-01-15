@@ -69,11 +69,11 @@ int main (
             server::Options::Instance ().version ||
             server::Options::Instance ().loggerMgr.consoleLogger ||
             server::Options::Instance ().path.empty ()) {
-        THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::Ptr (new util::ConsoleLogger));
+        THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::SharedPtr (new util::ConsoleLogger));
     }
     if (!server::Options::Instance ().loggerMgr.fileLogger.path.empty ()) {
         THEKOGANS_UTIL_LOG_ADD_LOGGER (
-            util::Logger::Ptr (
+            util::Logger::SharedPtr (
                 new util::FileLogger (
                     server::Options::Instance ().loggerMgr.fileLogger.path,
                     server::Options::Instance ().loggerMgr.fileLogger.archive,

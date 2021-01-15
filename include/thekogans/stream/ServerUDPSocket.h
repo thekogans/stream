@@ -73,8 +73,8 @@ namespace thekogans {
             /// up to you, but may I recommend: \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
-                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "ServerUDPSocket"
@@ -144,7 +144,7 @@ namespace thekogans {
                 /// \brief
                 /// Create a UDPSocket based on the address.
                 /// \return UDPSocket based on the address.
-                virtual Stream::Ptr CreateStream () const;
+                virtual Stream::SharedPtr CreateStream () const;
             };
 
             /// \brief
@@ -199,10 +199,10 @@ namespace thekogans {
             /// Connection encapsulates the new connection data. Since ServerUDPSocket
             /// has no idea what you're planning to do with the first dgram, it sends
             /// it along with the new socket.
-            struct _LIB_THEKOGANS_STREAM_DECL Connection : public util::ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_STREAM_DECL Connection : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Connection>.
-                typedef util::ThreadSafeRefCounted::Ptr<Connection> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Connection>.
+                typedef util::RefCounted::SharedPtr<Connection> SharedPtr;
 
                 /// \brief
                 /// Connection has a private heap to help with memory
@@ -211,7 +211,7 @@ namespace thekogans {
 
                 /// \brief
                 /// The new connection.
-                UDPSocket::Ptr udpSocket;
+                UDPSocket::SharedPtr udpSocket;
                 /// \brief
                 /// The datagram that arrived.
                 util::Buffer buffer;
@@ -247,7 +247,7 @@ namespace thekogans {
             /// an AsyncIoEventQueue, and return new connections through
             /// \see{AsyncIoEventSink::HandleServerUDPSocketConnection}.
             /// \return The new connection info.
-            Connection::Ptr Accept ();
+            Connection::SharedPtr Accept ();
 
         protected:
             // Stream

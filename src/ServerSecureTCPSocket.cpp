@@ -392,8 +392,8 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ServerSecureTCPSocket::Context::CreateStream () const {
-            return Stream::Ptr (
+        Stream::SharedPtr ServerSecureTCPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (
                 new ServerSecureTCPSocket (
                     address,
                     reuseAddress,
@@ -434,9 +434,9 @@ namespace thekogans {
             }
         }
 
-        SecureTCPSocket::Ptr ServerSecureTCPSocket::Accept () {
+        SecureTCPSocket::SharedPtr ServerSecureTCPSocket::Accept () {
             if (!IsAsync ()) {
-                SecureTCPSocket::Ptr connection (
+                SecureTCPSocket::SharedPtr connection (
                     new SecureTCPSocket ((THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
             #if defined (TOOLCHAIN_OS_Windows)
                 connection->UpdateAcceptContext (handle);
@@ -467,7 +467,7 @@ namespace thekogans {
                         (TCPSocket::AcceptOverlapped &)overlapped;
                     TCPSocket::UpdateAcceptContext (handle,
                         (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection);
-                    SecureTCPSocket::Ptr connection (
+                    SecureTCPSocket::SharedPtr connection (
                         asyncInfo->eventSink.GetSecureTCPSocket (
                             (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection));
                     // AcceptOverlapped::~AcceptOverlapped will
@@ -488,7 +488,7 @@ namespace thekogans {
         void ServerSecureTCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    SecureTCPSocket::Ptr connection =
+                    SecureTCPSocket::SharedPtr connection =
                         asyncInfo->eventSink.GetSecureTCPSocket (TCPSocket::Accept ());
                     // Connections inherit the listening socket's
                     // non-blocking state. Since we handle all

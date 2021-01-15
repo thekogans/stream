@@ -402,7 +402,7 @@ namespace thekogans {
                 if (IsSessionReused ()) {
                     SSL_SESSION *session = SSL_get0_session (ssl.get ());
                     if (session != 0) {
-                        SessionInfo::Ptr savedSessionInfo (
+                        SessionInfo::SharedPtr savedSessionInfo (
                             (SessionInfo *)SSL_SESSION_get_ex_data (session,
                                 OpenSSLInit::SSL_SESSIONSessionInfoIndex));
                         SSL_SESSION_set_ex_data (session,
@@ -450,7 +450,7 @@ namespace thekogans {
             if (SSL_is_server (ssl.get ()) == 1) {
                 SSL_SESSION *session = SSL_get0_session (ssl.get ());
                 if (session != 0) {
-                    SessionInfo::Ptr savedSessionInfo (new SessionInfo (sessionInfo));
+                    SessionInfo::SharedPtr savedSessionInfo (new SessionInfo (sessionInfo));
                     if (SSL_SESSION_set_ex_data (
                             session,
                             OpenSSLInit::SSL_SESSIONSessionInfoIndex,

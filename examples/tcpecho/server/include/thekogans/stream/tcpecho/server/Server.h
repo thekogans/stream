@@ -39,7 +39,7 @@ namespace thekogans {
                         public AsyncIoEventSink {
                 private:
                     util::JobQueue jobQueue;
-                    AsyncIoEventQueue::Ptr eventQueue;
+                    AsyncIoEventQueue::SharedPtr eventQueue;
                     volatile bool done;
 
                 public:
@@ -70,7 +70,7 @@ namespace thekogans {
                         const util::Exception &exception) throw ();
                     virtual void HandleServerTCPSocketConnection (
                         ServerTCPSocket &serverTCPSocket,
-                        TCPSocket::Ptr connection) throw ();
+                        TCPSocket::SharedPtr connection) throw ();
                     virtual void HandleStreamDisconnect (
                         Stream &stream) throw ();
                     virtual void HandleStreamRead (

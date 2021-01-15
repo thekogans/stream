@@ -179,7 +179,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void AsyncIoEventQueue::SetTimeoutPolicy (TimeoutPolicy::Ptr timeoutPolicy_) {
+        void AsyncIoEventQueue::SetTimeoutPolicy (TimeoutPolicy::SharedPtr timeoutPolicy_) {
             if (timeoutPolicy_.Get () != 0) {
                 timeoutPolicy = timeoutPolicy_;
             }
@@ -291,10 +291,10 @@ namespace thekogans {
                     TimeoutPolicyController timeoutPolicyController (
                         *timeoutPolicy, lastEventBatchTime, currentTime, count);
                     for (ULONG i = 0; i < count; ++i) {
-                        Stream::Ptr stream;
+                        Stream::SharedPtr stream;
                         util::ui32 event = Stream::AsyncInfo::EventInvalid;
                         if (iocpEvents[i].lpOverlapped != 0) {
-                            Stream::AsyncInfo::Overlapped::Ptr overlapped (
+                            Stream::AsyncInfo::Overlapped::SharedPtr overlapped (
                                 (Stream::AsyncInfo::Overlapped *)iocpEvents[i].lpOverlapped, false);
                             assert ((Stream *)iocpEvents[i].lpCompletionKey == overlapped->stream.Get ());
                             overlapped->Prolog ();

@@ -38,7 +38,7 @@ namespace thekogans {
                         public AsyncIoEventSink {
                 private:
                     util::JobQueue jobQueue;
-                    AsyncIoEventQueue::Ptr eventQueue;
+                    AsyncIoEventQueue::SharedPtr eventQueue;
                     volatile bool done;
 
                 public:

@@ -77,22 +77,21 @@ namespace thekogans {
         ///   called asynchronously from a completely different thread.
         ///   There is no one there to catch your exceptions. YOU WILL SEG FAULT!
 
-        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink :
-                public virtual util::ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink : public virtual util::RefCounted {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncIoEventSink>.
-            typedef util::ThreadSafeRefCounted::Ptr<AsyncIoEventSink> Ptr;
+            /// Convenient typedef for util::RefCounted::SharedPtr<AsyncIoEventSink>.
+            typedef util::RefCounted::SharedPtr<AsyncIoEventSink> SharedPtr;
 
         protected:
             /// \brief
             /// Next AsyncIoEventSink in the chain.
-            AsyncIoEventSink::Ptr next;
+            AsyncIoEventSink::SharedPtr next;
 
         public:
             /// \brief
             /// dtor.
             /// \param[in] next_ Next AsyncIoEventSink in the chain.
-            AsyncIoEventSink (AsyncIoEventSink::Ptr next_ = 0) :
+            AsyncIoEventSink (AsyncIoEventSink::SharedPtr next_ = 0) :
                 next (next_) {}
             /// \brief
             /// dtor.
@@ -213,8 +212,8 @@ namespace thekogans {
             /// Override this method if you're deriving from a TCPSocket.
             /// \param[in] handle OS socket handle to wrap.
             /// \return A \see{TCPSocket} derivative.
-            virtual TCPSocket::Ptr GetTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
-                return TCPSocket::Ptr (new TCPSocket (handle));
+            virtual TCPSocket::SharedPtr GetTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
+                return TCPSocket::SharedPtr (new TCPSocket (handle));
             }
             /// \brief
             /// Called to report that the given \see{TCPSocket} has been shutdown.
@@ -231,7 +230,7 @@ namespace thekogans {
             /// NOTE: The new connection will be sync (blocking).
             virtual void HandleServerTCPSocketConnection (
                 ServerTCPSocket &serverTCPSocket,
-                TCPSocket::Ptr connection) throw ();
+                TCPSocket::SharedPtr connection) throw ();
             /// \brief
             /// Called to report a new connection on a \see{ServerUDPSocket}.
             /// \param[in] serverUDPSocket \see{ServerUDPSocket} on which the
@@ -240,15 +239,15 @@ namespace thekogans {
             /// NOTE: The new connection will be sync (blocking).
             virtual void HandleServerUDPSocketConnection (
                 ServerUDPSocket &serverUDPSocket,
-                ServerUDPSocket::Connection::Ptr connection) throw ();
+                ServerUDPSocket::Connection::SharedPtr connection) throw ();
 
         #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
             /// \brief
             /// Override this method if you're deriving from a \see{SecureTCPSocket}.
             /// \param[in] handle OS socket handle to wrap.
             /// \return A SecureTCPSocket derivative.
-            virtual SecureTCPSocket::Ptr GetSecureTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
-                return SecureTCPSocket::Ptr (new SecureTCPSocket (handle));
+            virtual SecureTCPSocket::SharedPtr GetSecureTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
+                return SecureTCPSocket::SharedPtr (new SecureTCPSocket (handle));
             }
             /// \brief
             /// Called to report a new connection on a \see{ServerSecureTCPSocket}.
@@ -262,7 +261,7 @@ namespace thekogans {
             /// handshake.
             virtual void HandleServerSecureTCPSocketConnection (
                 ServerSecureTCPSocket &serverSecureTCPSocket,
-                SecureTCPSocket::Ptr connection) throw ();
+                SecureTCPSocket::SharedPtr connection) throw ();
             /// \brief
             /// Called to report a new connection on a \see{ServerSecureUDPSocket}.
             /// \param[in] serverSecureUDPSocket \see{ServerSecureUDPSocket} on which
@@ -275,7 +274,7 @@ namespace thekogans {
             /// a DTLS handshake.
             virtual void HandleServerSecureUDPSocketConnection (
                 ServerSecureUDPSocket &serverSecureUDPSocket,
-                SecureUDPSocket::Ptr connection) throw ();
+                SecureUDPSocket::SharedPtr connection) throw ();
 
             /// \brief
             /// Called when the TLS handshake is about to start.

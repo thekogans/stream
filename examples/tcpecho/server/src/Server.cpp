@@ -59,7 +59,7 @@ namespace thekogans {
                                     it = addresses.begin (),
                                     end = addresses.end (); it != end; ++it) {
                                 eventQueue->AddStream (
-                                    *ServerTCPSocket::Ptr (
+                                    *ServerTCPSocket::SharedPtr (
                                         new ServerTCPSocket (
                                             *it, reuseAddress, maxPendingConnections)),
                                     *this);
@@ -375,7 +375,7 @@ namespace thekogans {
 
                 void Server::HandleServerTCPSocketConnection (
                         ServerTCPSocket &serverTCPSocket,
-                        TCPSocket::Ptr connection) throw () {
+                        TCPSocket::SharedPtr connection) throw () {
                     THEKOGANS_UTIL_TRY {
                         Address peerAddress = connection->GetPeerAddress ();
                         THEKOGANS_UTIL_LOG_INFO (
@@ -405,7 +405,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_TRY {
                         if (!buffer.IsEmpty ()) {
                             struct WriteJob : public util::RunLoop::Job {
-                                Stream::Ptr stream;
+                                Stream::SharedPtr stream;
                                 util::Buffer buffer;
                                 WriteJob (
                                     Stream &stream_,
@@ -423,7 +423,7 @@ namespace thekogans {
                                 }
                             };
                             jobQueue.EnqJob (
-                                util::RunLoop::Job::Ptr (
+                                util::RunLoop::Job::SharedPtr (
                                     new WriteJob (stream, std::move (buffer))));
                         }
                     }

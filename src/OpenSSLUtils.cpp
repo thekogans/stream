@@ -74,7 +74,7 @@ namespace thekogans {
                     int idx,
                     long argl,
                     void *argp) {
-                volatile SessionInfo::Ptr sessionInfo ((SessionInfo *)ptr);
+                volatile SessionInfo::SharedPtr sessionInfo ((SessionInfo *)ptr);
             }
         }
 

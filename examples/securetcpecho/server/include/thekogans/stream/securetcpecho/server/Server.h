@@ -39,7 +39,7 @@ namespace thekogans {
                 private:
                     bool useWriteQueue;
                     util::JobQueue jobQueue;
-                    stream::AsyncIoEventQueue::Ptr eventQueue;
+                    stream::AsyncIoEventQueue::SharedPtr eventQueue;
                     volatile bool done;
 
                 public:
@@ -68,7 +68,7 @@ namespace thekogans {
                         const util::Exception &exception) throw ();
                     virtual void HandleServerSecureTCPSocketConnection (
                         stream::ServerSecureTCPSocket &serverSecureTCPSocket,
-                        stream::SecureTCPSocket::Ptr connection) throw ();
+                        stream::SecureTCPSocket::SharedPtr connection) throw ();
                     virtual void HandleStreamDisconnect (
                         stream::Stream &stream) throw ();
                     virtual void HandleStreamRead (

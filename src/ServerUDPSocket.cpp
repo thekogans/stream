@@ -69,8 +69,8 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ServerUDPSocket::Context::CreateStream () const {
-            return Stream::Ptr (new ServerUDPSocket (address, maxMessageLength));
+        Stream::SharedPtr ServerUDPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (new ServerUDPSocket (address, maxMessageLength));
         }
 
         ServerUDPSocket::ServerUDPSocket (
@@ -86,8 +86,8 @@ namespace thekogans {
             SetRecvPktInfo (true);
         }
 
-        ServerUDPSocket::Connection::Ptr ServerUDPSocket::Accept () {
-            Connection::Ptr connection;
+        ServerUDPSocket::Connection::SharedPtr ServerUDPSocket::Accept () {
+            Connection::SharedPtr connection;
             {
                 util::Buffer buffer;
                 if (IsAsync ()) {
@@ -142,7 +142,7 @@ namespace thekogans {
                     if (!readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
                         asyncInfo->eventSink.HandleServerUDPSocketConnection (
                             *this,
-                            Connection::Ptr (
+                            Connection::SharedPtr (
                                 new Connection (
                                     std::move (readMsgWriteMsgOverlapped.buffer),
                                     readMsgWriteMsgOverlapped.from,
@@ -162,7 +162,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferSize = GetDataAvailable ();
                     if (bufferSize != 0) {
-                        Connection::Ptr connection = Accept ();
+                        Connection::SharedPtr connection = Accept ();
                         // Connections inherit the listening socket's
                         // non-blocking state. Since we handle all
                         // async io through AsyncIoEventQueue, set the

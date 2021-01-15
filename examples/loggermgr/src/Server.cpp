@@ -34,11 +34,11 @@ namespace thekogans {
                 if (!addresses.empty ()) {
                     if (maxEntrySize > 0 && maxEntrySize <= DEFAULT_ENTRY_SIZE) {
                         if (done) {
-                            eventQueue.reset (new stream::AsyncIoEventQueue ());
+                            eventQueue.Reset (new stream::AsyncIoEventQueue ());
                             for (std::list<stream::Address>::const_iterator
                                     it = addresses.begin (),
                                     end = addresses.end (); it != end; ++it) {
-                                stream::UDPSocket::Ptr udpSocket (
+                                stream::UDPSocket::SharedPtr udpSocket (
                                     new stream::UDPSocket (*it));
                                 udpSocket->SetSendBufferSize (maxEntrySize);
                                 udpSocket->SetReceiveBufferSize (maxEntrySize);
@@ -71,7 +71,7 @@ namespace thekogans {
                     done = true;
                     eventQueue->Break ();
                     Wait ();
-                    eventQueue.reset ();
+                    eventQueue.Reset ();
                     jobQueue.WaitForIdle ();
                 }
                 else {
@@ -132,7 +132,7 @@ namespace thekogans {
                         }
                     };
                     jobQueue.EnqJob (
-                        util::RunLoop::Job::Ptr (
+                        util::RunLoop::Job::SharedPtr (
                             new Job (std::move (buffer), address)));
                 }
                 THEKOGANS_UTIL_CATCH_AND_LOG

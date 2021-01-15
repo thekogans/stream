@@ -100,11 +100,11 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
         }
 
-        Stream::Context::Ptr Stream::GetContext (const pugi::xml_node &node) {
+        Stream::Context::SharedPtr Stream::GetContext (const pugi::xml_node &node) {
             Map::iterator it = GetMap ().find (
                 util::Decodestring (node.attribute (Context::ATTR_STREAM_TYPE).value ()));
             return it != GetMap ().end () ?
-                it->second (node) : Stream::Context::Ptr ();
+                it->second (node) : Stream::Context::SharedPtr ();
         }
 
     #if defined (THEKOGANS_STREAM_TYPE_Static)

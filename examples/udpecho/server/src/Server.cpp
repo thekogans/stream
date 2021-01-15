@@ -37,7 +37,7 @@ namespace thekogans {
                                 for (std::list<Address>::const_iterator
                                         it = addresses.begin (),
                                         end = addresses.end (); it != end; ++it) {
-                                    UDPSocket::Ptr udpSocket (new UDPSocket (*it));
+                                    UDPSocket::SharedPtr udpSocket (new UDPSocket (*it));
                                     udpSocket->SetSendBufferSize (maxPacketSize);
                                     udpSocket->SetReceiveBufferSize (maxPacketSize);
                                     if (message) {
@@ -108,7 +108,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_TRY {
                         if (!buffer.IsEmpty ()) {
                             struct WriteJob : public util::RunLoop::Job {
-                                UDPSocket::Ptr udpSocket;
+                                UDPSocket::SharedPtr udpSocket;
                                 util::Buffer buffer;
                                 Address address;
                                 WriteJob (
@@ -129,7 +129,7 @@ namespace thekogans {
                                 }
                             };
                             jobQueue.EnqJob (
-                                util::RunLoop::Job::Ptr (
+                                util::RunLoop::Job::SharedPtr (
                                     new WriteJob (udpSocket, std::move (buffer), address)));
                         }
                     }
@@ -160,7 +160,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_TRY {
                         if (!buffer.IsEmpty ()) {
                             struct WriteJob : public util::RunLoop::Job {
-                                UDPSocket::Ptr udpSocket;
+                                UDPSocket::SharedPtr udpSocket;
                                 util::Buffer buffer;
                                 Address from;
                                 Address to;
@@ -184,7 +184,7 @@ namespace thekogans {
                                 }
                             };
                             jobQueue.EnqJob (
-                                util::RunLoop::Job::Ptr (
+                                util::RunLoop::Job::SharedPtr (
                                     new WriteJob (udpSocket, std::move (buffer), to, from)));
                         }
                     }

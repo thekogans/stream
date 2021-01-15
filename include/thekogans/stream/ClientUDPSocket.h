@@ -67,8 +67,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
-                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "ClientUDPSocket".
@@ -124,7 +124,7 @@ namespace thekogans {
                 /// purpose as you might want to call \see{UDPSocket::Connect}
                 /// asynchronously.
                 /// \return \see{UDPSocket} based on address.GetFamily ().
-                virtual Stream::Ptr CreateStream () const;
+                virtual Stream::SharedPtr CreateStream () const;
             };
 
             /// \brief

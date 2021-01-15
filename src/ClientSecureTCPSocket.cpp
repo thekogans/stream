@@ -285,8 +285,8 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ClientSecureTCPSocket::Context::CreateStream () const {
-            return Stream::Ptr (
+        Stream::SharedPtr ClientSecureTCPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (
                 new SecureTCPSocket (address.GetFamily (), SOCK_STREAM, 0));
         }
 

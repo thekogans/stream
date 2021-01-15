@@ -57,8 +57,8 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ClientUDPSocket::Context::CreateStream () const {
-            return Stream::Ptr (new UDPSocket (address));
+        Stream::SharedPtr ClientUDPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (new UDPSocket (address));
         }
 
     } // namespace stream

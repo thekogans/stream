@@ -43,8 +43,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL TCPSocket : public Socket {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<TCPSocket>.
-            typedef util::ThreadSafeRefCounted::Ptr<TCPSocket> Ptr;
+            /// Convenient typedef for util::RefCounted::SharedPtr<TCPSocket>.
+            typedef util::RefCounted::SharedPtr<TCPSocket> SharedPtr;
 
             /// \brief
             /// TCPSocket has a private heap to help with memory
@@ -222,8 +222,8 @@ namespace thekogans {
             /// instantiating Overlapped used by \see{TCPSocket::Connect} easier.
             struct ConnectOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ConnectOverlapped>.
-                typedef util::ThreadSafeRefCounted::Ptr<ConnectOverlapped> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<ConnectOverlapped>.
+                typedef util::RefCounted::SharedPtr<ConnectOverlapped> SharedPtr;
 
                 /// \brief
                 /// ConnectOverlapped has a private heap to help with memory
@@ -255,8 +255,8 @@ namespace thekogans {
             /// instantiating Overlapped used by \see{TCPSocket::Accept} easier.
             struct AcceptOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AcceptOverlapped>.
-                typedef util::ThreadSafeRefCounted::Ptr<AcceptOverlapped> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<AcceptOverlapped>.
+                typedef util::RefCounted::SharedPtr<AcceptOverlapped> SharedPtr;
 
                 /// \brief
                 /// AcceptOverlapped has a private heap to help with memory
@@ -312,8 +312,8 @@ namespace thekogans {
             /// instantiating Overlapped used by \see{TCPSocket::Shutdown} easier.
             struct ShutdownOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ShutdownOverlapped>.
-                typedef util::ThreadSafeRefCounted::Ptr<ShutdownOverlapped> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<ShutdownOverlapped>.
+                typedef util::RefCounted::SharedPtr<ShutdownOverlapped> SharedPtr;
 
                 /// \brief
                 /// ShutdownOverlapped has a private heap to help with memory

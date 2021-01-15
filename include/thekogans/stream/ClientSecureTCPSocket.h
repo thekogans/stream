@@ -99,8 +99,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
-                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "ClientSecureTCPSocket".
@@ -345,7 +345,7 @@ namespace thekogans {
                 /// \brief
                 /// Create a ClientSecureTCPSocket.
                 /// \return ClientSecureTCPSocket.
-                virtual Stream::Ptr CreateStream () const;
+                virtual Stream::SharedPtr CreateStream () const;
             };
 
             /// \brief

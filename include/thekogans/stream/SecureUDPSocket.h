@@ -54,8 +54,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL SecureUDPSocket : public UDPSocket {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<SecureUDPSocket>.
-            typedef util::ThreadSafeRefCounted::Ptr<SecureUDPSocket> Ptr;
+            /// Convenient typedef for util::RefCounted::SharedPtr<SecureUDPSocket>.
+            typedef util::RefCounted::SharedPtr<SecureUDPSocket> SharedPtr;
 
             /// \brief
             /// SecureUDPSocket has a private heap to help with memory

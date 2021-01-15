@@ -57,10 +57,9 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ClientTCPSocket::Context::CreateStream () const {
-            return Stream::Ptr (new TCPSocket (family, type, protocol));
+        Stream::SharedPtr ClientTCPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (new TCPSocket (family, type, protocol));
         }
 
     } // namespace stream
 } // namespace thekogans
-

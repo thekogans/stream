@@ -38,7 +38,7 @@ namespace thekogans {
                         public stream::AsyncIoEventSink {
                 private:
                     util::JobQueue jobQueue;
-                    stream::AsyncIoEventQueue::Ptr eventQueue;
+                    stream::AsyncIoEventQueue::SharedPtr eventQueue;
                     volatile bool done;
 
                 public:
@@ -65,7 +65,7 @@ namespace thekogans {
                         const util::Exception &exception) throw ();
                     virtual void HandleServerSecureUDPSocketConnection (
                         stream::ServerSecureUDPSocket &serverSecureUDPSocket,
-                        stream::SecureUDPSocket::Ptr connection) throw ();
+                        stream::SecureUDPSocket::SharedPtr connection) throw ();
                     virtual void HandleStreamDisconnect (
                         stream::Stream &stream) throw ();
                     virtual void HandleStreamRead (

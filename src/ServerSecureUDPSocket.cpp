@@ -414,8 +414,8 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ServerSecureUDPSocket::Context::CreateStream () const {
-            return Stream::Ptr (
+        Stream::SharedPtr ServerSecureUDPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (
                 new ServerSecureUDPSocket (
                     address,
                     context.GetSSL_CTX (),
@@ -445,8 +445,8 @@ namespace thekogans {
             }
         }
 
-        SecureUDPSocket::Ptr ServerSecureUDPSocket::Accept () {
-            SecureUDPSocket::Ptr connection;
+        SecureUDPSocket::SharedPtr ServerSecureUDPSocket::Accept () {
+            SecureUDPSocket::SharedPtr connection;
             {
                 util::Buffer buffer;
                 if (IsAsync ()) {
@@ -516,7 +516,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferSize = GetDataAvailable ();
                     if (bufferSize != 0) {
-                        SecureUDPSocket::Ptr connection = Accept ();
+                        SecureUDPSocket::SharedPtr connection = Accept ();
                         // Connections inherit the listening socket's
                         // non-blocking state. Since we handle all
                         // async io through AsyncIoEventQueue, set the
@@ -537,11 +537,11 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        SecureUDPSocket::Ptr ServerSecureUDPSocket::CreatePeerConnection (
+        SecureUDPSocket::SharedPtr ServerSecureUDPSocket::CreatePeerConnection (
                 util::Buffer buffer,
                 const Address &from,
                 const Address &to) const {
-            SecureUDPSocket::Ptr connection (
+            SecureUDPSocket::SharedPtr connection (
                 new SecureUDPSocket (from.GetFamily (), SOCK_DGRAM, 0));
             connection->SetReuseAddress (true);
         #if defined (SO_REUSEPORT) || defined (SO_REUSE_UNICASTPORT)

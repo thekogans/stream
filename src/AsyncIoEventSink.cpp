@@ -96,7 +96,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleServerTCPSocketConnection (
                 ServerTCPSocket &serverTCPSocket,
-                TCPSocket::Ptr connection) throw () {
+                TCPSocket::SharedPtr connection) throw () {
             if (next.Get () != 0) {
                 next->HandleServerTCPSocketConnection (serverTCPSocket, connection);
             }
@@ -104,7 +104,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleServerUDPSocketConnection (
                 ServerUDPSocket &serverUDPSocket,
-                ServerUDPSocket::Connection::Ptr connection) throw () {
+                ServerUDPSocket::Connection::SharedPtr connection) throw () {
             if (next.Get () != 0) {
                 next->HandleServerUDPSocketConnection (
                     serverUDPSocket,
@@ -115,7 +115,7 @@ namespace thekogans {
     #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
         void AsyncIoEventSink::HandleServerSecureTCPSocketConnection (
                 ServerSecureTCPSocket &serverSecureTCPSocket,
-                SecureTCPSocket::Ptr connection) throw () {
+                SecureTCPSocket::SharedPtr connection) throw () {
             if (next.Get () != 0) {
                 next->HandleServerSecureTCPSocketConnection (
                     serverSecureTCPSocket,
@@ -125,7 +125,7 @@ namespace thekogans {
 
         void AsyncIoEventSink::HandleServerSecureUDPSocketConnection (
                 ServerSecureUDPSocket &serverSecureUDPSocket,
-                SecureUDPSocket::Ptr connection) throw () {
+                SecureUDPSocket::SharedPtr connection) throw () {
             if (next.Get () != 0) {
                 next->HandleServerSecureUDPSocketConnection (
                     serverSecureUDPSocket,

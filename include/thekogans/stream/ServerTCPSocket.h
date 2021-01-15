@@ -67,8 +67,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
-                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "ServerTCPSocket"
@@ -144,7 +144,7 @@ namespace thekogans {
                 /// \brief
                 /// Create a ServerTCPSocket based on the address and maxPendingConnections.
                 /// \return ServerTCPSocket based on the address and maxPendingConnections.
-                virtual Stream::Ptr CreateStream () const;
+                virtual Stream::SharedPtr CreateStream () const;
             };
 
             /// \brief
@@ -187,7 +187,7 @@ namespace thekogans {
             /// an AsyncIoEventQueue, and return new connections through
             /// AsyncIoEventSink::HandleServerTCPSocketConnection.
             /// \return The new connection.
-            TCPSocket::Ptr Accept ();
+            TCPSocket::SharedPtr Accept ();
 
         protected:
             // Stream

@@ -135,13 +135,13 @@ namespace thekogans {
         ///       ServerSecureUDPSocket\n
 
         struct _LIB_THEKOGANS_STREAM_DECL Stream :
-                public virtual util::ThreadSafeRefCounted,
+                public virtual util::RefCounted,
                 public AsyncIoEventQueueRegistryList::Node,
                 public AsyncIoEventQueueTimedStreamsList::Node,
                 public AsyncIoEventQueueDeletedStreamsList::Node {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Stream>.
-            typedef util::ThreadSafeRefCounted::Ptr<Stream> Ptr;
+            /// Convenient typedef for util::RefCounted::Ptr<Stream>.
+            typedef util::RefCounted::SharedPtr<Stream> SharedPtr;
 
             /// \struct Stream::Context Stream.h thekogans/stream/Stream.h
             ///
@@ -152,10 +152,10 @@ namespace thekogans {
             /// suitable for storage. Later you can use Stream::GetContext
             /// to recreate it. From there, you can call Context::CreateStream
             /// to create a fully initialized stream from the parameters.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public util::ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_STREAM_DECL Context : public util::RefCounted {
                 /// \brief
                 /// Convenient typedef for <Context>.
-                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "Context"
@@ -199,7 +199,7 @@ namespace thekogans {
                 /// \brief
                 /// Create a stream from the Context parameters.
                 /// \return The newly created stream.
-                virtual Stream::Ptr CreateStream () const = 0;
+                virtual Stream::SharedPtr CreateStream () const = 0;
             };
 
         protected:
@@ -207,7 +207,7 @@ namespace thekogans {
             /// Typedef for Context factory method. A method of this type will
             /// create a correct Context from the values found in the XML node.
             /// \param[in] node XML node that will contain the Context.
-            typedef Context::Ptr (*ContextFactory) (const pugi::xml_node &node);
+            typedef Context::SharedPtr (*ContextFactory) (const pugi::xml_node &node);
             /// \brief
             /// Typedef for an Context/Stream factories map. This map
             /// is populated at initialization time by the MapInitializer
@@ -262,7 +262,7 @@ namespace thekogans {
             /// type.
             /// \param[in] node XML node representing an Context of a particular type.
             /// \return A fully parsed and populated Context of that type.
-            static Context::Ptr GetContext (const pugi::xml_node &node);
+            static Context::SharedPtr GetContext (const pugi::xml_node &node);
         #if defined (THEKOGANS_STREAM_TYPE_Static)
             /// \brief
             /// Because the stream library uses dynamic initialization,
@@ -444,10 +444,10 @@ namespace thekogans {
             /// \brief
             /// AsyncInfo holds the async state and is created when you
             /// call \see{AsyncIoEventQueue::AddStream}.
-            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfo : public util::ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfo : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncInfo>.
-                typedef util::ThreadSafeRefCounted::Ptr<AsyncInfo> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<AsyncInfo>.
+                typedef util::RefCounted::SharedPtr<AsyncInfo> SharedPtr;
 
                 /// \brief
                 /// AsyncInfo has a private heap to help with memory
@@ -566,14 +566,14 @@ namespace thekogans {
                 struct Overlapped :
                         public WSAOVERLAPPED,
                         public OverlappedList::Node,
-                        public util::ThreadSafeRefCounted {
+                        public util::RefCounted {
                     /// \brief
-                    /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Overlapped>.
-                    typedef util::ThreadSafeRefCounted::Ptr<Overlapped> Ptr;
+                    /// Convenient typedef for util::RefCounted::SharedPtr<Overlapped>.
+                    typedef util::RefCounted::SharedPtr<Overlapped> SharedPtr;
 
                     /// \brief
                     /// Stream that created this Overlapped.
-                    Stream::Ptr stream;
+                    Stream::SharedPtr stream;
                     /// \brief
                     /// Operation represented by this Overlapped.
                     util::ui32 event;
@@ -660,8 +660,8 @@ namespace thekogans {
                 /// \see{Stream::Write} easier.
                 struct ReadWriteOverlapped : public Overlapped {
                     /// \brief
-                    /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ReadWriteOverlapped>.
-                    typedef util::ThreadSafeRefCounted::Ptr<ReadWriteOverlapped> Ptr;
+                    /// Convenient typedef for util::RefCounted::SharedPtr<ReadWriteOverlapped>.
+                    typedef util::RefCounted::SharedPtr<ReadWriteOverlapped> SharedPtr;
 
                     /// \brief
                     /// ReadWriteOverlapped has a private heap to help with memory
@@ -955,7 +955,7 @@ namespace thekogans {
             };
             /// \brief
             /// Async state.
-            AsyncInfo::Ptr asyncInfo;
+            AsyncInfo::SharedPtr asyncInfo;
 
             /// \brief
             /// Used by the \see{AsyncIoEventQueue::AddStream} to allow
@@ -984,10 +984,10 @@ namespace thekogans {
             /// do timed synchronous io.
             struct TimedOverlapped :
                     public OVERLAPPED,
-                    public util::ThreadSafeRefCounted {
+                    public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<TimedOverlapped>.
-                typedef util::ThreadSafeRefCounted::Ptr<TimedOverlapped> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<TimedOverlapped>.
+                typedef util::RefCounted::SharedPtr<TimedOverlapped> SharedPtr;
 
                 /// \brief
                 /// TimedOverlapped has a private heap to help with memory
@@ -1095,12 +1095,12 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
-            typedef thekogans::util::ThreadSafeRefCounted::Ptr<type> Ptr;\
+            typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
         public:\
-            static thekogans::stream::Stream::Context::Ptr CreateContext (\
+            static thekogans::stream::Stream::Context::SharedPtr CreateContext (\
                     const pugi::xml_node &node) {\
-                return thekogans::stream::Stream::Context::Ptr (\
+                return thekogans::stream::Stream::Context::SharedPtr (\
                     new type::Context (node));\
             }
 

@@ -95,7 +95,7 @@ namespace thekogans {
 
                 void Server::HandleServerSecureUDPSocketConnection (
                         stream::ServerSecureUDPSocket &serverSecureUDPSocket,
-                        stream::SecureUDPSocket::Ptr connection) throw () {
+                        stream::SecureUDPSocket::SharedPtr connection) throw () {
                     THEKOGANS_UTIL_LOG_INFO ("%s\n", "Received connection request.");
                     THEKOGANS_UTIL_TRY {
                         eventQueue->AddStream (*connection, *this);
@@ -119,7 +119,7 @@ namespace thekogans {
                         util::Buffer buffer) throw () {
                     THEKOGANS_UTIL_TRY {
                         struct WriteJob : public util::RunLoop::Job {
-                            stream::Stream::Ptr stream;
+                            stream::Stream::SharedPtr stream;
                             util::Buffer buffer;
                             WriteJob (
                                 stream::Stream &stream_,
@@ -137,7 +137,7 @@ namespace thekogans {
                             }
                         };
                         jobQueue.EnqJob (
-                            util::RunLoop::Job::Ptr (
+                            util::RunLoop::Job::SharedPtr (
                                 new WriteJob (stream, std::move (buffer))));
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG

@@ -120,8 +120,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Context>.
-                typedef util::ThreadSafeRefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "ServerSecureUDPSocket"
@@ -365,7 +365,7 @@ namespace thekogans {
                 /// \brief
                 /// Create a ServerSecureUDPSocket.
                 /// \return ServerSecureUDPSocket.
-                virtual Stream::Ptr CreateStream () const;
+                virtual Stream::SharedPtr CreateStream () const;
             };
 
             /// \brief
@@ -413,7 +413,7 @@ namespace thekogans {
             /// an AsyncIoEventQueue, and return new connections through
             /// \see{AsyncIoEventSink::HandleServerSecureUDPSocketConnection}.
             /// \return The new connection.
-            SecureUDPSocket::Ptr Accept ();
+            SecureUDPSocket::SharedPtr Accept ();
 
         protected:
             // Stream
@@ -541,7 +541,7 @@ namespace thekogans {
             /// \param[in] from Peer address that initiated the connection.
             /// \param[in] to Local address that received the connection.
             /// \return A \see{SecureUDPSocket} representing the connection.
-            SecureUDPSocket::Ptr CreatePeerConnection (
+            SecureUDPSocket::SharedPtr CreatePeerConnection (
                 util::Buffer buffer,
                 const Address &from,
                 const Address &to) const;

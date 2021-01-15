@@ -90,7 +90,7 @@ namespace {
                 totalBytes (0),
                 bandwidth (0.0f) {
             stream::GlobalAsyncIoEventQueue::Instance ().SetTimeoutPolicy (
-                stream::AsyncIoEventQueue::TimeoutPolicy::Ptr (
+                stream::AsyncIoEventQueue::TimeoutPolicy::SharedPtr (
                     new stream::AsyncIoEventQueue::DefaultTimeoutPolicy (
                         stream::GlobalAsyncIoEventQueue::Instance ())));
         }
@@ -106,7 +106,7 @@ namespace {
                     util::MainRunLoop::Instance ().Stop ();
                 }
             };
-            stream::TCPSocket::Ptr tcpSocket (
+            stream::TCPSocket::SharedPtr tcpSocket (
                 new MyTCPSocket (address.GetFamily (), SOCK_STREAM, 0));
             stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this, 0);
             if (timeSpec != util::TimeSpec::Zero) {
@@ -228,7 +228,7 @@ int main (
     THEKOGANS_UTIL_LOG_RESET (
         client::Options::Instance ().logLevel,
         util::LoggerMgr::All);
-    THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::Ptr (new util::ConsoleLogger));
+    THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::SharedPtr (new util::ConsoleLogger));
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (client::Options::Instance ().help) {
         THEKOGANS_UTIL_LOG_INFO (

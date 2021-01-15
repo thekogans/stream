@@ -66,10 +66,10 @@ namespace thekogans {
         /// \brief
         /// Contains adapter addresses returned by \see{Adapters::GetAddressesMap}.
 
-        struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses : public virtual util::ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses : public virtual util::RefCounted {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AdapterAddresses>.
-            typedef util::ThreadSafeRefCounted::Ptr<AdapterAddresses> Ptr;
+            /// Convenient typedef for util::RefCounted::SharedPtr<AdapterAddresses>.
+            typedef util::RefCounted::SharedPtr<AdapterAddresses> SharedPtr;
 
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AdapterAddresses, util::SpinLock);
 
@@ -161,10 +161,10 @@ namespace thekogans {
 
         /// \brief
         /// Convenient typedef for std::list<AdapterAddresses>.
-        typedef std::list<AdapterAddresses::Ptr> AdapterAddressesList;
+        typedef std::list<AdapterAddresses::SharedPtr> AdapterAddressesList;
         /// \brief
         /// Convenient typedef for std::map<std::string, AdapterAddresses>.
-        typedef std::map<std::string, AdapterAddresses::Ptr> AdapterAddressesMap;
+        typedef std::map<std::string, AdapterAddresses::SharedPtr> AdapterAddressesMap;
 
         /// \struct AdaptersEvents Adapters.h thekogans/stream/Adapters.h
         ///
@@ -181,19 +181,19 @@ namespace thekogans {
             /// Called when a new adapter was added to the network.
             /// \param[in] addresses New adapter addresses.
             virtual void OnAdapterAdded (
-                AdapterAddresses::Ptr /*addresses*/) throw () {}
+                AdapterAddresses::SharedPtr /*addresses*/) throw () {}
             /// \brief
             /// Called when an existing adapter was removed from the network.
             /// \param[in] addresses Deleted adapter addresses.
             virtual void OnAdapterDeleted (
-                AdapterAddresses::Ptr /*addresses*/) throw () {}
+                AdapterAddresses::SharedPtr /*addresses*/) throw () {}
             /// \brief
             /// Called when an existing adapter was modified.
             /// \param[in] oldAddresses Old adapter addresses.
             /// \param[in] newAddresses New adapter addresses.
             virtual void OnAdapterChanged (
-                AdapterAddresses::Ptr /*oldAddresses*/,
-                AdapterAddresses::Ptr /*newAddresses*/) throw () {}
+                AdapterAddresses::SharedPtr /*oldAddresses*/,
+                AdapterAddresses::SharedPtr /*newAddresses*/) throw () {}
         };
 
         /// \struct Adapters Adapters.h thekogans/stream/Adapters.h
@@ -211,7 +211,11 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
                 public util::Thread,
             #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-                public util::Singleton<Adapters, util::SpinLock>,
+                public util::Singleton<
+                    Adapters,
+                    util::SpinLock,
+                    util::RefCountedInstanceCreator<Adapters>,
+                    util::RefCountedInstanceDestroyer<Adapters>>,
                 public util::Producer<AdaptersEvents> {
         private:
         #if defined (TOOLCHAIN_OS_Windows)
@@ -221,7 +225,7 @@ namespace thekogans {
         #elif defined (TOOLCHAIN_OS_Linux)
             /// \brief
             /// Linux netlink socket to listen for network changes.
-            UDPSocket::Ptr socket;
+            UDPSocket::SharedPtr socket;
         #elif defined (TOOLCHAIN_OS_OSX)
             /// \brief
             /// OS X run loop to use to listen for network changes.
@@ -280,7 +284,7 @@ namespace thekogans {
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
             virtual void OnSubscribe (
                 util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                util::Producer<AdaptersEvents>::EventDeliveryPolicy::Ptr /*eventDeliveryPolicy*/);
+                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/);
             /// \brief
             /// Overide this methid to react to a \see{Subscriber being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.

@@ -286,8 +286,8 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ClientSecureUDPSocket::Context::CreateStream () const {
-            return Stream::Ptr (
+        Stream::SharedPtr ClientSecureUDPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (
                 new SecureUDPSocket (address.GetFamily (), SOCK_DGRAM, 0));
         }
 

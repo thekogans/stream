@@ -180,11 +180,11 @@ namespace thekogans {
                 }
                 if (loggerMgr.consoleLogger) {
                     THEKOGANS_UTIL_LOG_ADD_LOGGER (
-                        util::Logger::Ptr (new util::ConsoleLogger));
+                        util::Logger::SharedPtr (new util::ConsoleLogger));
                 }
                 if (!loggerMgr.fileLogger.path.empty ()) {
                     THEKOGANS_UTIL_LOG_ADD_LOGGER (
-                        util::Logger::Ptr (
+                        util::Logger::SharedPtr (
                             new util::FileLogger (
                                 loggerMgr.fileLogger.path,
                                 loggerMgr.fileLogger.archive)));

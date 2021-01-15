@@ -34,14 +34,14 @@ namespace thekogans {
                     if (!addresses.empty ()) {
                         if (maxPacketSize > 0 && maxPacketSize <= DEFAULT_MAX_PACKET_SIZE) {
                             if (done) {
-                                eventQueue.reset (new AsyncIoEventQueue ());
+                                eventQueue.Reset (new AsyncIoEventQueue ());
                                 eventQueue->SetTimeoutPolicy (
-                                    AsyncIoEventQueue::TimeoutPolicy::UniquePtr (
+                                    AsyncIoEventQueue::TimeoutPolicy::SharedPtr (
                                         new AsyncIoEventQueue::DefaultTimeoutPolicy (*eventQueue)));
                                 for (std::list<Address>::const_iterator
                                         it = addresses.begin (),
                                         end = addresses.end (); it != end; ++it) {
-                                    ServerUDPSocket::Ptr serverUDPSocket (
+                                    ServerUDPSocket::SharedPtr serverUDPSocket (
                                         new ServerUDPSocket (*it, maxPacketSize));
                                     serverUDPSocket->SetReceiveBufferSize (maxPacketSize);
                                     eventQueue->AddStream (*serverUDPSocket, *this, maxPacketSize);
@@ -74,7 +74,7 @@ namespace thekogans {
                         jobQueue.Stop ();
                         eventQueue->Break ();
                         Wait ();
-                        eventQueue.reset ();
+                        eventQueue.Reset ();
                     }
                     else {
                         THEKOGANS_UTIL_LOG_WARNING (
@@ -111,7 +111,7 @@ namespace thekogans {
 
                 void Server::HandleServerUDPSocketConnection (
                         ServerUDPSocket &serverUDPSocket,
-                        ServerUDPSocket::Connection::UniquePtr connection) throw () {
+                        ServerUDPSocket::Connection::SharedPtr connection) throw () {
                     THEKOGANS_UTIL_LOG_INFO ("%s\n", "Received connection request.");
                     THEKOGANS_UTIL_TRY {
                         connection->udpSocket->SetReadTimeout (
@@ -130,7 +130,7 @@ namespace thekogans {
                         util::Buffer buffer) throw () {
                     THEKOGANS_UTIL_TRY {
                         struct WriteJob : public util::RunLoop::Job {
-                            Stream::Ptr stream;
+                            Stream::SharedPtr stream;
                             util::Buffer buffer;
                             WriteJob (
                                 Stream &stream_,
@@ -148,7 +148,7 @@ namespace thekogans {
                             }
                         };
                         jobQueue.EnqJob (
-                            util::RunLoop::Job::Ptr (
+                            util::RunLoop::Job::SharedPtr (
                                 new WriteJob (stream, std::move (buffer))));
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG

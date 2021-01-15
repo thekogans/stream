@@ -52,8 +52,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL UDPSocket : public Socket {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<UDPSocket>.
-            typedef util::ThreadSafeRefCounted::Ptr<UDPSocket> Ptr;
+            /// Convenient typedef for util::RefCounted::SharedPtr<UDPSocket>.
+            typedef util::RefCounted::SharedPtr<UDPSocket> SharedPtr;
 
             /// \brief
             /// UDPSocket has a private heap to help with memory
@@ -309,8 +309,8 @@ namespace thekogans {
             /// \see{UDPSocket::WriteTo} easier.
             struct ReadFromWriteToOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ReadFromWriteToOverlapped>.
-                typedef util::ThreadSafeRefCounted::Ptr<ReadFromWriteToOverlapped> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<ReadFromWriteToOverlapped>.
+                typedef util::RefCounted::SharedPtr<ReadFromWriteToOverlapped> SharedPtr;
 
                 /// \brief
                 /// ReadFromWriteToOverlapped has a private heap to help with memory
@@ -386,8 +386,8 @@ namespace thekogans {
             /// easier.
             struct ReadMsgWriteMsgOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<ReadMsgWriteMsgOverlapped>.
-                typedef util::ThreadSafeRefCounted::Ptr<ReadMsgWriteMsgOverlapped> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<ReadMsgWriteMsgOverlapped>.
+                typedef util::RefCounted::SharedPtr<ReadMsgWriteMsgOverlapped> SharedPtr;
 
                 /// \brief
                 /// ReadMsgWriteMsgOverlapped has a private heap to help with memory

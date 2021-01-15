@@ -202,7 +202,7 @@ namespace thekogans {
             struct DiffProcessor {
                 AdapterAddressesList added;
                 AdapterAddressesList deleted;
-                std::list<std::pair<AdapterAddresses::Ptr, AdapterAddresses::Ptr>> changed;
+                std::list<std::pair<AdapterAddresses::SharedPtr, AdapterAddresses::SharedPtr>> changed;
 
                 inline bool IsEmpty () const {
                     return added.empty () && deleted.empty () && changed.empty ();
@@ -227,7 +227,7 @@ namespace thekogans {
                         }
                         else if (*originalBegin->second != *currentBegin->second) {
                             changed.push_back (
-                                std::pair<AdapterAddresses::Ptr, AdapterAddresses::Ptr> (
+                                std::pair<AdapterAddresses::SharedPtr, AdapterAddresses::SharedPtr> (
                                     (originalBegin++)->second, (currentBegin++)->second));
                         }
                         else {
@@ -273,7 +273,7 @@ namespace thekogans {
                             std::placeholders::_1,
                             *it));
                 }
-                for (std::list<std::pair<AdapterAddresses::Ptr, AdapterAddresses::Ptr>>::const_iterator
+                for (std::list<std::pair<AdapterAddresses::SharedPtr, AdapterAddresses::SharedPtr>>::const_iterator
                          it = diffProcessor.changed.begin (),
                          end = diffProcessor.changed.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
@@ -352,7 +352,7 @@ namespace thekogans {
                             ipAdapterAddresses != 0; ipAdapterAddresses = ipAdapterAddresses->Next) {
                         AdapterInfo adapterInfo (ipAdapterAddresses->IfIndex);
                         if (adapterInfo.IsConnected ()) {
-                            AdapterAddresses::Ptr addresses (
+                            AdapterAddresses::SharedPtr addresses (
                                 new AdapterAddresses (
                                     ipAdapterAddresses->AdapterName,
                                     ipAdapterAddresses->IfIndex,
@@ -441,7 +441,7 @@ namespace thekogans {
                                 newAddressesMap.insert (
                                     AdapterAddressesMap::value_type (
                                         curr->ifa_name,
-                                        AdapterAddresses::Ptr (
+                                        AdapterAddresses::SharedPtr (
                                             new AdapterAddresses (
                                                 curr->ifa_name,
                                                 if_nametoindex (curr->ifa_name),
@@ -777,7 +777,7 @@ namespace thekogans {
 
         void Adapters::OnSubscribe (
                 util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                util::Producer<AdaptersEvents>::EventDeliveryPolicy::Ptr /*eventDeliveryPolicy*/) {
+                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {
             if (util::Producer<AdaptersEvents>::GetSubscriberCount () == 1) {
                 addressesMap = GetAddressesMap ();
             #if defined (TOOLCHAIN_OS_Windows)

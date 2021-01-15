@@ -51,8 +51,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL SecureTCPSocket : public TCPSocket {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<SecureTCPSocket>.
-            typedef util::ThreadSafeRefCounted::Ptr<SecureTCPSocket> Ptr;
+            /// Convenient typedef for util::RefCounted::SharedPtr<SecureTCPSocket>.
+            typedef util::RefCounted::SharedPtr<SecureTCPSocket> SharedPtr;
 
             /// \brief
             /// SecureTCPSocket has a private heap to help with memory
@@ -77,10 +77,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Encapsulates extended async info.
-            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfoEx : public util::ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfoEx : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncInfoEx>.
-                typedef util::ThreadSafeRefCounted::Ptr<AsyncInfoEx> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<AsyncInfoEx>.
+                typedef util::RefCounted::SharedPtr<AsyncInfoEx> SharedPtr;
 
                 /// \brief
                 /// AsyncInfoEx has a private heap to help with memory
@@ -160,7 +160,7 @@ namespace thekogans {
             };
             /// \brief
             /// \see{Stream::AsyncInfo} extensions.
-            AsyncInfoEx::Ptr asyncInfoEx;
+            AsyncInfoEx::SharedPtr asyncInfoEx;
 
         public:
             /// \brief

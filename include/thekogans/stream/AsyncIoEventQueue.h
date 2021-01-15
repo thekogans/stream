@@ -76,10 +76,10 @@ namespace thekogans {
         /// UDPSocket (especially SecureUDPSocket). Take a look at
         /// serverudpecho for an example on how to do that.
 
-        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue : public util::ThreadSafeRefCounted {
+        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue : public util::RefCounted {
             /// \brief
-            /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<AsyncIoEventQueue>.
-            typedef util::ThreadSafeRefCounted::Ptr<AsyncIoEventQueue> Ptr;
+            /// Convenient typedef for util::RefCounted::SharedPtr<AsyncIoEventQueue>.
+            typedef util::RefCounted::SharedPtr<AsyncIoEventQueue> SharedPtr;
 
             /// \struct AsyncIoEventQueue::TimeoutPolicy AsyncIoEventQueue.h
             /// thekogans/stream/AsyncIoEventQueue.h
@@ -105,10 +105,10 @@ namespace thekogans {
             /// architect to make the best choice for their particular situation.
             /// To go one step further, the choice doesn't have to be a static one.
             /// You can easily swap out policies based on runtime needs.
-            struct _LIB_THEKOGANS_STREAM_DECL TimeoutPolicy : public util::ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_STREAM_DECL TimeoutPolicy : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<TimeoutPolicy>.
-                typedef util::ThreadSafeRefCounted::Ptr<TimeoutPolicy> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<TimeoutPolicy>.
+                typedef util::RefCounted::SharedPtr<TimeoutPolicy> SharedPtr;
 
                 /// \brief
                 /// dtor.
@@ -218,7 +218,7 @@ namespace thekogans {
             THEKOGANS_UTIL_HANDLE handle;
             /// \brief
             /// The timed stream timeout policy currently in force.
-            TimeoutPolicy::Ptr timeoutPolicy;
+            TimeoutPolicy::SharedPtr timeoutPolicy;
             /// \brief
             /// Last io event batch time.
             util::TimeSpec lastEventBatchTime;
@@ -318,7 +318,7 @@ namespace thekogans {
             /// \brief
             /// Set the current timed stream timeout policy.
             /// \param[in] timeoutPolicy_ TimeoutPolicy to set.
-            void SetTimeoutPolicy (TimeoutPolicy::Ptr timeoutPolicy_);
+            void SetTimeoutPolicy (TimeoutPolicy::SharedPtr timeoutPolicy_);
 
             /// \brief
             /// Add a given stream to the queue.
@@ -456,7 +456,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL GlobalAsyncIoEventQueue :
                 public AsyncIoEventQueue,
-                public util::Singleton<GlobalAsyncIoEventQueue, util::SpinLock>,
+                public util::Singleton<
+                    GlobalAsyncIoEventQueue,
+                    util::SpinLock,
+                    util::RefCountedInstanceCreator<GlobalAsyncIoEventQueue>,
+                    util::RefCountedInstanceDestroyer<GlobalAsyncIoEventQueue>>,
                 public util::Thread {
             /// \brief
             /// ctor.
@@ -481,10 +485,6 @@ namespace thekogans {
                 util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
 
         private:
-            // util::ThreadSafeRefCounted
-            /// \brief
-            /// We're a singleton. We don't die.
-            virtual void Harakiri () {}
             // util::Thread
             /// \brief
             /// GlobalAsyncIoEventQueue thread.

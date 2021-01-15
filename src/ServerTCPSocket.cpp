@@ -74,8 +74,8 @@ namespace thekogans {
             }
         }
 
-        Stream::Ptr ServerTCPSocket::Context::CreateStream () const {
-            return Stream::Ptr (
+        Stream::SharedPtr ServerTCPSocket::Context::CreateStream () const {
+            return Stream::SharedPtr (
                 new ServerTCPSocket (address, reuseAddress, maxPendingConnections));
         }
 
@@ -105,9 +105,9 @@ namespace thekogans {
             Listen (maxPendingConnections);
         }
 
-        TCPSocket::Ptr ServerTCPSocket::Accept () {
+        TCPSocket::SharedPtr ServerTCPSocket::Accept () {
             if (!IsAsync ()) {
-                TCPSocket::Ptr connection (
+                TCPSocket::SharedPtr connection (
                     new TCPSocket ((THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
             #if defined (TOOLCHAIN_OS_Windows)
                 connection->UpdateAcceptContext (handle);
@@ -138,7 +138,7 @@ namespace thekogans {
                         (TCPSocket::AcceptOverlapped &)overlapped;
                     TCPSocket::UpdateAcceptContext (handle,
                         (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection);
-                    TCPSocket::Ptr connection =
+                    TCPSocket::SharedPtr connection =
                         asyncInfo->eventSink.GetTCPSocket (
                             (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection);
                     // Overlapped::AcceptInfo::~AcceptInfo will
@@ -158,7 +158,7 @@ namespace thekogans {
         void ServerTCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
             if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    TCPSocket::Ptr connection =
+                    TCPSocket::SharedPtr connection =
                         asyncInfo->eventSink.GetTCPSocket (TCPSocket::Accept ());
                     // Connections inherit the listening socket's
                     // non-blocking state. Since we handle all

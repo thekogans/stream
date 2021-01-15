@@ -43,10 +43,10 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a serialized LoggerMgr entry.
-            struct _LIB_THEKOGANS_STREAM_DECL Entry : public util::ThreadSafeRefCounted {
+            struct _LIB_THEKOGANS_STREAM_DECL Entry : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::ThreadSafeRefCounted::Ptr<Entry>.
-                typedef util::ThreadSafeRefCounted::Ptr<Entry> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Entry>.
+                typedef util::RefCounted::SharedPtr<Entry> SharedPtr;
 
                 /// \brief
                 /// "Entry"
@@ -113,7 +113,7 @@ namespace thekogans {
 
             /// \brief
             /// Stream to dump log entries to.
-            Stream::Ptr stream;
+            Stream::SharedPtr stream;
             /// \brief
             /// Entry tag name.
             const std::string entryTagName;
@@ -123,7 +123,7 @@ namespace thekogans {
             /// \param[in] stream_ Stream to dump log entries to.
             /// \param[in] entryTagName_ Entry tag name.
             StreamLogger (
-                Stream::Ptr stream_,
+                Stream::SharedPtr stream_,
                 const std::string &entryTagName_ = Entry::TAG_ENTRY) :
                 stream (stream_),
                 entryTagName (entryTagName_) {}
