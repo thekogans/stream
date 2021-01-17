@@ -30,7 +30,7 @@ namespace thekogans {
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
                 DWORD numberOfBytesRead = 0;
-                TimedOverlapped::Ptr overlapped;
+                TimedOverlapped::SharedPtr overlapped;
                 if (readTimeout != util::TimeSpec::Zero) {
                     overlapped.Reset (new TimedOverlapped);
                 }
@@ -71,7 +71,7 @@ namespace thekogans {
             if (buffer != 0 && count > 0) {
                 DWORD numberOfBytesWriten = 0;
                 if (IsAsync ()) {
-                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, buffer, count));
                     if (!WriteFile (
                             handle,
@@ -87,7 +87,7 @@ namespace thekogans {
                     overlapped.Release ();
                 }
                 else {
-                    TimedOverlapped::Ptr overlapped;
+                    TimedOverlapped::SharedPtr overlapped;
                     if (writeTimeout != util::TimeSpec::Zero) {
                         overlapped.Reset (new TimedOverlapped);
                     }
@@ -126,7 +126,7 @@ namespace thekogans {
         void NamedPipe::WriteBuffer (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
-                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
                     if (!WriteFile (
                             handle,
@@ -189,7 +189,7 @@ namespace thekogans {
 
         void NamedPipe::PostAsyncRead () {
             if (asyncInfo->bufferLength) {
-                AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                     new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength));
                 if (!ReadFile (
                         handle,

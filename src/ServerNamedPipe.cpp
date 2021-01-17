@@ -126,7 +126,7 @@ namespace thekogans {
         }
 
         void ServerNamedPipe::Connect () {
-            AsyncInfo::Overlapped::Ptr overlapped;
+            AsyncInfo::Overlapped::SharedPtr overlapped;
             if (IsAsync ()) {
                 overlapped.Reset (
                     new AsyncInfo::Overlapped (*this, AsyncInfo::EventConnect));
@@ -153,8 +153,8 @@ namespace thekogans {
             }
         }
 
-        ServerNamedPipe::Ptr ServerNamedPipe::Clone () const {
-            return ServerNamedPipe::Ptr (
+        ServerNamedPipe::SharedPtr ServerNamedPipe::Clone () const {
+            return ServerNamedPipe::SharedPtr (
                 new ServerNamedPipe (address, pipeType, bufferSize));
         }
 

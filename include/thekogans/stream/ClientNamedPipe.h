@@ -65,8 +65,8 @@ namespace thekogans {
             /// connected ClientNamedPipe.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::Ptr<Context>.
-                typedef util::RefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "ClientNamedPipe"
@@ -130,8 +130,8 @@ namespace thekogans {
                 /// \brief
                 /// Create a ClientNamedPipe based on the Context parameters.
                 /// \return ClientNamedPipe based on the Context parameters.
-                virtual Stream::Ptr CreateStream () const {
-                    return Stream::Ptr (
+                virtual Stream::SharedPtr CreateStream () const {
+                    return Stream::SharedPtr (
                         new ClientNamedPipe (address, pipeType));
                 }
             };

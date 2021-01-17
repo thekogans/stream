@@ -67,7 +67,7 @@ namespace thekogans {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD countRead = 0;
-                TimedOverlapped::Ptr overlapped;
+                TimedOverlapped::SharedPtr overlapped;
                 if (readTimeout != util::TimeSpec::Zero) {
                     overlapped.Reset (new TimedOverlapped);
                 }
@@ -117,7 +117,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD countWritten = 0;
                 if (IsAsync ()) {
-                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, buffer, count));
                     if (!WriteFile (
                             handle,
@@ -133,7 +133,7 @@ namespace thekogans {
                     overlapped.Release ();
                 }
                 else {
-                    TimedOverlapped::Ptr overlapped;
+                    TimedOverlapped::SharedPtr overlapped;
                     if (writeTimeout != util::TimeSpec::Zero) {
                         overlapped.Reset (new TimedOverlapped);
                     }
@@ -188,7 +188,7 @@ namespace thekogans {
             if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
                     if (!WriteFile (
                             handle,
@@ -275,7 +275,7 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         void Pipe::PostAsyncRead () {
             if (asyncInfo->bufferLength != 0) {
-                AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                     new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength));
                 if (!ReadFile (
                         handle,

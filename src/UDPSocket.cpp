@@ -181,7 +181,7 @@ namespace thekogans {
             if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
                     if (WSASend ((THEKOGANS_STREAM_SOCKET)handle,
                             &overlapped->wsaBuf, 1, 0, 0,
@@ -293,7 +293,7 @@ namespace thekogans {
             if (!buffer.IsEmpty () && address != Address::Empty) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    ReadFromWriteToOverlapped::Ptr overlapped (
+                    ReadFromWriteToOverlapped::SharedPtr overlapped (
                         new ReadFromWriteToOverlapped (*this, std::move (buffer), address));
                     if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle,
                             &overlapped->wsaBuf, 1, 0,
@@ -429,7 +429,7 @@ namespace thekogans {
                     from != Address::Empty && to != Address::Empty) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    ReadMsgWriteMsgOverlapped::Ptr overlapped (
+                    ReadMsgWriteMsgOverlapped::SharedPtr overlapped (
                         new ReadMsgWriteMsgOverlapped (*this, std::move (buffer), from, to));
                     if (WindowsFunctions::Instance ().WSASendMsg (
                             (THEKOGANS_STREAM_SOCKET)handle,
@@ -962,7 +962,7 @@ namespace thekogans {
         }
 
         void UDPSocket::PostAsyncRead (bool useGetBuffer) {
-            AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+            AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                 new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength, useGetBuffer));
             if (WSARecv ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf, 1, 0,
@@ -980,7 +980,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count,
                 bool useGetBuffer) {
-            AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+            AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                 new AsyncInfo::ReadWriteOverlapped (*this, buffer, count, useGetBuffer));
             if (WSASend ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf, 1, 0, 0,
@@ -994,7 +994,7 @@ namespace thekogans {
         }
 
         void UDPSocket::PostAsyncReadFrom (bool useGetBuffer) {
-            ReadFromWriteToOverlapped::Ptr overlapped (
+            ReadFromWriteToOverlapped::SharedPtr overlapped (
                 new ReadFromWriteToOverlapped (*this, asyncInfo->bufferLength, useGetBuffer));
             if (WSARecvFrom ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf, 1, 0,
@@ -1015,7 +1015,7 @@ namespace thekogans {
                 std::size_t count,
                 const Address &address,
                 bool useGetBuffer) {
-            ReadFromWriteToOverlapped::Ptr overlapped (
+            ReadFromWriteToOverlapped::SharedPtr overlapped (
                 new ReadFromWriteToOverlapped (*this, buffer, count, address, useGetBuffer));
             if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf, 1, 0,
@@ -1032,7 +1032,7 @@ namespace thekogans {
         }
 
         void UDPSocket::PostAsyncReadMsg (bool useGetBuffer) {
-            ReadMsgWriteMsgOverlapped::Ptr overlapped (
+            ReadMsgWriteMsgOverlapped::SharedPtr overlapped (
                 new ReadMsgWriteMsgOverlapped (*this, asyncInfo->bufferLength, useGetBuffer));
             if (WindowsFunctions::Instance ().WSARecvMsg (
                     (THEKOGANS_STREAM_SOCKET)handle,
@@ -1052,7 +1052,7 @@ namespace thekogans {
                 const Address &from,
                 const Address &to,
                 bool useGetBuffer) {
-            ReadMsgWriteMsgOverlapped::Ptr overlapped (
+            ReadMsgWriteMsgOverlapped::SharedPtr overlapped (
                 new ReadMsgWriteMsgOverlapped (*this, buffer, count, from, to, useGetBuffer));
             if (WindowsFunctions::Instance ().WSASendMsg (
                     (THEKOGANS_STREAM_SOCKET)handle,

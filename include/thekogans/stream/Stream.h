@@ -140,7 +140,7 @@ namespace thekogans {
                 public AsyncIoEventQueueTimedStreamsList::Node,
                 public AsyncIoEventQueueDeletedStreamsList::Node {
             /// \brief
-            /// Convenient typedef for util::RefCounted::Ptr<Stream>.
+            /// Convenient typedef for util::RefCounted::SharedPtr<Stream>.
             typedef util::RefCounted::SharedPtr<Stream> SharedPtr;
 
             /// \struct Stream::Context Stream.h thekogans/stream/Stream.h

@@ -47,7 +47,7 @@ namespace thekogans {
         ///         ServerNamedPipe &serverNamedPipe) throw () {
         ///     THEKOGANS_UTIL_TRY {
         ///         // Create a new ServerNamedPipe clone.
-        ///         ServerNamedPipe::Ptr newServerNamedPipe = serverNamedPipe.Clone ();
+        ///         ServerNamedPipe::SharedPtr newServerNamedPipe = serverNamedPipe.Clone ();
         ///         // Add the new ServerNamedPipe to the AsyncIoEventQueue.
         ///         // This will put the newly created named pipe in to
         ///         // listening mode.
@@ -91,8 +91,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::Ptr<Context>.
-                typedef util::RefCounted::Ptr<Context> Ptr;
+                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
+                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
 
                 /// \brief
                 /// "ServerNamedPipe"
@@ -168,8 +168,8 @@ namespace thekogans {
                 /// Context parameters.
                 /// \return ServerNamedPipe based on the
                 /// Context parametersaddress.
-                virtual Stream::Ptr CreateStream () const {
-                    return Stream::Ptr (
+                virtual Stream::SharedPtr CreateStream () const {
+                    return Stream::SharedPtr (
                         new ServerNamedPipe (address, pipeType, bufferSize));
                 }
             };
@@ -222,7 +222,7 @@ namespace thekogans {
             /// \brief
             /// Clone this ServerNamedPipe.
             /// \return Cloned ServerNamedPipe.
-            virtual ServerNamedPipe::Ptr Clone () const;
+            virtual ServerNamedPipe::SharedPtr Clone () const;
 
         protected:
             /// \brief

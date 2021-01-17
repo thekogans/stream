@@ -115,7 +115,7 @@ namespace thekogans {
         }
 
         void ClientNamedPipe::InitAsyncIo () {
-            AsyncInfo::Overlapped::Ptr overlapped (
+            AsyncInfo::Overlapped::SharedPtr overlapped (
                 new AsyncInfo::Overlapped (*this, AsyncInfo::EventConnect));
             if (!PostQueuedCompletionStatus (
                     asyncInfo->eventQueue.GetHandle (),

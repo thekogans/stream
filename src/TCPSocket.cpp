@@ -177,7 +177,7 @@ namespace thekogans {
             if (!buffer.IsEmpty ()) {
                 if (IsAsync ()) {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                         new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
                     if (WSASend (
                             (THEKOGANS_STREAM_SOCKET)handle,
@@ -238,7 +238,7 @@ namespace thekogans {
                     if (!IsBound ()) {
                         Bind (Address::Any (0, address.GetFamily ()));
                     }
-                    ConnectOverlapped::Ptr overlapped (
+                    ConnectOverlapped::SharedPtr overlapped (
                         new ConnectOverlapped (*this, address));
                     if (!WindowsFunctions::Instance ().ConnectEx (
                             (THEKOGANS_STREAM_SOCKET)handle,
@@ -286,7 +286,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         void TCPSocket::Disconnect (bool reuseSocket) {
-            AsyncInfo::Overlapped::Ptr overlapped;
+            AsyncInfo::Overlapped::SharedPtr overlapped;
             if (IsAsync ()) {
                 overlapped.Reset (new AsyncInfo::Overlapped (*this, AsyncInfo::EventDisconnect));
             }
@@ -579,7 +579,7 @@ namespace thekogans {
         }
 
         void TCPSocket::PostAsyncShutdown (ShutdownType shutdownType) {
-            ShutdownOverlapped::Ptr overlapped (
+            ShutdownOverlapped::SharedPtr overlapped (
                 new ShutdownOverlapped (*this, shutdownType));
             if (!PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)this, overlapped.Get ())) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -589,7 +589,7 @@ namespace thekogans {
         }
 
         void TCPSocket::PostAsyncRead (bool useGetBuffer) {
-            AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+            AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                 new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength, useGetBuffer));
             if (WSARecv (
                     (THEKOGANS_STREAM_SOCKET)handle,
@@ -611,7 +611,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count,
                 bool useGetBuffer) {
-            AsyncInfo::ReadWriteOverlapped::Ptr overlapped (
+            AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                 new AsyncInfo::ReadWriteOverlapped (*this, buffer, count, useGetBuffer));
             if (WSASend (
                     (THEKOGANS_STREAM_SOCKET)handle,
@@ -630,7 +630,7 @@ namespace thekogans {
         }
 
         void TCPSocket::PostAsyncAccept () {
-            AcceptOverlapped::Ptr overlapped (
+            AcceptOverlapped::SharedPtr overlapped (
                 new AcceptOverlapped (*this, GetFamily (), GetType (), GetProtocol ()));
             if (!WindowsFunctions::Instance ().AcceptEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
