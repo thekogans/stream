@@ -362,7 +362,7 @@ namespace thekogans {
                                     unicastAddress != 0; unicastAddress = unicastAddress->Next) {
                                 if (unicastAddress->Address.lpSockaddr->sa_family == AF_INET) {
                                     assert (unicastAddress->Address.iSockaddrLength == sizeof (sockaddr_in));
-                                    Addresses::IPV4 ipv4;
+                                    AdapterAddresses::IPV4 ipv4;
                                     memcpy (&ipv4.unicast.in, unicastAddress->Address.lpSockaddr,
                                         unicastAddress->Address.iSockaddrLength);
                                     ipv4.unicast.length = sizeof (sockaddr_in);
@@ -402,7 +402,7 @@ namespace thekogans {
                                     ipAdapterAddresses->PhysicalAddressLength);
                             }
                             if (!addresses->ipv4.empty () || !addresses->ipv6.empty ()) {
-                                newAddressesMap.insert (AddressesMap::value_type (addresses->name, addresses));
+                                newAddressesMap.insert (AdapterAddressesMap::value_type (addresses->name, addresses));
                             }
                         }
                     }
