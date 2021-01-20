@@ -11,9 +11,14 @@
                 name = "util"/>
     <dependency organization = "thekogans"
                 name = "stream"/>
-    <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
-      <framework>Foundation</framework>
-    </if>
+    <choose>
+      <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
+        <library>Iphlpapi.lib</library>
+      </when>
+      <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
+        <framework>Foundation</framework>
+      </when>
+    </choose>
   </dependencies>
   <cpp_headers prefix = "include">
     <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>
