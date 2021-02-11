@@ -39,6 +39,7 @@
 #include <openssl/pem.h>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/crypto/OpenSSLInit.h"

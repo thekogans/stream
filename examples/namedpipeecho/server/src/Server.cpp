@@ -38,7 +38,7 @@ namespace thekogans {
                                     it = addresses.begin (),
                                     end = addresses.end (); it != end; ++it) {
                                 eventQueue->AddStream (
-                                    *stream::ServerNamedPipe::Ptr (
+                                    *stream::ServerNamedPipe::SharedPtr (
                                         new stream::ServerNamedPipe (*it)),
                                     *this);
                                 THEKOGANS_UTIL_LOG_INFO ("Listening on: %s\n",
@@ -97,7 +97,7 @@ namespace thekogans {
                         stream::ServerNamedPipe &serverNamedPipe) throw () {
                     THEKOGANS_UTIL_LOG_INFO ("%s\n", "Received connection request.");
                     THEKOGANS_UTIL_TRY {
-                        stream::ServerNamedPipe::Ptr newServerNamedPipe = serverNamedPipe.Clone ();
+                        stream::ServerNamedPipe::SharedPtr newServerNamedPipe = serverNamedPipe.Clone ();
                         eventQueue->AddStream (*newServerNamedPipe, *this);
                     }
                     THEKOGANS_UTIL_CATCH_AND_LOG
@@ -117,7 +117,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_TRY {
                         if (!buffer.IsEmpty ()) {
                             struct WriteJob : public util::RunLoop::Job {
-                                stream::Stream::Ptr stream;
+                                stream::Stream::SharedPtr stream;
                                 util::Buffer buffer;
                                 WriteJob (
                                     stream::Stream &stream_,
@@ -135,7 +135,7 @@ namespace thekogans {
                                 }
                             };
                             jobQueue.EnqJob (
-                                util::RunLoop::Job::Ptr (
+                                util::RunLoop::Job::SharedPtr (
                                     new WriteJob (stream, std::move (buffer))));
                         }
                     }

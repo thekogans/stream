@@ -279,14 +279,14 @@ namespace thekogans {
 
             // public util::Producer<AdaptersEvents>.
             /// \brief
-            /// Overide this methid to react to a new \see{Subscriber.
+            /// Overide this methid to react to a new \see{Subscriber}.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
             virtual void OnSubscribe (
                 util::Subscriber<AdaptersEvents> & /*subscriber*/,
                 util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/);
             /// \brief
-            /// Overide this methid to react to a \see{Subscriber being removed.
+            /// Overide this methid to react to a \see{Subscriber} being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
             virtual void OnUnsubscribe (util::Subscriber<AdaptersEvents> & /*subscriber*/);
 
