@@ -493,7 +493,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
-            return addressesMap;
+            return newAddressesMap;
         }
 
     #if defined (TOOLCHAIN_OS_OSX)
@@ -777,8 +777,9 @@ namespace thekogans {
 
         void Adapters::OnSubscribe (
                 util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {
-            if (util::Producer<AdaptersEvents>::GetSubscriberCount () == 1) {
+                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
+                std::size_t subscriberCount) {
+            if (subscriberCount == 1) {
                 addressesMap = GetAddressesMap ();
             #if defined (TOOLCHAIN_OS_Windows)
                 if (handle == 0) {
@@ -804,8 +805,10 @@ namespace thekogans {
             }
         }
 
-        void Adapters::OnUnsubscribe (util::Subscriber<AdaptersEvents> & /*subscriber*/) {
-            if (util::Producer<AdaptersEvents>::GetSubscriberCount () == 0) {
+        void Adapters::OnUnsubscribe (
+                util::Subscriber<AdaptersEvents> & /*subscriber*/,
+                std::size_t subscriberCount) {
+            if (subscriberCount == 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (handle != 0) {
                     if (CancelMibChangeNotify2 (handle) != NO_ERROR) {

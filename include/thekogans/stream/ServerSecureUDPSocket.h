@@ -120,8 +120,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
-                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
 
                 /// \brief
                 /// "ServerSecureUDPSocket"

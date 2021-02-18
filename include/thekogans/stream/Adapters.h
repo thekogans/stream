@@ -68,10 +68,11 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses : public virtual util::RefCounted {
             /// \brief
-            /// Convenient typedef for util::RefCounted::SharedPtr<AdapterAddresses>.
-            typedef util::RefCounted::SharedPtr<AdapterAddresses> SharedPtr;
-
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AdapterAddresses, util::SpinLock);
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AdapterAddresses)
+            /// \brief
+            /// AdapterAddresses has a private \see{util::Heap} to help with heap fragmentation.
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AdapterAddresses, util::SpinLock)
 
             /// \brief
             /// Name of adapter.
@@ -217,6 +218,10 @@ namespace thekogans {
                     util::RefCountedInstanceCreator<Adapters>,
                     util::RefCountedInstanceDestroyer<Adapters>>,
                 public util::Producer<AdaptersEvents> {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Adapters)
+
         private:
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -274,7 +279,7 @@ namespace thekogans {
             // util::Thread
             /// \brief
             /// Used on Linux and OS X to listen for network changes.
-            virtual void Run () throw ();
+            virtual void Run () throw () override;
         #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 
             // public util::Producer<AdaptersEvents>.
@@ -282,13 +287,18 @@ namespace thekogans {
             /// Overide this methid to react to a new \see{Subscriber}.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
+            /// \param[in] subscriberCount Number of \see{Subscriber}s (including this one).
             virtual void OnSubscribe (
                 util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/);
+                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
+                std::size_t subscriberCount) override;
             /// \brief
             /// Overide this methid to react to a \see{Subscriber} being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
-            virtual void OnUnsubscribe (util::Subscriber<AdaptersEvents> & /*subscriber*/);
+            /// \param[in] subscriberCount Number of \see{Subscriber}s remaining.
+            virtual void OnUnsubscribe (
+                util::Subscriber<AdaptersEvents> & /*subscriber*/,
+                std::size_t subscriberCount) override;
 
             /// \brief
             /// Adapters is neither copy constructable, nor assignable.

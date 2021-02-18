@@ -45,8 +45,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL Pipe : public Stream {
             /// \brief
-            /// Convenient typedef for util::RefCounted::SharedPtr<Pipe>.
-            typedef util::RefCounted::SharedPtr<Pipe> SharedPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Pipe)
 
             /// \brief
             /// Pipe has a private heap to help with memory management.

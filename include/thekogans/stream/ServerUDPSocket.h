@@ -73,8 +73,8 @@ namespace thekogans {
             /// up to you, but may I recommend: \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
-                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
 
                 /// \brief
                 /// "ServerUDPSocket"
@@ -201,8 +201,8 @@ namespace thekogans {
             /// it along with the new socket.
             struct _LIB_THEKOGANS_STREAM_DECL Connection : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<Connection>.
-                typedef util::RefCounted::SharedPtr<Connection> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Connection)
 
                 /// \brief
                 /// Connection has a private heap to help with memory

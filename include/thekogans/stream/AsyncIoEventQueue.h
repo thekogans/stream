@@ -78,8 +78,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue : public util::RefCounted {
             /// \brief
-            /// Convenient typedef for util::RefCounted::SharedPtr<AsyncIoEventQueue>.
-            typedef util::RefCounted::SharedPtr<AsyncIoEventQueue> SharedPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AsyncIoEventQueue)
 
             /// \struct AsyncIoEventQueue::TimeoutPolicy AsyncIoEventQueue.h
             /// thekogans/stream/AsyncIoEventQueue.h
@@ -107,8 +107,8 @@ namespace thekogans {
             /// You can easily swap out policies based on runtime needs.
             struct _LIB_THEKOGANS_STREAM_DECL TimeoutPolicy : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<TimeoutPolicy>.
-                typedef util::RefCounted::SharedPtr<TimeoutPolicy> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TimeoutPolicy)
 
                 /// \brief
                 /// dtor.

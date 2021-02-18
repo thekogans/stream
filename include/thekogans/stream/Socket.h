@@ -39,8 +39,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL Socket : public Stream {
             /// \brief
-            /// Convenient typedef for util::RefCounted::SharedPtr<Socket>.
-            typedef util::RefCounted::SharedPtr<Socket> SharedPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Socket)
 
             /// \struct Socket::Context Socket.h thekogans/stream/Socket.h
             ///
@@ -61,8 +61,8 @@ namespace thekogans {
             /// \see{AsyncIoEventQueue}.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<Context>.
-                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
 
                 /// \brief
                 /// "Socket".

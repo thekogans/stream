@@ -45,8 +45,8 @@ namespace thekogans {
             /// Represents a serialized LoggerMgr entry.
             struct _LIB_THEKOGANS_STREAM_DECL Entry : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<Entry>.
-                typedef util::RefCounted::SharedPtr<Entry> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Entry)
 
                 /// \brief
                 /// "Entry"

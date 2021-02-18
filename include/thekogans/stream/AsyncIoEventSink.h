@@ -79,8 +79,8 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventSink : public virtual util::RefCounted {
             /// \brief
-            /// Convenient typedef for util::RefCounted::SharedPtr<AsyncIoEventSink>.
-            typedef util::RefCounted::SharedPtr<AsyncIoEventSink> SharedPtr;
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AsyncIoEventSink)
 
         protected:
             /// \brief

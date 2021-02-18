@@ -140,8 +140,8 @@ namespace thekogans {
                 public AsyncIoEventQueueTimedStreamsList::Node,
                 public AsyncIoEventQueueDeletedStreamsList::Node {
             /// \brief
-            /// Convenient typedef for util::RefCounted::SharedPtr<Stream>.
-            typedef util::RefCounted::SharedPtr<Stream> SharedPtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Stream)
 
             /// \struct Stream::Context Stream.h thekogans/stream/Stream.h
             ///
@@ -154,8 +154,8 @@ namespace thekogans {
             /// to create a fully initialized stream from the parameters.
             struct _LIB_THEKOGANS_STREAM_DECL Context : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for <Context>.
-                typedef util::RefCounted::SharedPtr<Context> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
 
                 /// \brief
                 /// "Context"
@@ -446,8 +446,8 @@ namespace thekogans {
             /// call \see{AsyncIoEventQueue::AddStream}.
             struct _LIB_THEKOGANS_STREAM_DECL AsyncInfo : public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<AsyncInfo>.
-                typedef util::RefCounted::SharedPtr<AsyncInfo> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AsyncInfo)
 
                 /// \brief
                 /// AsyncInfo has a private heap to help with memory
@@ -568,8 +568,8 @@ namespace thekogans {
                         public OverlappedList::Node,
                         public util::RefCounted {
                     /// \brief
-                    /// Convenient typedef for util::RefCounted::SharedPtr<Overlapped>.
-                    typedef util::RefCounted::SharedPtr<Overlapped> SharedPtr;
+                    /// Declare \see{RefCounted} pointers.
+                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Overlapped)
 
                     /// \brief
                     /// Stream that created this Overlapped.
@@ -660,8 +660,8 @@ namespace thekogans {
                 /// \see{Stream::Write} easier.
                 struct ReadWriteOverlapped : public Overlapped {
                     /// \brief
-                    /// Convenient typedef for util::RefCounted::SharedPtr<ReadWriteOverlapped>.
-                    typedef util::RefCounted::SharedPtr<ReadWriteOverlapped> SharedPtr;
+                    /// Declare \see{RefCounted} pointers.
+                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ReadWriteOverlapped)
 
                     /// \brief
                     /// ReadWriteOverlapped has a private heap to help with memory
@@ -986,8 +986,8 @@ namespace thekogans {
                     public OVERLAPPED,
                     public util::RefCounted {
                 /// \brief
-                /// Convenient typedef for util::RefCounted::SharedPtr<TimedOverlapped>.
-                typedef util::RefCounted::SharedPtr<TimedOverlapped> SharedPtr;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TimedOverlapped)
 
                 /// \brief
                 /// TimedOverlapped has a private heap to help with memory
@@ -1095,7 +1095,7 @@ namespace thekogans {
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
-            typedef thekogans::util::RefCounted::SharedPtr<type> SharedPtr;\
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
         public:\
             static thekogans::stream::Stream::Context::SharedPtr CreateContext (\
