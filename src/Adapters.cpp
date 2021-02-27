@@ -235,11 +235,11 @@ namespace thekogans {
                             ++currentBegin;
                         }
                     }
-                    assert (*originalBegin == *originalEnd || *currentBegin == *currentEnd);
-                    while (*originalBegin != *originalEnd) {
+                    assert (originalBegin == originalEnd || currentBegin == currentEnd);
+                    while (originalBegin != originalEnd) {
                         deleted.push_back ((originalBegin++)->second);
                     }
-                    while (*currentBegin != *currentEnd) {
+                    while (currentBegin != currentEnd) {
                         added.push_back ((currentBegin++)->second);
                     }
                 }
@@ -260,7 +260,7 @@ namespace thekogans {
                         end = diffProcessor.added.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
-                            &AdaptersEvents::OnAdapterAdded,
+                            &AdaptersEvents::OnAdaptersAdapterAdded,
                             std::placeholders::_1,
                             *it));
                 }
@@ -269,7 +269,7 @@ namespace thekogans {
                          end = diffProcessor.deleted.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
-                            &AdaptersEvents::OnAdapterDeleted,
+                            &AdaptersEvents::OnAdaptersAdapterDeleted,
                             std::placeholders::_1,
                             *it));
                 }
@@ -278,7 +278,7 @@ namespace thekogans {
                          end = diffProcessor.changed.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
-                            &AdaptersEvents::OnAdapterChanged,
+                            &AdaptersEvents::OnAdaptersAdapterChanged,
                             std::placeholders::_1,
                             (*it).first,
                             (*it).second));

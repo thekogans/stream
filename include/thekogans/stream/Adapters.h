@@ -181,18 +181,18 @@ namespace thekogans {
             /// \brief
             /// Called when a new adapter was added to the network.
             /// \param[in] addresses New adapter addresses.
-            virtual void OnAdapterAdded (
+            virtual void OnAdaptersAdapterAdded (
                 AdapterAddresses::SharedPtr /*addresses*/) throw () {}
             /// \brief
             /// Called when an existing adapter was removed from the network.
             /// \param[in] addresses Deleted adapter addresses.
-            virtual void OnAdapterDeleted (
+            virtual void OnAdaptersAdapterDeleted (
                 AdapterAddresses::SharedPtr /*addresses*/) throw () {}
             /// \brief
             /// Called when an existing adapter was modified.
             /// \param[in] oldAddresses Old adapter addresses.
             /// \param[in] newAddresses New adapter addresses.
-            virtual void OnAdapterChanged (
+            virtual void OnAdaptersAdapterChanged (
                 AdapterAddresses::SharedPtr /*oldAddresses*/,
                 AdapterAddresses::SharedPtr /*newAddresses*/) throw () {}
         };
