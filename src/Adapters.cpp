@@ -53,8 +53,6 @@
 namespace thekogans {
     namespace stream {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (AdapterAddresses, util::SpinLock)
-
         bool AdapterAddresses::Contains (const Address &address) const {
             util::ui16 family = address.GetFamily ();
             if (family == AF_INET) {
@@ -202,7 +200,9 @@ namespace thekogans {
             struct DiffProcessor {
                 AdapterAddressesList added;
                 AdapterAddressesList deleted;
-                std::list<std::pair<AdapterAddresses::SharedPtr, AdapterAddresses::SharedPtr>> changed;
+                typedef std::pair<AdapterAddresses, AdapterAddresses> AdapterAddressesPair;
+                typedef std::list<AdapterAddressesPair> AdapterAddressesPairList;
+                AdapterAddressesPairList changed;
 
                 inline bool IsEmpty () const {
                     return added.empty () && deleted.empty () && changed.empty ();
@@ -219,16 +219,18 @@ namespace thekogans {
                     AdapterAddressesMap::const_iterator currentBegin = current.begin ();
                     AdapterAddressesMap::const_iterator currentEnd = current.end ();
                     while (originalBegin != originalEnd && currentBegin != currentEnd) {
-                        if (*originalBegin->second < *currentBegin->second) {
+                        if (originalBegin->second < currentBegin->second) {
+                            // THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
+                            //     THEKOGANS_STREAM,
+                            //     ""
                             deleted.push_back ((originalBegin++)->second);
                         }
-                        else if (*currentBegin->second < *originalBegin->second) {
+                        else if (currentBegin->second < originalBegin->second) {
                             added.push_back ((currentBegin++)->second);
                         }
-                        else if (*originalBegin->second != *currentBegin->second) {
+                        else if (originalBegin->second != currentBegin->second) {
                             changed.push_back (
-                                std::pair<AdapterAddresses::SharedPtr, AdapterAddresses::SharedPtr> (
-                                    (originalBegin++)->second, (currentBegin++)->second));
+                                AdapterAddressesPair ((originalBegin++)->second, (currentBegin++)->second));
                         }
                         else {
                             ++originalBegin;
@@ -273,7 +275,7 @@ namespace thekogans {
                             std::placeholders::_1,
                             *it));
                 }
-                for (std::list<std::pair<AdapterAddresses::SharedPtr, AdapterAddresses::SharedPtr>>::const_iterator
+                for (DiffProcessor::AdapterAddressesPairList::const_iterator
                          it = diffProcessor.changed.begin (),
                          end = diffProcessor.changed.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
@@ -352,11 +354,16 @@ namespace thekogans {
                             ipAdapterAddresses != 0; ipAdapterAddresses = ipAdapterAddresses->Next) {
                         AdapterInfo adapterInfo (ipAdapterAddresses->IfIndex);
                         if (adapterInfo.IsConnected ()) {
-                            AdapterAddresses::SharedPtr addresses (
-                                new AdapterAddresses (
-                                    ipAdapterAddresses->AdapterName,
-                                    ipAdapterAddresses->IfIndex,
-                                    adapterInfo.IsMulticast ()));
+                            THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
+                                THEKOGANS_STREAM,
+                                "Retrieving addresses for; Name: %s, Index: %u, Multicast: %s\n",
+                                ipAdapterAddresses->AdapterName,
+                                ipAdapterAddresses->IfIndex,
+                                util::boolTostring (adapterInfo.IsMulticast ()).c_str ());
+                            AdapterAddresses addresses (
+                                ipAdapterAddresses->AdapterName,
+                                ipAdapterAddresses->IfIndex,
+                                adapterInfo.IsMulticast ());
                             for (PIP_ADAPTER_UNICAST_ADDRESS
                                     unicastAddress = ipAdapterAddresses->FirstUnicastAddress;
                                     unicastAddress != 0; unicastAddress = unicastAddress->Next) {
@@ -383,7 +390,12 @@ namespace thekogans {
                                             htonl (ntohl (ipv4.unicast.in.sin_addr.s_addr) | mask);
                                         ipv4.broadcast.length = sizeof (sockaddr_in);
                                     }
-                                    addresses->ipv4.push_back (ipv4);
+                                    addresses.ipv4.push_back (ipv4);
+                                    THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
+                                        THEKOGANS_STREAM,
+                                        "IPV4; Unicast: %s, Broadcast: %s\n",
+                                        ipv4.unicast.ToString ().c_str (),
+                                        ipv4.broadcast.ToString ().c_str ());
                                 }
                                 else if (unicastAddress->Address.lpSockaddr->sa_family == AF_INET6) {
                                     assert (unicastAddress->Address.iSockaddrLength == sizeof (sockaddr_in6));
@@ -392,18 +404,35 @@ namespace thekogans {
                                         unicastAddress->Address.lpSockaddr,
                                         unicastAddress->Address.iSockaddrLength);
                                     ipv6.length = sizeof (sockaddr_in6);
-                                    addresses->ipv6.push_back (ipv6);
+                                    addresses.ipv6.push_back (ipv6);
+                                    THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
+                                        THEKOGANS_STREAM,
+                                        "IPV6: %s\n",
+                                        ipv6.ToString ().c_str ());
                                 }
                             }
                             if (ipAdapterAddresses->PhysicalAddressLength == util::MAC_LENGTH) {
                                 memcpy (
-                                    addresses->mac,
+                                    addresses.mac,
                                     ipAdapterAddresses->PhysicalAddress,
                                     ipAdapterAddresses->PhysicalAddressLength);
+                                THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
+                                    THEKOGANS_STREAM,
+                                    "MAC: %s\n",
+                                    util::HexEncodeBuffer (
+                                        ipAdapterAddresses->PhysicalAddress,
+                                        ipAdapterAddresses->PhysicalAddressLength).c_str ());
                             }
-                            if (!addresses->ipv4.empty () || !addresses->ipv6.empty ()) {
-                                newAddressesMap.insert (AdapterAddressesMap::value_type (addresses->name, addresses));
+                            if (!addresses.ipv4.empty () || !addresses.ipv6.empty ()) {
+                                THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
+                                    THEKOGANS_STREAM,
+                                    "Added addresses for; Name: %s, Index: %u, Multicast: %s\n",
+                                    ipAdapterAddresses->AdapterName,
+                                    ipAdapterAddresses->IfIndex,
+                                    util::boolTostring (adapterInfo.IsMulticast ()).c_str ());
+                                newAddressesMap.insert (AdapterAddressesMap::value_type (addresses.name, addresses));
                             }
+                            THEKOGANS_UTIL_LOG_FLUSH
                         }
                     }
                 }
@@ -441,11 +470,10 @@ namespace thekogans {
                                 newAddressesMap.insert (
                                     AdapterAddressesMap::value_type (
                                         curr->ifa_name,
-                                        AdapterAddresses::SharedPtr (
-                                            new AdapterAddresses (
-                                                curr->ifa_name,
-                                                if_nametoindex (curr->ifa_name),
-                                                util::Flags32 (curr->ifa_flags).Test (IFF_MULTICAST)))));
+                                        AdapterAddresses (
+                                            curr->ifa_name,
+                                            if_nametoindex (curr->ifa_name),
+                                            util::Flags32 (curr->ifa_flags).Test (IFF_MULTICAST))));
                             if (result.second) {
                                 it = result.first;
                             }
@@ -462,13 +490,13 @@ namespace thekogans {
                                 memcpy (&ipv4.broadcast.in, curr->ifa_broadaddr, sizeof (sockaddr_in));
                                 ipv4.broadcast.length = sizeof (sockaddr_in);
                             }
-                            it->second->ipv4.push_back (ipv4);
+                            it->second.ipv4.push_back (ipv4);
                         }
                         else if (curr->ifa_addr->sa_family == AF_INET6) {
                             Address ipv6;
                             memcpy (&ipv6.in6, curr->ifa_addr, sizeof (sockaddr_in6));
                             ipv6.length = sizeof (sockaddr_in6);
-                            it->second->ipv6.push_back (ipv6);
+                            it->second.ipv6.push_back (ipv6);
                         }
                     #if defined (TOOLCHAIN_OS_Linux)
                         else if (curr->ifa_addr->sa_family == AF_PACKET) {
@@ -481,7 +509,7 @@ namespace thekogans {
                         else if (curr->ifa_addr->sa_family == AF_LINK) {
                             const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
                             if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == util::MAC_LENGTH) {
-                                memcpy (it->second->mac, LLADDR (addr), addr->sdl_alen);
+                                memcpy (it->second.mac, LLADDR (addr), addr->sdl_alen);
                             }
                         }
                     #endif // defined (TOOLCHAIN_OS_Linux)

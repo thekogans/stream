@@ -66,14 +66,7 @@ namespace thekogans {
         /// \brief
         /// Contains adapter addresses returned by \see{Adapters::GetAddressesMap}.
 
-        struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses : public virtual util::RefCounted {
-            /// \brief
-            /// Declare \see{util::RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AdapterAddresses)
-            /// \brief
-            /// AdapterAddresses has a private \see{util::Heap} to help with heap fragmentation.
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AdapterAddresses, util::SpinLock)
-
+        struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses {
             /// \brief
             /// Name of adapter.
             std::string name;
@@ -162,10 +155,10 @@ namespace thekogans {
 
         /// \brief
         /// Convenient typedef for std::list<AdapterAddresses>.
-        typedef std::list<AdapterAddresses::SharedPtr> AdapterAddressesList;
+        typedef std::list<AdapterAddresses> AdapterAddressesList;
         /// \brief
         /// Convenient typedef for std::map<std::string, AdapterAddresses>.
-        typedef std::map<std::string, AdapterAddresses::SharedPtr> AdapterAddressesMap;
+        typedef std::map<std::string, AdapterAddresses> AdapterAddressesMap;
 
         /// \struct AdaptersEvents Adapters.h thekogans/stream/Adapters.h
         ///
@@ -173,7 +166,11 @@ namespace thekogans {
         /// Network change notification events. See \see{util::Subscriber} for an
         /// example on how to use this class.
 
-        struct _LIB_THEKOGANS_STREAM_DECL AdaptersEvents {
+        struct _LIB_THEKOGANS_STREAM_DECL AdaptersEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{thekogans::util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AdaptersEvents)
+
             /// \brief
             /// dtor.
             virtual ~AdaptersEvents () {}
@@ -182,19 +179,19 @@ namespace thekogans {
             /// Called when a new adapter was added to the network.
             /// \param[in] addresses New adapter addresses.
             virtual void OnAdaptersAdapterAdded (
-                AdapterAddresses::SharedPtr /*addresses*/) throw () {}
+                const AdapterAddresses & /*addresses*/) throw () {}
             /// \brief
             /// Called when an existing adapter was removed from the network.
             /// \param[in] addresses Deleted adapter addresses.
             virtual void OnAdaptersAdapterDeleted (
-                AdapterAddresses::SharedPtr /*addresses*/) throw () {}
+                const AdapterAddresses & /*addresses*/) throw () {}
             /// \brief
             /// Called when an existing adapter was modified.
             /// \param[in] oldAddresses Old adapter addresses.
             /// \param[in] newAddresses New adapter addresses.
             virtual void OnAdaptersAdapterChanged (
-                AdapterAddresses::SharedPtr /*oldAddresses*/,
-                AdapterAddresses::SharedPtr /*newAddresses*/) throw () {}
+                const AdapterAddresses & /*oldAddresses*/,
+                const AdapterAddresses & /*newAddresses*/) throw () {}
         };
 
         /// \struct Adapters Adapters.h thekogans/stream/Adapters.h
