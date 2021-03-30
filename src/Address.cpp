@@ -781,6 +781,10 @@ namespace thekogans {
             }
         }
 
+        std::size_t Address::Size () const {
+            return 0;
+        }
+
         _LIB_THEKOGANS_STREAM_DECL bool _LIB_THEKOGANS_STREAM_API operator == (
                 const Address &address1,
                 const Address &address2) {
@@ -793,6 +797,42 @@ namespace thekogans {
                 const Address &address2) {
             return address1.length != address2.length ||
                 memcmp (&address1, &address2, address1.length) != 0;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL util::Serializable & _LIB_THEKOGANS_UTIL_API operator << (
+                util::Serializable &serializable,
+                const Address &address) {
+            return serializable;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL util::Serializable & _LIB_THEKOGANS_UTIL_API operator >> (
+                util::Serializable &serializable,
+                Address &address) {
+            return serializable;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+                pugi::xml_node &node,
+                const Address &address) {
+            return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+                pugi::xml_node &node,
+                Address &address) {
+            return node;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+                util::JSON::Object &object,
+                const Address &address) {
+            return object;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+                util::JSON::Object &object,
+                Address &address) {
+            return object;
         }
 
     } // namespace stream

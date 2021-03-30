@@ -160,24 +160,23 @@ namespace thekogans {
             /// needs to call Close itself.
             virtual ~Socket ();
 
-            // Stream
             /// \brief
             /// Return read timeout value.
             /// \return Read timeout value.
-            virtual util::TimeSpec GetReadTimeout () const;
+            util::TimeSpec GetReadTimeout () const;
             /// \brief
             /// Set read timeout.
             /// \param[in] timeSpec Read timeout.
-            virtual void SetReadTimeout (const util::TimeSpec &timeSpec);
+            void SetReadTimeout (const util::TimeSpec &timeSpec);
 
             /// \brief
             /// Return write timeout value.
             /// \return Write timeout value.
-            virtual util::TimeSpec GetWriteTimeout () const;
+            util::TimeSpec GetWriteTimeout () const;
             /// \brief
             /// Set write timeout.
             /// \param[in] timeSpec Write timeout.
-            virtual void SetWriteTimeout (const util::TimeSpec &timeSpec);
+            void SetWriteTimeout (const util::TimeSpec &timeSpec);
 
             /// \brief
             /// Return the host name.

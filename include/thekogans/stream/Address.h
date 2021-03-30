@@ -56,6 +56,8 @@
 #include <string>
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Serializable.h"
+#include "thekogans/util/JSON.h"
 #include "thekogans/stream/Config.h"
 
 namespace thekogans {
@@ -449,6 +451,11 @@ namespace thekogans {
             std::string ToString (
                 std::size_t indentationLevel = 0,
                 const char *tagName = TAG_ADDRESS) const;
+
+            /// \brief
+            /// Return the serializable size (not including the header).
+            /// \return Serializable size.
+            std::size_t Size () const;
         };
 
         /// \brief
@@ -467,6 +474,60 @@ namespace thekogans {
         _LIB_THEKOGANS_STREAM_DECL bool _LIB_THEKOGANS_STREAM_API operator != (
             const Address &address1,
             const Address &address2);
+
+        /// \brief
+        /// Write the given \see{Address} to the given \see{util::Serializable}.
+        /// \param[in] serializable Where to write the given \see{Address}.
+        /// \param[in] address \See{Address} to write.
+        /// \return serializable.
+        _LIB_THEKOGANS_UTIL_DECL util::Serializable & _LIB_THEKOGANS_UTIL_API operator << (
+            util::Serializable &serializable,
+            const Address &address);
+
+        /// \brief
+        /// Read an \See{Address} from the given \see{util::Serializable}.
+        /// \param[in] serializable Where to read the \see{Address} from.
+        /// \param[out] address \See{Address} to read.
+        /// \return serializable.
+        _LIB_THEKOGANS_UTIL_DECL util::Serializable & _LIB_THEKOGANS_UTIL_API operator >> (
+            util::Serializable &serializable,
+            Address &address);
+
+        /// \brief
+        /// Write the given \see{Address} to the given node.
+        /// \param[in] node Where to write the given \see{Address}.
+        /// \param[in] address \See{Address} to write.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
+            pugi::xml_node &node,
+            const Address &address);
+
+        /// \brief
+        /// Read an \See{Address} from the given node.
+        /// \param[in] node Where to read the \see{Address} from.
+        /// \param[out] address \See{Address} to read.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+            pugi::xml_node &node,
+            Address &address);
+
+        /// \brief
+        /// Write the given \see{Address} to the given node.
+        /// \param[in] object Where to write the given \see{Address}.
+        /// \param[in] address \See{Address} to write.
+        /// \return object.
+        _LIB_THEKOGANS_UTIL_DECL util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
+            util::JSON::Object &object,
+            const Address &address);
+
+        /// \brief
+        /// Read an \See{Address} from the given object.
+        /// \param[in] object Where to read the \see{Address} from.
+        /// \param[out] address \See{Address} to read.
+        /// \return object.
+        _LIB_THEKOGANS_UTIL_DECL util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+            util::JSON::Object &object,
+            Address &address);
 
     } // namespace stream
 } // namespace thekogans
