@@ -125,7 +125,21 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 runLoop (0),
             #endif // defined (TOOLCHAIN_OS_Windows)
-                addressesMap (GetAddressesMap ()) {}
+                addressesMap (GetAddressesMap ()) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            typedef VOID (NETIOAPI_API_ *INTERFACE_CHANGE_CALLBACK) (
+                PVOID,
+                PMIB_IPINTERFACE_ROW,
+                MIB_NOTIFICATION_TYPE);
+            DWORD rc = NotifyIpInterfaceChange (AF_UNSPEC,
+                (INTERFACE_CHANGE_CALLBACK)InterfaceChangeCallback, 0, FALSE, &handle);
+            if (rc != NO_ERROR) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (rc);
+            }
+        #elif defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
 
         AdapterAddressesList Adapters::GetAddressesList () {
             util::LockGuard<util::SpinLock> guard (spinLock);
@@ -211,7 +225,7 @@ namespace thekogans {
                 // This function works under the assumption that original and current
                 // are related. Since the two maps are snapshots in time of the state
                 // of adapters in the system, the assumption is satisfied.
-                void Diff (
+                AdapterAddressesMap Diff (
                         const AdapterAddressesMap &original,
                         const AdapterAddressesMap &current) {
                     AdapterAddressesMap::const_iterator originalBegin = original.begin ();
@@ -220,43 +234,43 @@ namespace thekogans {
                     AdapterAddressesMap::const_iterator currentEnd = current.end ();
                     while (originalBegin != originalEnd && currentBegin != currentEnd) {
                         if (originalBegin->second < currentBegin->second) {
-                            // THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
-                            //     THEKOGANS_STREAM,
-                            //     ""
-                            deleted.push_back ((originalBegin++)->second);
+                            deleted.push_back (originalBegin->second);
+                            ++originalBegin;
                         }
                         else if (currentBegin->second < originalBegin->second) {
-                            added.push_back ((currentBegin++)->second);
-                        }
-                        else if (originalBegin->second != currentBegin->second) {
-                            changed.push_back (
-                                AdapterAddressesPair ((originalBegin++)->second, (currentBegin++)->second));
+                            added.push_back (currentBegin->second);
+                            ++currentBegin;
                         }
                         else {
+                            if (originalBegin->second != currentBegin->second) {
+                                changed.push_back (
+                                    AdapterAddressesPair (originalBegin->second, currentBegin->second));
+                            }
                             ++originalBegin;
                             ++currentBegin;
                         }
                     }
                     assert (originalBegin == originalEnd || currentBegin == currentEnd);
                     while (originalBegin != originalEnd) {
-                        deleted.push_back ((originalBegin++)->second);
+                        deleted.push_back (originalBegin->second);
+                        ++originalBegin;
                     }
                     while (currentBegin != currentEnd) {
-                        added.push_back ((currentBegin++)->second);
+                        added.push_back (currentBegin->second);
+                        ++currentBegin;
                     }
+                    return current;
                 }
             };
         }
 
         void Adapters::NotifySubscribers () {
-            AdapterAddressesMap newAddressesMap = GetAddressesMap ();
             DiffProcessor diffProcessor;
-            diffProcessor.Diff (addressesMap, newAddressesMap);
+            {
+                util::LockGuard<util::SpinLock> guard (spinLock);
+                addressesMap = diffProcessor.Diff (addressesMap, GetAddressesMap ());
+            }
             if (!diffProcessor.IsEmpty ()) {
-                {
-                    util::LockGuard<util::SpinLock> guard (spinLock);
-                    addressesMap = newAddressesMap;
-                }
                 for (AdapterAddressesList::const_iterator
                         it = diffProcessor.added.begin (),
                         end = diffProcessor.added.end (); it != end; ++it) {
@@ -267,8 +281,8 @@ namespace thekogans {
                             *it));
                 }
                 for (AdapterAddressesList::const_iterator
-                         it = diffProcessor.deleted.begin (),
-                         end = diffProcessor.deleted.end (); it != end; ++it) {
+                        it = diffProcessor.deleted.begin (),
+                        end = diffProcessor.deleted.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
                             &AdaptersEvents::OnAdaptersAdapterDeleted,
@@ -276,8 +290,8 @@ namespace thekogans {
                             *it));
                 }
                 for (DiffProcessor::AdapterAddressesPairList::const_iterator
-                         it = diffProcessor.changed.begin (),
-                         end = diffProcessor.changed.end (); it != end; ++it) {
+                        it = diffProcessor.changed.begin (),
+                        end = diffProcessor.changed.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
                             &AdaptersEvents::OnAdaptersAdapterChanged,
@@ -393,7 +407,9 @@ namespace thekogans {
                                     addresses.ipv4.push_back (ipv4);
                                     THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
                                         THEKOGANS_STREAM,
-                                        "IPV4; Unicast: %s, Broadcast: %s\n",
+                                        "IPV4;\n"
+                                        "Unicast: %s"
+                                        "Broadcast: %s",
                                         ipv4.unicast.ToString ().c_str (),
                                         ipv4.broadcast.ToString ().c_str ());
                                 }
@@ -407,7 +423,7 @@ namespace thekogans {
                                     addresses.ipv6.push_back (ipv6);
                                     THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
                                         THEKOGANS_STREAM,
-                                        "IPV6: %s\n",
+                                        "IPV6: %s",
                                         ipv6.ToString ().c_str ());
                                 }
                             }
@@ -802,62 +818,6 @@ namespace thekogans {
             Adapters::Instance ().NotifySubscribers ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
-
-        void Adapters::OnSubscribe (
-                util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
-                std::size_t subscriberCount) {
-            if (subscriberCount == 1) {
-                addressesMap = GetAddressesMap ();
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (handle == 0) {
-                    typedef VOID (NETIOAPI_API_ *INTERFACE_CHANGE_CALLBACK) (
-                        PVOID,
-                        PMIB_IPINTERFACE_ROW,
-                        MIB_NOTIFICATION_TYPE);
-                    DWORD rc = NotifyIpInterfaceChange (AF_UNSPEC,
-                        (INTERFACE_CHANGE_CALLBACK)InterfaceChangeCallback, 0, FALSE, &handle);
-                    if (rc != NO_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (rc);
-                    }
-                }
-            #elif defined (TOOLCHAIN_OS_Linux)
-                if (socket.Get () == 0) {
-                    Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-                }
-            #elif defined (TOOLCHAIN_OS_OSX)
-                if (runLoop == 0) {
-                    Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-        }
-
-        void Adapters::OnUnsubscribe (
-                util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                std::size_t subscriberCount) {
-            if (subscriberCount == 0) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (handle != 0) {
-                    if (CancelMibChangeNotify2 (handle) != NO_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                    handle = 0;
-                }
-            #elif defined (TOOLCHAIN_OS_Linux)
-                if (socket.Get () != 0) {
-                    socket->Close ();
-                    Wait ();
-                }
-            #elif defined (TOOLCHAIN_OS_OSX)
-                if (runLoop != 0) {
-                    CFRunLoopStop (runLoop);
-                    Wait ();
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-        }
 
     } // namespace stream
 } // namespace thekogans

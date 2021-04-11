@@ -664,7 +664,7 @@ namespace thekogans {
                     in.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
                 }
                 else {
-                    inet_pton (AF_INET, addr.c_str (), &in.sin_addr.s_addr);
+                    inet_pton (AF_INET, util::Decodestring (addr).c_str (), &in.sin_addr.s_addr);
                 }
             }
             else if (family == VALUE_FAMILY_INET6) {
@@ -680,7 +680,7 @@ namespace thekogans {
                     in6.sin6_addr = in6addr_loopback;
                 }
                 else {
-                    inet_pton (AF_INET6, addr.c_str (), &in6.sin6_addr);
+                    inet_pton (AF_INET6, util::Decodestring (addr).c_str (), &in6.sin6_addr);
                 }
             }
             else if (family == VALUE_FAMILY_LOCAL) {

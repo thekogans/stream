@@ -279,24 +279,6 @@ namespace thekogans {
             virtual void Run () throw () override;
         #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 
-            // public util::Producer<AdaptersEvents>.
-            /// \brief
-            /// Overide this methid to react to a new \see{Subscriber}.
-            /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
-            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which events are delivered.
-            /// \param[in] subscriberCount Number of \see{Subscriber}s (including this one).
-            virtual void OnSubscribe (
-                util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                util::Producer<AdaptersEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/,
-                std::size_t subscriberCount) override;
-            /// \brief
-            /// Overide this methid to react to a \see{Subscriber} being removed.
-            /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
-            /// \param[in] subscriberCount Number of \see{Subscriber}s remaining.
-            virtual void OnUnsubscribe (
-                util::Subscriber<AdaptersEvents> & /*subscriber*/,
-                std::size_t subscriberCount) override;
-
             /// \brief
             /// Adapters is neither copy constructable, nor assignable.
             THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Adapters)
