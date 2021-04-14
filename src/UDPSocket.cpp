@@ -142,7 +142,13 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD numberOfBytesSent = 0;
                 if (IsAsync ()) {
-                    PostAsyncWrite (buffer, count);
+                    THEKOGANS_UTIL_TRY {
+                        PostAsyncWrite (buffer, count);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
                 else {
                     WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
@@ -188,7 +194,10 @@ namespace thekogans {
                             overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                         if (errorCode != WSA_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            return;
                         }
                     }
                     overlapped.Release ();
@@ -249,7 +258,13 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD numberOfBytesSent = 0;
                 if (IsAsync ()) {
-                    PostAsyncWriteTo (buffer, count, address);
+                    THEKOGANS_UTIL_TRY {
+                        PostAsyncWriteTo (buffer, count, address);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
                 else {
                     WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
@@ -303,7 +318,10 @@ namespace thekogans {
                             overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                         if (errorCode != WSA_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            return;
                         }
                     }
                     overlapped.Release ();
@@ -384,7 +402,13 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD numberOfBytesSent = 0;
                 if (IsAsync ()) {
-                    PostAsyncWriteMsg (buffer, count, from, to);
+                    THEKOGANS_UTIL_TRY {
+                        PostAsyncWriteMsg (buffer, count, from, to);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
                 else {
                     MsgHdr msgHdr (buffer, count, from, to);
@@ -437,7 +461,10 @@ namespace thekogans {
                             overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                         if (errorCode != WSA_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            return;
                         }
                     }
                     overlapped.Release ();

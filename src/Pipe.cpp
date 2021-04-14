@@ -127,7 +127,10 @@ namespace thekogans {
                             overlapped.Get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode != ERROR_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            return;
                         }
                     }
                     overlapped.Release ();
@@ -198,7 +201,10 @@ namespace thekogans {
                             overlapped.Get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                         if (errorCode != ERROR_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            return;
                         }
                     }
                     overlapped.Release ();
@@ -223,7 +229,13 @@ namespace thekogans {
             if (timeSpec != util::TimeSpec::Infinite) {
                 readTimeout = timeSpec;
                 if (IsAsync ()) {
-                    asyncInfo->UpdateTimedStream (AsyncInfo::EventRead);
+                    THEKOGANS_UTIL_TRY {
+                        asyncInfo->UpdateTimedStream (AsyncInfo::EventRead);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
             }
             else {
@@ -236,7 +248,13 @@ namespace thekogans {
             if (timeSpec != util::TimeSpec::Infinite) {
                 writeTimeout = timeSpec;
                 if (IsAsync ()) {
-                    asyncInfo->UpdateTimedStream (AsyncInfo::EventWrite);
+                    THEKOGANS_UTIL_TRY {
+                        asyncInfo->UpdateTimedStream (AsyncInfo::EventWrite);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
             }
             else {

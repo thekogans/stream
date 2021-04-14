@@ -553,26 +553,38 @@ namespace thekogans {
         }
 
         void Stream::AsyncInfo::EnqBufferFront (BufferInfo::UniquePtr bufferInfo) {
-            if (bufferInfo.get () != 0) {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                bufferInfoList.push_front (bufferInfo.get ());
-                eventQueue.AddStreamForEvents (stream, bufferInfo.release ()->event);
+            THEKOGANS_UTIL_TRY {
+                if (bufferInfo.get () != 0) {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    bufferInfoList.push_front (bufferInfo.get ());
+                    eventQueue.AddStreamForEvents (stream, bufferInfo.release ()->event);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                eventSink.HandleStreamError (stream, exception);
             }
         }
 
         void Stream::AsyncInfo::EnqBufferBack (BufferInfo::UniquePtr bufferInfo) {
-            if (bufferInfo.get () != 0) {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                bufferInfoList.push_back (bufferInfo.get ());
-                eventQueue.AddStreamForEvents (stream, bufferInfo.release ()->event);
+            THEKOGANS_UTIL_TRY {
+                if (bufferInfo.get () != 0) {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    bufferInfoList.push_back (bufferInfo.get ());
+                    eventQueue.AddStreamForEvents (stream, bufferInfo.release ()->event);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                eventSink.HandleStreamError (stream, exception);
             }
         }
 
@@ -582,8 +594,14 @@ namespace thekogans {
             if (!bufferInfoList.empty ()) {
                 bufferInfo.reset (bufferInfoList.pop_front ());
                 if (bufferInfoList.empty ()) {
-                    eventQueue.DeleteStreamForEvents (
-                        stream, EventWrite | EventWriteTo | EventWriteMsg);
+                    THEKOGANS_UTIL_TRY {
+                        eventQueue.DeleteStreamForEvents (
+                            stream, EventWrite | EventWriteTo | EventWriteMsg);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        eventSink.HandleStreamError (stream, exception);
+                    }
                 }
             }
             return bufferInfo;

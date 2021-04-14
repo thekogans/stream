@@ -41,6 +41,7 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
+#include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Socket.h"
 
 namespace thekogans {
@@ -224,7 +225,13 @@ namespace thekogans {
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
                 if (IsAsync ()) {
-                    asyncInfo->UpdateTimedStream (AsyncInfo::EventRead);
+                    THEKOGANS_UTIL_TRY {
+                        asyncInfo->UpdateTimedStream (AsyncInfo::EventRead);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
             }
             else {
@@ -273,7 +280,13 @@ namespace thekogans {
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
                 if (IsAsync ()) {
-                    asyncInfo->UpdateTimedStream (AsyncInfo::EventWrite);
+                    THEKOGANS_UTIL_TRY {
+                        asyncInfo->UpdateTimedStream (AsyncInfo::EventWrite);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
             }
             else {

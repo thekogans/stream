@@ -140,7 +140,10 @@ namespace thekogans {
                     }
                 }
                 else if (errorCode != ERROR_IO_PENDING) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    asyncInfo->eventSink.HandleStreamError (
+                        *this,
+                        THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                    return;
                 }
             }
             overlapped.Release ();

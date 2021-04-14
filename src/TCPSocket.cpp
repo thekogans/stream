@@ -138,7 +138,13 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD numberOfBytesSent = 0;
                 if (IsAsync ()) {
-                    PostAsyncWrite (buffer, count);
+                    THEKOGANS_UTIL_TRY {
+                        PostAsyncWrite (buffer, count);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    }
                 }
                 else {
                     WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
@@ -189,7 +195,10 @@ namespace thekogans {
                             0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                         if (errorCode != WSA_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            return;
                         }
                     }
                     overlapped.Release ();
@@ -236,7 +245,14 @@ namespace thekogans {
                     // being that ConnectEx needs the socket to be
                     // explicitly bound.
                     if (!IsBound ()) {
-                        Bind (Address::Any (0, address.GetFamily ()));
+                        THEKOGANS_UTIL_TRY {
+                            Bind (Address::Any (0, address.GetFamily ()));
+                        }
+                        THEKOGANS_UTIL_CATCH (util::Exception) {
+                            THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                            asyncInfo->eventSink.HandleStreamError (*this, exception);
+                            return;
+                        }
                     }
                     ConnectOverlapped::SharedPtr overlapped (
                         new ConnectOverlapped (*this, address));
@@ -250,7 +266,10 @@ namespace thekogans {
                             overlapped.Get ())) {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                         if (errorCode != WSA_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            return;
                         }
                     }
                     overlapped.Release ();
@@ -264,16 +283,27 @@ namespace thekogans {
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
                 if (IsAsync ()) {
-                    asyncInfo->AddStreamForEvents (AsyncInfo::EventConnect);
+                    THEKOGANS_UTIL_TRY {
+                        asyncInfo->AddStreamForEvents (AsyncInfo::EventConnect);
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                        asyncInfo->eventSink.HandleStreamError (*this, exception);
+                        return;
+                    }
                 }
                 if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
                         THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                     if (errorCode != EINPROGRESS) {
                         if (IsAsync ()) {
-                            asyncInfo->DeleteStreamForEvents (AsyncInfo::EventConnect);
+                            asyncInfo->eventSink.HandleStreamError (
+                                *this,
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
                         }
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        else {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
                     }
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -297,7 +327,15 @@ namespace thekogans {
                     0)) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                 if (errorCode != WSA_IO_PENDING) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    if (IsAsync ()) {
+                        asyncInfo->eventSink.HandleStreamError (
+                            *this,
+                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                        return;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
                 }
             }
             overlapped.Release ();
@@ -489,7 +527,13 @@ namespace thekogans {
         void TCPSocket::Shutdown (ShutdownType shutdownType) {
             if (IsAsync ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                PostAsyncShutdown (shutdownType);
+                THEKOGANS_UTIL_TRY {
+                    PostAsyncShutdown (shutdownType);
+                }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                }
             #else // defined (TOOLCHAIN_OS_Windows)
                 asyncInfo->EnqBufferBack (
                     AsyncInfo::BufferInfo::UniquePtr (
