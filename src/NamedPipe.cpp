@@ -84,7 +84,7 @@ namespace thekogans {
                             asyncInfo->eventSink.HandleStreamError (
                                 *this,
                                 THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                            return;
+                            return 0;
                         }
                     }
                     overlapped.Release ();
