@@ -266,10 +266,11 @@ namespace thekogans {
 
         void Adapters::NotifySubscribers () {
             DiffProcessor diffProcessor;
-            {
+            THEKOGANS_UTIL_TRY {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 addressesMap = diffProcessor.Diff (addressesMap, GetAddressesMap ());
             }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
             if (!diffProcessor.IsEmpty ()) {
                 for (AdapterAddressesList::const_iterator
                         it = diffProcessor.added.begin (),

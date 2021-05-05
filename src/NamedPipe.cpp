@@ -206,7 +206,7 @@ namespace thekogans {
         }
 
         void NamedPipe::PostAsyncRead () {
-            if (asyncInfo->bufferLength) {
+            if (asyncInfo->bufferLength != 0) {
                 AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
                     new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength));
                 if (!ReadFile (
