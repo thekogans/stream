@@ -224,15 +224,6 @@ namespace thekogans {
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        asyncInfo->UpdateTimedStream (AsyncInfo::EventRead);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                    }
-                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -279,15 +270,6 @@ namespace thekogans {
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        asyncInfo->UpdateTimedStream (AsyncInfo::EventWrite);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                    }
-                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

@@ -57,9 +57,6 @@ namespace thekogans {
             /// AsyncIoEventQueueRegistryList list id.
             ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID,
             /// \brief
-            /// AsyncIoEventQueueTimedStreamsList list id.
-            ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID,
-            /// \brief
             /// AsyncIoEventQueueDeletedStreamsList list id.
             ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID
         };
@@ -68,10 +65,6 @@ namespace thekogans {
         /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID>.
         typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_REGISTRY_LIST_ID>
             AsyncIoEventQueueRegistryList;
-        /// \brief
-        /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>.
-        typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_TIMED_STREAMS_LIST_ID>
-            AsyncIoEventQueueTimedStreamsList;
         /// \brief
         /// Convenient typedef for util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>.
         typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>
@@ -137,7 +130,6 @@ namespace thekogans {
         struct _LIB_THEKOGANS_STREAM_DECL Stream :
                 public virtual util::RefCounted,
                 public AsyncIoEventQueueRegistryList::Node,
-                public AsyncIoEventQueueTimedStreamsList::Node,
                 public AsyncIoEventQueueDeletedStreamsList::Node {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -416,24 +408,6 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count);
 
-            /// \brief
-            /// Return the read timeout value.
-            /// \return The read timeout value.
-            virtual util::TimeSpec GetReadTimeout () const = 0;
-            /// \brief
-            /// Set the read timeout. util::TimeSpec::Zero == no timeout.
-            /// \param[in] timeSpec Read timeout.
-            virtual void SetReadTimeout (const util::TimeSpec & /*timeSpec*/) = 0;
-
-            /// \brief
-            /// Return the write timeout value.
-            /// \return The write timeout value.
-            virtual util::TimeSpec GetWriteTimeout () const = 0;
-            /// \brief
-            /// Set the write timeout. util::TimeSpec::Zero == no timeout.
-            /// \param[in] timeSpec Write timeout.
-            virtual void SetWriteTimeout (const util::TimeSpec & /*timeSpec*/) = 0;
-
         protected:
             /// \brief
             /// Close the stream.
@@ -577,9 +551,6 @@ namespace thekogans {
                     /// \brief
                     /// Operation represented by this Overlapped.
                     util::ui32 event;
-                    /// \brief
-                    /// Absolute timeout value for timed async io.
-                    util::TimeSpec deadline;
 
                     /// \brief
                     /// ctor.
@@ -626,14 +597,6 @@ namespace thekogans {
                     /// Set offset in the stream where bytes are read or written.
                     /// \param[in] offset_ Offset in the stream where bytes are read or written.
                     void SetOffset (util::ui64 offset_);
-
-                    /// \brief
-                    /// Return true if the operation represented by this overlapped timed out.
-                    /// \param[in] currentTime Current time.
-                    /// \return true if the operation represented by this overlapped timed out.
-                    inline bool TimedOut (const util::TimeSpec &currentTime) const {
-                        return deadline != util::TimeSpec::Zero && currentTime >= deadline;
-                    }
 
                     /// \brief
                     /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
@@ -922,32 +885,7 @@ namespace thekogans {
                 /// the EventWrite, EventWriteTo and EventWriteMsg events.
                 /// Writes the pending buffers to the stream.
                 void WriteBuffers ();
-
-                /// \brief
-                /// Return true if the read operation timed out.
-                /// \param[in] currentTime Current time.
-                /// \return true if the read operation timed out.
-                inline bool ReadTimedOut (const util::TimeSpec &currentTime) const {
-                    return readDeadline != util::TimeSpec::Zero && currentTime >= readDeadline;
-                }
-                /// \brief
-                /// Return true if the write operation timed out.
-                /// \param[in] currentTime Current time.
-                /// \return true if the write operation timed out.
-                inline bool WriteTimedOut (const util::TimeSpec &currentTime) const {
-                    return writeDeadline != util::TimeSpec::Zero && currentTime >= writeDeadline;
-                }
             #endif // defined (TOOLCHAIN_OS_Windows)
-
-                /// \brief
-                /// Update the deadlines of a timed stream.
-                /// \param[in] events Events for which to check.
-                /// \param[in] doBreak Call \see{AsyncIoEventQueue::Break}
-                /// after updating.
-                /// \return true = stream is timed, false = stream is not timed.
-                bool UpdateTimedStream (
-                    util::ui32 events,
-                    bool doBreak = true);
 
                 /// \brief
                 /// AsyncInfo is neither copy constructable, nor assignable.
@@ -977,100 +915,17 @@ namespace thekogans {
             /// \param[in] exception Async error.
             virtual void HandleError (const util::Exception &exception) throw ();
         #if defined (TOOLCHAIN_OS_Windows)
-            /// \struct Stream::TimedOverlapped Stream.h thekogans/stream/Stream.h
-            ///
-            /// \brief
-            /// TimedOverlapped provides the mechanism by which named pipes
-            /// do timed synchronous io.
-            struct TimedOverlapped :
-                    public OVERLAPPED,
-                    public util::RefCounted {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TimedOverlapped)
-
-                /// \brief
-                /// TimedOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (TimedOverlapped, util::SpinLock)
-
-                /// \brief
-                /// ctor.
-                TimedOverlapped ();
-                /// \brief
-                /// dtor.
-                ~TimedOverlapped ();
-
-                /// \brief
-                /// Wait for io to complete.
-                /// \param[in] handle NamedPipe handle to wait on.
-                /// \param[in] timeSpec How long to wait.
-                /// \return Count of bytes transffered.
-                DWORD Wait (
-                    THEKOGANS_UTIL_HANDLE handle,
-                    const util::TimeSpec &timeSpec);
-
-                /// \brief
-                /// TimedOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (TimedOverlapped)
-            };
-
             /// \brief
             /// Used by \see{AsyncIoEventQueue} to notify the stream that
             /// an overlapped operation has completed successfully.
             /// \param[in] overlapped \see{Overlapped} that completed successfully.
             virtual void HandleOverlapped (AsyncInfo::Overlapped & /*overlapped*/) throw () = 0;
-            /// \brief
-            /// Used by \see{AsyncIoEventQueue} to notify the stream that
-            /// an overlapped operation has timed out.
-            /// \param[in] overlapped \see{Overlapped} that timed out.
-            virtual void HandleTimedOutOverlapped (AsyncInfo::Overlapped & /*overlapped*/) throw ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \struct Stream::TimedEvent Stream.h thekogans/stream/Stream.h
-            ///
-            /// \brief
-            /// TimedEvent provides the mechanism by which pipes
-            /// do timed synchronous io.
-            struct TimedEvent {
-            private:
-                /// \brief
-                /// epoll/kqueue handle.
-                THEKOGANS_UTIL_HANDLE handle;
-
-            public:
-                /// \brief
-                /// ctor.
-                TimedEvent ();
-                /// \brief
-                /// dtor.
-                ~TimedEvent ();
-
-                /// \brief
-                /// Wait for event or timeout.
-                /// \param[in] stream Stream to wait on.
-                /// \param[in] event Event to monitor for (Event[Read | Write])
-                /// \param[in] timeSpec Time interval to wait.
-                /// \return true = got event, false = timed out.
-                bool Wait (
-                    THEKOGANS_UTIL_HANDLE stream,
-                    util::ui32 event,
-                    const util::TimeSpec &timeSpec);
-
-                /// \brief
-                /// TimedEvent is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (TimedEvent)
-            };
-
             /// \brief
             /// Used by \see{AsyncIoEventQueue} to notify the stream of
             /// pending io event.
             /// \param[in] event Async io event enum.
             virtual void HandleAsyncEvent (util::ui32 /*event*/) throw () = 0;
-            /// \brief
-            /// Used by \see{AsyncIoEventQueue} to notify the stream of
-            /// pending io event that timed out.
-            /// \param[in] event Async io event enum.
-            virtual void HandleTimedOutAsyncEvent (util::ui32 /*event*/) throw ();
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief

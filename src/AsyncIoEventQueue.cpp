@@ -68,59 +68,19 @@ namespace thekogans {
             }
         };
 
-        struct AsyncIoEventQueue::TimeoutPolicyController {
-            AsyncIoEventQueue::TimeoutPolicy &timeoutPolicy;
-            util::TimeSpec &lastEventBatchTime;
-            const util::TimeSpec &currentTime;
-            std::size_t countOfTimedStreams;
-            std::size_t countOfRecentTimedStreams;
-
-            TimeoutPolicyController (
-                    AsyncIoEventQueue::TimeoutPolicy &timeoutPolicy_,
-                    util::TimeSpec &lastEventBatchTime_,
-                    const util::TimeSpec &currentTime_,
-                    std::size_t countOfEvents) :
-                    timeoutPolicy (timeoutPolicy_),
-                    lastEventBatchTime (lastEventBatchTime_),
-                    currentTime (currentTime_),
-                    countOfTimedStreams (0),
-                    countOfRecentTimedStreams (0) {
-                timeoutPolicy.BeginEventBatch (currentTime, countOfEvents);
-            }
-            ~TimeoutPolicyController () {
-                timeoutPolicy.EndEventBatch (countOfTimedStreams, countOfRecentTimedStreams);
-                lastEventBatchTime = currentTime;
-            }
-
-            void HandleTimedStream (
-                    Stream &stream,
-                    util::ui32 event) {
-                timeoutPolicy.HandleTimedStream (stream, event);
-                if (stream.asyncInfo->lastEventTime != currentTime) {
-                    ++countOfTimedStreams;
-                    if (stream.asyncInfo->lastEventTime == lastEventBatchTime) {
-                        ++countOfRecentTimedStreams;
-                    }
-                    stream.asyncInfo->lastEventTime = currentTime;
-                }
-            }
-        };
-
     #if defined (TOOLCHAIN_OS_Windows)
         AsyncIoEventQueue::AsyncIoEventQueue (util::ui32 concurrentThreads) :
                 handle (
                     CreateIoCompletionPort (
                         THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                        0, 0, concurrentThreads)),
+                        0, 0, concurrentThreads)) {
     #elif defined (TOOLCHAIN_OS_Linux)
         AsyncIoEventQueue::AsyncIoEventQueue (util::ui32 maxSize) :
-                handle (epoll_create (maxSize)),
+                handle (epoll_create (maxSize)) {
     #elif defined (TOOLCHAIN_OS_OSX)
         AsyncIoEventQueue::AsyncIoEventQueue () :
-                handle (kqueue ()),
+                handle (kqueue ()) {
     #endif // defined (TOOLCHAIN_OS_Windows)
-                timeoutPolicy (new NullTimeoutPolicy),
-                lastEventBatchTime (util::TimeSpec::Zero) {
             if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -179,16 +139,6 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void AsyncIoEventQueue::SetTimeoutPolicy (TimeoutPolicy::SharedPtr timeoutPolicy_) {
-            if (timeoutPolicy_.Get () != 0) {
-                timeoutPolicy = timeoutPolicy_;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
         void AsyncIoEventQueue::AddStream (
                 Stream &stream,
                 AsyncIoEventSink &eventSink,
@@ -235,7 +185,6 @@ namespace thekogans {
                     {
                         util::LockGuard<util::SpinLock> guard (spinLock);
                         registryList.erase (&stream);
-                        timedStreamsList.erase (&stream);
                         deletedStreamsList.push_back (&stream);
                     }
                     stream.asyncInfo->ReleaseResources ();
@@ -275,7 +224,6 @@ namespace thekogans {
                 util::TimeSpec timeSpec) {
             if (maxEventsBatch > 0) {
                 volatile StreamDeleter streamDeleter (*this);
-                timeoutPolicy->TimeoutTimedStreams (timeSpec);
             #if defined (TOOLCHAIN_OS_Windows)
                 std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
                 ULONG count = 0;
@@ -287,12 +235,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    const util::TimeSpec currentTime = util::GetCurrentTime ();
-                    TimeoutPolicyController timeoutPolicyController (
-                        *timeoutPolicy, lastEventBatchTime, currentTime, count);
                     for (ULONG i = 0; i < count; ++i) {
-                        Stream::SharedPtr stream;
-                        util::ui32 event = Stream::AsyncInfo::EventInvalid;
                         if (iocpEvents[i].lpOverlapped != 0) {
                             Stream::AsyncInfo::Overlapped::SharedPtr overlapped (
                                 (Stream::AsyncInfo::Overlapped *)iocpEvents[i].lpOverlapped, false);
@@ -302,9 +245,9 @@ namespace thekogans {
                             if (errorCode != ERROR_SUCCESS) {
                                 // This check is very important as it will be returned
                                 // on all outstanding io when CancelIoEx () has been called.
-                                // That happens in DeleteStream () and TimeoutTimedStreams ()
-                                // and in all likelihood the stream is gone. So, if we see
-                                // STATUS_CANCELED, we silently ignore it.
+                                // That happens in DeleteStream () and in all likelihood
+                                // the stream is gone. So, if we see STATUS_CANCELED, we
+                                // silently ignore it.
                                 if (errorCode != STATUS_CANCELED) {
                                     if (errorCode == STATUS_LOCAL_DISCONNECT ||
                                             errorCode == STATUS_REMOTE_DISCONNECT ||
@@ -323,25 +266,10 @@ namespace thekogans {
                                     }
                                 }
                             }
-                            else if (overlapped->TimedOut (currentTime)) {
-                                overlapped->stream->HandleTimedOutOverlapped (*overlapped);
-                            }
                             else {
                                 overlapped->Epilog ();
                                 overlapped->stream->HandleOverlapped (*overlapped);
-                                // Overlapped dtor performs a timed check on it's stream.
-                                // Grab the stream pointer here and let overlapped dtor
-                                // do it's thing.
-                                stream = overlapped->stream;
-                                event = overlapped->event;
                             }
-                        }
-                        // Now that overlapped dtor is done with it's timed check,
-                        // we can properly inform the policy that the stream is
-                        // still timed.
-                        if (stream.Get () != 0 && timedStreamsList.contains (stream.Get ())) {
-                            assert (event != Stream::AsyncInfo::EventInvalid);
-                            timeoutPolicyController.HandleTimedStream (*stream, event);
                         }
                     }
                 }
@@ -359,9 +287,6 @@ namespace thekogans {
                     }
                 }
                 else {
-                    const util::TimeSpec currentTime = util::GetCurrentTime ();
-                    TimeoutPolicyController timeoutPolicyController (
-                        *timeoutPolicy, lastEventBatchTime, currentTime, count);
                     for (int i = 0; i < count; ++i) {
                         Stream *stream = (Stream *)epollEvents[i].data.ptr;
                         if (stream == &readPipe) {
@@ -410,15 +335,7 @@ namespace thekogans {
                                             Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
                                         Stream::AsyncInfo::EventInvalid;
                                     if (event != Stream::AsyncInfo::EventInvalid) {
-                                        if (!stream->asyncInfo->ReadTimedOut (currentTime)) {
-                                            stream->HandleAsyncEvent (event);
-                                            if (UpdateTimedStream (*stream, event, false)) {
-                                                timeoutPolicyController.HandleTimedStream (*stream, event);
-                                            }
-                                        }
-                                        else {
-                                            stream->HandleTimedOutAsyncEvent (event);
-                                        }
+                                        stream->HandleAsyncEvent (event);
                                     }
                                 }
                                 if (epollEvents[i].events & EPOLLOUT) {
@@ -435,15 +352,7 @@ namespace thekogans {
                                             Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
                                         Stream::AsyncInfo::EventInvalid;
                                     if (event != Stream::AsyncInfo::EventInvalid) {
-                                        if (!stream->asyncInfo->WriteTimedOut (currentTime)) {
-                                            stream->HandleAsyncEvent (event);
-                                            if (UpdateTimedStream (*stream, event, false)) {
-                                                timeoutPolicyController.HandleTimedStream (*stream, event);
-                                            }
-                                        }
-                                        else {
-                                            stream->HandleTimedOutAsyncEvent (event);
-                                        }
+                                        stream->HandleAsyncEvent (event);
                                     }
                                 }
                                 if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
@@ -468,9 +377,6 @@ namespace thekogans {
                     }
                 }
                 else {
-                    const util::TimeSpec currentTime = util::GetCurrentTime ();
-                    TimeoutPolicyController timeoutPolicyController (
-                        *timeoutPolicy, lastEventBatchTime, currentTime, count);
                     for (int i = 0; i < count; ++i) {
                         Stream *stream = (Stream *)kqueueEvents[i].udata;
                         if (stream == &readPipe) {
@@ -509,15 +415,7 @@ namespace thekogans {
                                         Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
                                     Stream::AsyncInfo::EventInvalid;
                                 if (event != Stream::AsyncInfo::EventInvalid) {
-                                    if (!stream->asyncInfo->ReadTimedOut (currentTime)) {
-                                        stream->HandleAsyncEvent (event);
-                                        if (UpdateTimedStream (*stream, event, false)) {
-                                            timeoutPolicyController.HandleTimedStream (*stream, event);
-                                        }
-                                    }
-                                    else {
-                                        stream->HandleTimedOutAsyncEvent (event);
-                                    }
+                                    stream->HandleAsyncEvent (event);
                                 }
                             }
                             else if (kqueueEvents[i].filter == EVFILT_WRITE) {
@@ -534,15 +432,7 @@ namespace thekogans {
                                         Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
                                     Stream::AsyncInfo::EventInvalid;
                                 if (event != Stream::AsyncInfo::EventInvalid) {
-                                    if (!stream->asyncInfo->WriteTimedOut (currentTime)) {
-                                        stream->HandleAsyncEvent (event);
-                                        if (UpdateTimedStream (*stream, event, false)) {
-                                            timeoutPolicyController.HandleTimedStream (*stream, event);
-                                        }
-                                    }
-                                    else {
-                                        stream->HandleTimedOutAsyncEvent (event);
-                                    }
+                                    stream->HandleAsyncEvent (event);
                                 }
                             }
                         }
@@ -619,7 +509,6 @@ namespace thekogans {
                     }
                     newEvents ^= stream.asyncInfo->events;
                     stream.asyncInfo->events |= newEvents;
-                    UpdateTimedStream (stream, newEvents);
                 }
             }
         }
@@ -660,17 +549,6 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
                 stream.asyncInfo->events = newEvents;
-                if (!util::Flags32 (stream.asyncInfo->events).TestAny (
-                        Stream::AsyncInfo::EventConnect |
-                        Stream::AsyncInfo::EventShutdown |
-                        Stream::AsyncInfo::EventRead |
-                        Stream::AsyncInfo::EventReadFrom |
-                        Stream::AsyncInfo::EventReadMsg |
-                        Stream::AsyncInfo::EventWrite |
-                        Stream::AsyncInfo::EventWriteTo |
-                        Stream::AsyncInfo::EventWriteMsg)) {
-                    DeleteTimedStream (stream);
-                }
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
@@ -706,7 +584,6 @@ namespace thekogans {
                         }
                     }
                     stream.asyncInfo->events |= newEvents;
-                    UpdateTimedStream (stream, newEvents);
                 }
             }
         }
@@ -742,244 +619,9 @@ namespace thekogans {
                     }
                 }
                 stream.asyncInfo->events &= ~newEvents;
-                if (!util::Flags32 (stream.asyncInfo->events).TestAny (
-                        Stream::AsyncInfo::EventConnect |
-                        Stream::AsyncInfo::EventShutdown |
-                        Stream::AsyncInfo::EventRead |
-                        Stream::AsyncInfo::EventReadFrom |
-                        Stream::AsyncInfo::EventReadMsg |
-                        Stream::AsyncInfo::EventWrite |
-                        Stream::AsyncInfo::EventWriteTo |
-                        Stream::AsyncInfo::EventWriteMsg)) {
-                    DeleteTimedStream (stream);
-                }
             }
         }
     #endif // defined (TOOLCHAIN_OS_Linux)
-
-        void AsyncIoEventQueue::AddTimedStream (Stream &stream) {
-            if (registryList.contains (&stream)) {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                timedStreamsList.push_back (&stream);
-            }
-        }
-
-        void AsyncIoEventQueue::DeleteTimedStream (Stream &stream) {
-            util::LockGuard<util::SpinLock> guard (spinLock);
-            timedStreamsList.erase (&stream);
-        }
-
-        bool AsyncIoEventQueue::UpdateTimedStream (
-                Stream &stream,
-                util::ui32 events,
-                bool doBreak) {
-            bool timed = false;
-            const util::TimeSpec currentTime = util::GetCurrentTime ();
-        #if defined (TOOLCHAIN_OS_Windows)
-            util::LockGuard<util::SpinLock> guard (stream.asyncInfo->spinLock);
-            for (Stream::AsyncInfo::Overlapped *
-                    overlapped = stream.asyncInfo->overlappedList.front ();
-                    overlapped != 0;
-                    overlapped = stream.asyncInfo->overlappedList.next (overlapped)) {
-                if (overlapped->deadline != util::TimeSpec::Zero) {
-                    if (util::Flags32 (events).TestAny (
-                            Stream::AsyncInfo::EventRead |
-                            Stream::AsyncInfo::EventReadFrom |
-                            Stream::AsyncInfo::EventReadMsg)) {
-                        if (util::Flags32 (overlapped->event).TestAny (
-                                Stream::AsyncInfo::EventRead |
-                                Stream::AsyncInfo::EventReadFrom |
-                                Stream::AsyncInfo::EventReadMsg)) {
-                            overlapped->deadline = stream.GetReadTimeout ();
-                        }
-                        else {
-                            overlapped->deadline = util::TimeSpec::Zero;
-                        }
-                    }
-                    if (util::Flags32 (events).TestAny (
-                            Stream::AsyncInfo::EventConnect |
-                            Stream::AsyncInfo::EventShutdown |
-                            Stream::AsyncInfo::EventWrite |
-                            Stream::AsyncInfo::EventWriteTo |
-                            Stream::AsyncInfo::EventWriteMsg)) {
-                        if (util::Flags32 (overlapped->event).TestAny (
-                                Stream::AsyncInfo::EventConnect |
-                                Stream::AsyncInfo::EventShutdown |
-                                Stream::AsyncInfo::EventWrite |
-                                Stream::AsyncInfo::EventWriteTo |
-                                Stream::AsyncInfo::EventWriteMsg)) {
-                            overlapped->deadline = stream.GetWriteTimeout ();
-                        }
-                        else {
-                            overlapped->deadline = util::TimeSpec::Zero;
-                        }
-                    }
-                    if (overlapped->deadline != util::TimeSpec::Zero) {
-                        overlapped->deadline += currentTime;
-                        timed = true;
-                    }
-                }
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            if (util::Flags32 (events).TestAny (
-                    Stream::AsyncInfo::EventRead |
-                    Stream::AsyncInfo::EventReadFrom |
-                    Stream::AsyncInfo::EventReadMsg)) {
-                if (util::Flags32 (stream.asyncInfo->events).TestAny (
-                        Stream::AsyncInfo::EventRead |
-                        Stream::AsyncInfo::EventReadFrom |
-                        Stream::AsyncInfo::EventReadMsg)) {
-                    stream.asyncInfo->readDeadline = stream.GetReadTimeout ();
-                    if (stream.asyncInfo->readDeadline != util::TimeSpec::Zero) {
-                        stream.asyncInfo->readDeadline += currentTime;
-                    }
-                }
-                else {
-                    stream.asyncInfo->readDeadline = util::TimeSpec::Zero;
-                }
-            }
-            if (util::Flags32 (events).TestAny (
-                    Stream::AsyncInfo::EventConnect |
-                    Stream::AsyncInfo::EventShutdown |
-                    Stream::AsyncInfo::EventWrite |
-                    Stream::AsyncInfo::EventWriteTo |
-                    Stream::AsyncInfo::EventWriteMsg)) {
-                if (util::Flags32 (stream.asyncInfo->events).TestAny (
-                        Stream::AsyncInfo::EventConnect |
-                        Stream::AsyncInfo::EventShutdown |
-                        Stream::AsyncInfo::EventWrite |
-                        Stream::AsyncInfo::EventWriteTo |
-                        Stream::AsyncInfo::EventWriteMsg)) {
-                    stream.asyncInfo->writeDeadline = stream.GetWriteTimeout ();
-                    if (stream.asyncInfo->writeDeadline != util::TimeSpec::Zero) {
-                        stream.asyncInfo->writeDeadline += currentTime;
-                    }
-                }
-                else {
-                    stream.asyncInfo->writeDeadline = util::TimeSpec::Zero;
-                }
-            }
-            timed = stream.asyncInfo->readDeadline != util::TimeSpec::Zero ||
-                stream.asyncInfo->writeDeadline != util::TimeSpec::Zero;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            if (timed) {
-                AddTimedStream (stream);
-            }
-            else {
-                DeleteTimedStream (stream);
-            }
-            if (doBreak) {
-                Break ();
-            }
-            return timed;
-        }
-
-        std::size_t AsyncIoEventQueue::TimeoutTimedStreams (util::TimeSpec &timeSpec) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            std::vector<Stream::AsyncInfo::Overlapped *> timedOutOverlappeds;
-            timedOutOverlappeds.reserve (timedStreamsList.size ());
-        #else // defined (TOOLCHAIN_OS_Windows)
-            typedef std::pair<Stream *, util::ui32> StreamEvent;
-            std::vector<StreamEvent> timedOutStreams;
-            timedOutStreams.reserve (timedStreamsList.size ());
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            {
-                const util::TimeSpec currentTime = util::GetCurrentTime ();
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                for (Stream *
-                        stream = timedStreamsList.front ();
-                        stream != 0;
-                        stream = timedStreamsList.next (stream)) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    util::LockGuard<util::SpinLock> guard (stream->asyncInfo->spinLock);
-                    for (Stream::AsyncInfo::Overlapped *
-                            overlapped = stream->asyncInfo->overlappedList.front ();
-                            overlapped != 0;
-                            overlapped = stream->asyncInfo->overlappedList.next (overlapped)) {
-                        if (overlapped->deadline != util::TimeSpec::Zero) {
-                            if (currentTime >= overlapped->deadline) {
-                                CancelIoEx (stream->handle, overlapped);
-                                timedOutOverlappeds.push_back (overlapped);
-                            }
-                            else {
-                                util::TimeSpec remainder = overlapped->deadline - currentTime;
-                                if (timeSpec > remainder) {
-                                    timeSpec = remainder;
-                                }
-                            }
-                        }
-                    }
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    // This logic avoids the subtle bug where a stream
-                    // has both read and write operations on a deadline
-                    // and either or both timeout. The following two
-                    // cases are handled correctly:
-                    // 1. The stream is reported as timed out.
-                    // 2. timeSpec is properly adjusted.
-                    if (stream->asyncInfo->readDeadline != util::TimeSpec::Zero) {
-                        if (currentTime >= stream->asyncInfo->readDeadline) {
-                            util::ui32 event =
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventRead) ? Stream::AsyncInfo::EventRead :
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventReadFrom) ? Stream::AsyncInfo::EventReadFrom :
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
-                                Stream::AsyncInfo::EventInvalid;
-                            if (event != Stream::AsyncInfo::EventInvalid) {
-                                timedOutStreams.push_back (StreamEvent (stream, event));
-                            }
-                        }
-                        else {
-                            util::TimeSpec remainder =
-                                stream->asyncInfo->readDeadline - currentTime;
-                            if (timeSpec > remainder) {
-                                timeSpec = remainder;
-                            }
-                        }
-                    }
-                    if (stream->asyncInfo->writeDeadline != util::TimeSpec::Zero) {
-                        if (currentTime >= stream->asyncInfo->writeDeadline) {
-                            util::ui32 event =
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
-                                util::Flags32 (stream->asyncInfo->events).Test (
-                                    Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
-                                Stream::AsyncInfo::EventInvalid;
-                            if (event != Stream::AsyncInfo::EventInvalid) {
-                                timedOutStreams.push_back (StreamEvent (stream, event));
-                            }
-                        }
-                        else {
-                            util::TimeSpec remainder =
-                                stream->asyncInfo->writeDeadline - currentTime;
-                            if (timeSpec > remainder) {
-                                timeSpec = remainder;
-                            }
-                        }
-                    }
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-            }
-        #if defined (TOOLCHAIN_OS_Windows)
-            std::size_t count = timedOutOverlappeds.size ();
-            for (std::size_t i = 0; i < count; ++i) {
-                timedOutOverlappeds[i]->stream->HandleTimedOutOverlapped (*timedOutOverlappeds[i]);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            std::size_t count = timedOutStreams.size ();
-            for (std::size_t i = 0; i < count; ++i) {
-                timedOutStreams[i].first->HandleTimedOutAsyncEvent (timedOutStreams[i].second);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            return count;
-        }
 
     #if defined (TOOLCHAIN_OS_Windows)
         GlobalAsyncIoEventQueue::GlobalAsyncIoEventQueue (

@@ -67,161 +67,16 @@ namespace thekogans {
         /// Your code will truly be platform independent. If
         /// not, you will need to provide your own values using
         /// a #if defined (TOOLCHAIN_OS_[Windows | Linux | OSX]).
-        ///
-        /// NOTE: AsyncIoEventQueue has full support for timed async
-        /// streams. By calling Stream::Set[Read | Write]Timeout, you
-        /// control how long a stream will wait for async io events
-        /// before timing out. This feature has many uses, but one of
-        /// the most important is controlling the lifetime of an async
-        /// UDPSocket (especially SecureUDPSocket). Take a look at
-        /// serverudpecho for an example on how to do that.
 
         struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue : public util::RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AsyncIoEventQueue)
 
-            /// \struct AsyncIoEventQueue::TimeoutPolicy AsyncIoEventQueue.h
-            /// thekogans/stream/AsyncIoEventQueue.h
-            ///
-            /// \brief
-            /// For all the abstraction and encapsulation that thekogans_stream
-            /// library provides, one of the things I am most proud of is that
-            /// it provides this functionality at virtually zero cost. If you
-            /// take a close look at the code, there are practically no for/while
-            /// loops anywhere near the critical path. All this ends with timed
-            /// async streams. In order to provide timed async stream support, I
-            /// had to introduce a potentially very expensive O(n) operation in
-            /// the heart of WaitForEvents (TimeoutTimedStreams). It's cost is
-            /// derived not from it's complexity, but from the fact that streams
-            /// are checked for timeout every time we process a batch of events.
-            /// One can easily envision real world scenarios where this cost would
-            /// be a huge burden on throughput. As a mater of fact, functionally,
-            /// it is no different then the select system call. And we all know
-            /// how well that scales (not well at all). This is where TimeoutPolicy
-            /// comes in to play. This abstract class defines an interface for
-            /// making runtime decisions about how often to check for timed out
-            /// streams. It puts control in the hands of the system designer and
-            /// architect to make the best choice for their particular situation.
-            /// To go one step further, the choice doesn't have to be a static one.
-            /// You can easily swap out policies based on runtime needs.
-            struct _LIB_THEKOGANS_STREAM_DECL TimeoutPolicy : public util::RefCounted {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TimeoutPolicy)
-
-                /// \brief
-                /// dtor.
-                virtual ~TimeoutPolicy () {}
-
-                /// \brief
-                /// Called by AsyncIoEventQueue::WaitForEvents to give the policy
-                /// a chance to timeout streams. Given the stats gathering apis
-                /// below, the only logic that should be executed here will look
-                /// something like this:
-                /// \code{.cpp}
-                /// // okayToTimeout and nextCheckTimeSpec are calculated by
-                /// // the stats gathering apis.
-                /// if (okayToTimeout) {
-                ///     eventQueue.TimeoutTimedStreams (timeSpec);
-                /// }
-                /// else if (timeSpec > nextCheckTimeSpec) {
-                ///     timeSpec = nextCheckTimeSpec;
-                /// }
-                /// \endcode
-                /// \param[in,out] timeSpec The TimeSpec passed to AsyncIoEventQueue::WaitForEvents.
-                /// On return it should be adjusted to an interval to wait for io
-                /// events before checking for timeouts again.
-                virtual void TimeoutTimedStreams (util::TimeSpec & /*timeSpec*/) = 0;
-
-                /// \brief
-                /// The following three apis give the policy a chance to hook in to
-                /// the event processing logic. Use them to gather advanced run-time
-                /// stats to make informed decisions on when to best timeout timed
-                /// streams.
-
-                /// \brief
-                /// Called by AsyncIoEventQueue::WaitForEvents before processing
-                /// a batch of io events.
-                /// \param[in] currentTime Current time.
-                /// \param[in] countOfEvents Number of events in the batch.
-                virtual void BeginEventBatch (
-                    const util::TimeSpec & /*currentTime*/,
-                    std::size_t /*countOfEvents*/) {}
-                /// \brief
-                /// Called by AsyncIoEventQueue::WaitForEvents after processing
-                /// a batch of io events.
-                /// \param[in] countOfTimedStreams Number of unique timed streams
-                /// in the batch.
-                /// \param[in] countOfRecentTimedStreams Number of unique streams
-                /// that were seen in the previous event batch.
-                /// TIP: Use countOfTimedStreams to estimate the amount of work
-                /// done by timed streams in every event batch.
-                /// Use countOfRecentTimedStreams to estimate the distribution
-                /// of work among all timed streams.
-                virtual void EndEventBatch (
-                    std::size_t /*countOfTimedStreams*/,
-                    std::size_t /*countOfRecentTimedStreams*/) {}
-                /// \brief
-                /// Called by AsyncIoEventQueue::WaitForEvents to give the policy
-                /// a chance to gather run-time statistics. It's called for every
-                /// timed stream in the event batch.
-                /// \param[in] stream Timed stream that received an event.
-                /// \param[in] event Event received by the timed stream.
-                virtual void HandleTimedStream (
-                    Stream & /*stream*/,
-                    util::ui32 /*event*/) {}
-            };
-
-            /// \struct AsyncIoEventQueue::NullTimeoutPolicy AsyncIoEventQueue.h
-            /// thekogans/stream/AsyncIoEventQueue.h
-            ///
-            /// \brief
-            /// This policy is only suited for servers with no timed streams.
-            /// It's the policy that's in force when AsyncIoEventQueue gets
-            /// created. If you're going to handle timed streams, you need to
-            /// replace it (SetTimeoutPolicy) with a policy appropriate for
-            /// your design.
-            struct _LIB_THEKOGANS_STREAM_DECL NullTimeoutPolicy : public TimeoutPolicy {
-                /// \brief
-                /// Noop.
-                virtual void TimeoutTimedStreams (util::TimeSpec & /*timeSpec*/) {}
-            };
-
-            /// \struct AsyncIoEventQueue::DefaultTimeoutPolicy AsyncIoEventQueue.h
-            /// thekogans/stream/AsyncIoEventQueue.h
-            ///
-            /// \brief
-            /// This policy is best suited for servers with few active streams overall,
-            /// and even fewer timed ones.
-            struct _LIB_THEKOGANS_STREAM_DECL DefaultTimeoutPolicy : public TimeoutPolicy {
-                /// \brief
-                /// AsyncIoEventQueue this policy belongs to.
-                AsyncIoEventQueue &eventQueue;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] eventQueue_ AsyncIoEventQueue this policy belongs to.
-                explicit DefaultTimeoutPolicy (AsyncIoEventQueue &eventQueue_) :
-                    eventQueue (eventQueue_) {}
-
-                /// \brief
-                /// Blindly calls AsyncIoEventQueue::TimeoutTimedStreams.
-                virtual void TimeoutTimedStreams (util::TimeSpec &timeSpec) {
-                    eventQueue.TimeoutTimedStreams (timeSpec);
-                }
-            };
-
         private:
             /// \brief
             /// Handle to an OS specific async io event queue.
             THEKOGANS_UTIL_HANDLE handle;
-            /// \brief
-            /// The timed stream timeout policy currently in force.
-            TimeoutPolicy::SharedPtr timeoutPolicy;
-            /// \brief
-            /// Last io event batch time.
-            util::TimeSpec lastEventBatchTime;
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Implements the read end of a self-pipe.
@@ -236,12 +91,6 @@ namespace thekogans {
             /// Active stream list. Registry is also the stream owner.
             AsyncIoEventQueueRegistryList registryList;
             /// \brief
-            /// Neither iocp nor epoll nor kqueue support timeouts
-            /// for async streams. This list will hold streams that
-            /// have Read/Write timeouts with corresponding operations
-            /// in flight.
-            AsyncIoEventQueueTimedStreamsList timedStreamsList;
-            /// \brief
             /// Stream deletion has to be differed until it's safe.
             /// This list will hold zombie streams until it's safe
             /// to delete them (right before \see{WaitForEvents} returns).
@@ -253,9 +102,6 @@ namespace thekogans {
             /// \brief
             /// Internal class used to help with Stream lifetime management.
             struct StreamDeleter;
-            /// \brief
-            /// Internal class used to help with timed Stream management.
-            struct TimeoutPolicyController;
 
         public:
         #if defined (TOOLCHAIN_OS_Windows)
@@ -314,11 +160,6 @@ namespace thekogans {
                 /// Default buffer length for async WSARecv[From | Msg].
                 DEFAULT_BUFFER_LENGTH = 16384
             };
-
-            /// \brief
-            /// Set the current timed stream timeout policy.
-            /// \param[in] timeoutPolicy_ TimeoutPolicy to set.
-            void SetTimeoutPolicy (TimeoutPolicy::SharedPtr timeoutPolicy_);
 
             /// \brief
             /// Add a given stream to the queue.
@@ -398,42 +239,9 @@ namespace thekogans {
         #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
-            /// Add a given stream to the timedStreams list.
-            /// \param[in] stream Stream to add.
-            void AddTimedStream (Stream &stream);
-            /// \brief
-            /// Delete a given stream from the timedStreams list.
-            /// \param[in] stream Stream to delete.
-            void DeleteTimedStream (Stream &stream);
-            /// \brief
-            /// Called after Stream::Set[Read | Write]Timeout to
-            /// update the stream deadlines.
-            /// \param[in] stream Stream to update.
-            /// \param[in] events Events for which to check.
-            /// \param[in] doBreak Call Break after updating.
-            /// \return true = stream is timed, false = stream is not timed.
-            bool UpdateTimedStream (
-                Stream &stream,
-                util::ui32 events,
-                bool doBreak = true);
-            /// \brief
-            /// Walk the timedStreams list timing out expired streams.
-            /// \param[in,out] timeSpec The TimeSpec passed to WaitForEvents.
-            /// It will be adjusted to an interval to wait for io events
-            /// before checking for timeouts again.
-            /// \return Count of timed streams that timed out.
-            std::size_t TimeoutTimedStreams (util::TimeSpec &timeSpec);
-
-            /// \brief
-            /// \see{Stream::AsyncInfo} calls AddStreamForEvents,
-            /// DeleteStreamForEvents (Linux/OS X) and UpdateTimedStream.
+            /// \see{Stream::AsyncInfo} calls AddStreamForEvents and
+            /// DeleteStreamForEvents (Linux/OS X).
             friend struct Stream::AsyncInfo;
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// \see{Stream::AsyncInfo::Overlapped} calls AddTimedStream
-            /// and DeleteTimedStream.
-            friend struct Stream::AsyncInfo::Overlapped;
-        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// AsyncIoEventQueue is neither copy constructable, nor assignable.

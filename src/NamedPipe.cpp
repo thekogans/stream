@@ -30,30 +30,7 @@ namespace thekogans {
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
                 DWORD numberOfBytesRead = 0;
-                TimedOverlapped::SharedPtr overlapped;
-                if (readTimeout != util::TimeSpec::Zero) {
-                    overlapped.Reset (new TimedOverlapped);
-                }
-                if (!ReadFile (
-                        handle,
-                        buffer,
-                        (DWORD)count,
-                        overlapped.Get () != 0 ? 0 : &numberOfBytesRead,
-                        overlapped.Get ())) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                    if (errorCode == ERROR_IO_PENDING) {
-                        numberOfBytesRead = overlapped->Wait (handle, readTimeout);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
-                }
-                else if (overlapped.Get () != 0 &&
-                       !GetOverlappedResult (
-                           handle,
-                           overlapped.Get (),
-                           &numberOfBytesRead,
-                           FALSE)) {
+                if (!ReadFile (handle, buffer, (DWORD)count, &numberOfBytesRead, 0)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -89,34 +66,9 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 }
-                else {
-                    TimedOverlapped::SharedPtr overlapped;
-                    if (writeTimeout != util::TimeSpec::Zero) {
-                        overlapped.Reset (new TimedOverlapped);
-                    }
-                    if (!WriteFile (
-                            handle,
-                            buffer,
-                            (DWORD)count,
-                            overlapped.Get () != 0 ? 0 : &numberOfBytesWriten,
-                            overlapped.Get ())) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode == ERROR_IO_PENDING) {
-                            numberOfBytesWriten = overlapped->Wait (handle, writeTimeout);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                    }
-                    else if (overlapped.Get () != 0 &&
-                            !GetOverlappedResult (
-                                handle,
-                                overlapped.Get (),
-                                &numberOfBytesWriten,
-                                FALSE)) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
+                else if (!WriteFile (handle, buffer, (DWORD)count, &numberOfBytesWriten, 0)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
                 return numberOfBytesWriten;
             }
@@ -151,44 +103,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "%s", "WriteBuffer is called on a blocking named pipe.");
                 }
-            }
-        }
-
-        void NamedPipe::SetReadTimeout (const util::TimeSpec &timeSpec) {
-            if (timeSpec != util::TimeSpec::Infinite) {
-                readTimeout = timeSpec;
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        asyncInfo->UpdateTimedStream (AsyncInfo::EventRead);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                    }
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void NamedPipe::SetWriteTimeout (const util::TimeSpec &timeSpec) {
-            if (timeSpec != util::TimeSpec::Infinite) {
-                writeTimeout = timeSpec;
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        asyncInfo->UpdateTimedStream (AsyncInfo::EventWrite);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                    }
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 

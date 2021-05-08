@@ -56,20 +56,11 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Read timeout (util::TimeSpec::Zero == no timeout).
-            util::TimeSpec readTimeout;
-            /// \brief
-            /// Write timeout (util::TimeSpec::Zero == no timeout).
-            util::TimeSpec writeTimeout;
-
-            /// \brief
             /// ctor.
             /// Wrap an OS handle.
             /// \param[in] handle OS stream handle to wrap.
             NamedPipe (THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE) :
-                Stream (handle),
-                readTimeout (util::TimeSpec::Zero),
-                writeTimeout (util::TimeSpec::Zero) {}
+                Stream (handle) {}
 
             // Stream
             /// \brief
@@ -96,28 +87,6 @@ namespace thekogans {
             /// Async write a buffer to the stream.
             /// \param[in] buffer Buffer to write.
             virtual void WriteBuffer (util::Buffer buffer);
-
-            /// \brief
-            /// Return read timeout value.
-            /// \return Read timeout value.
-            virtual util::TimeSpec GetReadTimeout () const {
-                return readTimeout;
-            }
-            /// \brief
-            /// Set read timeout.
-            /// \param[in] timeSpec Read timeout.
-            virtual void SetReadTimeout (const util::TimeSpec &timeSpec);
-
-            /// \brief
-            /// Return write timeout value.
-            /// \return Write timeout value.
-            virtual util::TimeSpec GetWriteTimeout () const {
-                return writeTimeout;
-            }
-            /// \brief
-            /// Set write timeout.
-            /// \param[in] timeSpec Write timeout.
-            virtual void SetWriteTimeout (const util::TimeSpec &timeSpec);
 
             /// \brief
             /// Return number of bytes available for reading.

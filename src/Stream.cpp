@@ -276,13 +276,12 @@ namespace thekogans {
                 eventQueue (eventQueue_),
                 stream (stream_),
                 eventSink (eventSink_),
+            #if defined (TOOLCHAIN_OS_Windows)
+                bufferLength (bufferLength_) {
+            #else // defined (TOOLCHAIN_OS_Windows)
                 bufferLength (bufferLength_),
-            #if !defined (TOOLCHAIN_OS_Windows)
-                events (EventInvalid),
-                readDeadline (util::TimeSpec::Zero),
-                writeDeadline (util::TimeSpec::Zero),
+                events (EventInvalid) {
             #endif // !defined (TOOLCHAIN_OS_Windows)
-                lastEventTime (util::TimeSpec::Zero) {
             eventQueue.AddRef ();
             stream.AddRef ();
             eventSink.AddRef ();
@@ -317,56 +316,14 @@ namespace thekogans {
                 Stream &stream_,
                 util::ui32 event_) :
                 stream (&stream_),
-                event (event_),
-                deadline (util::TimeSpec::Zero) {
+                event (event_) {
             memset ((WSAOVERLAPPED *)this, 0, sizeof (WSAOVERLAPPED));
-            if (util::Flags32 (event).TestAny (
-                    Stream::AsyncInfo::EventRead |
-                    Stream::AsyncInfo::EventReadFrom |
-                    Stream::AsyncInfo::EventReadMsg)) {
-                deadline = stream->GetReadTimeout ();
-                if (deadline != util::TimeSpec::Zero) {
-                    deadline += util::GetCurrentTime ();
-                }
-            }
-            else if (util::Flags32 (event).TestAny (
-                    Stream::AsyncInfo::EventConnect |
-                    Stream::AsyncInfo::EventShutdown |
-                    Stream::AsyncInfo::EventWrite |
-                    Stream::AsyncInfo::EventWriteTo |
-                    Stream::AsyncInfo::EventWriteMsg)) {
-                deadline = stream->GetWriteTimeout ();
-                if (deadline != util::TimeSpec::Zero) {
-                    deadline += util::GetCurrentTime ();
-                }
-            }
-            if (deadline != util::TimeSpec::Zero) {
-                stream->asyncInfo->eventQueue.AddTimedStream (*stream);
-            }
             stream->asyncInfo->AddOverlapped (this);
             stream->AddRef ();
         }
 
         Stream::AsyncInfo::Overlapped::~Overlapped () {
             stream->asyncInfo->DeleteOverlapped (this);
-            if (deadline != util::TimeSpec::Zero) {
-                bool timed = false;
-                {
-                    util::LockGuard<util::SpinLock> guard (stream->asyncInfo->spinLock);
-                    for (Overlapped *
-                            overlapped = stream->asyncInfo->overlappedList.front ();
-                            overlapped != 0;
-                            overlapped = stream->asyncInfo->overlappedList.next (overlapped)) {
-                        if (overlapped->deadline != util::TimeSpec::Zero) {
-                            timed = true;
-                            break;
-                        }
-                    }
-                }
-                if (!timed) {
-                    stream->asyncInfo->eventQueue.DeleteTimedStream (*stream);
-                }
-            }
             stream->Release ();
         }
 
@@ -458,52 +415,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-        }
-
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Stream::TimedOverlapped, util::SpinLock)
-
-        Stream::TimedOverlapped::TimedOverlapped () {
-            memset ((OVERLAPPED *)this, 0, sizeof (OVERLAPPED));
-            hEvent = CreateEvent (0, TRUE, FALSE, 0);
-            if (hEvent == 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        }
-
-        Stream::TimedOverlapped::~TimedOverlapped () {
-            CloseHandle (hEvent);
-        }
-
-        DWORD Stream::TimedOverlapped::Wait (
-                THEKOGANS_UTIL_HANDLE handle,
-                const util::TimeSpec &timeSpec) {
-            DWORD numberOfBytesTransferred = 0;
-            DWORD result = WaitForSingleObject (hEvent, (DWORD)timeSpec.ToMilliseconds ());
-            if (result == WAIT_OBJECT_0) {
-                if (!GetOverlappedResult (handle, this, &numberOfBytesTransferred, FALSE)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            }
-            else {
-                CancelIoEx (handle, this);
-                if (result == WAIT_TIMEOUT) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT);
-                }
-                else if (result == WAIT_FAILED) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            }
-            return numberOfBytesTransferred;
-        }
-
-        void Stream::HandleTimedOutOverlapped (AsyncInfo::Overlapped & /*overlapped*/) {
-            HandleError (
-                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT));
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (
@@ -635,78 +546,7 @@ namespace thekogans {
                 }
             }
         }
-
-        Stream::TimedEvent::TimedEvent () :
-            #if defined (TOOLCHAIN_OS_Linux)
-                handle (epoll_create (5)) {
-            #else // defined (TOOLCHAIN_OS_Linux)
-                handle (kqueue ()) {
-            #endif // defined (TOOLCHAIN_OS_Linux)
-            if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        }
-
-        Stream::TimedEvent::~TimedEvent () {
-            close (handle);
-        }
-
-        bool Stream::TimedEvent::Wait (
-                THEKOGANS_UTIL_HANDLE stream,
-                util::ui32 event,
-                const util::TimeSpec &timeSpec) {
-            if (stream != THEKOGANS_UTIL_INVALID_HANDLE_VALUE &&
-                    (event == Stream::AsyncInfo::EventRead || event == Stream::AsyncInfo::EventWrite) &&
-                    timeSpec != util::TimeSpec::Infinite) {
-            #if defined (TOOLCHAIN_OS_Linux)
-                epoll_event epollEvent = {0};
-                epollEvent.events = event == Stream::AsyncInfo::EventRead ? EPOLLIN : EPOLLOUT;
-                if (epoll_ctl (handle, EPOLL_CTL_ADD, stream, &epollEvent) < 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                if (epoll_wait (handle, &epollEvent, 1, timeSpec.ToMilliseconds ()) == 1 &&
-                        (((epollEvent.events & EPOLLIN) && event == Stream::AsyncInfo::EventRead) ||
-                        ((epollEvent.events & EPOLLOUT) && event == Stream::AsyncInfo::EventWrite))) {
-                    return true;
-                }
-            #else // defined (TOOLCHAIN_OS_Linux)
-                keventStruct kevent = {0};
-                keventSet (&kevent, stream,
-                    event == Stream::AsyncInfo::EventRead ? EVFILT_READ : EVFILT_WRITE,
-                    EV_ADD, 0, 0, 0);
-                if (keventFunc (handle, &kevent, 1, 0, 0, 0) < 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                timespec timespec = timeSpec.Totimespec ();
-                if (keventFunc (handle, 0, 0, &kevent, 1, &timespec) == 1 &&
-                        (((kevent.filter == EVFILT_READ) && event == Stream::AsyncInfo::EventRead) ||
-                        ((kevent.filter == EVFILT_WRITE) && event == Stream::AsyncInfo::EventWrite))) {
-                    return true;
-                }
-            #endif // defined (TOOLCHAIN_OS_Linux)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            return false;
-        }
-
-        void Stream::HandleTimedOutAsyncEvent (util::ui32 /*event*/) throw () {
-            HandleError (
-                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT));
-        }
     #endif // defined (TOOLCHAIN_OS_Windows)
-
-        bool Stream::AsyncInfo::UpdateTimedStream (
-                util::ui32 events,
-                bool doBreak) {
-            return eventQueue.UpdateTimedStream (stream, events, doBreak);
-        }
 
     } // namespace stream
 } // namespace thekogans
