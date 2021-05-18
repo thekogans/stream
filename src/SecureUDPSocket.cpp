@@ -119,8 +119,13 @@ namespace thekogans {
                     if (IsAsync ()) {
                         assert (inBIO.get () != 0);
                         assert (outBIO.get () != 0);
+                    #if OPENSSL_VERSION_NUMBER < 0x10100000L
                         CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
                         CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
+                    #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                        BIO_up_ref (inBIO.get ());
+                        BIO_up_ref (outBIO.get ());
+                    #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                         SSL_set_bio (ssl.get (), inBIO.get (), outBIO.get ());
                     }
                     else {
@@ -173,8 +178,13 @@ namespace thekogans {
                     if (IsAsync ()) {
                         assert (inBIO.get () != 0);
                         assert (outBIO.get () != 0);
+                    #if OPENSSL_VERSION_NUMBER < 0x10100000L
                         CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
                         CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
+                    #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                        BIO_up_ref (inBIO.get ());
+                        BIO_up_ref (outBIO.get ());
+                    #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                         SSL_set_bio (ssl.get (), inBIO.get (), outBIO.get ());
                     }
                     else if (SSL_set_fd (ssl.get (), (int)handle) != 1) {
@@ -216,7 +226,11 @@ namespace thekogans {
                 int result = SSL_do_handshake (ssl.get ());
                 if (!IsFatalError (result)) {
                     if (SSL_is_server (ssl.get ()) == 1) {
+                    #if OPENSSL_VERSION_NUMBER < 0x10100000L
                         ssl->state = SSL_ST_ACCEPT;
+                    #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                        SSL_set_accept_state (ssl.get ());
+                    #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                     }
                     if (IsAsync ()) {
                         RunDTLS ();
@@ -269,8 +283,13 @@ namespace thekogans {
                 outBIO.reset (BIO_new (BIO_s_mem ()));
                 if (outBIO.get () != 0) {
                     if (ssl.get () != 0) {
+                    #if OPENSSL_VERSION_NUMBER < 0x10100000L
                         CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
                         CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
+                    #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                        BIO_up_ref (inBIO.get ());
+                        BIO_up_ref (outBIO.get ());
+                    #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                         SSL_set_bio (ssl.get (), inBIO.get (), outBIO.get ());
                     }
                 }

@@ -49,8 +49,13 @@ namespace thekogans {
 
         void SecureTCPSocket::AsyncInfoEx::HookSSL () {
             if (secureTCPSocket.ssl.get () != 0) {
+            #if OPENSSL_VERSION_NUMBER < 0x10100000L
                 CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
                 CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
+            #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                BIO_up_ref (inBIO.get ());
+                BIO_up_ref (outBIO.get ());
+            #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                 SSL_set_bio (secureTCPSocket.ssl.get (), inBIO.get (), outBIO.get ());
             }
         }
@@ -344,7 +349,11 @@ namespace thekogans {
                 int result = SSL_do_handshake (ssl.get ());
                 if (!IsFatalError (result)) {
                     if (SSL_is_server (ssl.get ()) == 1) {
+                    #if OPENSSL_VERSION_NUMBER < 0x10100000L
                         ssl->state = SSL_ST_ACCEPT;
+                    #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                        SSL_set_accept_state (ssl.get ());
+                    #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                     }
                     if (IsAsync ()) {
                         asyncInfoEx->RunTLS ();

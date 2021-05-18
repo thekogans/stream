@@ -75,7 +75,11 @@ namespace thekogans {
                 maxServerCertificateChainDepth (context.maxServerCertificateChainDepth),
                 ctx (context.ctx.get ()) {
             if (ctx.get () != 0) {
+            #if OPENSSL_VERSION_NUMBER < 0x10100000L
                 CRYPTO_add (&ctx->references, 1, CRYPTO_LOCK_SSL_CTX);
+            #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                SSL_CTX_up_ref (ctx.get ());
+            #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
             }
         }
 
@@ -92,7 +96,11 @@ namespace thekogans {
                 maxServerCertificateChainDepth = context.maxServerCertificateChainDepth;
                 ctx.reset (context.ctx.get ());
                 if (ctx.get () != 0) {
+                #if OPENSSL_VERSION_NUMBER < 0x10100000L
                     CRYPTO_add (&ctx->references, 1, CRYPTO_LOCK_SSL_CTX);
+                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                    SSL_CTX_up_ref (ctx.get ());
+                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                 }
             }
             return *this;

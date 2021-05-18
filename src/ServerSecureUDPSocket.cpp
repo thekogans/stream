@@ -87,7 +87,11 @@ namespace thekogans {
                 cachedSessionTTL (context.cachedSessionTTL),
                 ctx (context.ctx.get ()) {
             if (ctx.get () != 0) {
+            #if OPENSSL_VERSION_NUMBER < 0x10100000L
                 CRYPTO_add (&ctx->references, 1, CRYPTO_LOCK_SSL_CTX);
+            #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                SSL_CTX_up_ref (ctx.get ());
+            #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
             }
         }
 
@@ -110,7 +114,11 @@ namespace thekogans {
                 cachedSessionTTL = context.cachedSessionTTL;
                 ctx.reset (context.ctx.get ());
                 if (ctx.get () != 0) {
+                #if OPENSSL_VERSION_NUMBER < 0x10100000L
                     CRYPTO_add (&ctx->references, 1, CRYPTO_LOCK_SSL_CTX);
+                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                    SSL_CTX_up_ref (ctx.get ());
+                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                 }
             }
             return *this;
@@ -154,10 +162,17 @@ namespace thekogans {
                 return 1;
             }
 
+        #if OPENSSL_VERSION_NUMBER < 0x10100000L
             int CookieVerifyCB (
                     SSL *ssl,
                     util::ui8 *cookie,
                     util::ui32 cookieLength) {
+        #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+            int CookieVerifyCB (
+                    SSL *ssl,
+                    const util::ui8 *cookie,
+                    util::ui32 cookieLength) {
+        #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                 Address peer;
                 (void)BIO_dgram_get_peer (SSL_get_rbio (ssl), &peer);
                 unsigned char buffer[EVP_MAX_MD_SIZE] = {0};
@@ -431,7 +446,11 @@ namespace thekogans {
                 ctx (ctx_),
                 sessionInfo (sessionInfo_) {
             if (ctx.get () != 0) {
+            #if OPENSSL_VERSION_NUMBER < 0x10100000L
                 CRYPTO_add (&ctx->references, 1, CRYPTO_LOCK_SSL_CTX);
+            #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                SSL_CTX_up_ref (ctx.get ());
+            #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                 SetReuseAddress (true);
             #if defined (SO_REUSEPORT) || defined (SO_REUSE_UNICASTPORT)
                 SetReusePort (true);

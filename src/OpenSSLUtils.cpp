@@ -135,7 +135,11 @@ namespace thekogans {
                 countTransfered (sessionInfo.countTransfered),
                 session (sessionInfo.session.get ()) {
             if (session.get () != 0) {
+            #if OPENSSL_VERSION_NUMBER < 0x10100000L
                 CRYPTO_add (&session->references, 1, CRYPTO_LOCK_SSL_SESSION);
+            #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                SSL_SESSION_up_ref (session.get ());
+            #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
             }
         }
 
@@ -148,7 +152,11 @@ namespace thekogans {
                 countTransfered = sessionInfo.countTransfered;
                 session.reset (sessionInfo.session.get ());
                 if (session.get () != 0) {
+                #if OPENSSL_VERSION_NUMBER < 0x10100000L
                     CRYPTO_add (&session->references, 1, CRYPTO_LOCK_SSL_SESSION);
+                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                    SSL_SESSION_up_ref (session.get ());
+                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                 }
             }
             return *this;
@@ -310,17 +318,31 @@ namespace thekogans {
                         const X509V3_EXT_METHOD *method = X509V3_EXT_get (extension);
                         if (method != 0) {
                             void *extensionData = 0;
+                        #if OPENSSL_VERSION_NUMBER < 0x10100000L
                             const void *data = extension->value->data;
+                        #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                            const ASN1_OCTET_STRING *data = X509_EXTENSION_get_data (extension);
+                        #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                             if (method->it != 0) {
                                 extensionData = ASN1_item_d2i (0,
+                                #if OPENSSL_VERSION_NUMBER < 0x10100000L
                                     (const util::ui8 **)&data,
                                     extension->value->length,
+                                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                                    (const util::ui8 **)&data->data,
+                                    data->length,
+                                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                                     ASN1_ITEM_ptr (method->it));
                             }
                             else {
                                 extensionData = method->d2i (0,
+                                #if OPENSSL_VERSION_NUMBER < 0x10100000L
                                     (const util::ui8 **)&data,
                                     extension->value->length);
+                                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                                    (const util::ui8 **)&data->data,
+                                    data->length);
+                                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                             }
                             STACK_OF (CONF_VALUE) *nameValues =
                                 method->i2v (method, extensionData, 0);
