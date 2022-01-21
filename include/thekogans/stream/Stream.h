@@ -23,6 +23,7 @@
 #include <string>
 #include <map>
 #include "pugixml/pugixml.hpp"
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Heap.h"

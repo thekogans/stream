@@ -22,6 +22,7 @@
 
 #include <memory>
 #include <list>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/stream/Config.h"

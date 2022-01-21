@@ -17,6 +17,7 @@
 
 #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (_WINDOWS_)
         #if !defined (WIN32_LEAN_AND_MEAN)
@@ -86,12 +87,16 @@ namespace thekogans {
                 bool multiThreaded,
                 util::ui32 entropyNeeded,
                 util::ui64 workingSetSize,
+                const std::string &opensslDir,
+                ENGINE *engine,
                 bool loadSystemCACertificates,
                 bool loadSystemRootCACertificatesOnly) :
                 crypto::OpenSSLInit (
                     multiThreaded,
                     entropyNeeded,
-                    workingSetSize) {
+                    workingSetSize,
+                    opensslDir,
+                    engine) {
             {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 if (SSLSecureSocketIndex == -1) {
@@ -318,23 +323,37 @@ namespace thekogans {
                         const X509V3_EXT_METHOD *method = X509V3_EXT_get (extension);
                         if (method != 0) {
                             void *extensionData = 0;
-                            const ASN1_OCTET_STRING *value = X509_EXTENSION_get_data (extension);
-                            if (value != 0) {
-                                if (method->it != 0) {
-                                    extensionData = ASN1_item_d2i (0,
-                                        (const util::ui8 **)&value->data,
-                                        value->length,
-                                        ASN1_ITEM_ptr (method->it));
-                                }
-                                else {
-                                    extensionData = method->d2i (0,
-                                        (const util::ui8 **)&value->data,
-                                        value->length);
-                                }
-                                STACK_OF (CONF_VALUE) *nameValues = method->i2v (method, extensionData, 0);
-                                if (nameValues != 0) {
-                                    for (int j = 0, count = sk_CONF_VALUE_num (nameValues); j < count; ++j) {
-                                        CONF_VALUE *nameValue = sk_CONF_VALUE_value (nameValues, j);
+                        #if OPENSSL_VERSION_NUMBER < 0x10100000L
+                            const void *data = extension->value->data;
+                        #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                            const ASN1_OCTET_STRING *data = X509_EXTENSION_get_data (extension);
+                        #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
+                            if (method->it != 0) {
+                                extensionData = ASN1_item_d2i (0,
+                                #if OPENSSL_VERSION_NUMBER < 0x10100000L
+                                    (const util::ui8 **)&data,
+                                    extension->value->length,
+                                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                                    (const util::ui8 **)&data->data,
+                                    data->length,
+                                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
+                                    ASN1_ITEM_ptr (method->it));
+                            }
+                            else {
+                                extensionData = method->d2i (0,
+                                #if OPENSSL_VERSION_NUMBER < 0x10100000L
+                                    (const util::ui8 **)&data,
+                                    extension->value->length);
+                                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                                    (const util::ui8 **)&data->data,
+                                    data->length);
+                                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
+                            }
+                            STACK_OF (CONF_VALUE) *nameValues = method->i2v (method, extensionData, 0);
+                            if (nameValues != 0) {
+                                for (int j = 0, count = sk_CONF_VALUE_num (nameValues); j < count; ++j) {
+                                    CONF_VALUE *nameValue = sk_CONF_VALUE_value (nameValues, j);
+                                    if (nameValue != 0) {
                                         if (std::string ("DNS") == nameValue->name &&
                                                 CompareServerName (serverName, nameValue->value)) {
                                             return true;

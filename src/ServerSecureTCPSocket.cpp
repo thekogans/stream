@@ -17,6 +17,7 @@
 
 #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
+#include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #if !defined (_WINDOWS_)
         #if !defined (WIN32_LEAN_AND_MEAN)

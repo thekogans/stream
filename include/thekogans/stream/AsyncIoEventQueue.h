@@ -19,6 +19,7 @@
 #define __thekogans_stream_AsyncIoEventQueue_h
 
 #include <functional>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"

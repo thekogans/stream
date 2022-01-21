@@ -19,6 +19,7 @@
 #define __thekogans_stream_AsyncIoEventSink_h
 
 #include <memory>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Buffer.h"
@@ -130,7 +131,7 @@ namespace thekogans {
             virtual util::Buffer GetBuffer (
                     Stream &stream,
                     util::Endianness endianness,
-                    std::size_t count) throw () {
+                    std::size_t count) {
                 return util::Buffer (endianness, count);
             }
             /// \brief
@@ -152,7 +153,7 @@ namespace thekogans {
                     Stream &stream,
                     util::Endianness endianness,
                     const void *buffer,
-                    std::size_t count) throw () {
+                    std::size_t count) {
                 return util::Buffer (
                     endianness,
                     (const util::ui8 *)buffer,
@@ -212,7 +213,7 @@ namespace thekogans {
             /// Override this method if you're deriving from a TCPSocket.
             /// \param[in] handle OS socket handle to wrap.
             /// \return A \see{TCPSocket} derivative.
-            virtual TCPSocket::SharedPtr GetTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
+            virtual TCPSocket::SharedPtr GetTCPSocket (THEKOGANS_UTIL_HANDLE handle) {
                 return TCPSocket::SharedPtr (new TCPSocket (handle));
             }
             /// \brief
@@ -246,7 +247,7 @@ namespace thekogans {
             /// Override this method if you're deriving from a \see{SecureTCPSocket}.
             /// \param[in] handle OS socket handle to wrap.
             /// \return A SecureTCPSocket derivative.
-            virtual SecureTCPSocket::SharedPtr GetSecureTCPSocket (THEKOGANS_UTIL_HANDLE handle) throw () {
+            virtual SecureTCPSocket::SharedPtr GetSecureTCPSocket (THEKOGANS_UTIL_HANDLE handle) {
                 return SecureTCPSocket::SharedPtr (new SecureTCPSocket (handle));
             }
             /// \brief

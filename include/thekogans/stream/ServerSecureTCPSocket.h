@@ -24,6 +24,7 @@
 #include <string>
 #include <list>
 #include "pugixml/pugixml.hpp"
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/TCPSocket.h"

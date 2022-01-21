@@ -18,6 +18,7 @@
 #if !defined (__thekogans_stream_TCPSocket_h)
 #define __thekogans_stream_TCPSocket_h
 
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Exception.h"

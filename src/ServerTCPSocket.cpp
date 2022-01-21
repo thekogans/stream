@@ -16,6 +16,7 @@
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
 #include <sstream>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"

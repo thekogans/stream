@@ -18,6 +18,8 @@
 #if !defined (__thekogans_stream_ClientNamedPipe_h)
 #define __thekogans_stream_ClientNamedPipe_h
 
+#include "thekogans/util/Environment.h"
+
 #if defined (TOOLCHAIN_OS_Windows)
 
 #include "pugixml/pugixml.hpp"

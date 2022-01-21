@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"

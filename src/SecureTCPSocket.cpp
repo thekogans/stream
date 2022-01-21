@@ -18,6 +18,7 @@
 #if defined (THEKOGANS_STREAM_HAVE_OPENSSL)
 
 #include <cassert>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/LockGuard.h"
