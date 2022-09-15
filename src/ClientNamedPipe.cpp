@@ -90,13 +90,13 @@ namespace thekogans {
                 timeout) == TRUE;
         }
 
-        void ClientNamedPipe::Connect () {
+        void ClientNamedPipe::Connect (LPSECURITY_ATTRIBUTES securityAttributes) {
             if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 handle = CreateFileW (
                     util::UTF8ToUTF16 (address.GetPath ()).c_str (),
                     GENERIC_READ | GENERIC_WRITE,
                     0,
-                    0,
+                    securityAttributes,
                     OPEN_EXISTING,
                     FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
                     0);

@@ -69,7 +69,7 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses {
             /// \brief
-            /// Name of adapter.
+            /// Adapter name.
             std::string name;
             /// \brief
             /// Adapter index.

@@ -73,27 +73,22 @@ namespace {
 
     public:
         BandwidthTester (
-                util::ui32 rounds_ = 10,
-                util::ui32 seed_ = 64,
-                util::f32 a_ = 2.0f,
-                util::f32 b_ = 0.0f,
-                const util::TimeSpec &timeSpec_ = util::TimeSpec::FromSeconds (3)) :
-                rounds (rounds_),
-                seed (seed_),
-                a (a_),
-                b (b_),
-                timeSpec (timeSpec_),
-                start (0),
-                round (0),
-                roundBytes (0),
-                receivedBytes (0),
-                totalBytes (0),
-                bandwidth (0.0f) {
-            stream::GlobalAsyncIoEventQueue::Instance ().SetTimeoutPolicy (
-                stream::AsyncIoEventQueue::TimeoutPolicy::SharedPtr (
-                    new stream::AsyncIoEventQueue::DefaultTimeoutPolicy (
-                        stream::GlobalAsyncIoEventQueue::Instance ())));
-        }
+            util::ui32 rounds_ = 10,
+            util::ui32 seed_ = 64,
+            util::f32 a_ = 2.0f,
+            util::f32 b_ = 0.0f,
+            const util::TimeSpec &timeSpec_ = util::TimeSpec::FromSeconds (3)) :
+            rounds (rounds_),
+            seed (seed_),
+            a (a_),
+            b (b_),
+            timeSpec (timeSpec_),
+            start (0),
+            round (0),
+            roundBytes (0),
+            receivedBytes (0),
+            totalBytes (0),
+            bandwidth (0.0f) {}
 
         void TestBandwidth (const stream::Address &address) {
             struct MyTCPSocket : public stream::TCPSocket {
@@ -262,36 +257,38 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            THEKOGANS_UTIL_LOG_INFO (
-                "Conducting a bandwidth test with: %s:%u\n",
-                client::Options::Instance ().addr.c_str (),
-                client::Options::Instance ().port);
-            if (client::Options::Instance ().async) {
-                BandwidthTester bandwidthTester (
-                    client::Options::Instance ().rounds,
-                    client::Options::Instance ().seed,
-                    client::Options::Instance ().a,
-                    client::Options::Instance ().b,
-                    util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
-                bandwidthTester.TestBandwidth (
-                    stream::Address (
-                        client::Options::Instance ().port,
-                        client::Options::Instance ().addr));
-                util::MainRunLoop::Instance ().Start ();
-                THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidthTester.GetBandwidth ());
-            }
-            else {
-                util::f32 bandwidth = TestBandwidth (
-                    stream::Address (
-                        client::Options::Instance ().port,
-                        client::Options::Instance ().addr),
-                    client::Options::Instance ().rounds,
-                    client::Options::Instance ().seed,
-                    client::Options::Instance ().a,
-                    client::Options::Instance ().b,
-                    util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
-                THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
-            }
+            stream::TCPSocket socket (AF_LOCAL, SOCK_STREAM, 0);
+            socket.Connect (stream::Address ("/tmp/logitech_kiros_updater"));
+            // THEKOGANS_UTIL_LOG_INFO (
+            //     "Conducting a bandwidth test with: %s:%u\n",
+            //     client::Options::Instance ().addr.c_str (),
+            //     client::Options::Instance ().port);
+            // if (client::Options::Instance ().async) {
+            //     BandwidthTester bandwidthTester (
+            //         client::Options::Instance ().rounds,
+            //         client::Options::Instance ().seed,
+            //         client::Options::Instance ().a,
+            //         client::Options::Instance ().b,
+            //         util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
+            //     bandwidthTester.TestBandwidth (
+            //         stream::Address (
+            //             client::Options::Instance ().port,
+            //             client::Options::Instance ().addr));
+            //     util::MainRunLoop::Instance ().Start ();
+            //     THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidthTester.GetBandwidth ());
+            // }
+            // else {
+            //     util::f32 bandwidth = TestBandwidth (
+            //         stream::Address (
+            //             client::Options::Instance ().port,
+            //             client::Options::Instance ().addr),
+            //         client::Options::Instance ().rounds,
+            //         client::Options::Instance ().seed,
+            //         client::Options::Instance ().a,
+            //         client::Options::Instance ().b,
+            //         util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
+            //     THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
+            // }
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

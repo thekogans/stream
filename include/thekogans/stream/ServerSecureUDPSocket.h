@@ -451,9 +451,9 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual std::size_t ReadFrom (
-                    void *buffer,
-                    std::size_t count,
-                    Address &address) {
+                    void * /*buffer*/,
+                    std::size_t /*count*/,
+                    Address & /*address*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't ReadFrom.");
@@ -462,9 +462,9 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual std::size_t WriteTo (
-                    const void *buffer,
-                    std::size_t count,
-                    const Address &address) {
+                    const void * /*buffer*/,
+                    std::size_t /*count*/,
+                    const Address & /*address*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't WriteTo.");
@@ -473,8 +473,8 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual void WriteBufferTo (
-                    util::Buffer buffer,
-                    const Address &address) {
+                    util::Buffer /*buffer*/,
+                    const Address & /*address*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't WriteBufferTo.");
@@ -483,10 +483,10 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual std::size_t ReadMsg (
-                    void *buffer,
-                    std::size_t count,
-                    Address &from,
-                    Address &to) {
+                    void * /*buffer*/,
+                    std::size_t /*count*/,
+                    Address & /*from*/,
+                    Address & /*to*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't ReadMsg.");
@@ -507,9 +507,9 @@ namespace thekogans {
             /// \brief
             /// ServerSecureUDPSocket only listens for connections.
             virtual void WriteBufferMsg (
-                    util::Buffer buffer,
-                    const Address &from,
-                    const Address &to) {
+                    util::Buffer /*buffer*/,
+                    const Address & /*from*/,
+                    const Address & /*to*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "%s", "ServerSecureUDPSocket can't WriteBufferMsg.");

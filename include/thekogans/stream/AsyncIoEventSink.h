@@ -129,7 +129,7 @@ namespace thekogans {
             /// \param[in] count Minimum buffer size (packet size).
             /// \return Buffer of appropriate size.
             virtual util::Buffer GetBuffer (
-                    Stream &stream,
+                    Stream & /*stream*/,
                     util::Endianness endianness,
                     std::size_t count) {
                 return util::Buffer (endianness, count);
@@ -150,7 +150,7 @@ namespace thekogans {
             /// \param[in] count \see{Stream::Write} buffer length.
             /// \return \see{util::Buffer} to write to the stream.
             virtual util::Buffer GetBuffer (
-                    Stream &stream,
+                    Stream & /*stream*/,
                     util::Endianness endianness,
                     const void *buffer,
                     std::size_t count) {

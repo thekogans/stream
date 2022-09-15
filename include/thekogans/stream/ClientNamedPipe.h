@@ -176,7 +176,8 @@ namespace thekogans {
             /// If you do make the pipe async after calling Connect, the pipe will deliver
             /// an \see{AsyncIoEventSink::HandleClientNamedPipeConnected} to simulate an
             /// async connection.
-            void Connect ();
+            /// \param[in] securityAttributes Optional pointer to SECURITY_ATTRIBUTES.
+            void Connect (LPSECURITY_ATTRIBUTES securityAttributes = 0);
 
         protected:
             /// \brief
