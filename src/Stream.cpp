@@ -277,12 +277,11 @@ namespace thekogans {
                 eventQueue (eventQueue_),
                 stream (stream_),
                 eventSink (eventSink_),
-            #if defined (TOOLCHAIN_OS_Windows)
                 bufferLength (bufferLength_) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                bufferLength (bufferLength_),
-                events (EventInvalid) {
-            #endif // !defined (TOOLCHAIN_OS_Windows)
+        #if !defined (TOOLCHAIN_OS_Windows)
+            token = StreamRegistry::Instance ().Add (&stream);
+            events = EventInvalid;
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             eventQueue.AddRef ();
             stream.AddRef ();
             eventSink.AddRef ();
@@ -294,19 +293,26 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             assert (overlappedList.empty ());
         #else // defined (TOOLCHAIN_OS_Windows)
-            struct Callback : public BufferInfoList::Callback {
-                typedef BufferInfoList::Callback::result_type result_type;
-                typedef BufferInfoList::Callback::argument_type argument_type;
-                virtual result_type operator () (argument_type bufferInfo) {
-                    delete bufferInfo;
-                    return true;
-                }
-            } callback;
-            bufferInfoList.clear (callback);
+            assert (bufferInfoList.empty ());
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         void Stream::AsyncInfo::ReleaseResources () {
+        #if !defined (TOOLCHAIN_OS_Windows)
+            StreamRegistry::Instance ().Remove (token);
+            {
+                util::LockGuard<util::SpinLock> guard (spinLock);
+                struct Callback : public BufferInfoList::Callback {
+                    typedef BufferInfoList::Callback::result_type result_type;
+                    typedef BufferInfoList::Callback::argument_type argument_type;
+                    virtual result_type operator () (argument_type bufferInfo) {
+                        delete bufferInfo;
+                        return true;
+                    }
+                } callback;
+                bufferInfoList.clear (callback);
+            }
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             eventQueue.Release ();
             stream.Release ();
             eventSink.Release ();

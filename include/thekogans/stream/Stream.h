@@ -71,6 +71,12 @@ namespace thekogans {
         typedef util::IntrusiveList<Stream, ASYNC_IO_EVENT_QUEUE_DELETED_STREAMS_LIST_ID>
             AsyncIoEventQueueDeletedStreamsList;
 
+    #if !defined (TOOLCHAIN_OS_Windows)
+        /// \brief
+        /// Convenient typedef for util::RefCounted::Registry<Stream>.
+        typedef util::RefCounted::Registry<Stream> StreamRegistry;
+    #endif // !defined (TOOLCHAIN_OS_Windows)
+
         // Did I mention M$ is a brain dead company? Here's another
         // example of their stupidity and the hoops we have to jump
         // through to get around the obstacles they throw our way.
@@ -690,6 +696,9 @@ namespace thekogans {
                 OverlappedList overlappedList;
             #else // defined (TOOLCHAIN_OS_Windows)
                 /// \brief
+                /// \see{StreamRegistry} token.
+                StreamRegistry::Token token;
+                /// \brief
                 /// Events mask that records the events this
                 /// stream is interested in.
                 util::ui32 events;
@@ -804,16 +813,7 @@ namespace thekogans {
                 /// \brief
                 /// Queue (FIFO) of buffers waiting to be written.
                 BufferInfoList bufferInfoList;
-                /// \brief
-                /// Read deadline maintained by \see{AsyncIoEventQueue}.
-                util::TimeSpec readDeadline;
-                /// \brief
-                /// Write deadline maintained by \see{AsyncIoEventQueue}.
-                util::TimeSpec writeDeadline;
             #endif // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Last io event time.
-                util::TimeSpec lastEventTime;
                 /// \brief
                 /// Lock serializing access to overlappedList (Windows) or
                 /// bufferInfoList (Linux/OS X).

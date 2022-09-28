@@ -102,11 +102,11 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Linux)
             epoll_event event;
             event.events = EPOLLIN;
-            event.data.ptr = &readPipe;
+            event.data.u64 = StreamRegistry::INVALID_TOKEN;
             if (epoll_ctl (handle, EPOLL_CTL_ADD, readPipe.handle, &event) < 0) {
         #else // defined (TOOLCHAIN_OS_Linux)
             keventStruct event;
-            keventSet (&event, readPipe.handle, EVFILT_READ, EV_ADD, 0, 0, &readPipe);
+            keventSet (&event, readPipe.handle, EVFILT_READ, EV_ADD, 0, 0, StreamRegistry::INVALID_TOKEN);
             if (keventFunc (handle, &event, 1, 0, 0, 0) < 0) {
         #endif // defined (TOOLCHAIN_OS_Linux)
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -289,75 +289,77 @@ namespace thekogans {
                 }
                 else {
                     for (int i = 0; i < count; ++i) {
-                        Stream *stream = (Stream *)epollEvents[i].data.ptr;
-                        if (stream == &readPipe) {
+                        if (epollEvents[i].data.u64 == StreamRegistry::INVALID_TOKEN) {
                             std::size_t bufferSize = readPipe.GetDataAvailable ();
                             if (bufferSize != 0) {
                                 std::vector<util::ui8> buffer (bufferSize);
                                 readPipe.Read (buffer.data (), bufferSize);
                             }
                         }
-                        else if (registryList.contains (stream)) {
-                            if (epollEvents[i].events & EPOLLERR) {
-                                // For all the great things epoll does, it's error
-                                // handling is fucking abysmal. Not returning the
-                                // error code with EPOLLERR just does not make any
-                                // sense. For sockets, we have a way of getting
-                                // error codes. For pipes we do not. Since correct
-                                // processing of EPOLLERR is to close the stream,
-                                // it's not completely hopeless. It would just be
-                                // really nice if we could show something meaningful
-                                // in the log.
-                                Socket *socket = dynamic_cast<Socket *> (stream);
-                                if (socket != 0) {
-                                    THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
-                                    if (errorCode == EPIPE) {
-                                        stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                        else {
+                            Stream::SharedPtr stream = StreamRegistry::Instance ().Get (epollEvents[i].data.u64);
+                            if (stream.Get () != 0 && registryList.contains (stream.Get ())) {
+                                if (epollEvents[i].events & EPOLLERR) {
+                                    // For all the great things epoll does, it's error
+                                    // handling is fucking abysmal. Not returning the
+                                    // error code with EPOLLERR just does not make any
+                                    // sense. For sockets, we have a way of getting
+                                    // error codes. For pipes we do not. Since correct
+                                    // processing of EPOLLERR is to close the stream,
+                                    // it's not completely hopeless. It would just be
+                                    // really nice if we could show something meaningful
+                                    // in the log.
+                                    Socket::SharedPtr socket = util::dynamic_refcounted_sharedptr_cast<Socket> (stream);
+                                    if (socket.Get () != 0) {
+                                        THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
+                                        if (errorCode == EPIPE) {
+                                            socket->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                                        }
+                                        else {
+                                            socket->HandleError (
+                                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                                        }
                                     }
                                     else {
                                         stream->HandleError (
-                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                                            THEKOGANS_UTIL_STRING_EXCEPTION (
+                                                "%s", "Unknown stream error."));
                                     }
                                 }
                                 else {
-                                    stream->HandleError (
-                                        THEKOGANS_UTIL_STRING_EXCEPTION (
-                                            "%s", "Unknown stream error."));
-                                }
-                            }
-                            else {
-                                if (epollEvents[i].events & EPOLLIN) {
-                                    util::ui32 event =
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventRead) ? Stream::AsyncInfo::EventRead :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventReadFrom) ? Stream::AsyncInfo::EventReadFrom :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
-                                        Stream::AsyncInfo::EventInvalid;
-                                    if (event != Stream::AsyncInfo::EventInvalid) {
-                                        stream->HandleAsyncEvent (event);
+                                    if (epollEvents[i].events & EPOLLIN) {
+                                        util::ui32 event =
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventRead) ? Stream::AsyncInfo::EventRead :
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventReadFrom) ? Stream::AsyncInfo::EventReadFrom :
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
+                                            Stream::AsyncInfo::EventInvalid;
+                                        if (event != Stream::AsyncInfo::EventInvalid) {
+                                            stream->HandleAsyncEvent (event);
+                                        }
                                     }
-                                }
-                                if (epollEvents[i].events & EPOLLOUT) {
-                                    util::ui32 event =
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
-                                        Stream::AsyncInfo::EventInvalid;
-                                    if (event != Stream::AsyncInfo::EventInvalid) {
-                                        stream->HandleAsyncEvent (event);
+                                    if (epollEvents[i].events & EPOLLOUT) {
+                                        util::ui32 event =
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
+                                            util::Flags32 (stream->asyncInfo->events).Test (
+                                                Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
+                                            Stream::AsyncInfo::EventInvalid;
+                                        if (event != Stream::AsyncInfo::EventInvalid) {
+                                            stream->HandleAsyncEvent (event);
+                                        }
                                     }
-                                }
-                                if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
-                                    stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                                    if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
+                                        stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                                    }
                                 }
                             }
                         }
@@ -379,61 +381,63 @@ namespace thekogans {
                 }
                 else {
                     for (int i = 0; i < count; ++i) {
-                        Stream *stream = (Stream *)kqueueEvents[i].udata;
-                        if (stream == &readPipe) {
+                        if (kqueueEvents[i].udata == StreamRegistry::INVALID_TOKEN) {
                             std::size_t bufferSize = readPipe.GetDataAvailable ();
                             if (bufferSize != 0) {
                                 std::vector<util::ui8> buffer (bufferSize);
                                 readPipe.Read (buffer.data (), bufferSize);
                             }
                         }
-                        else if (registryList.contains (stream)) {
-                            if (kqueueEvents[i].flags & EV_ERROR) {
-                                stream->HandleError (
-                                    THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
-                                        (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data));
-                            }
-                            else if (kqueueEvents[i].flags & EV_EOF) {
-                                // If no one is listening on the other side, kqueue returns
-                                // EV_EOF instead of ECONNREFUSED. Simulate an error that would
-                                // be returned if we did a blocking connect.
-                                if (util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventConnect)) {
+                        else {
+                            Stream::SharedPtr stream = StreamRegistry::Instance ().Get (kqueueEvents[i].udata);
+                            if (stream.Get () != 0 && registryList.contains (stream.Get ())) {
+                                if (kqueueEvents[i].flags & EV_ERROR) {
                                     stream->HandleError (
-                                        THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (ECONNREFUSED));
+                                        THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
+                                            (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data));
                                 }
-                                else {
-                                    stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                                else if (kqueueEvents[i].flags & EV_EOF) {
+                                    // If no one is listening on the other side, kqueue returns
+                                    // EV_EOF instead of ECONNREFUSED. Simulate an error that would
+                                    // be returned if we did a blocking connect.
+                                    if (util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventConnect)) {
+                                        stream->HandleError (
+                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (ECONNREFUSED));
+                                    }
+                                    else {
+                                        stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                                    }
                                 }
-                            }
-                            else if (kqueueEvents[i].filter == EVFILT_READ) {
-                                util::ui32 event =
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventRead) ? Stream::AsyncInfo::EventRead :
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventReadFrom) ? Stream::AsyncInfo::EventReadFrom :
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
-                                    Stream::AsyncInfo::EventInvalid;
-                                if (event != Stream::AsyncInfo::EventInvalid) {
-                                    stream->HandleAsyncEvent (event);
+                                else if (kqueueEvents[i].filter == EVFILT_READ) {
+                                    util::ui32 event =
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventRead) ? Stream::AsyncInfo::EventRead :
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventReadFrom) ? Stream::AsyncInfo::EventReadFrom :
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
+                                        Stream::AsyncInfo::EventInvalid;
+                                    if (event != Stream::AsyncInfo::EventInvalid) {
+                                        stream->HandleAsyncEvent (event);
+                                    }
                                 }
-                            }
-                            else if (kqueueEvents[i].filter == EVFILT_WRITE) {
-                                util::ui32 event =
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
-                                    util::Flags32 (stream->asyncInfo->events).Test (
-                                        Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
-                                    Stream::AsyncInfo::EventInvalid;
-                                if (event != Stream::AsyncInfo::EventInvalid) {
-                                    stream->HandleAsyncEvent (event);
+                                else if (kqueueEvents[i].filter == EVFILT_WRITE) {
+                                    util::ui32 event =
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
+                                        util::Flags32 (stream->asyncInfo->events).Test (
+                                            Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
+                                        Stream::AsyncInfo::EventInvalid;
+                                    if (event != Stream::AsyncInfo::EventInvalid) {
+                                        stream->HandleAsyncEvent (event);
+                                    }
                                 }
                             }
                         }
@@ -501,7 +505,7 @@ namespace thekogans {
                             Stream::AsyncInfo::EventWriteMsg)) {
                         event.events |= EPOLLOUT;
                     }
-                    event.data.ptr = &stream;
+                    event.data.u64 = stream.asyncInfo->token;
                     if (epoll_ctl (handle,
                             stream.asyncInfo->events == 0 ? EPOLL_CTL_ADD : EPOLL_CTL_MOD,
                             stream.handle, &event) < 0) {
@@ -539,7 +543,7 @@ namespace thekogans {
                             Stream::AsyncInfo::EventWriteMsg)) {
                         epollEvent.events |= EPOLLOUT;
                     }
-                    epollEvent.data.ptr = &stream;
+                    epollEvent.data.u64 = stream.asyncInfo->token;
                     if (epoll_ctl (handle, EPOLL_CTL_MOD, stream.handle, &epollEvent) < 0) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -565,7 +569,7 @@ namespace thekogans {
                             Stream::AsyncInfo::EventReadFrom |
                             Stream::AsyncInfo::EventReadMsg)) {
                         keventStruct kqueueEvent = {0};
-                        keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, &stream);
+                        keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, stream.asyncInfo->token);
                         if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -578,7 +582,7 @@ namespace thekogans {
                             Stream::AsyncInfo::EventWriteTo |
                             Stream::AsyncInfo::EventWriteMsg)) {
                         keventStruct kqueueEvent = {0};
-                        keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, &stream);
+                        keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, stream.asyncInfo->token);
                         if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                                 THEKOGANS_UTIL_OS_ERROR_CODE);
