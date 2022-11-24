@@ -23,7 +23,6 @@
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/WindowsUtils.h"
-#include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/ServerNamedPipe.h"
 
 namespace thekogans {
@@ -128,23 +127,20 @@ namespace thekogans {
         }
 
         void ServerNamedPipe::Connect () {
-            AsyncInfo::Overlapped::SharedPtr overlapped;
-            if (IsAsync ()) {
-                overlapped.Reset (
-                    new AsyncInfo::Overlapped (*this, AsyncInfo::EventConnect));
-            }
+            Overlapped::SharedPtr overlapped (new Overlapped (*this, EventConnect));
             if (!ConnectNamedPipe (handle, overlapped.Get ())) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                 if (errorCode == ERROR_PIPE_CONNECTED) {
-                    if (IsAsync ()) {
-                        HandleOverlapped (*overlapped);
-                        return;
-                    }
+                    HandleOverlapped (*overlapped);
+                    return;
                 }
                 else if (errorCode != ERROR_IO_PENDING) {
-                    asyncInfo->eventSink.HandleStreamError (
-                        *this,
-                        THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
                     return;
                 }
             }
@@ -167,15 +163,24 @@ namespace thekogans {
             Connect ();
         }
 
-        void ServerNamedPipe::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventConnect) {
+        void ServerNamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventConnect) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncRead ();
-                    asyncInfo->eventSink.HandleServerNamedPipeConnection (*this);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnServerNamedPipeConnection,
+                            std::placeholders::_1,
+                            SharedPtr (this)));
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
                 }
             }
             else {

@@ -107,75 +107,23 @@ namespace thekogans {
             Bind (address);
         }
 
-        std::size_t UDPSocket::Read (
-                void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
-                DWORD numberOfBytesRecvd = 0;
-                DWORD flags = 0;
-                if (WSARecv ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf, 1,
-                        &numberOfBytesRecvd, &flags, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-                return numberOfBytesRecvd;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countRead = recv (handle, (char *)buffer, count, 0);
-                if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-                return (std::size_t)countRead;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        std::size_t UDPSocket::Write (
+        void UDPSocket::Write (
                 const void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD numberOfBytesSent = 0;
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        PostAsyncWrite (buffer, count);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                    }
+                THEKOGANS_UTIL_TRY {
+                    PostAsyncWrite (buffer, count);
                 }
-                else {
-                    WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
-                    DWORD flags = 0;
-                    if (WSASend ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf, 1,
-                            &numberOfBytesSent, flags, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
-                return numberOfBytesSent;
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countWritten = 0;
-                if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new AsyncInfo::WriteBufferInfo (*this, buffer, count)));
-                }
-                else {
-                    countWritten = send (handle, (const char *)buffer, count, 0);
-                    if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
-                }
-                return (std::size_t)countWritten;
+                EnqBufferBack (
+                    BufferInfo::UniquePtr (
+                        new WriteBufferInfo (*this, buffer, count)));
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -186,32 +134,26 @@ namespace thekogans {
 
         void UDPSocket::WriteBuffer (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
-                if (IsAsync ()) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
-                        new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
-                    if (WSASend ((THEKOGANS_STREAM_SOCKET)handle,
-                            &overlapped->wsaBuf, 1, 0, 0,
-                            overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                        if (errorCode != WSA_IO_PENDING) {
-                            asyncInfo->eventSink.HandleStreamError (
-                                *this,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                            return;
-                        }
+            #if defined (TOOLCHAIN_OS_Windows)
+                ReadWriteOverlapped::SharedPtr overlapped (
+                    new ReadWriteOverlapped (*this, std::move (buffer)));
+                if (WSASend ((THEKOGANS_STREAM_SOCKET)handle,
+                        &overlapped->wsaBuf, 1, 0, 0,
+                        overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                    if (errorCode != WSA_IO_PENDING) {
+                        eventSink.HandleStreamError (
+                            *this,
+                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                        return;
                     }
-                    overlapped.Release ();
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
-                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "WriteBuffer is called on a blocking socket.");
-                }
+                overlapped.Release ();
+            #else // defined (TOOLCHAIN_OS_Windows)
+                EnqBufferBack (
+                    BufferInfo::UniquePtr (
+                        new WriteBufferInfo (*this, std::move (buffer))));
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -251,50 +193,24 @@ namespace thekogans {
             }
         }
 
-        std::size_t UDPSocket::WriteTo (
+        void UDPSocket::WriteTo (
                 const void *buffer,
                 std::size_t count,
                 const Address &address) {
             if (buffer != 0 && count > 0 && address != Address::Empty) {
             #if defined (TOOLCHAIN_OS_Windows)
-                DWORD numberOfBytesSent = 0;
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        PostAsyncWriteTo (buffer, count, address);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                    }
+                THEKOGANS_UTIL_TRY {
+                    PostAsyncWriteTo (buffer, count, address);
                 }
-                else {
-                    WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
-                    DWORD flags = 0;
-                    if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf,
-                            1, &numberOfBytesSent, flags, &address.address,
-                            address.length, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
-                return numberOfBytesSent;
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countWritten = 0;
-                if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteToBufferInfo (
-                                *this, buffer, count, address)));
-                }
-                else {
-                    countWritten = sendto (handle, (const char *)buffer,
-                        count, 0, &address.address, address.length);
-                    if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
-                }
-                return (std::size_t)countWritten;
+                EnqBufferBack (
+                    BufferInfo::UniquePtr (
+                        new WriteToBufferInfo (
+                            *this, buffer, count, address)));
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -307,84 +223,29 @@ namespace thekogans {
                 util::Buffer buffer,
                 const Address &address) {
             if (!buffer.IsEmpty () && address != Address::Empty) {
-                if (IsAsync ()) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    ReadFromWriteToOverlapped::SharedPtr overlapped (
-                        new ReadFromWriteToOverlapped (*this, std::move (buffer), address));
-                    if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle,
-                            &overlapped->wsaBuf, 1, 0,
-                            overlapped->flags,
-                            &overlapped->address.address,
-                            overlapped->address.length,
-                            overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                        if (errorCode != WSA_IO_PENDING) {
-                            asyncInfo->eventSink.HandleStreamError (
-                                *this,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                            return;
-                        }
-                    }
-                    overlapped.Release ();
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteToBufferInfo (
-                                *this, std::move (buffer), address)));
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "WriteBufferTo is called on a blocking socket.");
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        std::size_t UDPSocket::ReadMsg (
-                void *buffer,
-                std::size_t count,
-                Address &from,
-                Address &to) {
-            if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
-                MsgHdr msgHdr (buffer, count, from);
-                DWORD numberOfBytesRecvd = 0;
-                if (WindowsFunctions::Instance ().WSARecvMsg (
-                        (THEKOGANS_STREAM_SOCKET)handle, &msgHdr,
-                        &numberOfBytesRecvd, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                ReadFromWriteToOverlapped::SharedPtr overlapped (
+                    new ReadFromWriteToOverlapped (*this, std::move (buffer), address));
+                if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle,
+                        &overlapped->wsaBuf, 1, 0,
+                        overlapped->flags,
+                        &overlapped->address.address,
+                        overlapped->address.length,
+                        overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                    if (errorCode != WSA_IO_PENDING) {
+                        eventSink.HandleStreamError (
+                            *this,
+                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                        return;
+                    }
                 }
-                if (from.GetFamily () == AF_INET) {
-                    from.length = sizeof (sockaddr_in);
-                }
-                else if (from.GetFamily () == AF_INET6) {
-                    from.length = sizeof (sockaddr_in6);
-                }
-                to = msgHdr.GetToAddress (GetHostAddress ().GetPort ());
-                return numberOfBytesRecvd;
+                overlapped.Release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                MsgHdr msgHdr (buffer, count, from);
-                ssize_t countRead = recvmsg (handle, &msgHdr, 0);
-                if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-                if (from.GetFamily () == AF_INET) {
-                    from.length = sizeof (sockaddr_in);
-                }
-                else if (from.GetFamily () == AF_INET6) {
-                    from.length = sizeof (sockaddr_in6);
-                }
-                else if (from.GetFamily () == AF_LOCAL) {
-                    from.length = sizeof (sockaddr_un);
-                }
-                to = msgHdr.GetToAddress (GetHostAddress ().GetPort ());
-                return (std::size_t)countRead;
+                EnqBufferBack (
+                    BufferInfo::UniquePtr (
+                        new WriteToBufferInfo (
+                            *this, std::move (buffer), address)));
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -393,7 +254,7 @@ namespace thekogans {
             }
         }
 
-        std::size_t UDPSocket::WriteMsg (
+        void UDPSocket::WriteMsg (
                 const void *buffer,
                 std::size_t count,
                 const Address &from,
@@ -401,43 +262,18 @@ namespace thekogans {
             if (buffer != 0 && count > 0 &&
                     from != Address::Empty && to != Address::Empty) {
             #if defined (TOOLCHAIN_OS_Windows)
-                DWORD numberOfBytesSent = 0;
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        PostAsyncWriteMsg (buffer, count, from, to);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                    }
+                THEKOGANS_UTIL_TRY {
+                    PostAsyncWriteMsg (buffer, count, from, to);
                 }
-                else {
-                    MsgHdr msgHdr (buffer, count, from, to);
-                    if (WindowsFunctions::Instance ().WSASendMsg (
-                            (THEKOGANS_STREAM_SOCKET)handle, &msgHdr, 0,
-                            &numberOfBytesSent, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
-                return numberOfBytesSent;
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countWritten = 0;
-                if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteMsgBufferInfo (
-                                *this, buffer, count, from, to)));
-                }
-                else {
-                    MsgHdr msgHdr (buffer, count, from, to);
-                    countWritten = sendmsg (handle, &msgHdr, 0);
-                    if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
-                }
-                return (std::size_t)countWritten;
+                EnqBufferBack (
+                    BufferInfo::UniquePtr (
+                        new WriteMsgBufferInfo (
+                            *this, buffer, count, from, to)));
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -452,34 +288,28 @@ namespace thekogans {
                 const Address &to) {
             if (!buffer.IsEmpty () &&
                     from != Address::Empty && to != Address::Empty) {
-                if (IsAsync ()) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    ReadMsgWriteMsgOverlapped::SharedPtr overlapped (
-                        new ReadMsgWriteMsgOverlapped (*this, std::move (buffer), from, to));
-                    if (WindowsFunctions::Instance ().WSASendMsg (
-                            (THEKOGANS_STREAM_SOCKET)handle,
-                            &overlapped->msgHdr, 0, 0,
-                            overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                        if (errorCode != WSA_IO_PENDING) {
-                            asyncInfo->eventSink.HandleStreamError (
-                                *this,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                            return;
-                        }
+            #if defined (TOOLCHAIN_OS_Windows)
+                ReadMsgWriteMsgOverlapped::SharedPtr overlapped (
+                    new ReadMsgWriteMsgOverlapped (*this, std::move (buffer), from, to));
+                if (WindowsFunctions::Instance ().WSASendMsg (
+                        (THEKOGANS_STREAM_SOCKET)handle,
+                        &overlapped->msgHdr, 0, 0,
+                        overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                    if (errorCode != WSA_IO_PENDING) {
+                        eventSink.HandleStreamError (
+                            *this,
+                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                        return;
                     }
-                    overlapped.Release ();
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteMsgBufferInfo (
-                                *this, std::move (buffer), from, to)));
-                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "WriteBufferMsg is called on a blocking socket.");
-                }
+                overlapped.Release ();
+            #else // defined (TOOLCHAIN_OS_Windows)
+                EnqBufferBack (
+                    BufferInfo::UniquePtr (
+                        new WriteMsgBufferInfo (
+                            *this, std::move (buffer), from, to)));
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -863,13 +693,13 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             SetBlocking (false);
             if (IsRecvPktInfo ()) {
-                asyncInfo->AddStreamForEvents (AsyncInfo::EventReadMsg);
+                AddStreamForEvents (EventReadMsg);
             }
             else if (IsConnected ()) {
-                asyncInfo->AddStreamForEvents (AsyncInfo::EventRead);
+                AddStreamForEvents (EventRead);
             }
             else {
-                asyncInfo->AddStreamForEvents (AsyncInfo::EventReadFrom);
+                AddStreamForEvents (EventReadFrom);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -881,9 +711,9 @@ namespace thekogans {
                 UDPSocket &udpSocket,
                 std::size_t count,
                 bool useGetBuffer) :
-                Overlapped (udpSocket, Stream::AsyncInfo::EventReadFrom),
+                Overlapped (udpSocket, Stream::EventReadFrom),
                 buffer (useGetBuffer ?
-                    udpSocket.asyncInfo->eventSink.GetBuffer (
+                    udpSocket.eventSink.GetBuffer (
                         udpSocket,
                         util::NetworkEndian,
                         count) :
@@ -899,9 +729,9 @@ namespace thekogans {
                 std::size_t count,
                 const Address &address_,
                 bool useGetBuffer) :
-                Overlapped (udpSocket, Stream::AsyncInfo::EventWriteTo),
+                Overlapped (udpSocket, Stream::EventWriteTo),
                 buffer (useGetBuffer ?
-                    udpSocket.asyncInfo->eventSink.GetBuffer (
+                    udpSocket.eventSink.GetBuffer (
                         udpSocket,
                         util::NetworkEndian,
                         buffer_,
@@ -918,11 +748,11 @@ namespace thekogans {
 
         void UDPSocket::ReadFromWriteToOverlapped::Epilog () throw () {
             switch (event) {
-                case Stream::AsyncInfo::EventReadFrom: {
+                case Stream::EventReadFrom: {
                     buffer.AdvanceWriteOffset (GetCount ());
                     break;
                 }
-                case Stream::AsyncInfo::EventWriteTo: {
+                case Stream::EventWriteTo: {
                     buffer.AdvanceReadOffset (GetCount ());
                     break;
                 }
@@ -935,9 +765,9 @@ namespace thekogans {
             UDPSocket &udpSocket,
             std::size_t count,
             bool useGetBuffer) :
-            Overlapped (udpSocket, Stream::AsyncInfo::EventReadMsg),
+            Overlapped (udpSocket, Stream::EventReadMsg),
             buffer (useGetBuffer ?
-                udpSocket.asyncInfo->eventSink.GetBuffer (
+                udpSocket.eventSink.GetBuffer (
                     udpSocket, util::NetworkEndian,
                     count) :
                 util::Buffer (util::NetworkEndian, count)),
@@ -953,9 +783,9 @@ namespace thekogans {
             const Address &from_,
             const Address &to_,
             bool useGetBuffer) :
-            Overlapped (udpSocket, Stream::AsyncInfo::EventWriteMsg),
+            Overlapped (udpSocket, Stream::EventWriteMsg),
             buffer (useGetBuffer ?
-                udpSocket.asyncInfo->eventSink.GetBuffer (
+                udpSocket.eventSink.GetBuffer (
                     udpSocket,
                     util::NetworkEndian,
                     buffer_,
@@ -970,7 +800,7 @@ namespace thekogans {
 
         void UDPSocket::ReadMsgWriteMsgOverlapped::Epilog () throw () {
             switch (event) {
-                case Stream::AsyncInfo::EventReadMsg: {
+                case Stream::EventReadMsg: {
                     buffer.AdvanceWriteOffset (GetCount ());
                     if (from.GetFamily () == AF_INET) {
                         from.length = sizeof (sockaddr_in);
@@ -982,7 +812,7 @@ namespace thekogans {
                         dynamic_cast<Socket *> (stream.Get ())->GetHostAddress ().GetPort ());
                     break;
                 }
-                case Stream::AsyncInfo::EventWriteMsg: {
+                case Stream::EventWriteMsg: {
                     buffer.AdvanceReadOffset (GetCount ());
                     break;
                 }
@@ -990,8 +820,8 @@ namespace thekogans {
         }
 
         void UDPSocket::PostAsyncRead (bool useGetBuffer) {
-            AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
-                new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength, useGetBuffer));
+            ReadWriteOverlapped::SharedPtr overlapped (
+                new ReadWriteOverlapped (*this, bufferLength, useGetBuffer));
             if (WSARecv ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf, 1, 0,
                     &overlapped->flags,
@@ -1008,8 +838,8 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count,
                 bool useGetBuffer) {
-            AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
-                new AsyncInfo::ReadWriteOverlapped (*this, buffer, count, useGetBuffer));
+            ReadWriteOverlapped::SharedPtr overlapped (
+                new ReadWriteOverlapped (*this, buffer, count, useGetBuffer));
             if (WSASend ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf, 1, 0, 0,
                     overlapped.Get (), 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
@@ -1023,7 +853,7 @@ namespace thekogans {
 
         void UDPSocket::PostAsyncReadFrom (bool useGetBuffer) {
             ReadFromWriteToOverlapped::SharedPtr overlapped (
-                new ReadFromWriteToOverlapped (*this, asyncInfo->bufferLength, useGetBuffer));
+                new ReadFromWriteToOverlapped (*this, bufferLength, useGetBuffer));
             if (WSARecvFrom ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf, 1, 0,
                     &overlapped->flags,
@@ -1061,7 +891,7 @@ namespace thekogans {
 
         void UDPSocket::PostAsyncReadMsg (bool useGetBuffer) {
             ReadMsgWriteMsgOverlapped::SharedPtr overlapped (
-                new ReadMsgWriteMsgOverlapped (*this, asyncInfo->bufferLength, useGetBuffer));
+                new ReadMsgWriteMsgOverlapped (*this, bufferLength, useGetBuffer));
             if (WindowsFunctions::Instance ().WSARecvMsg (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->msgHdr, 0,
@@ -1094,40 +924,40 @@ namespace thekogans {
             overlapped.Release ();
         }
 
-        void UDPSocket::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventRead) {
+        void UDPSocket::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventRead) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncRead ();
-                    AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
-                        (AsyncInfo::ReadWriteOverlapped &)overlapped;
+                    ReadWriteOverlapped &readWriteOverlapped =
+                        (ReadWriteOverlapped &)overlapped;
                     if (readWriteOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readWriteOverlapped.buffer =
-                                asyncInfo->eventSink.GetBuffer (
+                                eventSink.GetBuffer (
                                     *this, util::NetworkEndian, bufferLength);
                             readWriteOverlapped.buffer.AdvanceWriteOffset (
                                 Read (readWriteOverlapped.buffer.GetWritePtr (), bufferLength));
                         }
                     }
                     if (!readWriteOverlapped.buffer.IsEmpty ()) {
-                        asyncInfo->eventSink.HandleStreamRead (*this,
+                        eventSink.HandleStreamRead (*this,
                             std::move (readWriteOverlapped.buffer));
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (overlapped.event == AsyncInfo::EventWrite) {
-                AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
-                    (AsyncInfo::ReadWriteOverlapped &)overlapped;
+            else if (overlapped.event == EventWrite) {
+                ReadWriteOverlapped &readWriteOverlapped =
+                    (ReadWriteOverlapped &)overlapped;
                 assert (readWriteOverlapped.buffer.IsEmpty ());
-                asyncInfo->eventSink.HandleStreamWrite (*this,
+                eventSink.HandleStreamWrite (*this,
                     std::move (readWriteOverlapped.buffer));
             }
-            else if (overlapped.event == AsyncInfo::EventReadFrom) {
+            else if (overlapped.event == EventReadFrom) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncReadFrom ();
                     ReadFromWriteToOverlapped &readFromWriteToOverlapped =
@@ -1136,7 +966,7 @@ namespace thekogans {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readFromWriteToOverlapped.buffer =
-                                asyncInfo->eventSink.GetBuffer (
+                                eventSink.GetBuffer (
                                     *this, util::NetworkEndian, bufferLength);
                             readFromWriteToOverlapped.buffer.AdvanceWriteOffset (
                                 ReadFrom (
@@ -1146,25 +976,25 @@ namespace thekogans {
                         }
                     }
                     if (!readFromWriteToOverlapped.buffer.IsEmpty ()) {
-                        asyncInfo->eventSink.HandleUDPSocketReadFrom (*this,
+                        eventSink.HandleUDPSocketReadFrom (*this,
                             std::move (readFromWriteToOverlapped.buffer),
                             readFromWriteToOverlapped.address);
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (overlapped.event == AsyncInfo::EventWriteTo) {
+            else if (overlapped.event == EventWriteTo) {
                 ReadFromWriteToOverlapped &readFromWriteToOverlapped =
                     (ReadFromWriteToOverlapped &)overlapped;
                 assert (readFromWriteToOverlapped.buffer.IsEmpty ());
-                asyncInfo->eventSink.HandleUDPSocketWriteTo (*this,
+                eventSink.HandleUDPSocketWriteTo (*this,
                     std::move (readFromWriteToOverlapped.buffer),
                     readFromWriteToOverlapped.address);
             }
-            else if (overlapped.event == AsyncInfo::EventReadMsg) {
+            else if (overlapped.event == EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncReadMsg ();
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
@@ -1173,7 +1003,7 @@ namespace thekogans {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
-                                asyncInfo->eventSink.GetBuffer (
+                                eventSink.GetBuffer (
                                     *this, util::NetworkEndian, bufferLength);
                             readMsgWriteMsgOverlapped.buffer.AdvanceWriteOffset (
                                 ReadMsg (
@@ -1184,7 +1014,7 @@ namespace thekogans {
                         }
                     }
                     if (!readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
-                        asyncInfo->eventSink.HandleUDPSocketReadMsg (*this,
+                        eventSink.HandleUDPSocketReadMsg (*this,
                             std::move (readMsgWriteMsgOverlapped.buffer),
                             readMsgWriteMsgOverlapped.from,
                             readMsgWriteMsgOverlapped.to);
@@ -1192,14 +1022,14 @@ namespace thekogans {
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (overlapped.event == AsyncInfo::EventWriteMsg) {
+            else if (overlapped.event == EventWriteMsg) {
                 ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
                     (ReadMsgWriteMsgOverlapped &)overlapped;
                 assert (readMsgWriteMsgOverlapped.buffer.IsEmpty ());
-                asyncInfo->eventSink.HandleUDPSocketWriteMsg (*this,
+                eventSink.HandleUDPSocketWriteMsg (*this,
                     std::move (readMsgWriteMsgOverlapped.buffer),
                     readMsgWriteMsgOverlapped.from,
                     readMsgWriteMsgOverlapped.to);
@@ -1214,10 +1044,10 @@ namespace thekogans {
             std::size_t count,
             const Address &address_,
             bool useGetBuffer) :
-            BufferInfo (udpSocket_, AsyncInfo::EventWriteTo),
+            BufferInfo (udpSocket_, EventWriteTo),
             udpSocket (udpSocket_),
             buffer (useGetBuffer ?
-                udpSocket.asyncInfo->eventSink.GetBuffer (
+                udpSocket.eventSink.GetBuffer (
                     udpSocket,
                     util::NetworkEndian,
                     buffer_,
@@ -1240,7 +1070,7 @@ namespace thekogans {
 
         bool UDPSocket::WriteToBufferInfo::Notify () {
             if (buffer.IsEmpty ()) {
-                udpSocket.asyncInfo->eventSink.HandleUDPSocketWriteTo (
+                udpSocket.eventSink.HandleUDPSocketWriteTo (
                     udpSocket, std::move (buffer), address);
                 return true;
             }
@@ -1256,10 +1086,10 @@ namespace thekogans {
             const Address &from_,
             const Address &to_,
             bool useGetBuffer) :
-            BufferInfo (udpSocket_, AsyncInfo::EventWriteMsg),
+            BufferInfo (udpSocket_, EventWriteMsg),
             udpSocket (udpSocket_),
             buffer (useGetBuffer ?
-                udpSocket.asyncInfo->eventSink.GetBuffer (
+                udpSocket.eventSink.GetBuffer (
                     udpSocket,
                     util::NetworkEndian,
                     buffer_,
@@ -1282,7 +1112,7 @@ namespace thekogans {
 
         bool UDPSocket::WriteMsgBufferInfo::Notify () {
             if (buffer.IsEmpty ()) {
-                udpSocket.asyncInfo->eventSink.HandleUDPSocketWriteMsg (
+                udpSocket.eventSink.HandleUDPSocketWriteMsg (
                     udpSocket, std::move (buffer), from, to);
                 return true;
             }
@@ -1290,74 +1120,74 @@ namespace thekogans {
         }
 
         void UDPSocket::HandleAsyncEvent (util::ui32 event) throw () {
-            if (event == AsyncInfo::EventRead) {
+            if (event == EventRead) {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer buffer =
-                            asyncInfo->eventSink.GetBuffer (
+                            eventSink.GetBuffer (
                                 *this, util::NetworkEndian, bufferLength);
                         if (buffer.AdvanceWriteOffset (
                                 Read (buffer.GetWritePtr (), bufferLength)) > 0) {
-                            asyncInfo->eventSink.HandleStreamRead (
+                            eventSink.HandleStreamRead (
                                 *this, std::move (buffer));
                         }
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (event == AsyncInfo::EventWrite) {
-                asyncInfo->WriteBuffers ();
+            else if (event == EventWrite) {
+                WriteBuffers ();
             }
-            if (event == AsyncInfo::EventReadFrom) {
+            if (event == EventReadFrom) {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer buffer =
-                            asyncInfo->eventSink.GetBuffer (
+                            eventSink.GetBuffer (
                                 *this, util::NetworkEndian, bufferLength);
                         Address address;
                         if (buffer.AdvanceWriteOffset (
                                 ReadFrom (buffer.GetWritePtr (), bufferLength, address)) > 0) {
-                            asyncInfo->eventSink.HandleUDPSocketReadFrom (
+                            eventSink.HandleUDPSocketReadFrom (
                                 *this, std::move (buffer), address);
                         }
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    eventSink.HandleStreamError (*this, exception);
                 }
             }
-            else if (event == AsyncInfo::EventWriteTo) {
-                asyncInfo->WriteBuffers ();
+            else if (event == EventWriteTo) {
+                WriteBuffers ();
             }
-            else if (event == AsyncInfo::EventReadMsg) {
+            else if (event == EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
                         util::Buffer buffer =
-                            asyncInfo->eventSink.GetBuffer (
+                            eventSink.GetBuffer (
                                 *this, util::NetworkEndian, bufferLength);
                         Address from;
                         Address to;
                         if (buffer.AdvanceWriteOffset (
                                 ReadMsg (buffer.GetWritePtr (), bufferLength, from, to)) > 0) {
-                            asyncInfo->eventSink.HandleUDPSocketReadMsg (
+                            eventSink.HandleUDPSocketReadMsg (
                                 *this, std::move (buffer), from, to);
                         }
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    HandleStreamError (*this, exception);
                 }
             }
-            else if (event == AsyncInfo::EventWriteMsg) {
-                asyncInfo->WriteBuffers ();
+            else if (event == EventWriteMsg) {
+                WriteBuffers ();
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

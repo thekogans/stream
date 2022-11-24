@@ -90,14 +90,7 @@ namespace thekogans {
         ServerUDPSocket::Connection::SharedPtr ServerUDPSocket::Accept () {
             Connection::SharedPtr connection;
             {
-                util::Buffer buffer;
-                if (IsAsync ()) {
-                    buffer = asyncInfo->eventSink.GetBuffer (
-                        *this, util::NetworkEndian, maxMessageLength);
-                }
-                else {
-                    buffer = util::Buffer (util::NetworkEndian, maxMessageLength);
-                }
+                util::Buffer buffer = GetBuffer (util::NetworkEndian, maxMessageLength);
                 Address from;
                 Address to;
                 if (buffer.AdvanceWriteOffset (
@@ -115,13 +108,13 @@ namespace thekogans {
             PostAsyncReadMsg ();
         #else // defined (TOOLCHAIN_OS_Windows)
             SetBlocking (false);
-            asyncInfo->AddStreamForEvents (AsyncInfo::EventReadMsg);
+            AddStreamForEvents (EventReadMsg);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        void ServerUDPSocket::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventReadMsg) {
+        void ServerUDPSocket::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncReadMsg ();
                     ReadMsgWriteMsgOverlapped &readMsgWriteMsgOverlapped =
@@ -130,8 +123,7 @@ namespace thekogans {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
                             readMsgWriteMsgOverlapped.buffer =
-                                asyncInfo->eventSink.GetBuffer (
-                                    *this, util::NetworkEndian, bufferLength);
+                                GetBuffer (*this, util::NetworkEndian, bufferLength);
                             readMsgWriteMsgOverlapped.buffer.AdvanceWriteOffset (
                                 ReadMsg (
                                     readMsgWriteMsgOverlapped.buffer.GetWritePtr (),
@@ -141,7 +133,7 @@ namespace thekogans {
                         }
                     }
                     if (!readMsgWriteMsgOverlapped.buffer.IsEmpty ()) {
-                        asyncInfo->eventSink.HandleServerUDPSocketConnection (
+                        HandleServerUDPSocketConnection (
                             *this,
                             Connection::SharedPtr (
                                 new Connection (
@@ -153,13 +145,13 @@ namespace thekogans {
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    HandleStreamError (*this, exception);
                 }
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         void ServerUDPSocket::HandleAsyncEvent (util::ui32 event) throw () {
-            if (event == AsyncInfo::EventReadMsg) {
+            if (event == EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferSize = GetDataAvailable ();
                     if (bufferSize != 0) {
@@ -172,13 +164,13 @@ namespace thekogans {
                         // will call AsyncIoEventQueue::AddStream
                         // explicitly.
                         connection->udpSocket->SetBlocking (true);
-                        asyncInfo->eventSink.HandleServerUDPSocketConnection (
+                        HandleServerUDPSocketConnection (
                             *this, connection);
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    HandleStreamError (*this, exception);
                 }
             }
         }

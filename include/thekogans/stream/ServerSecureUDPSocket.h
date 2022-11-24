@@ -34,6 +34,19 @@
 namespace thekogans {
     namespace stream {
 
+            /// \brief
+            /// Called to report a new connection on a \see{ServerSecureUDPSocket}.
+            /// \param[in] serverSecureUDPSocket \see{ServerSecureUDPSocket} on which
+            /// the new connection occurred.
+            /// \param[in] connection The new connection socket.
+            /// NOTE: The new connection will be sync (blocking).
+            /// NOTE: The DTLS handshake has not occurred yet. After
+            /// adding the new connection to the \see{AsyncIoEventQueue},
+            /// call \see{SecureUDPSocket::SessionAccept} to begin
+            /// a DTLS handshake.
+            virtual void HandleServerSecureUDPSocketConnection (
+                ServerSecureUDPSocket &serverSecureUDPSocket,
+                SecureUDPSocket::SharedPtr connection) throw ();
         /// \struct ServerSecureUDPSocket ServerSecureUDPSocket.h thekogans/stream/ServerSecureUDPSocket.h
         ///
         /// \brief

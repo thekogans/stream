@@ -26,6 +26,60 @@
 namespace thekogans {
     namespace stream {
 
+        struct UDPSocket;
+
+        struct _LIB_THEKOGANS_STREAM_DECL UDPSocketEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (UDPSocketEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~UDPSocketEvents () {}
+
+            /// \brief
+            /// Called when a new datagram has arrived on a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket that received the datagram.
+            /// \param[in] buffer The new datagram.
+            /// \param[in] address Peer address that sent the datagram.
+            virtual void OnUDPSocketReadFrom (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &address) throw ();
+            /// \brief
+            /// Called when a datagram was written to a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
+            /// \param[in] buffer The written datagram.
+            /// \param[in] address Peer address that received the datagram.
+            virtual void OnUDPSocketWriteTo (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &address) throw ();
+
+            /// \brief
+            /// Called when a new datagram has arrived on a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket that received the datagram.
+            /// \param[in] buffer The new datagram.
+            /// \param[in] from Peer address that sent the datagram.
+            /// \param[in] to Local address that received the datagram.
+            virtual void OnUDPSocketReadMsg (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &from,
+                const Address &to) throw ();
+            /// \brief
+            /// Called when a datagram was written to a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
+            /// \param[in] buffer The written datagram.
+            /// \param[in] from Local address from which the datagram was sent.
+            /// \param[in] to Peer address that will receive the datagram.
+            virtual void OnUDPSocketWriteMsg (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &from,
+                const Address &to) throw ();
+        };
+
         /// \struct UDPSocket UDPSocket.h thekogans/stream/UDPSocket.h
         ///
         /// \brief
@@ -45,13 +99,15 @@ namespace thekogans {
         /// called will depend on the io mode chosen:
         ///
         /// 1. Basic:
-        ///    \see{AsyncIoEventSink::HandleUDPSocketReadFrom}, \see{AsyncIoEventSink::HandleUDPSocketWriteTo}.
+        ///    \see{AsyncIoEventSink::OnUDPSocketReadFrom}, \see{AsyncIoEventSink::OnUDPSocketWriteTo}.
         /// 2. Connected:
-        ///    \see{AsyncIoEventSink::HandleStreamRead}, \see{AsyncIoEventSink::HandleStreamWrite}.
+        ///    \see{AsyncIoEventSink::OnStreamRead}, \see{AsyncIoEventSink::OnStreamWrite}.
         /// 3. Message:
-        ///    \see{AsyncIoEventSink::HandleUDPSocketReadMsg}, \see{AsyncIoEventSink::HandleUDPSocketWriteMsg}.
+        ///    \see{AsyncIoEventSink::OnUDPSocketReadMsg}, \see{AsyncIoEventSink::OnUDPSocketWriteMsg}.
 
-        struct _LIB_THEKOGANS_STREAM_DECL UDPSocket : public Socket {
+        struct _LIB_THEKOGANS_STREAM_DECL UDPSocket :
+                public Socket,
+                public thekogans::util::Producer<UDPSocketEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (UDPSocket)
@@ -207,7 +263,7 @@ namespace thekogans {
             /// VERY IMPORTANT: You must call this api before calling
             /// ReadMsg/WriteMsg or if you want to use the socket in
             /// async mode and get notifications through
-            /// AsyncIoEventSink::HandleUDPSocketReadMsg/HandleUDPSocketWriteMsg.
+            /// AsyncIoEventSink::OnUDPSocketReadMsg/OnUDPSocketWriteMsg.
             /// \param[in] recvPktInfo true = Set the IP_PKTINFO/IPV6_PKTINFO option,
             /// false = clear the IP_PKTINFO/IPV6_PKTINFO option.
             void SetRecvPktInfo (bool recvPktInfo);

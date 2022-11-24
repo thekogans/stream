@@ -32,6 +32,37 @@
 namespace thekogans {
     namespace stream {
 
+            /// \brief
+            /// Called when a client \see{SecureTCPSocket} has established a
+            /// connection to the server.
+            /// \param[in] secureTCPSocket \see{SecureTCPSocket} that established
+            /// a connection.
+            /// NOTE: The TLS handshake has not occurred yet. Call
+            /// \see{SecureTCPSocket::SessionConnect} to begin a TLS handshake.
+            virtual void HandleSecureTCPSocketConnected (
+                SecureTCPSocket &tcpSocket) throw ();
+            /// \brief
+            /// Called when the TLS handshake is about to start.
+            /// This could be client side SSL_connect, server side
+            /// SSL_accept or client/server side renegotiation.
+            /// \param[in] secureTCPSocket \see{SecureTCPSocket}
+            /// on which the TLS handshake is about to start.
+            virtual void HandleSecureTCPSocketHandshakeStarting (
+                SecureTCPSocket &secureTCPSocket) throw ();
+            /// \brief
+            /// Called when the TLS handshake completed. This could
+            /// be client side SSL_connect, server side SSL_accept
+            /// or client/server side renegotiation.
+            /// \param[in] secureTCPSocket \see{SecureTCPSocket}
+            /// on which the TLS handshake completed.
+            virtual void HandleSecureTCPSocketHandshakeCompleted (
+                SecureTCPSocket &secureTCPSocket) throw ();
+            /// \brief
+            /// Called when a bidirectional TLS shutdown completed.
+            /// \param[in] secureTCPSocket \see{SecureTCPSocket}
+            /// on which the TLS shutdown completed.
+            virtual void HandleSecureTCPSocketShutdownCompleted (
+                SecureTCPSocket &secureTCPSocket) throw ();
         /// \struct SecureTCPSocket SecureTCPSocket.h thekogans/stream/SecureTCPSocket.h
         ///
         /// \brief

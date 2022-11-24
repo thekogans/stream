@@ -50,28 +50,15 @@ namespace thekogans {
             }
         }
 
-        std::size_t SecureUDPSocket::Write (
+        void SecureUDPSocket::Write (
                 const void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
-                int bytesWritten = 0;
-                if (IsAsync ()) {
-                    {
-                        util::LockGuard<util::SpinLock> guard (spinLock);
-                        encryptList.push_back (
-                            asyncInfo->eventSink.GetBuffer (
-                                *this, util::NetworkEndian, buffer, count));
-                    }
-                    RunDTLS ();
+                {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    encryptList.push_back (GetBuffer (util::NetworkEndian, buffer, count));
                 }
-                else {
-                    bytesWritten = SSL_write (ssl.get (), buffer, (int)count);
-                    if (bytesWritten < 0) {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                    }
-                    sessionInfo.countTransfered += bytesWritten;
-                }
-                return bytesWritten;
+                RunDTLS ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -81,18 +68,12 @@ namespace thekogans {
 
         void SecureUDPSocket::WriteBuffer (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
-                if (IsAsync ()) {
-                    {
-                        util::LockGuard<util::SpinLock> guard (spinLock);
-                        encryptList.push_back (std::move (buffer));
-                    }
-                    RunDTLS ();
+                {
+                    util::LockGuard<util::SpinLock> guard (spinLock);
+                    encryptList.push_back (std::move (buffer));
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "WriteBuffer is called on a blocking socket.");
-                }
-            }
+                RunDTLS ();
+
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -117,43 +98,23 @@ namespace thekogans {
                         (sessionInfo.session.get () == 0 ||
                         SSL_set_session (ssl.get (),
                             sessionInfo.session.get ()) == 1)) {
-                    if (IsAsync ()) {
-                        assert (inBIO.get () != 0);
-                        assert (outBIO.get () != 0);
-                    #if OPENSSL_VERSION_NUMBER < 0x10100000L
-                        CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
-                        CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
-                    #else // OPENSSL_VERSION_NUMBER < 0x10100000L
-                        BIO_up_ref (inBIO.get ());
-                        BIO_up_ref (outBIO.get ());
-                    #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
-                        SSL_set_bio (ssl.get (), inBIO.get (), outBIO.get ());
-                    }
-                    else {
-                        BIO *bio = BIO_new_dgram ((int)handle, BIO_NOCLOSE);
-                        if (bio != 0) {
-                            /*
-                            Address address = GetPeerAddress ();
-                            BIO_ctrl (bio, BIO_CTRL_DGRAM_SET_CONNECTED, 0, &address.address);
-                            // FIXME: parametarize.
-                            timeval timeout = util::TimeSpec::FromSeconds (3).Totimeval ();
-                            BIO_ctrl (bio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0, &timeout);
-                            SSL_set_bio (ssl.get (), bio, bio);
-                            */
-                        }
-                        else {
-                            THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                        }
-                    }
+                    assert (inBIO.get () != 0);
+                    assert (outBIO.get () != 0);
+                #if OPENSSL_VERSION_NUMBER < 0x10100000L
+                    CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
+                    CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
+                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                    BIO_up_ref (inBIO.get ());
+                    BIO_up_ref (outBIO.get ());
+                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
+                    SSL_set_bio (ssl.get (), inBIO.get (), outBIO.get ());
                     SSL_set_connect_state (ssl.get ());
                     SSL_set_ex_data (ssl.get (), OpenSSLInit::SSLSecureSocketIndex, this);
                     oldInfoCallback = SSL_get_info_callback (ssl.get ());
                     SSL_set_info_callback (ssl.get (), InfoCallback);
                     int result = SSL_connect (ssl.get ());
                     if (!IsFatalError (result)) {
-                        if (IsAsync ()) {
-                            RunDTLS ();
-                        }
+                        RunDTLS ();
                     }
                     else {
                         THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -176,33 +137,22 @@ namespace thekogans {
                 ssl.reset (SSL_new (ctx));
                 sessionInfo = sessionInfo_;
                 if (ssl.get () != 0) {
-                    if (IsAsync ()) {
-                        assert (inBIO.get () != 0);
-                        assert (outBIO.get () != 0);
-                    #if OPENSSL_VERSION_NUMBER < 0x10100000L
-                        CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
-                        CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
-                    #else // OPENSSL_VERSION_NUMBER < 0x10100000L
-                        BIO_up_ref (inBIO.get ());
-                        BIO_up_ref (outBIO.get ());
-                    #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
-                        SSL_set_bio (ssl.get (), inBIO.get (), outBIO.get ());
-                    }
-                    else if (SSL_set_fd (ssl.get (), (int)handle) != 1) {
-                        THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                    }
+                    assert (inBIO.get () != 0);
+                    assert (outBIO.get () != 0);
+                #if OPENSSL_VERSION_NUMBER < 0x10100000L
+                    CRYPTO_add (&inBIO->references, 1, CRYPTO_LOCK_BIO);
+                    CRYPTO_add (&outBIO->references, 1, CRYPTO_LOCK_BIO);
+                #else // OPENSSL_VERSION_NUMBER < 0x10100000L
+                    BIO_up_ref (inBIO.get ());
+                    BIO_up_ref (outBIO.get ());
+                #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
+                    SSL_set_bio (ssl.get (), inBIO.get (), outBIO.get ());
                     SSL_set_options (ssl.get (), SSL_OP_COOKIE_EXCHANGE);
                     SSL_set_accept_state (ssl.get ());
                     SSL_set_ex_data (ssl.get (),
                         OpenSSLInit::SSLSecureSocketIndex, this);
                     oldInfoCallback = SSL_get_info_callback (ssl.get ());
                     SSL_set_info_callback (ssl.get (), InfoCallback);
-                    if (!IsAsync ()) {
-                        int result = SSL_accept (ssl.get ());
-                        if (IsFatalError (result)) {
-                            THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                        }
-                    }
                 }
                 else {
                     THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -233,15 +183,7 @@ namespace thekogans {
                         SSL_set_accept_state (ssl.get ());
                     #endif // OPENSSL_VERSION_NUMBER < 0x10100000L
                     }
-                    if (IsAsync ()) {
-                        RunDTLS ();
-                    }
-                    else if (SSL_is_server (ssl.get ()) == 1) {
-                        result = SSL_do_handshake (ssl.get ());
-                        if (IsFatalError (result)) {
-                            THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
-                        }
-                    }
+                    RunDTLS ();
                 }
                 else {
                     THEKOGANS_CRYPTO_THROW_OPENSSL_EXCEPTION;
@@ -262,12 +204,7 @@ namespace thekogans {
             if (!ShutdownCompleted ()) {
                 int result = SSL_shutdown (ssl.get ());
                 if (result >= 0) {
-                    if (IsAsync ()) {
-                        RunDTLS ();
-                    }
-                    else if (!ShutdownCompleted ()) {
-                        SSL_shutdown (ssl.get ());
-                    }
+                    RunDTLS ();
                     if (ShutdownCompleted ()) {
                         ShutdownConnection ();
                     }
@@ -305,16 +242,16 @@ namespace thekogans {
             PostAsyncRead (false);
         #else // defined (TOOLCHAIN_OS_Windows)
             SetBlocking (false);
-            asyncInfo->AddStreamForEvents (AsyncInfo::EventRead);
+            AddStreamForEvents (EventRead);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        void SecureUDPSocket::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventRead) {
+        void SecureUDPSocket::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
-                        (AsyncInfo::ReadWriteOverlapped &)overlapped;
+                    ReadWriteOverlapped &readWriteOverlapped =
+                        (ReadWriteOverlapped &)overlapped;
                     if (readWriteOverlapped.buffer.IsEmpty ()) {
                         std::size_t bufferLength = GetDataAvailable ();
                         if (bufferLength != 0) {
@@ -333,25 +270,23 @@ namespace thekogans {
                         RunDTLS ();
                     }
                     else {
-                        asyncInfo->eventSink.HandleStreamDisconnect (*this);
+                        HandleStreamDisconnect (*this);
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    HandleStreamError (*this, exception);
                 }
             }
-            else if (overlapped.event == AsyncInfo::EventWrite) {
-                AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
-                    (AsyncInfo::ReadWriteOverlapped &)overlapped;
+            else if (overlapped.event == EventWrite) {
+                ReadWriteOverlapped &readWriteOverlapped = (ReadWriteOverlapped &)overlapped;
                 assert (readWriteOverlapped.buffer.IsEmpty ());
-                asyncInfo->eventSink.HandleStreamWrite (
-                    *this, std::move (readWriteOverlapped.buffer));
+                HandleStreamWrite (*this, std::move (readWriteOverlapped.buffer));
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         void SecureUDPSocket::HandleAsyncEvent (util::ui32 event) throw () {
-            if (event == AsyncInfo::EventRead) {
+            if (event == EventRead) {
                 THEKOGANS_UTIL_TRY {
                     std::size_t bufferLength = GetDataAvailable ();
                     if (bufferLength != 0) {
@@ -366,16 +301,16 @@ namespace thekogans {
                         }
                     }
                     else {
-                        asyncInfo->eventSink.HandleStreamDisconnect (*this);
+                        HandleStreamDisconnect (*this);
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    HandleStreamError (*this, exception);
                 }
             }
-            else if (event == AsyncInfo::EventWrite) {
-                asyncInfo->WriteBuffers ();
+            else {
+                UDPSocket::HandleAsyncEvent (event);
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
@@ -389,15 +324,13 @@ namespace thekogans {
             if (socket != 0) {
                 util::Flags<int> flags (where);
                 if (flags.Test (SSL_CB_HANDSHAKE_START) && ret == 1) {
-                    if (socket->IsAsync ()) {
-                        socket->asyncInfo->eventSink.HandleSecureUDPSocketHandshakeStarting (*socket);
-                    }
+                    socket->HandleSecureUDPSocketHandshakeStarting (*socket);
                 }
                 else if (flags.Test (SSL_CB_HANDSHAKE_DONE) && ret == 1) {
                     socket->FinalizeConnection ();
                 }
                 else if (flags.Test (SSL_CB_READ_ALERT) && ret == 256) {
-                    if (socket->IsAsync () && !socket->ShutdownCompleted ()) {
+                    if (!socket->ShutdownCompleted ()) {
                         int result = SSL_shutdown (socket->ssl.get ());
                         if (result >= 0) {
                             socket->RunDTLS ();
@@ -460,9 +393,7 @@ namespace thekogans {
                 }
                 sessionInfo.session.reset (SSL_get1_session (ssl.get ()));
             }
-            if (IsAsync ()) {
-                asyncInfo->eventSink.HandleSecureUDPSocketHandshakeCompleted (*this);
-            }
+            HandleSecureUDPSocketHandshakeCompleted (*this);
         }
 
         void SecureUDPSocket::ShutdownConnection () {
@@ -482,9 +413,7 @@ namespace thekogans {
             else {
                 sessionInfo.session.reset (SSL_get1_session (ssl.get ()));
             }
-            if (IsAsync ()) {
-                asyncInfo->eventSink.HandleSecureUDPSocketShutdownCompleted (*this);
-            }
+            HandleSecureUDPSocketShutdownCompleted (*this);
         }
 
         bool SecureUDPSocket::GetWorkToDo (
@@ -521,8 +450,7 @@ namespace thekogans {
                             }
                         }
                         else if (!BIO_should_retry (inBIO.get ())) {
-                            asyncInfo->eventSink.HandleStreamError (*this,
-                                THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
+                            HandleStreamError (*this, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                             return;
                         }
                     }
@@ -532,21 +460,17 @@ namespace thekogans {
                     // to the AsyncIoEventSink::HandleStreamRead.
                     int bytesRead = 0;
                     do {
-                        util::Buffer buffer =
-                            asyncInfo->eventSink.GetBuffer (
-                                *this, util::NetworkEndian, TLS_MAX_RECORD_LENGTH);
+                        util::Buffer buffer = GetBuffer (util::NetworkEndian, TLS_MAX_RECORD_LENGTH);
                         bytesRead = SSL_read (ssl.get (),
                             buffer.GetWritePtr (),
                             (int)buffer.GetDataAvailableForWriting ());
                         if (bytesRead > 0) {
                             sessionInfo.countTransfered += bytesRead;
                             buffer.AdvanceWriteOffset (bytesRead);
-                            asyncInfo->eventSink.HandleStreamRead (
-                                *this, std::move (buffer));
+                            HandleStreamRead (*this, std::move (buffer));
                         }
                         else if (IsFatalError (bytesRead)) {
-                            asyncInfo->eventSink.HandleStreamError (*this,
-                                THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
+                            HandleStreamError (*this, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                             return;
                         }
                     } while (bytesRead > 0);
@@ -567,8 +491,7 @@ namespace thekogans {
                             }
                         }
                         else if (IsFatalError (bytesWritten)) {
-                            asyncInfo->eventSink.HandleStreamError (*this,
-                                THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
+                            HandleStreamError (*this, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                             return;
                         }
                     }
@@ -588,8 +511,7 @@ namespace thekogans {
                             UDPSocket::WriteBuffer (std::move (buffer));
                         }
                         else if (!BIO_should_retry (outBIO.get ())) {
-                            asyncInfo->eventSink.HandleStreamError (*this,
-                                THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
+                            HandleStreamError (*this, THEKOGANS_CRYPTO_OPENSSL_EXCEPTION);
                             return;
                         }
                     }

@@ -70,22 +70,11 @@ namespace thekogans {
 
             // Stream
             /// \brief
-            /// Read bytes from the stream.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually placed in the buffer.
-            /// NOTE: This api is to be called by blocking
-            /// streams only. Async stream will listen for
-            /// incoming data, and notify AsyncIoEventSink.
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count);
-            /// \brief
             /// Write bytes to the stream.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Buffer length.
             /// \return Count of bytes actually written.
-            virtual std::size_t Write (
+            virtual void Write (
                 const void *buffer,
                 std::size_t count);
 

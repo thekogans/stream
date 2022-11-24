@@ -36,6 +36,37 @@ namespace thekogans {
         /// Forward declaration of \see{ServerSecureUDPSocket}.
         struct ServerSecureUDPSocket;
 
+            /// \brief
+            /// Called when a client \see{SecureUDPSocket} has established a
+            /// connection to the server.
+            /// \param[in] secureUDPSocket \see{SecureUDPSocket} that established
+            /// a connection.
+            /// NOTE: The DTLS handshake has not occurred yet. Call
+            /// \see{SecureUDPSocket::SessionConnect} to begin a DTLS handshake.
+            virtual void HandleSecureUDPSocketConnected (
+                SecureUDPSocket &udpSocket) throw ();
+            /// \brief
+            /// Called when the DTLS handshake is about to start.
+            /// This could be client side SSL_connect, server side
+            /// SSL_accept or client/server side renegotiation.
+            /// \param[in] secureUDPSocket \see{SecureUDPSocket} on
+            /// which the DTLS handshake completed.
+            virtual void HandleSecureUDPSocketHandshakeStarting (
+                SecureUDPSocket &secureUDPSocket) throw ();
+            /// \brief
+            /// Called when the DTLS handshake completed. This could
+            /// be client side SSL_connect, server side SSL_accept
+            /// or client/server side renegotiation.
+            /// \param[in] secureUDPSocket \see{SecureUDPSocket} on
+            /// which the DTLS handshake completed.
+            virtual void HandleSecureUDPSocketHandshakeCompleted (
+                SecureUDPSocket &secureUDPSocket) throw ();
+            /// \brief
+            /// Called when a bidirectional DTLS shutdown completed.
+            /// \param[in] secureUDPSocket \see{SecureUDPSocket} on
+            /// which the DTLS shutdown completed.
+            virtual void HandleSecureUDPSocketShutdownCompleted (
+                SecureUDPSocket &secureUDPSocket) throw ();
         /// \struct SecureUDPSocket SecureUDPSocket.h thekogans/stream/SecureUDPSocket.h
         ///
         /// \brief

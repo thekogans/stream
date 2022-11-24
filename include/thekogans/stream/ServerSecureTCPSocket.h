@@ -34,6 +34,19 @@
 namespace thekogans {
     namespace stream {
 
+            /// \brief
+            /// Called to report a new connection on a \see{ServerSecureTCPSocket}.
+            /// \param[in] serverSecureTCPSocket \see{ServerSecureTCPSocket} on which
+            /// the new connection occurred.
+            /// \param[in] connection The new connection socket.
+            /// NOTE: The new connection will be sync (blocking).
+            /// NOTE: The TLS handshake has not occurred yet. After
+            /// adding the new connection to the \see{AsyncIoEventQueue},
+            /// call \see{SecureTCPSocket::SessionAccept} to begin a TLS
+            /// handshake.
+            virtual void HandleServerSecureTCPSocketConnection (
+                ServerSecureTCPSocket &serverSecureTCPSocket,
+                SecureTCPSocket::SharedPtr connection) throw ();
         /// \struct ServerSecureTCPSocket ServerSecureTCPSocket.h thekogans/stream/ServerSecureTCPSocket.h
         ///
         /// \brief
@@ -508,15 +521,6 @@ namespace thekogans {
             virtual void Disconnect () {
                 Stream::Disconnect ();
             }
-
-            /// \brief
-            /// Wait for connections.
-            /// NOTE: This api can only be used by blocking (not async) sockets.
-            /// Async sockets go in to listening mode as soon as you add them to
-            /// an \see{AsyncIoEventQueue}, and return new connections through
-            /// \see{AsyncIoEventSink::HandleServerSecureTCPSocketConnection}.
-            /// \return The new connection.
-            SecureTCPSocket::SharedPtr Accept ();
 
         protected:
             // Stream

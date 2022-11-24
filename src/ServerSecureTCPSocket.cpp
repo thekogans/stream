@@ -447,33 +447,18 @@ namespace thekogans {
             }
         }
 
-        SecureTCPSocket::SharedPtr ServerSecureTCPSocket::Accept () {
-            if (!IsAsync ()) {
-                SecureTCPSocket::SharedPtr connection (
-                    new SecureTCPSocket ((THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
-            #if defined (TOOLCHAIN_OS_Windows)
-                connection->UpdateAcceptContext (handle);
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                return connection;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Accept is called on a non-blocking socket.");
-            }
-        }
-
         void ServerSecureTCPSocket::InitAsyncIo () {
         #if defined (TOOLCHAIN_OS_Windows)
             PostAsyncAccept ();
         #else // defined (TOOLCHAIN_OS_Windows)
             SetBlocking (false);
-            asyncInfo->AddStreamForEvents (AsyncInfo::EventRead);
+            AddStreamForEvents (EventRead);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        void ServerSecureTCPSocket::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventConnect) {
+        void ServerSecureTCPSocket::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventConnect) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncAccept ();
                     TCPSocket::AcceptOverlapped &acceptOverlapped =
@@ -481,28 +466,27 @@ namespace thekogans {
                     TCPSocket::UpdateAcceptContext (handle,
                         (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection);
                     SecureTCPSocket::SharedPtr connection (
-                        asyncInfo->eventSink.GetSecureTCPSocket (
+                        GetSecureTCPSocket (
                             (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection));
                     // AcceptOverlapped::~AcceptOverlapped will
                     // close an unclaimed socket. Set it to
                     // THEKOGANS_STREAM_INVALID_SOCKET to let
                     // it know that we did in fact claimed it.
                     acceptOverlapped.connection = THEKOGANS_STREAM_INVALID_SOCKET;
-                    asyncInfo->eventSink.HandleServerSecureTCPSocketConnection (
-                        *this, connection);
+                    HandleServerSecureTCPSocketConnection (*this, connection);
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    HandleStreamError (*this, exception);
                 }
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         void ServerSecureTCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
-            if (event == AsyncInfo::EventRead) {
+            if (event == EventRead) {
                 THEKOGANS_UTIL_TRY {
                     SecureTCPSocket::SharedPtr connection =
-                        asyncInfo->eventSink.GetSecureTCPSocket (TCPSocket::Accept ());
+                        GetSecureTCPSocket (TCPSocket::Accept ());
                     // Connections inherit the listening socket's
                     // non-blocking state. Since we handle all
                     // async io through AsyncIoEventQueue, set the
@@ -511,12 +495,11 @@ namespace thekogans {
                     // will call AsyncIoEventQueue::AddStream
                     // explicitly.
                     connection->SetBlocking (true);
-                    asyncInfo->eventSink.HandleServerSecureTCPSocketConnection (
-                        *this, connection);
+                    HandleServerSecureTCPSocketConnection (*this, connection);
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    HandleStreamError (*this, exception);
                 }
             }
         }

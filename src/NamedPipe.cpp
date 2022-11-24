@@ -27,52 +27,31 @@
 namespace thekogans {
     namespace stream {
 
-        std::size_t NamedPipe::Read (
-                void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
-                DWORD numberOfBytesRead = 0;
-                if (!ReadFile (handle, buffer, (DWORD)count, &numberOfBytesRead, 0)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                return numberOfBytesRead;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        std::size_t NamedPipe::Write (
+        void NamedPipe::Write (
                 const void *buffer,
                 std::size_t count) {
             if (buffer != 0 && count > 0) {
                 DWORD numberOfBytesWriten = 0;
-                if (IsAsync ()) {
-                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
-                        new AsyncInfo::ReadWriteOverlapped (*this, buffer, count));
-                    if (!WriteFile (
-                            handle,
-                            overlapped->buffer.GetReadPtr (),
-                            (DWORD)overlapped->buffer.GetDataAvailableForReading (),
-                            0,
-                            overlapped.Get ())) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode != ERROR_IO_PENDING) {
-                            asyncInfo->eventSink.HandleStreamError (
-                                *this,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                            return 0;
-                        }
+                ReadWriteOverlapped::SharedPtr overlapped (
+                    new ReadWriteOverlapped (*this, buffer, count));
+                if (!WriteFile (
+                        handle,
+                        overlapped->buffer.GetReadPtr (),
+                        (DWORD)overlapped->buffer.GetDataAvailableForReading (),
+                        0,
+                        overlapped.Get ())) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode != ERROR_IO_PENDING) {
+                        Produce (
+                            std::bind (
+                                &StreamEvents::OnStreamError,
+                                std::placeholders::_1,
+                                SharedPtr (this),
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
+                        return;
                     }
-                    overlapped.Release ();
                 }
-                else if (!WriteFile (handle, buffer, (DWORD)count, &numberOfBytesWriten, 0)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                return numberOfBytesWriten;
+                overlapped.Release ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -82,29 +61,26 @@ namespace thekogans {
 
         void NamedPipe::WriteBuffer (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
-                if (IsAsync ()) {
-                    AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
-                        new AsyncInfo::ReadWriteOverlapped (*this, std::move (buffer)));
-                    if (!WriteFile (
-                            handle,
-                            overlapped->buffer.GetReadPtr (),
-                            (ULONG)overlapped->buffer.GetDataAvailableForReading (),
-                            0,
-                            overlapped.Get ())) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode != ERROR_IO_PENDING) {
-                            asyncInfo->eventSink.HandleStreamError (
-                                *this,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                            return;
-                        }
+                ReadWriteOverlapped::SharedPtr overlapped (
+                    new ReadWriteOverlapped (*this, std::move (buffer)));
+                if (!WriteFile (
+                        handle,
+                        overlapped->buffer.GetReadPtr (),
+                        (ULONG)overlapped->buffer.GetDataAvailableForReading (),
+                        0,
+                        overlapped.Get ())) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode != ERROR_IO_PENDING) {
+                        Produce (
+                            std::bind (
+                                &StreamEvents::OnStreamError,
+                                std::placeholders::_1,
+                                SharedPtr (this),
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
+                        return;
                     }
-                    overlapped.Release ();
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "WriteBuffer is called on a blocking named pipe.");
-                }
+                overlapped.Release ();
             }
         }
 
@@ -122,56 +98,70 @@ namespace thekogans {
         }
 
         void NamedPipe::PostAsyncRead () {
-            if (asyncInfo->bufferLength != 0) {
-                AsyncInfo::ReadWriteOverlapped::SharedPtr overlapped (
-                    new AsyncInfo::ReadWriteOverlapped (*this, asyncInfo->bufferLength));
-                if (!ReadFile (
-                        handle,
-                        overlapped->buffer.GetWritePtr (),
-                        (DWORD)overlapped->buffer.GetDataAvailableForWriting (),
-                        0,
-                        overlapped.Get ())) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                    if (errorCode != ERROR_IO_PENDING) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
+            ReadWriteOverlapped::SharedPtr overlapped (
+                new ReadWriteOverlapped (*this, GetBufferLength ()));
+            if (!ReadFile (
+                    handle,
+                    overlapped->buffer.GetWritePtr (),
+                    (DWORD)overlapped->buffer.GetDataAvailableForWriting (),
+                    0,
+                    overlapped.Get ())) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                if (errorCode != ERROR_IO_PENDING) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
-                overlapped.Release ();
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            overlapped.Release ();
         }
 
-        void NamedPipe::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventDisconnect) {
-                asyncInfo->eventSink.HandleStreamDisconnect (*this);
+        void NamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventDisconnect) {
+                Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamDisconnect,
+                        std::placeholders::_1,
+                        SharedPtr (this)));
             }
-            else if (overlapped.event == AsyncInfo::EventRead) {
+            else if (overlapped.event == EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
-                        (AsyncInfo::ReadWriteOverlapped &)overlapped;
+                    ReadWriteOverlapped &readWriteOverlapped = (ReadWriteOverlapped &)overlapped;
                     if (!readWriteOverlapped.buffer.IsEmpty ()) {
                         PostAsyncRead ();
-                        asyncInfo->eventSink.HandleStreamRead (
-                            *this, std::move (readWriteOverlapped.buffer));
+                        HandleStreamDisconnect (*this);
+                        Produce (
+                            std::bind (
+                                &StreamEvents::OnStreamRead,
+                                std::placeholders::_1,
+                                SharedPtr (this),
+                                std::move (readWriteOverlapped.buffer)));
                     }
                     else {
-                        asyncInfo->eventSink.HandleStreamDisconnect (*this);
+                        Produce (
+                            std::bind (
+                                &StreamEvents::OnStreamDisconnect,
+                                std::placeholders::_1,
+                                SharedPtr (this)));
                     }
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
                 }
             }
-            else if (overlapped.event == AsyncInfo::EventWrite) {
-                AsyncInfo::ReadWriteOverlapped &readWriteOverlapped =
-                    (AsyncInfo::ReadWriteOverlapped &)overlapped;
+            else if (overlapped.event == EventWrite) {
+                ReadWriteOverlapped &readWriteOverlapped = (ReadWriteOverlapped &)overlapped;
                 assert (readWriteOverlapped.buffer.IsEmpty ());
-                asyncInfo->eventSink.HandleStreamWrite (
-                    *this, std::move (readWriteOverlapped.buffer));
+                Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamWrite,
+                        std::placeholders::_1,
+                        SharedPtr (this),
+                        std::move (readWriteOverlapped.buffer)));
             }
         }
 

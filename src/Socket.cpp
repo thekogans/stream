@@ -42,7 +42,6 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
-#include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Socket.h"
 
 namespace thekogans {
@@ -65,35 +64,6 @@ namespace thekogans {
             } winSockInit;
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
-
-        const char * const Socket::Context::VALUE_SOCKET = "Socket";
-        const char * const Socket::Context::ATTR_FAMILY = "Family";
-        const char * const Socket::Context::ATTR_TYPE = "Type";
-        const char * const Socket::Context::ATTR_PROTOCOL = "Protocol";
-
-        void Socket::Context::Parse (const pugi::xml_node &node) {
-            Stream::Context::Parse (node);
-            family = util::stringToi32 (node.attribute (ATTR_FAMILY).value ());
-            type = util::stringToi32 (node.attribute (ATTR_TYPE).value ());
-            protocol = util::stringToi32 (node.attribute (ATTR_PROTOCOL).value ());
-        }
-
-        std::string Socket::Context::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            if (tagName != 0) {
-                util::Attributes attributes;
-                attributes.push_back (util::Attribute (ATTR_STREAM_TYPE, util::Encodestring (VALUE_SOCKET)));
-                attributes.push_back (util::Attribute (ATTR_FAMILY, util::i32Tostring (family)));
-                attributes.push_back (util::Attribute (ATTR_TYPE, util::i32Tostring (type)));
-                attributes.push_back (util::Attribute (ATTR_PROTOCOL, util::i32Tostring (protocol)));
-                return util::OpenTag (indentationLevel, tagName, attributes, false, true);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
 
         Socket::Socket (THEKOGANS_UTIL_HANDLE handle) :
                 Stream (handle) {
@@ -184,98 +154,6 @@ namespace thekogans {
                 Close ();
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
-        }
-
-        util::TimeSpec Socket::GetReadTimeout () const {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD value = 0;
-            socklen_t length = sizeof (value);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_RCVTIMEO, (char *)&value, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec::FromMilliseconds (value);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            timeval timeVal;
-            socklen_t length = sizeof (timeval);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_RCVTIMEO, (char *)&timeVal, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec (timeVal);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        void Socket::SetReadTimeout (const util::TimeSpec &timeSpec) {
-            if (timeSpec != util::TimeSpec::Infinite) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD value = (DWORD)timeSpec.ToMilliseconds ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_RCVTIMEO, (char *)&value, sizeof (DWORD)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                timeval timeVal = timeSpec.Totimeval ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_RCVTIMEO, (char *)&timeVal, sizeof (timeval)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        util::TimeSpec Socket::GetWriteTimeout () const {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD value = 0;
-            socklen_t length = sizeof (value);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_SNDTIMEO, (char *)&value, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec::FromMilliseconds (value);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            timeval timeVal;
-            socklen_t length = sizeof (timeval);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_SNDTIMEO, (char *)&timeVal, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec (timeVal);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        void Socket::SetWriteTimeout (const util::TimeSpec &timeSpec) {
-            if (timeSpec != util::TimeSpec::Infinite) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD value = (DWORD)timeSpec.ToMilliseconds ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_SNDTIMEO, (char *)&value, sizeof (DWORD)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                timeval timeVal = timeSpec.Totimeval ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_SNDTIMEO, (char *)&timeVal, sizeof (timeval)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
         }
 
         std::string Socket::GetHostName () {

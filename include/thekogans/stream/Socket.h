@@ -42,92 +42,6 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Socket)
 
-            /// \struct Socket::Context Socket.h thekogans/stream/Socket.h
-            ///
-            /// \brief
-            /// Socket::Context represents the state of a Socket at rest.
-            /// At any time you want to reconstitute a Socket from rest,
-            /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName StreamType = "Any Socket derivative."
-            ///          Family = ""
-            ///          Type = ""
-            ///          Protocol = "">
-            /// </tagName>
-            /// to: Stream::GetContext (const pugi::xml_node &node), and it
-            /// will return back to you a properly constructed and initialized
-            /// Socket::Context. Call Context::CreateStream () to recreate a
-            /// Socket from rest. Where you go with it from there is entirely
-            /// up to you, but may I recommend:
-            /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
-
-                /// \brief
-                /// "Socket".
-                static const char * const VALUE_SOCKET;
-                /// \brief
-                /// "Family".
-                static const char * const ATTR_FAMILY;
-                /// \brief
-                /// "Type".
-                static const char * const ATTR_TYPE;
-                /// \brief
-                /// "Protocol".
-                static const char * const ATTR_PROTOCOL;
-
-                /// \brief
-                /// Socket family specification.
-                int family;
-                /// \brief
-                /// Socket type specification.
-                int type;
-                /// \brief
-                /// Socket protocol specification.
-                int protocol;
-
-                /// \brief
-                /// ctor. Parse the node representing a Socket::Context.
-                /// \param[in] node pugi::xml_node representing a Socket::Context.
-                explicit Context (const pugi::xml_node &node) :
-                        Stream::Context (VALUE_SOCKET),
-                        family (0),
-                        type (0),
-                        protocol (0) {
-                    Parse (node);
-                }
-                /// \brief
-                /// ctor.
-                /// \param[in] address Listening address.
-                /// \param[in] reuseAddress If true, call \see{Socket::SetReuseAddress}
-                /// before calling \see{Socket::Bind}.
-                /// \param[in] maxPendingConnections Max pending connection requests.
-                Context (
-                    const std::string &streamType,
-                    int family_,
-                    int type_,
-                    int protocol_) :
-                    Stream::Context (streamType),
-                    family (family_),
-                    type (type_),
-                    protocol (protocol_) {}
-
-                /// \brief
-                /// Parse the node representing a Socket::Context.
-                /// \param[in] node pugi::xml_node representing a Socket::Context.
-                virtual void Parse (const pugi::xml_node &node);
-                /// \brief
-                /// Return a string representing the rest state of the Socket.
-                /// \param[in] indentationLevel Pretty print parameter.
-                /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "Context").
-                /// \return String representing the rest state of the Socket.
-                virtual std::string ToString (
-                    std::size_t indentationLevel = 0,
-                    const char *tagName = TAG_CONTEXT) const;
-            };
-
         private:
             /// \brief
             /// Socket family specification.
@@ -159,25 +73,6 @@ namespace thekogans {
             /// Socket re-implements Close, and therefore
             /// needs to call Close itself.
             virtual ~Socket ();
-
-            // Stream
-            /// \brief
-            /// Return read timeout value.
-            /// \return Read timeout value.
-            util::TimeSpec GetReadTimeout () const;
-            /// \brief
-            /// Set read timeout.
-            /// \param[in] timeSpec Read timeout.
-            void SetReadTimeout (const util::TimeSpec &timeSpec);
-
-            /// \brief
-            /// Return write timeout value.
-            /// \return Write timeout value.
-            util::TimeSpec GetWriteTimeout () const;
-            /// \brief
-            /// Set write timeout.
-            /// \param[in] timeSpec Write timeout.
-            void SetWriteTimeout (const util::TimeSpec &timeSpec);
 
             /// \brief
             /// Return the host name.

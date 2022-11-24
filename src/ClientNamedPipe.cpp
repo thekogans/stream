@@ -91,7 +91,7 @@ namespace thekogans {
         }
 
         void ClientNamedPipe::Connect (LPSECURITY_ATTRIBUTES securityAttributes) {
-            if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+            if (!IsOpen ()) {
                 handle = CreateFileW (
                     util::UTF8ToUTF16 (address.GetPath ()).c_str (),
                     GENERIC_READ | GENERIC_WRITE,
@@ -117,10 +117,9 @@ namespace thekogans {
         }
 
         void ClientNamedPipe::InitAsyncIo () {
-            AsyncInfo::Overlapped::SharedPtr overlapped (
-                new AsyncInfo::Overlapped (*this, AsyncInfo::EventConnect));
+            Overlapped::SharedPtr overlapped (new Overlapped (*this, EventConnect));
             if (!PostQueuedCompletionStatus (
-                    asyncInfo->eventQueue.GetHandle (),
+                    AsyncIoEventQueue::Instance ().GetHandle (),
                     0,
                     (ULONG_PTR)this,
                     overlapped.Get ())) {
@@ -130,15 +129,24 @@ namespace thekogans {
             overlapped.Release ();
         }
 
-        void ClientNamedPipe::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventConnect) {
+        void ClientNamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventConnect) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncRead ();
-                    asyncInfo->eventSink.HandleClientNamedPipeConnected (*this);
+                    Produce (
+                        std::bind (
+                            &ClientNamedPipeEvents::OnClientNamedPipeConnected,
+                            std::placeholders::_1,
+                            SharedPtr (this)));
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
                 }
             }
             else {

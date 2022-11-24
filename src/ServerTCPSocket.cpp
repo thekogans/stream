@@ -104,77 +104,72 @@ namespace thekogans {
             }
             Bind (address);
             Listen (maxPendingConnections);
+            GlobalAsyncIoEventQueue::Instance ().AddStream (*this);
         }
 
-        TCPSocket::SharedPtr ServerTCPSocket::Accept () {
-            if (!IsAsync ()) {
-                TCPSocket::SharedPtr connection (
-                    new TCPSocket ((THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
-            #if defined (TOOLCHAIN_OS_Windows)
-                connection->UpdateAcceptContext (handle);
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                return connection;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Accept is called on a non-blocking socket.");
-            }
-        }
-
-        void ServerTCPSocket::InitAsyncIo () {
+        void ServerTCPSocket::ListenForConnections () {
         #if defined (TOOLCHAIN_OS_Windows)
             PostAsyncAccept ();
         #else // defined (TOOLCHAIN_OS_Windows)
             SetBlocking (false);
-            asyncInfo->AddStreamForEvents (AsyncInfo::EventRead);
+            AddStreamForEvents (EventRead);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        void ServerTCPSocket::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventConnect) {
+        void ServerTCPSocket::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventConnect) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncAccept ();
                     TCPSocket::AcceptOverlapped &acceptOverlapped =
                         (TCPSocket::AcceptOverlapped &)overlapped;
                     TCPSocket::UpdateAcceptContext (handle,
                         (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection);
-                    TCPSocket::SharedPtr connection =
-                        asyncInfo->eventSink.GetTCPSocket (
-                            (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection);
-                    // Overlapped::AcceptInfo::~AcceptInfo will
+                    TCPSocket::SharedPtr connection = GetTCPSocket (
+                        (THEKOGANS_UTIL_HANDLE)acceptOverlapped.connection);
+                    // AcceptOverlapped::~AcceptOverlapped will
                     // close an unclaimed socket. Set it to
                     // THEKOGANS_STREAM_INVALID_SOCKET to let
                     // it know that we did in fact claimed it.
                     acceptOverlapped.connection = THEKOGANS_STREAM_INVALID_SOCKET;
-                    asyncInfo->eventSink.HandleServerTCPSocketConnection (*this, connection);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnServerTCPSocketConnection,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            connection));
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
                 }
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         void ServerTCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
-            if (event == AsyncInfo::EventRead) {
+            if (event == EventRead) {
                 THEKOGANS_UTIL_TRY {
-                    TCPSocket::SharedPtr connection =
-                        asyncInfo->eventSink.GetTCPSocket (TCPSocket::Accept ());
-                    // Connections inherit the listening socket's
-                    // non-blocking state. Since we handle all
-                    // async io through AsyncIoEventQueue, set the
-                    // connection to blocking. If the caller
-                    // decides to make the connection async, they
-                    // will call AsyncIoEventQueue::AddStream
-                    // explicitly.
-                    connection->SetBlocking (true);
-                    asyncInfo->eventSink.HandleServerTCPSocketConnection (
-                        *this, connection);
+                    TCPSocket::SharedPtr connection = GetTCPSocket (TCPSocket::Accept ());
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnServerTCPSocketConnection,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            connection));
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
                 }
             }
         }

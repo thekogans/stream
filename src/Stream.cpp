@@ -33,7 +33,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/AsyncIoEventQueue.h"
-#include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Stream.h"
 #if defined (THEKOGANS_STREAM_TYPE_Static)
     #include "thekogans/stream/Pipe.h"
@@ -135,83 +134,6 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_STREAM_TYPE_Static)
 
-        void Stream::ChainAsyncIoEventSink (AsyncIoEventSink &next) {
-            if (IsAsync ()) {
-                asyncInfo->eventSink.SetNext (next);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s is not async.", typeid (*this).name ());
-            }
-        }
-
-        void Stream::Disconnect () {
-            if (IsAsync ()) {
-                asyncInfo->eventQueue.DeleteStream (*this);
-            }
-            else {
-                Close ();
-            }
-        }
-
-        void Stream::ReadFullBuffer (
-                void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
-                if (!IsAsync ()) {
-                    util::ui8 *data = (util::ui8 *)buffer;
-                    while (count > 0) {
-                        std::size_t countRead = Read (data, count);
-                        if (countRead > 0) {
-                            data += countRead;
-                            count -= countRead;
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Unable to read buffer: %u", count);
-                        }
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "ReadFullBuffer is called on an async stream.");
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void Stream::WriteFullBuffer (
-                const void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
-                if (!IsAsync ()) {
-                    const util::ui8 *data = (const util::ui8 *)buffer;
-                    while (count > 0) {
-                        std::size_t countWritten = Write (data, count);
-                        if (countWritten > 0) {
-                            data += countWritten;
-                            count -= countWritten;
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Unable to write buffer: %u", count);
-                        }
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "%s", "WriteFullBuffer is called on an async stream.");
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
         void Stream::Close () {
             if (IsOpen ()) {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -227,23 +149,28 @@ namespace thekogans {
         }
 
         void Stream::HandleError (const util::Exception &exception) throw () {
-            asyncInfo->eventSink.HandleStreamError (*this, exception);
+            Produce (
+                std::bind (
+                    &StreamEvents::OnStreamError,
+                    std::placeholders::_1,
+                    SharedPtr (this),
+                    exception));
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Stream::AsyncInfo, util::SpinLock)
 
-        const char * const Stream::AsyncInfo::EVENT_INVALID = "EventInvalid";
-        const char * const Stream::AsyncInfo::EVENT_CONNECT = "EventConnect";
-        const char * const Stream::AsyncInfo::EVENT_DISCONNECT = "EventDisconnect";
-        const char * const Stream::AsyncInfo::EVENT_SHUTDOWN = "EventShutdown";
-        const char * const Stream::AsyncInfo::EVENT_READ = "EventRead";
-        const char * const Stream::AsyncInfo::EVENT_WRITE = "EventWrite";
-        const char * const Stream::AsyncInfo::EVENT_READ_FROM = "EventReadFrom";
-        const char * const Stream::AsyncInfo::EVENT_WRITE_TO = "EventWriteTo";
-        const char * const Stream::AsyncInfo::EVENT_READ_MSG = "EventReadMsg";
-        const char * const Stream::AsyncInfo::EVENT_WRITE_MSG = "EventWriteMsg";
+        const char * const Stream::EVENT_INVALID = "EventInvalid";
+        const char * const Stream::EVENT_CONNECT = "EventConnect";
+        const char * const Stream::EVENT_DISCONNECT = "EventDisconnect";
+        const char * const Stream::EVENT_SHUTDOWN = "EventShutdown";
+        const char * const Stream::EVENT_READ = "EventRead";
+        const char * const Stream::EVENT_WRITE = "EventWrite";
+        const char * const Stream::EVENT_READ_FROM = "EventReadFrom";
+        const char * const Stream::EVENT_WRITE_TO = "EventWriteTo";
+        const char * const Stream::EVENT_READ_MSG = "EventReadMsg";
+        const char * const Stream::EVENT_WRITE_MSG = "EventWriteMsg";
 
-        std::string Stream::AsyncInfo::eventToString (util::ui32 event) {
+        std::string Stream::eventToString (util::ui32 event) {
             return
                 event == EventConnect ? EVENT_CONNECT :
                 event == EventDisconnect ? EVENT_DISCONNECT :
@@ -256,7 +183,7 @@ namespace thekogans {
                 event == EventWriteMsg ? EVENT_WRITE_MSG : EVENT_INVALID;
         }
 
-        util::ui32 Stream::AsyncInfo::stringToEvent (const std::string &event) {
+        util::ui32 Stream::stringToEvent (const std::string &event) {
             return
                 event == EVENT_CONNECT ? EventConnect :
                 event == EVENT_DISCONNECT ? EventDisconnect :
@@ -269,25 +196,24 @@ namespace thekogans {
                 event == EVENT_WRITE_MSG ? EventWriteMsg : EventInvalid;
         }
 
-        Stream::AsyncInfo::AsyncInfo (
+        void Stream::InitAsyncIo () {
+        }
+
+        void Stream::TerminateAsyncIo () {
+            Close ();
+        }
+
+        Stream::AsyncInfo (
                 AsyncIoEventQueue &eventQueue_,
-                Stream &stream_,
-                AsyncIoEventSink &eventSink_,
                 std::size_t bufferLength_) :
-                eventQueue (eventQueue_),
-                stream (stream_),
-                eventSink (eventSink_),
-                bufferLength (bufferLength_) {
+                 {
         #if !defined (TOOLCHAIN_OS_Windows)
             token = StreamRegistry::Instance ().Add (&stream);
             events = EventInvalid;
         #endif // !defined (TOOLCHAIN_OS_Windows)
-            eventQueue.AddRef ();
-            stream.AddRef ();
-            eventSink.AddRef ();
         }
 
-        Stream::AsyncInfo::~AsyncInfo () {
+        Stream::~AsyncInfo () {
             // NOTE: If these asserts fire, it's because
             // ReleaseResources (below) was not called.
         #if defined (TOOLCHAIN_OS_Windows)
@@ -297,84 +223,72 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void Stream::AsyncInfo::ReleaseResources () {
+        void Stream::ReleaseResources () {
         #if !defined (TOOLCHAIN_OS_Windows)
             StreamRegistry::Instance ().Remove (token);
             {
                 util::LockGuard<util::SpinLock> guard (spinLock);
-                struct Callback : public BufferInfoList::Callback {
-                    typedef BufferInfoList::Callback::result_type result_type;
-                    typedef BufferInfoList::Callback::argument_type argument_type;
-                    virtual result_type operator () (argument_type bufferInfo) {
+                bufferInfoList.clear (
+                    [] (BufferInfoList::Callback::argument_type bufferInfo) -> BufferInfoList::Callback::return_type {
                         delete bufferInfo;
                         return true;
                     }
-                } callback;
-                bufferInfoList.clear (callback);
+                );
             }
         #endif // !defined (TOOLCHAIN_OS_Windows)
-            eventQueue.Release ();
-            stream.Release ();
-            eventSink.Release ();
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        Stream::AsyncInfo::Overlapped::Overlapped (
+        Stream::Overlapped::Overlapped (
                 Stream &stream_,
                 util::ui32 event_) :
                 stream (&stream_),
                 event (event_) {
             memset ((WSAOVERLAPPED *)this, 0, sizeof (WSAOVERLAPPED));
-            stream->asyncInfo->AddOverlapped (this);
-            stream->AddRef ();
+            stream->AddOverlapped (this);
         }
 
-        Stream::AsyncInfo::Overlapped::~Overlapped () {
-            stream->asyncInfo->DeleteOverlapped (this);
-            stream->Release ();
+        Stream::Overlapped::~Overlapped () {
+            stream->DeleteOverlapped (this);
         }
 
-        util::ui64 Stream::AsyncInfo::Overlapped::GetOffset () const {
+        util::ui64 Stream::Overlapped::GetOffset () const {
             ULARGE_INTEGER offset;
             offset.LowPart = Offset;
             offset.HighPart = OffsetHigh;
             return offset.QuadPart;
         }
 
-        void Stream::AsyncInfo::Overlapped::SetOffset (util::ui64 offset_) {
+        void Stream::Overlapped::SetOffset (util::ui64 offset_) {
             ULARGE_INTEGER offset;
             offset.QuadPart = offset_;
             Offset = offset.LowPart;
             OffsetHigh = offset.HighPart;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Stream::AsyncInfo::ReadWriteOverlapped, util::SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Stream::ReadWriteOverlapped, util::SpinLock)
 
-        Stream::AsyncInfo::ReadWriteOverlapped::ReadWriteOverlapped (
+        Stream::ReadWriteOverlapped::ReadWriteOverlapped (
                 Stream &stream,
                 std::size_t count,
                 bool useGetBuffer) :
-                Overlapped (stream, Stream::AsyncInfo::EventRead),
+                Overlapped (stream, Stream::EventRead),
                 buffer (useGetBuffer ?
-                    stream.asyncInfo->eventSink.GetBuffer (
-                        stream,
-                        util::NetworkEndian,
-                        count) :
+                    stream.GetBuffer (util::NetworkEndian, count) :
                     util::Buffer (util::NetworkEndian, count)),
                 flags (0) {
             wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
             wsaBuf.buf = (char *)buffer.GetWritePtr ();
         }
 
-        Stream::AsyncInfo::ReadWriteOverlapped::ReadWriteOverlapped (
+        Stream::ReadWriteOverlapped::ReadWriteOverlapped (
                 Stream &stream,
                 const void *buffer_,
                 std::size_t count,
                 bool useGetBuffer) :
-                Overlapped (stream, Stream::AsyncInfo::EventWrite),
+                Overlapped (stream, Stream::EventWrite),
                 buffer (useGetBuffer ?
-                    stream.asyncInfo->eventSink.GetBuffer (
-                        stream,
+                    stream.GetBuffer (
                         util::NetworkEndian,
                         buffer_,
                         count) :
@@ -387,20 +301,20 @@ namespace thekogans {
             wsaBuf.buf = (char *)buffer.GetReadPtr ();
         }
 
-        void Stream::AsyncInfo::ReadWriteOverlapped::Epilog () throw () {
+        void Stream::ReadWriteOverlapped::Epilog () throw () {
             switch (event) {
-                case Stream::AsyncInfo::EventRead: {
+                case Stream::EventRead: {
                     buffer.AdvanceWriteOffset (GetCount ());
                     break;
                 }
-                case Stream::AsyncInfo::EventWrite: {
+                case Stream::EventWrite: {
                     buffer.AdvanceReadOffset (GetCount ());
                     break;
                 }
             }
         }
 
-        void Stream::AsyncInfo::AddOverlapped (Overlapped *overlapped) {
+        void Stream::AddOverlapped (Overlapped *overlapped) {
             if (overlapped != 0) {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 assert (!overlappedList.contains (overlapped));
@@ -412,7 +326,7 @@ namespace thekogans {
             }
         }
 
-        void Stream::AsyncInfo::DeleteOverlapped (Overlapped *overlapped) {
+        void Stream::DeleteOverlapped (Overlapped *overlapped) {
             if (overlapped != 0) {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 assert (overlappedList.contains (overlapped));
@@ -425,17 +339,16 @@ namespace thekogans {
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (
-            Stream::AsyncInfo::WriteBufferInfo, util::SpinLock)
+            Stream::WriteBufferInfo, util::SpinLock)
 
-        Stream::AsyncInfo::WriteBufferInfo::WriteBufferInfo (
+        Stream::WriteBufferInfo::WriteBufferInfo (
             Stream &stream,
             const void *buffer_,
             std::size_t count,
             bool useGetBuffer) :
-            BufferInfo (stream, AsyncInfo::EventWrite),
+            BufferInfo (stream, EventWrite),
             buffer (useGetBuffer ?
-                stream.asyncInfo->eventSink.GetBuffer (
-                    stream,
+                stream.GetBuffer (
                     util::NetworkEndian,
                     buffer_,
                     count) :
@@ -444,7 +357,7 @@ namespace thekogans {
                     (const util::ui8 *)buffer_,
                     (const util::ui8 *)buffer_ + count)) {}
 
-        ssize_t Stream::AsyncInfo::WriteBufferInfo::Write () {
+        ssize_t Stream::WriteBufferInfo::Write () {
             ssize_t countWritten = send (stream.GetHandle (),
                 buffer.GetReadPtr (), buffer.GetDataAvailableForReading (), 0);
             if (countWritten > 0) {
@@ -453,29 +366,33 @@ namespace thekogans {
             return countWritten;
         }
 
-        bool Stream::AsyncInfo::WriteBufferInfo::Notify () {
+        bool Stream::WriteBufferInfo::Notify () {
             if (buffer.IsEmpty ()) {
-                stream.asyncInfo->eventSink.HandleStreamWrite (
-                    stream, std::move (buffer));
+                Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamWrite,
+                        std::placeholders::_1,
+                        SharedPtr (this),
+                        std::move (buffer)));
                 return true;
             }
             return false;
         }
 
-        void Stream::AsyncInfo::AddStreamForEvents (util::ui32 events) {
-            eventQueue.AddStreamForEvents (stream, events);
+        void Stream::AddStreamForEvents (util::ui32 events) {
+            AsyncIoEventQueue::Instance ().AddStreamForEvents (stream, events);
         }
 
-        void Stream::AsyncInfo::DeleteStreamForEvents (util::ui32 events) {
-            eventQueue.DeleteStreamForEvents (stream, events);
+        void Stream::DeleteStreamForEvents (util::ui32 events) {
+            AsyncIoEventQueue::Instance ().DeleteStreamForEvents (stream, events);
         }
 
-        void Stream::AsyncInfo::EnqBufferFront (BufferInfo::UniquePtr bufferInfo) {
+        void Stream::EnqBufferFront (BufferInfo::UniquePtr bufferInfo) {
             THEKOGANS_UTIL_TRY {
                 if (bufferInfo.get () != 0) {
                     util::LockGuard<util::SpinLock> guard (spinLock);
                     bufferInfoList.push_front (bufferInfo.get ());
-                    eventQueue.AddStreamForEvents (stream, bufferInfo.release ()->event);
+                    AddStreamForEvents (bufferInfo.release ()->event);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -484,16 +401,21 @@ namespace thekogans {
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                eventSink.HandleStreamError (stream, exception);
+                Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamError,
+                        std::placeholders::_1,
+                        SharedPtr (this),
+                        exception));
             }
         }
 
-        void Stream::AsyncInfo::EnqBufferBack (BufferInfo::UniquePtr bufferInfo) {
+        void Stream::EnqBufferBack (BufferInfo::UniquePtr bufferInfo) {
             THEKOGANS_UTIL_TRY {
                 if (bufferInfo.get () != 0) {
                     util::LockGuard<util::SpinLock> guard (spinLock);
                     bufferInfoList.push_back (bufferInfo.get ());
-                    eventQueue.AddStreamForEvents (stream, bufferInfo.release ()->event);
+                    AddStreamForEvents (bufferInfo.release ()->event);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -502,30 +424,39 @@ namespace thekogans {
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                eventSink.HandleStreamError (stream, exception);
+                Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamError,
+                        std::placeholders::_1,
+                        SharedPtr (this),
+                        exception));
             }
         }
 
-        Stream::AsyncInfo::BufferInfo::UniquePtr Stream::AsyncInfo::DeqBuffer () {
+        Stream::BufferInfo::UniquePtr Stream::DeqBuffer () {
             util::LockGuard<util::SpinLock> guard (spinLock);
             BufferInfo::UniquePtr bufferInfo;
             if (!bufferInfoList.empty ()) {
                 bufferInfo.reset (bufferInfoList.pop_front ());
                 if (bufferInfoList.empty ()) {
                     THEKOGANS_UTIL_TRY {
-                        eventQueue.DeleteStreamForEvents (
-                            stream, EventWrite | EventWriteTo | EventWriteMsg);
+                        DeleteStreamForEvents (EventWrite | EventWriteTo | EventWriteMsg);
                     }
                     THEKOGANS_UTIL_CATCH (util::Exception) {
                         THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        eventSink.HandleStreamError (stream, exception);
+                        Produce (
+                            std::bind (
+                                &StreamEvents::OnStreamError,
+                                std::placeholders::_1,
+                                SharedPtr (this),
+                                exception));
                     }
                 }
             }
             return bufferInfo;
         }
 
-        void Stream::AsyncInfo::WriteBuffers () {
+        void Stream::WriteBuffers () {
             for (BufferInfo::UniquePtr bufferInfo = DeqBuffer ();
                     bufferInfo.get () != 0; bufferInfo = DeqBuffer ()) {
                 while (1) {
@@ -536,7 +467,11 @@ namespace thekogans {
                         }
                     }
                     else if (countWritten == 0) {
-                        eventSink.HandleStreamDisconnect (stream);
+                        Produce (
+                            std::bind (
+                                &StreamEvents::OnStreamDisconnect,
+                                std::placeholders::_1,
+                                SharedPtr (this)));
                         return;
                     }
                     else {
@@ -545,8 +480,12 @@ namespace thekogans {
                             EnqBufferFront (std::move (bufferInfo));
                         }
                         else {
-                            eventSink.HandleStreamError (stream,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                            Produce (
+                                std::bind (
+                                    &StreamEvents::OnStreamError,
+                                    std::placeholders::_1,
+                                    SharedPtr (this),
+                                    THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
                         }
                         return;
                     }

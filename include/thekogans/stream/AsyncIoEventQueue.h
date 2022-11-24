@@ -21,17 +21,15 @@
 #include <functional>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/JobQueue.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/stream/Config.h"
-#include "thekogans/stream/Stream.h"
-#if !defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/stream/Pipe.h"
-#endif // !defined (TOOLCHAIN_OS_Windows)
-#include "thekogans/stream/AsyncIoEventSink.h"
 
 namespace thekogans {
     namespace stream {
+
+        struct Stream;
 
         /// \struct AsyncIoEventQueue AsyncIoEventQueue.h thekogans/stream/AsyncIoEventQueue.h
         ///
@@ -69,7 +67,9 @@ namespace thekogans {
         /// not, you will need to provide your own values using
         /// a #if defined (TOOLCHAIN_OS_[Windows | Linux | OSX]).
 
-        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue : public util::RefCounted {
+        struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue :
+                public util::Singleton<AsyncIoEventQueue, util::SpinLock>,
+                public util::Thread {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AsyncIoEventQueue)
@@ -78,31 +78,6 @@ namespace thekogans {
             /// \brief
             /// Handle to an OS specific async io event queue.
             THEKOGANS_UTIL_HANDLE handle;
-        #if !defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Implements the read end of a self-pipe.
-            /// Used to break out of the WaitForEvents.
-            Pipe readPipe;
-            /// \brief
-            /// Implements the write end of a self-pipe.
-            /// Used to break out of the WaitForEvents.
-            Pipe writePipe;
-        #endif // !defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Active stream list. Registry is also the stream owner.
-            AsyncIoEventQueueRegistryList registryList;
-            /// \brief
-            /// Stream deletion has to be differed until it's safe.
-            /// This list will hold zombie streams until it's safe
-            /// to delete them (right before \see{WaitForEvents} returns).
-            AsyncIoEventQueueDeletedStreamsList deletedStreamsList;
-            /// \brief
-            /// Synchronization SpinLock for registryList,
-            /// timedStreamsList and deletedStreamsList.
-            util::SpinLock spinLock;
-            /// \brief
-            /// Internal class used to help with Stream lifetime management.
-            struct StreamDeleter;
 
         public:
         #if defined (TOOLCHAIN_OS_Windows)
@@ -117,37 +92,37 @@ namespace thekogans {
                 /// do something different.
                 DEFAULT_CONCURRENT_THREADS = 1
             };
-            /// \brief
-            /// Windows ctor.
-            /// \param[in] concurrentThreads The maximum number
-            /// of threads that the operating system can allow
-            /// to concurrently process I/O completion packets
-            /// for the I/O completion port.
-            /// NOTE: All async io goes through the stream.
-            /// \see{AsyncIoEventSink} will be called by the stream
-            /// after it has determined what to call.
-            AsyncIoEventQueue (
-                util::ui32 concurrentThreads = DEFAULT_CONCURRENT_THREADS);
         #elif defined (TOOLCHAIN_OS_Linux)
             enum {
                 /// \brief
                 /// Default max queue size.
                 DEFAULT_MAX_SIZE = 256
             };
-            /// \brief
-            /// Linux ctor.
-            /// \param[in] maxSize Provided for completeness only.
-            /// This parameter is ignored by epoll_create.
-            explicit AsyncIoEventQueue (
-                util::ui32 maxSize = DEFAULT_MAX_SIZE);
-        #elif defined (TOOLCHAIN_OS_OSX)
-            /// \brief
-            /// OS X ctor.
-            AsyncIoEventQueue ();
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
+            /// ctor.
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] concurrentThreads The maximum number
+            /// of threads that the operating system can allow
+            /// to concurrently process I/O completion packets
+            /// for the I/O completion port.
+        #elif defined (TOOLCHAIN_OS_Linux)
+            /// \param[in] maxSize Provided for completeness only.
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// This parameter is ignored by epoll_create.
+            /// \param[in] priority Thread priority.
+            /// \param[in] affinity Thread affinity.
+            AsyncIoEventQueue (
+            #if defined (TOOLCHAIN_OS_Windows)
+                util::ui32 concurrentThreads = DEFAULT_CONCURRENT_THREADS,
+            #elif defined (TOOLCHAIN_OS_Linux)
+                util::ui32 maxSize = DEFAULT_MAX_SIZE,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
+            /// \brief
             /// dtor. Close the queue handle.
-            virtual ~AsyncIoEventQueue ();
+            ~AsyncIoEventQueue ();
 
             /// \brief
             /// Return the queue handle.
@@ -156,32 +131,10 @@ namespace thekogans {
                 return handle;
             }
 
-            enum {
-                /// \brief
-                /// Default buffer length for async WSARecv[From | Msg].
-                DEFAULT_BUFFER_LENGTH = 16384
-            };
-
             /// \brief
             /// Add a given stream to the queue.
             /// \param[in] stream Stream to add.
-            /// \param[in] eventSink \see{AsyncIoEventSink} that will
-            /// receive the events.
-            /// \param[in] bufferLength Buffer length for async
-            /// WSARecv[From | Msg] and ReadFile on Windows.
-            /// NOTE: For socket based async io, use the bufferLength
-            /// parameter to select between max throughput and max
-            /// connections. bufferLength == 0 reads will result in
-            /// the ability to handle max connections. bufferLength != 0
-            /// reads will result in max throughput (at the expense
-            /// of locking system pages).
-            /// VERY IMPORTANT: For (named) pipe io on Windows
-            /// bufferLength cannot be == 0. Windows has no concept
-            /// of zero length reads for these objects.
-            void AddStream (
-                Stream &stream,
-                AsyncIoEventSink &eventSink,
-                std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
+            void AddStream (Stream &stream);
             /// \brief
             /// Adds the given stream to the deletedStreams list.
             /// Streams are aggregated for deletion so as not to
@@ -198,24 +151,7 @@ namespace thekogans {
                 DEFAULT_MAX_EVENTS_BATCH = 256
             };
 
-            /// \brief
-            /// Wait for and dispatch events.
-            /// \param[in] maxEventsBatch Maximum events to batch
-            /// process at a time.
-            /// \param[in] timeSpec How long to wait for events.
-            /// IMPORTANT: timeSpec is a relative value.
-            void WaitForEvents (
-                std::size_t maxEventsBatch = DEFAULT_MAX_EVENTS_BATCH,
-                util::TimeSpec timeSpec = util::TimeSpec::Infinite);
-            /// \brief
-            /// Break out of the wait state.
-            void Break ();
-
         private:
-            /// \brief
-            /// Flush the deleteStreams list.
-            void ReleaseDeletedStreams ();
-
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Used internally by epoll and kqueue variants to
@@ -237,12 +173,16 @@ namespace thekogans {
             void DeleteStreamForEvents (
                 Stream &stream,
                 util::ui32 events);
-        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
-            /// \see{Stream::AsyncInfo} calls AddStreamForEvents and
-            /// DeleteStreamForEvents (Linux/OS X).
-            friend struct Stream::AsyncInfo;
+            /// \see{Stream} calls AddStreamForEvents and DeleteStreamForEvents (Linux/OS X).
+            friend struct Stream;
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+
+            // util::Thread
+            /// \brief
+            /// AsyncIoEventQueue thread.
+            virtual void Run () throw ();
 
             /// \brief
             /// AsyncIoEventQueue is neither copy constructable, nor assignable.
@@ -271,33 +211,6 @@ namespace thekogans {
                     util::RefCountedInstanceCreator<GlobalAsyncIoEventQueue>,
                     util::RefCountedInstanceDestroyer<GlobalAsyncIoEventQueue>>,
                 public util::Thread {
-            /// \brief
-            /// ctor.
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] concurrentThreads The maximum number
-            /// of threads that the operating system can allow
-            /// to concurrently process I/O completion packets
-            /// for the I/O completion port.
-        #elif defined (TOOLCHAIN_OS_Linux)
-            /// \param[in] maxSize Provided for completeness only.
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            /// This parameter is ignored by epoll_create.
-            /// \param[in] priority Thread priority.
-            /// \param[in] affinity Thread affinity.
-            GlobalAsyncIoEventQueue (
-            #if defined (TOOLCHAIN_OS_Windows)
-                util::ui32 concurrentThreads = AsyncIoEventQueue::DEFAULT_CONCURRENT_THREADS,
-            #elif defined (TOOLCHAIN_OS_Linux)
-                util::ui32 maxSize = AsyncIoEventQueue::DEFAULT_MAX_SIZE,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
-
-        private:
-            // util::Thread
-            /// \brief
-            /// GlobalAsyncIoEventQueue thread.
-            virtual void Run () throw ();
 
             /// \brief
             /// GlobalAsyncIoEventQueue is neither copy constructable nor assignable.

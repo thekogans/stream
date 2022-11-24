@@ -35,6 +35,31 @@ namespace thekogans {
         /// Forward declaration of \see{ServerSecureTCPSocket}.
         struct ServerSecureTCPSocket;
 
+        struct _LIB_THEKOGANS_STREAM_DECL TCPSocketEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TCPSocketEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~TCPSocketEvents () {}
+
+            /// \brief
+            /// Called when a client \see{TCPSocket} has established
+            /// a connection to the server.
+            /// \param[in] tcpSocket \see{TCPSocket} that established
+            /// a connection.
+            virtual void OnTCPSocketConnected (
+                util::RefCounted::SharedPtr<TCPSocket> tcpSocket) throw () {}
+            /// \brief
+            /// Called to report that the given \see{TCPSocket} has been shutdown.
+            /// \param[in] tcpSocket \see{TCPSocket} that was shutdown.
+            /// \param[in] shutdownType One of \see{TCPSocket::ShutdownType}.
+            virtual void OnTCPSocketShutdown (
+                util::RefCounted::SharedPtr<TCPSocket> tcpSocket,
+                TCPSocket::ShutdownType shutdownType) throw () {}
+        };
+
         /// \struct TCPSocket TCPSocket.h thekogans/stream/TCPSocket.h
         ///
         /// \brief
@@ -42,7 +67,9 @@ namespace thekogans {
         /// It provides all common SOCK_STREAM socket apis, and let's the
         /// derivatives handle the specifics.
 
-        struct _LIB_THEKOGANS_STREAM_DECL TCPSocket : public Socket {
+        struct _LIB_THEKOGANS_STREAM_DECL TCPSocket :
+                public Socket,
+                public thekogans::util::Producer<TCPSocketEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TCPSocket)
