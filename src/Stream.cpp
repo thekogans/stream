@@ -326,12 +326,10 @@ namespace thekogans {
                 event (event_) {
             memset ((WSAOVERLAPPED *)this, 0, sizeof (WSAOVERLAPPED));
             stream->asyncInfo->AddOverlapped (this);
-            stream->AddRef ();
         }
 
         Stream::AsyncInfo::Overlapped::~Overlapped () {
             stream->asyncInfo->DeleteOverlapped (this);
-            stream->Release ();
         }
 
         util::ui64 Stream::AsyncInfo::Overlapped::GetOffset () const {
