@@ -29,124 +29,133 @@
 namespace thekogans {
     namespace stream {
 
+        struct ServerTCPSocket;
+
+        struct _LIB_THEKOGANS_STREAM_DECL ServerTCPSocketEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ServerTCPSocketEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~ServerTCPSocketEvents () {}
+
+            /// \brief
+            /// Called to report a new connection on a \see{ServerTCPSocket}.
+            /// \param[in] serverTCPSocket \see{ServerTCPSocket} on which the
+            /// new connection occurred.
+            /// \param[in] connection The new connection socket.
+            /// NOTE: The new connection will be sync (blocking).
+            virtual void OnServerTCPSocketConnection (
+                util::RefCounted::SharedPtr<ServerTCPSocket> serverTCPSocket,
+                TCPSocket::SharedPtr connection) throw ();
+        };
+
         /// \struct ServerTCPSocket ServerTCPSocket.h thekogans/stream/ServerTCPSocket.h
         ///
         /// \brief
         /// ServerTCPSocket is used to listen for connections from \see{ClientTCPSockets}.
+        ///
+        /// Ex:
+        /// \code{.cpp}
+        /// using namespace thekogans;
+        ///
+        /// struct Server :
+        ///         public util::Singleton<
+        ///             Server,
+        ///             util::SpinLock,
+        ///             util::RefCountedInstanceCreator<Server>,
+        ///             util::RefCountedInstanceDestroyer<Server>>,
+        ///         public util::Subscriber<ServerTCPSocketEvents> {
+        /// private:
+        ///     stream::Address &address;
+        ///     stream::ServerTCPSocket serverSocket;
+        ///     std::vector<TCPSocket::SharedPtr> connections;
+        ///     util::JobQueue jobQueue;
+        ///
+        /// public:
+        ///     void Start (const stream::Address &address_) {
+        ///         address = address_;
+        ///         AcceptClientConnections ();
+        ///     }
+        ///
+        ///     void Stop () {
+        ///         clientSocket.Reset ();
+        ///         connections.clear ();
+        ///     }
+        ///
+        /// private:
+        ///     void OnStreamError (
+        ///             stream::SharedPtr stream,
+        ///             const util::Exception &exception) throw () {
+        ///         // Log exception.
+        ///         if (serverSocket == stream) {
+        ///             AcceptClientConnections ();
+        ///         }
+        ///         else {
+        ///             std::vector<TCPSocket::SharedPtr>::iterator it =
+        ///                 std::find (connections.begin (), connections.end (), stream);
+        ///             if (it != connections.end ()) {
+        ///                 connections.erase (it);
+        ///             }
+        ///         }
+        ///     }
+        ///
+        ///     void OnStreamDisconnect (Stream::SharedPtr stream) throw () {
+        ///         std::vector<TCPSocket::SharedPtr>::iterator it =
+        ///             std::find (connections.begin (), connections.end (), stream);
+        ///         if (it != connections.end ()) {
+        ///             connections.erase (it);
+        ///         }
+        ///     }
+        ///
+        ///     void OnStreamRead (
+        ///             stream::SharedPtr stream,
+        ///             util::Buffer buffer) throw () {
+        ///         // Process incomming request from a client.
+        ///     }
+        ///
+        ///     void OnServerTCPSocketConnection (
+        ///             stream::ServerTCPSocket::SharedPtr /*serverTCPSocket*/,
+        ///             stream::TCPSocket::SharedPtr connection) throw () {
+        ///         // Log new connection.
+        ///         connection->MakeAsync ();
+        ///         util::Subscriber<stream::StreamEvents>::Subscribe (
+        ///             *connection,
+        ///             util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                 new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
+        ///                     jobQueue)));
+        ///         // Initiate an async read to listen for client requests.
+        ///         connection->Read ();
+        ///         connections.push_back (connection);
+        ///     }
+        ///
+        ///     void AcceptClientConnections () {
+        ///         connections.clear ();
+        ///         serverSocket.Reset (new stream::ServerTCPSocket (address));
+        ///         serverSocket->MakeAsync ();
+        ///         util::Subscriber<stream::StreamEvents>::Subscribe (
+        ///             *serverSocket,
+        ///             util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                 new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
+        ///                     jobQueue)));
+        ///         util::Subscriber<stream::ServerTCPSocketEvents>::Subscribe (
+        ///             *serverSocket,
+        ///             util::Producer<stream::ServerTCPSocketEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                 new util::Producer<stream::ServerTCPSocketEvents>::RunLoopEventDeliveryPolicy (
+        ///                     jobQueue)));
+        ///         serverSocket->Accept ();
+        ///     }
+        /// };
+        /// \endcode
 
-        struct _LIB_THEKOGANS_STREAM_DECL ServerTCPSocket : public TCPSocket {
+        struct _LIB_THEKOGANS_STREAM_DECL ServerTCPSocket :
+                public TCPSocket,
+                public util::Producer<ServerTCPSocketEvents> {
             /// \brief
             /// ServerTCPSocket participates in the Stream dynamic
             /// discovery and creation.
             THEKOGANS_STREAM_DECLARE_STREAM (ServerTCPSocket)
-
-            /// \struct ServerTCPSocket::Context ServerTCPSocket.h thekogans/stream/ServerTCPSocket.h
-            ///
-            /// \brief
-            /// ServerTCPSocket::Context represents the state
-            /// of a ServerTCPSocket at rest. At any time you want
-            /// to reconstitute a ServerTCPSocket from rest,
-            /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName StreamType = "ServerTCPSocket"
-            ///          Family = ""
-            ///          Type = ""
-            ///          Protocol = "">
-            ///     <Address Family = "inet | inet6"
-            ///              Port = ""
-            ///              Addr = "an inet or inet6 formated address, or host name"/>
-            ///     or
-            ///     <Address Family = "local"
-            ///              Path = ""/>
-            ///     <ReuseAddress>if true call SetReuseAddress</ReuseAddress>
-            ///     <MaxPendingConnections>max pending connection requests</MaxPendingConnections>
-            /// </tagName>
-            /// to: Stream::GetContext (const pugi::xml_node &node), and it
-            /// will return back to you a properly constructed and initialized
-            /// ServerTCPSocket::Context. Call Context::CreateStream () to
-            /// recreate a ServerTCPSocket from rest. Where you go with
-            /// it from there is entirely up to you, but may I recommend:
-            /// \see{AsyncIoEventQueue}.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Socket::Context {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
-
-                /// \brief
-                /// "ServerTCPSocket"
-                static const char * const VALUE_SERVER_TCP_SOCKET;
-                /// \brief
-                /// "ReuseAddress"
-                static const char * const TAG_REUSE_ADDRESS;
-                /// \brief
-                /// "MaxPendingConnections"
-                static const char * const TAG_MAX_PENDING_CONNECTIONS;
-
-                /// \brief
-                /// Listening address.
-                Address address;
-                /// \brief
-                /// If true, call \see{Socket::SetReuseAddress} before calling \see{Socket::Bind}.
-                bool reuseAddress;
-                /// \brief
-                /// Max pending connection requests.
-                util::i32 maxPendingConnections;
-
-                /// \brief
-                /// ctor. Parse the node representing a
-                /// ServerTCPSocket::Context.
-                /// \param[in] node pugi::xml_node representing
-                /// a ServerTCPSocket::Context.
-                explicit Context (const pugi::xml_node &node) :
-                        Socket::Context (VALUE_SERVER_TCP_SOCKET, 0, 0, 0),
-                        address (Address::Empty),
-                        reuseAddress (false),
-                        maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS) {
-                    Parse (node);
-                }
-                /// \brief
-                /// ctor.
-                /// \param[in] family Socket family specification.
-                /// \param[in] type Socket type specification.
-                /// \param[in] protocol Socket protocol specification.
-                /// \param[in] address Listening address.
-                /// \param[in] reuseAddress If true, call \see{Socket::SetReuseAddress}
-                /// before calling \see{Socket::Bind}.
-                /// \param[in] maxPendingConnections Max pending connection requests.
-                Context (
-                    int family,
-                    int type,
-                    int protocol,
-                    const Address &address_,
-                    bool reuseAddress_,
-                    util::i32 maxPendingConnections_) :
-                    Socket::Context (VALUE_SERVER_TCP_SOCKET, family, type, protocol),
-                    address (address_),
-                    reuseAddress (reuseAddress_),
-                    maxPendingConnections (maxPendingConnections_) {}
-
-                /// \brief
-                /// Parse the node representing a
-                /// ServerTCPSocket::Context.
-                /// \param[in] node pugi::xml_node representing
-                /// a ServerTCPSocket::Context.
-                virtual void Parse (const pugi::xml_node &node);
-                /// \brief
-                /// Return a string representing the rest
-                /// state of the ServerTCPSocket.
-                /// \param[in] indentationLevel Pretty print parameter.
-                /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "Context").
-                /// \return String representing the rest state of the
-                /// ServerTCPSocket.
-                virtual std::string ToString (
-                    std::size_t indentationLevel = 0,
-                    const char *tagName = TAG_CONTEXT) const;
-
-                /// \brief
-                /// Create a ServerTCPSocket based on the address and maxPendingConnections.
-                /// \return ServerTCPSocket based on the address and maxPendingConnections.
-                virtual Stream::SharedPtr CreateStream () const;
-            };
 
             /// \brief
             /// ctor.
@@ -221,14 +230,6 @@ namespace thekogans {
                     "%s", "ServerTCPSocket can't WriteBuffer.");
             }
 
-            /// \brief
-            /// Used by the AsyncIoEventQueue to allow the stream to
-            /// initialize itself. When this function is called, the
-            /// stream is already async, and Stream::AsyncInfo has
-            /// been created. At this point the stream should do
-            /// whatever stream specific initialization it needs to
-            /// do.
-            virtual void InitAsyncIo ();
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Used by AsyncIoEventQueue to notify the stream that

@@ -29,6 +29,15 @@
 namespace thekogans {
     namespace stream {
 
+            /// \brief
+            /// Called to report a new connection on a \see{ServerUDPSocket}.
+            /// \param[in] serverUDPSocket \see{ServerUDPSocket} on which the
+            /// new connection occurred.
+            /// \param[in] connection The new connection info.
+            /// NOTE: The new connection will be sync (blocking).
+            virtual void OnServerUDPSocketConnection (
+                ServerUDPSocket &serverUDPSocket,
+                ServerUDPSocket::Connection::SharedPtr connection) throw ();
         /// \struct ServerUDPSocket ServerUDPSocket.h thekogans/stream/ServerUDPSocket.h
         ///
         /// \brief

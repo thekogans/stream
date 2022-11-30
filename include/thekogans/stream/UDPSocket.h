@@ -26,6 +26,60 @@
 namespace thekogans {
     namespace stream {
 
+        struct UDPSocket;
+
+        struct _LIB_THEKOGANS_STREAM_DECL UDPSocketEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (UDPSocketEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~UDPSocketEvents () {}
+
+            /// \brief
+            /// Called when a new datagram has arrived on a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket that received the datagram.
+            /// \param[in] buffer The new datagram.
+            /// \param[in] address Peer address that sent the datagram.
+            virtual void OnUDPSocketReadFrom (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &address) throw ();
+            /// \brief
+            /// Called when a datagram was written to a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
+            /// \param[in] buffer The written datagram.
+            /// \param[in] address Peer address that received the datagram.
+            virtual void OnUDPSocketWriteTo (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &address) throw ();
+
+            /// \brief
+            /// Called when a new datagram has arrived on a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket that received the datagram.
+            /// \param[in] buffer The new datagram.
+            /// \param[in] from Peer address that sent the datagram.
+            /// \param[in] to Local address that received the datagram.
+            virtual void OnUDPSocketReadMsg (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &from,
+                 const Address &to) throw ();
+            /// \brief
+            /// Called when a datagram was written to a (Secure)UDPSocket.
+            /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
+            /// \param[in] buffer The written datagram.
+            /// \param[in] from Local address from which the datagram was sent.
+            /// \param[in] to Peer address that will receive the datagram.
+            virtual void OnUDPSocketWriteMsg (
+                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                util::Buffer buffer,
+                const Address &from,
+                const Address &to) throw ();
+        };
+
         /// \struct UDPSocket UDPSocket.h thekogans/stream/UDPSocket.h
         ///
         /// \brief
@@ -51,7 +105,9 @@ namespace thekogans {
         /// 3. Message:
         ///    \see{AsyncIoEventSink::HandleUDPSocketReadMsg}, \see{AsyncIoEventSink::HandleUDPSocketWriteMsg}.
 
-        struct _LIB_THEKOGANS_STREAM_DECL UDPSocket : public Socket {
+        struct _LIB_THEKOGANS_STREAM_DECL UDPSocket :
+                public Socket,
+                public thekogans::util::Producer<UDPSocketEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (UDPSocket)
@@ -512,15 +568,15 @@ namespace thekogans {
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \struct UDPSocket::WriteToBufferInfo UDPSocket.h thekogans/stream/UDPSocket.h
+            /// \struct UDPSocket::WriteToOverlapped UDPSocket.h thekogans/stream/UDPSocket.h
             ///
             /// \brief
             /// Uses sendto to write the buffer to the stream.
-            struct WriteToBufferInfo : public AsyncInfo::BufferInfo {
+            struct WriteToOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// WriteToBufferInfo has a private heap to help with memory
+                /// WriteToOverlapped has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteToBufferInfo, util::SpinLock)
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteToOverlapped, util::SpinLock)
 
                 /// \brief
                 /// \see{UDPSocket} to write to.
@@ -539,7 +595,7 @@ namespace thekogans {
                 /// \param[in] count \see{util::Buffer} length.
                 /// \param[in] address_ Peer \see{Address} to write to.
                 /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                WriteToBufferInfo (
+                WriteToOverlapped (
                     UDPSocket &udpSocket_,
                     const void *buffer_,
                     std::size_t count,
@@ -550,40 +606,40 @@ namespace thekogans {
                 /// \param[in] udpSocket_ \see{UDPSocket} to write to.
                 /// \param[in] buffer_ \see{util::Buffer} to write.
                 /// \param[in] address_ Peer \see{Address} to write to.
-                WriteToBufferInfo (
+                WriteToOverlapped (
                     UDPSocket &udpSocket_,
                     util::Buffer buffer_,
                     const Address &address_) :
-                    BufferInfo (udpSocket_, AsyncInfo::EventWriteTo),
+                    Overlapped (udpSocket_, AsyncInfo::EventWriteTo),
                     udpSocket (udpSocket_),
                     buffer (std::move (buffer_)),
                     address (address_) {}
 
                 /// \brief
-                /// Used by \see{AsyncInfo::WriteBuffers} to write
+                /// Used by \see{AsyncInfo::PumpAsyncIo} to write
                 /// the buffer to the given stream.
                 /// \return Count of bytes written.
-                virtual ssize_t Write ();
+                virtual ssize_t Prolog ();
                 /// \brief
-                /// Used by \see{AsyncInfo::WriteBuffers} to complete
+                /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
                 /// the write operation and notify \see{AsyncIoEventSink}.
                 /// \return true = \see{AsyncIoEventSink} was notified,
                 /// false = \see{AsyncIoEventSink} was not notified.
-                virtual bool Notify ();
+                virtual bool Epilog ();
 
                 /// \brief
-                /// WriteToBufferInfo is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteToBufferInfo)
+                /// WriteToOverlapped is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteToOverlapped)
             };
-            /// \struct UDPSocket::WriteMsgBufferInfo UDPSocket.h thekogans/stream/UDPSocket.h
+            /// \struct UDPSocket::WriteMsgOverlapped UDPSocket.h thekogans/stream/UDPSocket.h
             ///
             /// \brief
             /// Uses sendmsg to write the buffer to the stream.
-            struct WriteMsgBufferInfo : public AsyncInfo::BufferInfo {
+            struct WriteMsgOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// WriteMsgBufferInfo has a private heap to help with memory
+                /// WriteMsgOverlapped has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteMsgBufferInfo, util::SpinLock)
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteMsgOverlapped, util::SpinLock)
 
                 /// \brief
                 /// \see{UDPSocket} to write to.
@@ -606,7 +662,7 @@ namespace thekogans {
                 /// \param[in] from_ Local \see{Address} to write from.
                 /// \param[in] to_ Peer \see{Address} to write to.
                 /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                WriteMsgBufferInfo (
+                WriteMsgOverlapped (
                     UDPSocket &udpSocket_,
                     const void *buffer_,
                     std::size_t count,
@@ -619,32 +675,32 @@ namespace thekogans {
                 /// \param[in] buffer_ \see{util::Buffer} to write.
                 /// \param[in] from_ Local \see{Address} to write from.
                 /// \param[in] to_ Peer \see{Address} to write to.
-                WriteMsgBufferInfo (
+                WriteMsgOverlapped (
                     UDPSocket &udpSocket_,
                     util::Buffer buffer_,
                     const Address &from_,
                     const Address &to_) :
-                    BufferInfo (udpSocket_, AsyncInfo::EventWriteMsg),
+                    Overlapped (udpSocket_, AsyncInfo::EventWriteMsg),
                     udpSocket (udpSocket_),
                     buffer (std::move (buffer_)),
                     from (from_),
                     to (to_) {}
 
                 /// \brief
-                /// Used by \see{AsyncInfo::WriteBuffers} to write
+                /// Used by \see{AsyncInfo::PumpAsyncIo} to write
                 /// the buffer to the given stream.
                 /// \return Count of bytes written.
-                virtual ssize_t Write ();
+                virtual ssize_t Prolog ();
                 /// \brief
-                /// Used by \see{AsyncInfo::WriteBuffers} to complete
+                /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
                 /// the write operation and notify \see{AsyncIoEventSink}.
                 /// \return true = \see{AsyncIoEventSink} was notified,
                 /// false = \see{AsyncIoEventSink} was not notified.
-                virtual bool Notify ();
+                virtual bool Epilog ();
 
                 /// \brief
-                /// WriteMsgBufferInfo is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteMsgBufferInfo)
+                /// WriteMsgOverlapped is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteMsgOverlapped)
             };
             /// \brief
             /// Used by AsyncIoEventQueue to notify the stream of

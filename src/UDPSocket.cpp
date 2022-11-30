@@ -164,9 +164,9 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new AsyncInfo::WriteBufferInfo (*this, buffer, count)));
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new AsyncInfo::WriteOverlapped (*this, buffer, count)));
                 }
                 else {
                     countWritten = send (handle, (const char *)buffer, count, 0);
@@ -203,9 +203,9 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new AsyncInfo::WriteOverlapped (*this, std::move (buffer))));
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 else {
@@ -281,9 +281,9 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteToBufferInfo (
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new WriteToOverlapped (
                                 *this, buffer, count, address)));
                 }
                 else {
@@ -327,9 +327,9 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteToBufferInfo (
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new WriteToOverlapped (
                                 *this, std::move (buffer), address)));
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -424,9 +424,9 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteMsgBufferInfo (
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new WriteMsgOverlapped (
                                 *this, buffer, count, from, to)));
                 }
                 else {
@@ -470,9 +470,9 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new WriteMsgBufferInfo (
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new WriteMsgOverlapped (
                                 *this, std::move (buffer), from, to)));
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -1206,15 +1206,15 @@ namespace thekogans {
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (UDPSocket::WriteToBufferInfo, util::SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (UDPSocket::WriteToOverlapped, util::SpinLock)
 
-        UDPSocket::WriteToBufferInfo::WriteToBufferInfo (
+        UDPSocket::WriteToOverlapped::WriteToOverlapped (
             UDPSocket &udpSocket_,
             const void *buffer_,
             std::size_t count,
             const Address &address_,
             bool useGetBuffer) :
-            BufferInfo (udpSocket_, AsyncInfo::EventWriteTo),
+            Overlapped (udpSocket_, AsyncInfo::EventWriteTo),
             udpSocket (udpSocket_),
             buffer (useGetBuffer ?
                 udpSocket.asyncInfo->eventSink.GetBuffer (
@@ -1228,7 +1228,7 @@ namespace thekogans {
                     (const util::ui8 *)buffer_ + count)),
             address (address_) {}
 
-        ssize_t UDPSocket::WriteToBufferInfo::Write () {
+        ssize_t UDPSocket::WriteToOverlapped::Prolog () {
             ssize_t countWritten = sendto (udpSocket.handle,
                 buffer.GetReadPtr (), buffer.GetDataAvailableForReading (), 0,
                 &address.address, address.length);
@@ -1238,7 +1238,7 @@ namespace thekogans {
             return countWritten;
         }
 
-        bool UDPSocket::WriteToBufferInfo::Notify () {
+        bool UDPSocket::WriteToOverlapped::Epilog () {
             if (buffer.IsEmpty ()) {
                 udpSocket.asyncInfo->eventSink.HandleUDPSocketWriteTo (
                     udpSocket, std::move (buffer), address);
@@ -1247,16 +1247,16 @@ namespace thekogans {
             return false;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (UDPSocket::WriteMsgBufferInfo, util::SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (UDPSocket::WriteMsgOverlapped, util::SpinLock)
 
-        UDPSocket::WriteMsgBufferInfo::WriteMsgBufferInfo (
+        UDPSocket::WriteMsgOverlapped::WriteMsgOverlapped (
             UDPSocket &udpSocket_,
             const void *buffer_,
             std::size_t count,
             const Address &from_,
             const Address &to_,
             bool useGetBuffer) :
-            BufferInfo (udpSocket_, AsyncInfo::EventWriteMsg),
+            Overlapped (udpSocket_, AsyncInfo::EventWriteMsg),
             udpSocket (udpSocket_),
             buffer (useGetBuffer ?
                 udpSocket.asyncInfo->eventSink.GetBuffer (
@@ -1271,7 +1271,7 @@ namespace thekogans {
             from (from_),
             to (to_) {}
 
-        ssize_t UDPSocket::WriteMsgBufferInfo::Write () {
+        ssize_t UDPSocket::WriteMsgOverlapped::Prolog () {
             MsgHdr msgHdr (buffer.GetReadPtr (), buffer.GetDataAvailableForReading (), from, to);
             ssize_t countWritten = sendmsg (udpSocket.handle, &msgHdr, 0);
             if (countWritten > 0) {
@@ -1280,7 +1280,7 @@ namespace thekogans {
             return countWritten;
         }
 
-        bool UDPSocket::WriteMsgBufferInfo::Notify () {
+        bool UDPSocket::WriteMsgOverlapped::Epilog () {
             if (buffer.IsEmpty ()) {
                 udpSocket.asyncInfo->eventSink.HandleUDPSocketWriteMsg (
                     udpSocket, std::move (buffer), from, to);
@@ -1310,7 +1310,7 @@ namespace thekogans {
                 }
             }
             else if (event == AsyncInfo::EventWrite) {
-                asyncInfo->WriteBuffers ();
+                asyncInfo->PumpAsyncIo ();
             }
             if (event == AsyncInfo::EventReadFrom) {
                 THEKOGANS_UTIL_TRY {
@@ -1333,7 +1333,7 @@ namespace thekogans {
                 }
             }
             else if (event == AsyncInfo::EventWriteTo) {
-                asyncInfo->WriteBuffers ();
+                asyncInfo->PumpAsyncIo ();
             }
             else if (event == AsyncInfo::EventReadMsg) {
                 THEKOGANS_UTIL_TRY {
@@ -1357,7 +1357,7 @@ namespace thekogans {
                 }
             }
             else if (event == AsyncInfo::EventWriteMsg) {
-                asyncInfo->WriteBuffers ();
+                asyncInfo->PumpAsyncIo ();
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

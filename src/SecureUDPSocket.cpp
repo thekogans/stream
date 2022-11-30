@@ -375,7 +375,7 @@ namespace thekogans {
                 }
             }
             else if (event == AsyncInfo::EventWrite) {
-                asyncInfo->WriteBuffers ();
+                asyncInfo->PumpAsyncIo ();
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

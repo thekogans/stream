@@ -24,42 +24,131 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientTCPSocket)
 
-        const char * const ClientTCPSocket::Context::VALUE_CLIENT_TCP_SOCKET =
-            "ClientTCPSocket";
-
-        void ClientTCPSocket::Context::Parse (const pugi::xml_node &node) {
-            Socket::Context::Parse (node);
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
-                if (child.type () == pugi::node_element) {
-                    std::string childName = child.name ();
-                    if (childName == Address::TAG_ADDRESS) {
-                        address.Parse (child);
+        void ClientTCPSocket::Connect (const Address &address) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (IsAsync ()) {
+                THEKOGANS_UTIL_TRY {
+                    // Asshole M$ strikes again. Wasted a significant
+                    // portion of my life chasing a bug that wound up
+                    // being that ConnectEx needs the socket to be
+                    // explicitly bound.
+                    if (!IsBound ()) {
+                        Bind (Address::Any (0, address.GetFamily ()));
+                    }
+                    ConnectOverlapped::SharedPtr overlapped (new ConnectOverlapped (*this, address));
+                    if (!WindowsFunctions::Instance ().ConnectEx (
+                            (THEKOGANS_STREAM_SOCKET)handle,
+                            &overlapped->address.address,
+                            overlapped->address.length,
+                            0,
+                            0,
+                            0,
+                            overlapped.Get ())) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                        if (errorCode != WSA_IO_PENDING) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
+                    }
+                    overlapped.Release ();
+                }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
+                }
+            }
+            else {
+                if (WSAConnect ((THEKOGANS_STREAM_SOCKET)handle, &address.address,
+                        address.length, 0, 0, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                }
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            THEKOGANS_UTIL_TRY {
+                if (IsAsync ()) {
+                    AsyncIoEventQueue::Instance ().AddStreamForEvents (AsyncInfo::EventConnect);
+                }
+                if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
+                        THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                    if (errorCode != EINPROGRESS) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
             }
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                if (IsAsync ()) {
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
+                }
+                else {
+                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);
+                }
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        std::string ClientTCPSocket::Context::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            if (tagName != 0) {
-                std::ostringstream stream;
-                stream <<
-                    Socket::Context::ToString (indentationLevel, tagName) <<
-                        address.ToString (indentationLevel + 1) <<
-                    util::CloseTag (indentationLevel, tagName);
-                return stream.str ();
+    #if defined (TOOLCHAIN_OS_Windows)
+        void ClientTCPSocket::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
+            if (overlapped.event == AsyncInfo::EventConnect) {
+                THEKOGANS_UTIL_TRY {
+                    UpdateConnectContext ();
+                    Produce (
+                        std::bind (
+                            &ClientTCPSocketEvents::OnTCPSocketConnected,
+                            std::placeholders::_1,
+                            SharedPtr (this)));
+                }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
+                }
             }
             else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                TCPSocket::HandleAsyncEvent (event);
             }
         }
-
-        Stream::SharedPtr ClientTCPSocket::Context::CreateStream () const {
-            return Stream::SharedPtr (new TCPSocket (family, type, protocol));
+    #else // defined (TOOLCHAIN_OS_Windows)
+        void ClientTCPSocket::HandleAsyncEvent (util::ui32 event) throw () {
+            if (event == AsyncInfo::EventConnect) {
+                THEKOGANS_UTIL_TRY {
+                    AsyncIoEventQueue::Instance ().DeleteStreamForEvents (AsyncInfo::EventConnect);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnTCPSocketConnected,
+                            std::placeholders::_1,
+                            SharedPtr (this)));
+                }
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
+                }
+            }
+            else {
+                TCPSocket::HandleAsyncEvent (event);
+            }
         }
+    #endif // defined (TOOLCHAIN_OS_Windows)
 
     } // namespace stream
 } // namespace thekogans

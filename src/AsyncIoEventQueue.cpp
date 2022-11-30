@@ -50,25 +50,6 @@
 namespace thekogans {
     namespace stream {
 
-        struct AsyncIoEventQueue::StreamDeleter :
-                public AsyncIoEventQueueRegistryList::Callback {
-        private:
-            AsyncIoEventQueue &eventQueue;
-
-        public:
-            explicit StreamDeleter (AsyncIoEventQueue &eventQueue_) :
-                eventQueue (eventQueue_) {}
-            virtual ~StreamDeleter () {
-                eventQueue.ReleaseDeletedStreams ();
-            }
-
-            // AsyncIoEventQueueRegistryList::Callback
-            virtual bool operator () (Stream *stream) {
-                eventQueue.DeleteStream (*stream);
-                return true;
-            }
-        };
-
     #if defined (TOOLCHAIN_OS_Windows)
         AsyncIoEventQueue::AsyncIoEventQueue (util::ui32 concurrentThreads) :
                 handle (
@@ -116,21 +97,6 @@ namespace thekogans {
         }
 
         AsyncIoEventQueue::~AsyncIoEventQueue () {
-        #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-            THEKOGANS_UTIL_TRY {
-                readPipe.Close ();
-                writePipe.Close ();
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
-        #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-            THEKOGANS_UTIL_TRY {
-                StreamDeleter streamDeleter (*this);
-                registryList.for_each (streamDeleter);
-            #if defined (TOOLCHAIN_OS_Windows)
-                WaitForEvents (DEFAULT_MAX_EVENTS_BATCH, util::TimeSpec::Zero);
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
         #if defined (TOOLCHAIN_OS_Windows)
             CloseHandle (handle);
         #elif defined (TOOLCHAIN_OS_Linux)
@@ -142,57 +108,16 @@ namespace thekogans {
 
         void AsyncIoEventQueue::AddStream (
                 Stream &stream,
-                AsyncIoEventSink &eventSink,
                 std::size_t bufferLength) {
             if (stream.IsOpen () && !stream.IsAsync ()) {
-                // Adding the same stream to the queue is stupid but harmless.
-                if (!registryList.contains (&stream)) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    if (CreateIoCompletionPort (
-                            stream.handle, handle, (ULONG_PTR)&stream, 0) == 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    {
-                        util::LockGuard<util::SpinLock> guard (spinLock);
-                        registryList.push_back (&stream);
-                    }
-                    stream.AddRef ();
-                    stream.asyncInfo.Reset (
-                        new Stream::AsyncInfo (*this, stream, eventSink, bufferLength));
-                    stream.InitAsyncIo ();
+            // Adding the same stream to the queue is stupid but harmless.
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (CreateIoCompletionPort (
+                        stream.handle, handle, (ULONG_PTR)&stream, 0) == 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        void AsyncIoEventQueue::DeleteStream (Stream &stream) {
-            if (stream.IsAsync () && &stream.asyncInfo->eventQueue == this) {
-                // This is safe as contains operates on the node and
-                // not the list.
-                // NOTE: This check alows you to call DeleteStream
-                // multiple times with all but the first time being
-                // a noop.
-                if (registryList.contains (&stream)) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    CancelIoEx (stream.handle, 0);
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    DeleteStreamForEvents (stream, stream.asyncInfo->events);
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    {
-                        util::LockGuard<util::SpinLock> guard (spinLock);
-                        registryList.erase (&stream);
-                        deletedStreamsList.push_back (&stream);
-                    }
-                    stream.asyncInfo->ReleaseResources ();
-                    stream.TerminateAsyncIo ();
-                    // Kick WaitForEvents to get it to clean up the mess.
-                    Break ();
-                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -224,7 +149,6 @@ namespace thekogans {
                 std::size_t maxEventsBatch,
                 util::TimeSpec timeSpec) {
             if (maxEventsBatch > 0) {
-                volatile StreamDeleter streamDeleter (*this);
             #if defined (TOOLCHAIN_OS_Windows)
                 std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
                 ULONG count = 0;
@@ -298,7 +222,7 @@ namespace thekogans {
                         }
                         else {
                             Stream::SharedPtr stream = StreamRegistry::Instance ().Get (epollEvents[i].data.u64);
-                            if (stream.Get () != 0 && registryList.contains (stream.Get ())) {
+                            if (stream.Get () != 0) {
                                 if (epollEvents[i].events & EPOLLERR) {
                                     // For all the great things epoll does, it's error
                                     // handling is fucking abysmal. Not returning the
@@ -390,7 +314,7 @@ namespace thekogans {
                         }
                         else {
                             Stream::SharedPtr stream = StreamRegistry::Instance ().Get (kqueueEvents[i].udata);
-                            if (stream.Get () != 0 && registryList.contains (stream.Get ())) {
+                            if (stream.Get () != 0) {
                                 if (kqueueEvents[i].flags & EV_ERROR) {
                                     stream->HandleError (
                                         THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
@@ -451,70 +375,39 @@ namespace thekogans {
             }
         }
 
-        void AsyncIoEventQueue::Break () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (!PostQueuedCompletionStatus (handle, 0, 0, 0)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_TRY {
-                writePipe.Write ("\0", 1);
-            }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                // Prevent the case where an application calls Break
-                // repeatedly without calling WaitForEvents.
-                if (exception.GetErrorCode () != EAGAIN &&
-                        exception.GetErrorCode () != EWOULDBLOCK) {
-                    THEKOGANS_UTIL_RETHROW_EXCEPTION (exception);
-                }
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        void AsyncIoEventQueue::ReleaseDeletedStreams () {
-            util::LockGuard<util::SpinLock> guard (spinLock);
-            while (!deletedStreamsList.empty ()) {
-                Stream *stream = deletedStreamsList.pop_front ();
-                stream->Release ();
-            }
-        }
-
     #if defined (TOOLCHAIN_OS_Linux)
         void AsyncIoEventQueue::AddStreamForEvents (
                 Stream &stream,
                 util::ui32 events) {
-            if (registryList.contains (&stream)) {
-                util::ui32 newEvents = stream.asyncInfo->events | events;
-                if (newEvents > stream.asyncInfo->events) {
-                    epoll_event event = {0};
-                    if (util::Flags32 (newEvents).Test (Stream::AsyncInfo::EventDisconnect)) {
-                        event.events |= EPOLLRDHUP;
-                    }
-                    if (util::Flags32 (newEvents).TestAny (
-                            Stream::AsyncInfo::EventRead |
-                            Stream::AsyncInfo::EventReadFrom |
-                            Stream::AsyncInfo::EventReadMsg)) {
-                        event.events |= EPOLLIN;
-                    }
-                    if (util::Flags32 (newEvents).TestAny (
-                            Stream::AsyncInfo::EventConnect |
-                            Stream::AsyncInfo::EventShutdown |
-                            Stream::AsyncInfo::EventWrite |
-                            Stream::AsyncInfo::EventWriteTo |
-                            Stream::AsyncInfo::EventWriteMsg)) {
-                        event.events |= EPOLLOUT;
-                    }
-                    event.data.u64 = stream.asyncInfo->token;
-                    if (epoll_ctl (handle,
-                            stream.asyncInfo->events == 0 ? EPOLL_CTL_ADD : EPOLL_CTL_MOD,
-                            stream.handle, &event) < 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                    newEvents ^= stream.asyncInfo->events;
-                    stream.asyncInfo->events |= newEvents;
+            util::ui32 newEvents = stream.asyncInfo->events | events;
+            if (newEvents > stream.asyncInfo->events) {
+                epoll_event event = {0};
+                if (util::Flags32 (newEvents).Test (Stream::AsyncInfo::EventDisconnect)) {
+                    event.events |= EPOLLRDHUP;
                 }
+                if (util::Flags32 (newEvents).TestAny (
+                        Stream::AsyncInfo::EventRead |
+                        Stream::AsyncInfo::EventReadFrom |
+                        Stream::AsyncInfo::EventReadMsg)) {
+                    event.events |= EPOLLIN;
+                }
+                if (util::Flags32 (newEvents).TestAny (
+                        Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
+                        Stream::AsyncInfo::EventWrite |
+                        Stream::AsyncInfo::EventWriteTo |
+                        Stream::AsyncInfo::EventWriteMsg)) {
+                    event.events |= EPOLLOUT;
+                }
+                event.data.u64 = stream.asyncInfo->token;
+                if (epoll_ctl (handle,
+                        stream.asyncInfo->events == 0 ? EPOLL_CTL_ADD : EPOLL_CTL_MOD,
+                        stream.handle, &event) < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                newEvents ^= stream.asyncInfo->events;
+                stream.asyncInfo->events |= newEvents;
             }
         }
 
@@ -560,36 +453,34 @@ namespace thekogans {
         void AsyncIoEventQueue::AddStreamForEvents (
                 Stream &stream,
                 util::ui32 events) {
-            if (registryList.contains (&stream)) {
-                util::ui32 newEvents = stream.asyncInfo->events | events;
-                if (newEvents > stream.asyncInfo->events) {
-                    newEvents ^= stream.asyncInfo->events;
-                    if (util::Flags32 (newEvents).TestAny (
-                            Stream::AsyncInfo::EventRead |
-                            Stream::AsyncInfo::EventReadFrom |
-                            Stream::AsyncInfo::EventReadMsg)) {
-                        keventStruct kqueueEvent = {0};
-                        keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, stream.asyncInfo->token);
-                        if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE);
-                        }
+            util::ui32 newEvents = stream.asyncInfo->events | events;
+            if (newEvents > stream.asyncInfo->events) {
+                newEvents ^= stream.asyncInfo->events;
+                if (util::Flags32 (newEvents).TestAny (
+                        Stream::AsyncInfo::EventRead |
+                        Stream::AsyncInfo::EventReadFrom |
+                        Stream::AsyncInfo::EventReadMsg)) {
+                    keventStruct kqueueEvent = {0};
+                    keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, stream.asyncInfo->token);
+                    if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
-                    if (util::Flags32 (newEvents).TestAny (
-                            Stream::AsyncInfo::EventConnect |
-                            Stream::AsyncInfo::EventShutdown |
-                            Stream::AsyncInfo::EventWrite |
-                            Stream::AsyncInfo::EventWriteTo |
-                            Stream::AsyncInfo::EventWriteMsg)) {
-                        keventStruct kqueueEvent = {0};
-                        keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, stream.asyncInfo->token);
-                        if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE);
-                        }
-                    }
-                    stream.asyncInfo->events |= newEvents;
                 }
+                if (util::Flags32 (newEvents).TestAny (
+                        Stream::AsyncInfo::EventConnect |
+                        Stream::AsyncInfo::EventShutdown |
+                        Stream::AsyncInfo::EventWrite |
+                        Stream::AsyncInfo::EventWriteTo |
+                        Stream::AsyncInfo::EventWriteMsg)) {
+                    keventStruct kqueueEvent = {0};
+                    keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, stream.asyncInfo->token);
+                    if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE);
+                    }
+                }
+                stream.asyncInfo->events |= newEvents;
             }
         }
 

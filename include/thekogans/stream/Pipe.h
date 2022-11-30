@@ -44,7 +44,9 @@ namespace thekogans {
         /// actually created from named pipes so that we can take
         /// advantage of overlapped (async) io.
 
-        struct _LIB_THEKOGANS_STREAM_DECL Pipe : public Stream {
+        struct _LIB_THEKOGANS_STREAM_DECL Pipe :
+                public Stream,
+                public util::Producer<StreamEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Pipe)

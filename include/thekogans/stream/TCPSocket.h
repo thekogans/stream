@@ -35,6 +35,24 @@ namespace thekogans {
         /// Forward declaration of \see{ServerSecureTCPSocket}.
         struct ServerSecureTCPSocket;
 
+        struct _LIB_THEKOGANS_STREAM_DECL TCPSocketEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TCPSocketEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~TCPSocketEvents () {}
+
+            /// \brief
+            /// Called to report that the given \see{TCPSocket} has been shutdown.
+            /// \param[in] tcpSocket \see{TCPSocket} that was shutdown.
+            /// \param[in] shutdownType One of \see{TCPSocket::ShutdownType}.
+            virtual void OnTCPSocketShutdown (
+                util::RefCounted::SharedPtr<TCPSocket> tcpSocket,
+                TCPSocket::ShutdownType shutdownType) throw () {}
+        };
+
         /// \struct TCPSocket TCPSocket.h thekogans/stream/TCPSocket.h
         ///
         /// \brief
@@ -42,7 +60,9 @@ namespace thekogans {
         /// It provides all common SOCK_STREAM socket apis, and let's the
         /// derivatives handle the specifics.
 
-        struct _LIB_THEKOGANS_STREAM_DECL TCPSocket : public Socket {
+        struct _LIB_THEKOGANS_STREAM_DECL TCPSocket :
+                public Socket,
+                public thekogans::util::Producer<TCPSocketEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TCPSocket)
@@ -403,15 +423,15 @@ namespace thekogans {
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \struct TCPSocket::ShutdownBufferInfo TCPSocket.h thekogans/stream/TCPSocket.h
+            /// \struct TCPSocket::ShutdownOverlapped TCPSocket.h thekogans/stream/TCPSocket.h
             ///
             /// \brief
             /// Shutdown the socket after all async writes have completed.
-            struct ShutdownBufferInfo : public AsyncInfo::BufferInfo {
+            struct ShutdownOverlapped : public AsyncInfo::Overlapped {
                 /// \brief
-                /// ShutdownBufferInfo has a private heap to help with memory
+                /// ShutdownOverlapped has a private heap to help with memory
                 /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ShutdownBufferInfo, util::SpinLock)
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ShutdownOverlapped, util::SpinLock)
 
                 /// \brief
                 /// \see{TCPSocket} to shutdown.
@@ -425,28 +445,28 @@ namespace thekogans {
                 /// \param[in] tcpSocket_ \see{TCPSocket} to shutdown.
                 /// \param[in] shutdownType One of ShutdownRead,
                 /// ShutdownWrite or ShutdownBoth.
-                ShutdownBufferInfo (
+                ShutdownOverlapped (
                     TCPSocket &tcpSocket_,
                     ShutdownType shutdownType_) :
-                    BufferInfo (tcpSocket_, AsyncInfo::EventShutdown),
+                    Overlapped (tcpSocket_, AsyncInfo::EventShutdown),
                     tcpSocket (tcpSocket_),
                     shutdownType (shutdownType_) {}
 
                 /// \brief
-                /// Used by \see{AsyncInfo::WriteBuffers} to write
+                /// Used by \see{AsyncInfo::PumpAsyncIo} to write
                 /// the buffer to the given stream.
                 /// \return Count of bytes written.
-                virtual ssize_t Write ();
+                virtual ssize_t Prolog ();
                 /// \brief
-                /// Used by \see{AsyncInfo::WriteBuffers} to complete
+                /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
                 /// the write operation and notify \see{AsyncIoEventSink}.
                 /// \return true = \see{AsyncIoEventSink} was notified,
                 /// false = \see{AsyncIoEventSink} was not notified.
-                virtual bool Notify ();
+                virtual bool Epilog ();
 
                 /// \brief
-                /// ShutdownBufferInfo is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ShutdownBufferInfo)
+                /// ShutdownOverlapped is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ShutdownOverlapped)
             };
             /// \brief
             /// Used by \see{AsyncIoEventQueue::WaitForEvents} to notify the

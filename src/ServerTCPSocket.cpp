@@ -29,57 +29,6 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ServerTCPSocket)
 
-        const char * const ServerTCPSocket::Context::VALUE_SERVER_TCP_SOCKET = "ServerTCPSocket";
-        const char * const ServerTCPSocket::Context::TAG_REUSE_ADDRESS = "ReuseAddress";
-        const char * const ServerTCPSocket::Context::TAG_MAX_PENDING_CONNECTIONS = "MaxPendingConnections";
-
-        void ServerTCPSocket::Context::Parse (const pugi::xml_node &node) {
-            Socket::Context::Parse (node);
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
-                if (child.type () == pugi::node_element) {
-                    std::string childName = child.name ();
-                    if (childName == Address::TAG_ADDRESS) {
-                        address.Parse (child);
-                    }
-                    else if (childName == TAG_REUSE_ADDRESS) {
-                        reuseAddress = std::string (child.text ().get ()) == util::XML_TRUE;
-                    }
-                    else if (childName == TAG_MAX_PENDING_CONNECTIONS) {
-                        maxPendingConnections = util::stringToui32 (child.text ().get ());
-                    }
-                }
-            }
-        }
-
-        std::string ServerTCPSocket::Context::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            if (tagName != 0) {
-                std::ostringstream stream;
-                stream <<
-                    Socket::Context::ToString (indentationLevel, tagName) <<
-                        address.ToString (indentationLevel + 1) <<
-                        util::OpenTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
-                            util::boolTostring (reuseAddress) <<
-                        util::CloseTag (indentationLevel + 1, TAG_REUSE_ADDRESS) <<
-                        util::OpenTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
-                            util::i32Tostring (maxPendingConnections) <<
-                        util::CloseTag (indentationLevel + 1, TAG_MAX_PENDING_CONNECTIONS) <<
-                    util::CloseTag (indentationLevel, tagName);
-                return stream.str ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        Stream::SharedPtr ServerTCPSocket::Context::CreateStream () const {
-            return Stream::SharedPtr (
-                new ServerTCPSocket (address, reuseAddress, maxPendingConnections));
-        }
-
         ServerTCPSocket::ServerTCPSocket (
                 const Address &address,
                 bool reuseAddress,
@@ -107,7 +56,15 @@ namespace thekogans {
         }
 
         TCPSocket::SharedPtr ServerTCPSocket::Accept () {
-            if (!IsAsync ()) {
+            if (IsAsync ()) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                PostAsyncAccept ();
+            #else // defined (TOOLCHAIN_OS_Windows)
+                AsyncIoEventQueue::Instance ()->AddStreamForEvents (*this, AsyncInfo::EventRead);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                return TCPSocket::SharedPtr ();
+            }
+            else {
                 TCPSocket::SharedPtr connection (
                     new TCPSocket ((THEKOGANS_UTIL_HANDLE)TCPSocket::Accept ()));
             #if defined (TOOLCHAIN_OS_Windows)
@@ -115,19 +72,6 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 return connection;
             }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "%s", "Accept is called on a non-blocking socket.");
-            }
-        }
-
-        void ServerTCPSocket::InitAsyncIo () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            PostAsyncAccept ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            SetBlocking (false);
-            asyncInfo->AddStreamForEvents (AsyncInfo::EventRead);
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

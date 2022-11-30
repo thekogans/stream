@@ -160,9 +160,9 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = 0;
                 if (IsAsync ()) {
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new AsyncInfo::WriteBufferInfo (*this, buffer, count)));
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new AsyncInfo::WriteOverlapped (*this, buffer, count)));
                 }
                 else {
                     countWritten = send (handle, (const char *)buffer, count, 0);
@@ -204,9 +204,9 @@ namespace thekogans {
                     }
                     overlapped.Release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    asyncInfo->EnqBufferBack (
-                        AsyncInfo::BufferInfo::UniquePtr (
-                            new AsyncInfo::WriteBufferInfo (*this, std::move (buffer))));
+                    asyncInfo->EnqOverlappedBack (
+                        AsyncInfo::Overlapped::SharedPtr (
+                            new AsyncInfo::WriteOverlapped (*this, std::move (buffer))));
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 else {
@@ -235,84 +235,6 @@ namespace thekogans {
             return getpeername ((THEKOGANS_STREAM_SOCKET)handle,
                 &address.address, &address.length) != THEKOGANS_STREAM_SOCKET_ERROR;
         #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        void TCPSocket::Connect (const Address &address) {
-            if (address != Address::Empty) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (IsAsync ()) {
-                    // Asshole M$ strikes again. Wasted a significant
-                    // portion of my life chasing a bug that wound up
-                    // being that ConnectEx needs the socket to be
-                    // explicitly bound.
-                    if (!IsBound ()) {
-                        THEKOGANS_UTIL_TRY {
-                            Bind (Address::Any (0, address.GetFamily ()));
-                        }
-                        THEKOGANS_UTIL_CATCH (util::Exception) {
-                            THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                            asyncInfo->eventSink.HandleStreamError (*this, exception);
-                            return;
-                        }
-                    }
-                    ConnectOverlapped::SharedPtr overlapped (
-                        new ConnectOverlapped (*this, address));
-                    if (!WindowsFunctions::Instance ().ConnectEx (
-                            (THEKOGANS_STREAM_SOCKET)handle,
-                            &overlapped->address.address,
-                            overlapped->address.length,
-                            0,
-                            0,
-                            0,
-                            overlapped.Get ())) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                        if (errorCode != WSA_IO_PENDING) {
-                            asyncInfo->eventSink.HandleStreamError (
-                                *this,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                            return;
-                        }
-                    }
-                    overlapped.Release ();
-                }
-                else {
-                    if (WSAConnect ((THEKOGANS_STREAM_SOCKET)handle, &address.address,
-                            address.length, 0, 0, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                if (IsAsync ()) {
-                    THEKOGANS_UTIL_TRY {
-                        asyncInfo->AddStreamForEvents (AsyncInfo::EventConnect);
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                        asyncInfo->eventSink.HandleStreamError (*this, exception);
-                        return;
-                    }
-                }
-                if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
-                        THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                    if (errorCode != EINPROGRESS) {
-                        if (IsAsync ()) {
-                            asyncInfo->eventSink.HandleStreamError (
-                                *this,
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                    }
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -536,9 +458,9 @@ namespace thekogans {
                     asyncInfo->eventSink.HandleStreamError (*this, exception);
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
-                asyncInfo->EnqBufferBack (
-                    AsyncInfo::BufferInfo::UniquePtr (
-                        new ShutdownBufferInfo (*this, shutdownType)));
+                asyncInfo->EnqOverlappedBack (
+                    AsyncInfo::Overlapped::SharedPtr (
+                        new ShutdownOverlapped (*this, shutdownType)));
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else if (ShutdownHelper (shutdownType) == THEKOGANS_STREAM_SOCKET_ERROR) {
@@ -751,17 +673,17 @@ namespace thekogans {
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (TCPSocket::ShutdownBufferInfo, util::SpinLock)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (TCPSocket::ShutdownOverlapped, util::SpinLock)
 
-        ssize_t TCPSocket::ShutdownBufferInfo::Write () {
+        ssize_t TCPSocket::ShutdownOverlapped::Prolog () {
             THEKOGANS_UTIL_ERROR_CODE errorCode = tcpSocket.ShutdownHelper (shutdownType);
-            // Stream::AsyncInfo::WriteBuffers uses the return code to figure out what to do next.
-            // Returning 1 for successful shutdown tells it to call Notify next. -1 means do error
+            // Stream::AsyncInfo::PumpAsyncIo uses the return code to figure out what to do next.
+            // Returning 1 for successful shutdown tells it to call Epilog next. -1 means do error
             // processing.
             return errorCode == THEKOGANS_STREAM_SOCKET_ERROR ? -1 : 1;
         }
 
-        bool TCPSocket::ShutdownBufferInfo::Notify () {
+        bool TCPSocket::ShutdownOverlapped::Epilog () {
             tcpSocket.asyncInfo->eventSink.HandleTCPSocketShutdown (tcpSocket, shutdownType);
             return true;
         }
@@ -781,7 +703,7 @@ namespace thekogans {
                 asyncInfo->eventSink.HandleStreamDisconnect (*this);
             }
             else if (event == AsyncInfo::EventShutdown) {
-                asyncInfo->WriteBuffers ();
+                asyncInfo->PumpAsyncIo ();
             }
             else if (event == AsyncInfo::EventRead) {
                 THEKOGANS_UTIL_TRY {
@@ -804,7 +726,7 @@ namespace thekogans {
                 }
             }
             else if (event == AsyncInfo::EventWrite) {
-                asyncInfo->WriteBuffers ();
+                asyncInfo->PumpAsyncIo ();
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

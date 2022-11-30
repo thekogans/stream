@@ -31,6 +31,25 @@
 namespace thekogans {
     namespace stream {
 
+        struct ServerNamedPipe;
+
+        struct _LIB_THEKOGANS_STREAM_DECL ServerNamedPipeEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ServerNamedPipeEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~ServerNamedPipeEvents () {}
+
+            /// \brief
+            /// Called to report a connection on a \see{ServerNamedPipe}.
+            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
+            /// the connection occurred.
+            virtual void OnServerNamedPipeConnection (
+                util::RefCounted::SharedPtr<ServerNamedPipe> serverNamedPipe) throw ();
+        }
+
         /// \struct ServerNamedPipe ServerNamedPipe.h thekogans/stream/ServerNamedPipe.h
         ///
         /// \brief
@@ -59,7 +78,9 @@ namespace thekogans {
         /// }
         /// \endcode
 
-        struct _LIB_THEKOGANS_STREAM_DECL ServerNamedPipe : public NamedPipe {
+        struct _LIB_THEKOGANS_STREAM_DECL ServerNamedPipe :
+                public NamedPipe,
+                public util::Producer<ServerNamedPipeEvents> {
             /// \brief
             /// ServerNamedPipe participates in the Stream dynamic
             /// discovery and creation.
