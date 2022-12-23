@@ -29,11 +29,8 @@ namespace thekogans {
     namespace stream {
 
         /// \brief
-        /// Forward declaration of \see{ServerTCPSocket}.
-        struct ServerTCPSocket;
-        /// \brief
-        /// Forward declaration of \see{ServerSecureTCPSocket}.
-        struct ServerSecureTCPSocket;
+        /// Forward declaration of \see{TCPSocket}.
+        struct TCPSocket;
 
         struct _LIB_THEKOGANS_STREAM_DECL TCPSocketEvents : public virtual util::RefCounted {
             /// \brief
@@ -45,12 +42,28 @@ namespace thekogans {
             virtual ~TCPSocketEvents () {}
 
             /// \brief
+            /// Called when a client \see{TCPSocket} has established
+            /// a connection to the server.
+            /// \param[in] tcpSocket \see{TCPSocket} that established
+            /// a connection.
+            /// \param[in] adress \see{Address} the client connected on.
+            virtual void OnTCPSocketConnect (
+                util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
+                const Address & /*address*/) throw () {}
+            /// \brief
+            /// Called to report a new connection on a \see{TCPSocket}.
+            /// \param[in] tcpSocket \see{TCPSocket} on which the new connection occurred.
+            /// \param[in] connection The new connection socket.
+            virtual void OnTCPSocketAccept (
+                util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
+                util::RefCounted::SharedPtr<TCPSocket> /*connection*/) throw () {}
+            /// \brief
             /// Called to report that the given \see{TCPSocket} has been shutdown.
             /// \param[in] tcpSocket \see{TCPSocket} that was shutdown.
             /// \param[in] shutdownType One of \see{TCPSocket::ShutdownType}.
             virtual void OnTCPSocketShutdown (
-                util::RefCounted::SharedPtr<TCPSocket> tcpSocket,
-                TCPSocket::ShutdownType shutdownType) throw () {}
+                util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
+                TCPSocket::ShutdownType /*shutdownType*/) throw () {}
         };
 
         /// \struct TCPSocket TCPSocket.h thekogans/stream/TCPSocket.h
@@ -59,24 +72,228 @@ namespace thekogans {
         /// TCPSocket is a base class for all SOCK_STREAM socket derivatives.
         /// It provides all common SOCK_STREAM socket apis, and let's the
         /// derivatives handle the specifics.
+        ///
+        /// Ex:
+        /// \code{.cpp}
+        /// using namespace thekogans;
+        ///
+        /// struct Client :
+        ///         public util::Singleton<
+        ///             Client,
+        ///             util::SpinLock,
+        ///             util::RefCountedInstanceCreator<Client>,
+        ///             util::RefCountedInstanceDestroyer<Client>>,
+        ///         public util::Subscriber<StreamEvents>,
+        ///         public util::Subscriber<TCPSocketEvents> {
+        /// private:
+        ///     stream::Address address;
+        ///     stream::TCPSocket::SharedPtr clientSocket;
+        ///     util::JobQueue jobQueue;
+        ///
+        /// public:
+        ///     void Start (const stream::Address &address_) {
+        ///         address = address_;
+        ///         ResetIo (true);
+        ///     }
+        ///
+        ///     void Stop () {
+        ///         ResetIo (false);
+        ///     }
+        ///
+        /// private:
+        ///     // StreamEvents
+        ///     void OnStreamError (
+        ///             Stream::SharedPtr /*stream*/,
+        ///             const util::Exception &exception) throw () {
+        ///         // Log exception.
+        ///         // Perhaps wait a while between retries.
+        ///         ResetIo (true);
+        ///     }
+        ///
+        ///     void OnStreamDisconnect (Stream::SharedPtr /*stream*/) throw () {
+        ///         ResetIo (true);
+        ///     }
+        ///
+        ///     void Client::OnStreamRead (
+        ///             Stream::SharedPtr stream,
+        ///             const util::Buffer &buffer) throw () {
+        ///         // Process incomming reply from the server.
+        ///         // Post an async read to get the servers response.
+        ///         stream->Read (0);
+        ///     }
+        ///
+        ///     // TCPSocketEvents
+        ///     void Client::OnTCPSocketConnect (TCPSocket::SharedPtr tcpSocket) throw () {
+        ///         // Send handshake packet(s).
+        ///         ...
+        ///         // Post an async read to get the servers response.
+        ///         tcpSocket->Read (0);
+        ///     }
+        ///
+        ///     void Client::ResetIo (bool connect) {
+        ///         // Given the nature of async io, there are no guarantees that the clientSocket.Reset (...)
+        ///         // call below will result in the pointer being deleted. There might be residual references
+        ///         // due to other threads in the code still doing work on the object. It is therefore
+        ///         // imperative that we sever all communications with the old producer before creating a new one.
+        ///         // Stream contamination is a dangerous thing.
+        ///         util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+        ///         util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
+        ///         clientSocket.Reset ();
+        ///         if (connect) {
+        ///             // Create new async client socket.
+        ///             clientSocket.Reset (new stream::TCPSocket (AF_INET, SOCK_STREAM, 0));
+        ///             // Setup async notifications.
+        ///             util::Subscriber<stream::StreamEvents>::Subscribe (
+        ///                 *clientSocket,
+        ///                 util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                     new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
+        ///                         jobQueue)));
+        ///             util::Subscriber<stream::ClientTCPSocketEvents>::Subscribe (
+        ///                 *clientSocket,
+        ///                 util::Producer<stream::ClientTCPSocketEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                     new util::Producer<stream::ClientTCPSocketEvents>::RunLoopEventDeliveryPolicy (
+        ///                         jobQueue)));
+        ///             // The socket is now async. All appropriate notification channels are open.
+        ///             // Fire up a connect attempt.
+        ///             clientSocket->Connect (address);
+        ///         }
+        ///     }
+        /// };
+        /// \endcode
+        ///
+        /// Ex:
+        /// \code{.cpp}
+        /// using namespace thekogans;
+        ///
+        /// struct Server :
+        ///         public util::Singleton<
+        ///             Server,
+        ///             util::SpinLock,
+        ///             util::RefCountedInstanceCreator<Server>,
+        ///             util::RefCountedInstanceDestroyer<Server>>,
+        ///         public util::Subscriber<StreamEvents>, {
+        ///         public util::Subscriber<TCPSocketEvents> {
+        /// private:
+        ///     stream::Address address;
+        ///     bool reuseAddress;
+        ///     util::ui32 maxPendingConnections;
+        ///     stream::TCPSocket::SharedPtr serverSocket;
+        ///     std::vector<TCPSocket::SharedPtr> connections;
+        ///     util::JobQueue jobQueue;
+        ///     // NOTE: Even though the server is fully async, there's no
+        ///     // need for a lock protecting it's resources as all communications
+        ///     // are seralized on the jobQueue above.
+        ///
+        /// public:
+        ///     void Start (
+        ///             const stream::Address &address_,
+        ///             bool reuseAddress_ = false,
+        ///             util::ui32 maxPendingConnections_ = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS) {
+        ///         address = address_;
+        ///         reuseAddress = reuseAddress_;
+        ///         maxPendingConnections = maxPendingConnections_;
+        ///         ResetIo (true);
+        ///     }
+        ///
+        ///     void Stop () {
+        ///         ResetIo (false);
+        ///     }
+        ///
+        /// private:
+        ///     // StreamEvents
+        ///     virtual void OnStreamError (
+        ///             stream::Stream::SharedPtr stream,
+        ///             const util::Exception &exception) throw () {
+        ///         // Log exception.
+        ///         if (serverSocket == stream) {
+        ///             ResetIo (true);
+        ///         }
+        ///         else {
+        ///             RemoveConnection (stream);
+        ///         }
+        ///     }
+        ///
+        ///     virtual void OnStreamDisconnect (stream::Stream::SharedPtr stream) throw () {
+        ///         RemoveConnection (stream);
+        ///     }
+        ///
+        ///     virtual void OnStreamRead (
+        ///             stream::Stream::SharedPtr stream,
+        ///             const util::Buffer &buffer) throw () {
+        ///         // Process incomming request from a client.
+        ///         // Initiate an async read to listen for client requests.
+        ///         stream->Read (0);
+        ///     }
+        ///
+        ///     // TCPSocketEvents
+        ///     virtual void OnTCPSocketAccept (
+        ///             stream::TCPSocket::SharedPtr /*tcpSocket*/,
+        ///             stream::TCPSocket::SharedPtr connection) throw () {
+        ///         // Setup async notifications.
+        ///         util::Subscriber<stream::StreamEvents>::Subscribe (
+        ///             *connection,
+        ///             util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                 new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
+        ///                     jobQueue)));
+        ///         // Initiate an async read to listen for client requests.
+        ///         connection->Read (0);
+        ///         connections.push_back (connection);
+        ///         // Listen for more client connections.
+        ///         serverSocket->Accept ();
+        ///     }
+        ///
+        ///     void ResetIo (bool accept) {
+        ///         // Given the nature of async io, there are no guarantees that the connections.clear () and
+        ///         // serverSocket.Reset (...) calls below will result in the pointers being deleted. There might
+        ///         // be residual references on the objects just due to other threads in the code still doing some
+        ///         // work. It is therefore imperative that we sever all communications with the old producers before
+        ///         // connecting new ones. Stream contamination is a dangerous thing.
+        ///         util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+        ///         util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
+        ///         connections.clear ();
+        ///         serverSocket.Reset ();
+        ///         if (accept) {
+        ///             // Create a listening socket.
+        ///             serverSocket.Reset (new stream::TCPSocket (address, reuseAddress, maxPendingConnections));
+        ///             // Setup async notifications.
+        ///             util::Subscriber<stream::StreamEvents>::Subscribe (
+        ///                 *serverSocket,
+        ///                 util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                     new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
+        ///                         jobQueue)));
+        ///             util::Subscriber<stream::TCPSocketEvents>::Subscribe (
+        ///                 *serverSocket,
+        ///                 util::Producer<stream::TCPSocketEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                     new util::Producer<stream::TCPSocketEvents>::RunLoopEventDeliveryPolicy (
+        ///                         jobQueue)));
+        ///             // We're open for business. Start listening for client connections.
+        ///             serverSocket->Accept ();
+        ///         }
+        ///     }
+        ///
+        ///     void RemoveConnection (Stream::SharedPtr stream ) {
+        ///         std::vector<TCPSocket::SharedPtr>::iterator it =
+        ///             std::find (connections.begin (), connections.end (), stream);
+        ///         if (it != connections.end ()) {
+        ///             util::Subscriber<stream::StreamEvents>::Unsubscribe (**it);
+        ///             connections.erase (it);
+        ///         }
+        ///     }
+        /// };
+        /// \endcode
 
         struct _LIB_THEKOGANS_STREAM_DECL TCPSocket :
                 public Socket,
-                public thekogans::util::Producer<TCPSocketEvents> {
+                public util::Producer<TCPSocketEvents> {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TCPSocket)
-
-            /// \brief
-            /// TCPSocket has a private heap to help with memory
-            /// management, performance, and global heap fragmentation.
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (TCPSocket, util::SpinLock)
+            /// TCPSocket is a \see{Stream}.
+            THEKOGANS_STREAM_DECLARE_STREAM (TCPSocket)
 
             /// \brief
             /// ctor.
             /// Wrap an OS handle.
             /// \param[in] handle OS stream handle to wrap.
-            TCPSocket (THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE) :
+            TCPSocket (THEKOGANS_UTIL_HANDLE handle) :
                 Socket (handle) {}
             /// \brief
             /// ctor.
@@ -88,39 +305,26 @@ namespace thekogans {
                 int type,
                 int protocol) :
                 Socket (family, type, protocol) {}
-
-            // Stream
+            enum {
+                /// \brief
+                /// Default max pending connection requests.
+                DEFAULT_MAX_PENDING_CONNECTIONS = 5
+            };
             /// \brief
-            /// Disconnect the stream from it's peer.
-            virtual void Disconnect ();
-
-            /// \brief
-            /// Read bytes from the stream.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually placed in the buffer.
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count);
-            /// \brief
-            /// Write bytes to the stream.
-            /// \param[in] buffer Bytes to write.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually written.
-            virtual std::size_t Write (
-                const void *buffer,
-                std::size_t count);
-            /// \brief
-            /// Async write a buffer to the stream.
-            /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer buffer);
+            /// ctor.
+            /// \param[in] address Address to listen on.
+            /// \param[in] reuseAddress Call \see{Socket::SetReuseAddress} with this parameter.
+            TCPSocket (
+                const Address &address,
+                bool reuseAddress = false,
+                util::i32 maxPendingConnections = DEFAULT_MAX_PENDING_CONNECTIONS);
 
             /// \brief
             /// Return true if Connect was successfully called on this socket.
             /// \return true if Connect was successfully called on this socket.
             bool IsConnected () const;
             /// \brief
-            /// Connect to a host with the given address.
+            /// Async connect to a host with the given address.
             /// \param[in] address Address of host to connect to.
             void Connect (const Address &address);
         #if defined (TOOLCHAIN_OS_Windows)
@@ -134,15 +338,13 @@ namespace thekogans {
             /// Return true if socket is in listening mode.
             /// \return true if socket is in listening mode.
             bool IsListening () const;
-            enum {
-                /// \brief
-                /// Default max pending connection requests.
-                DEFAULT_MAX_PENDING_CONNECTIONS = 5
-            };
             /// \brief
             /// Listen for incoming connections.
             /// \param[in] maxPendingConnections Maximum number of waiting connections.
             void Listen (util::i32 maxPendingConnections = DEFAULT_MAX_PENDING_CONNECTIONS);
+            /// \brief
+            /// Start async connections wait.
+            void Accept ();
 
             /// \brief
             /// Return true if SO_KEEPALIVE option is set.
@@ -213,172 +415,21 @@ namespace thekogans {
                 ShutdownBoth
             };
             /// \brief
-            /// Shutdown either the read or the write end of the
+            /// Async shutdown either the read or the write end of the
             /// socket without closing it.
             /// \param[in] shutdownType One of ShutdownRead,
             /// ShutdownWrite or ShutdownBoth.
             void Shutdown (ShutdownType shutdownType = ShutdownBoth);
 
-            /// \brief
-            /// Accept a pending connection.
-            /// NOTE: This is a blocking function.
-            /// \return Handle to new connection.
-            THEKOGANS_STREAM_SOCKET Accept ();
-
         protected:
             // Stream
             /// \brief
-            /// Used by the \see{AsyncIoEventQueue::AddStream} to
-            /// allow the stream to initialize itself. When this
-            /// function is called, the stream is already async,
-            /// and \see{Stream::AsyncInfo} has been created. At
-            /// this point the stream should do whatever stream
-            /// specific initialization it needs to do.
-            virtual void InitAsyncIo ();
+            /// Used by \see{AsyncIoEventQueue::WaitForEvents} to notify the
+            /// stream that an overlapped operation has completed successfully.
+            /// \param[in] overlapped Overlapped that completed successfully.
+            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
+
         #if defined (TOOLCHAIN_OS_Windows)
-            /// \struct TCPSocket::ConnectOverlapped TCPSocket.h thekogans/stream/TCPSocket.h
-            ///
-            /// \brief
-            /// ConnectOverlapped is a helper class. It reduces code clutter and makes
-            /// instantiating Overlapped used by \see{TCPSocket::Connect} easier.
-            struct ConnectOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ConnectOverlapped)
-
-                /// \brief
-                /// ConnectOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ConnectOverlapped, util::SpinLock)
-
-                /// \brief
-                /// Address used by async TCPSocket::Connect.
-                Address address;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this ConnectOverlapped.
-                /// \param[in] address Address used by \see{TCPSocket::Connect}.
-                ConnectOverlapped (
-                    Stream &stream,
-                    const Address &address_) :
-                    Overlapped (stream, Stream::AsyncInfo::EventConnect),
-                    address (address_) {}
-
-                /// \brief
-                /// ConnectOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ConnectOverlapped)
-            };
-            /// \struct TCPSocket::AcceptOverlapped TCPSocket.h thekogans/stream/TCPSocket.h
-            ///
-            /// \brief
-            /// AcceptOverlapped is a helper class. It reduces code clutter and makes
-            /// instantiating Overlapped used by \see{TCPSocket::Accept} easier.
-            struct AcceptOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AcceptOverlapped)
-
-                /// \brief
-                /// AcceptOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AcceptOverlapped, util::SpinLock)
-
-                /// \brief
-                /// Pending (Secure)TCPSocket used by Server(Secure)TCPSocket.
-                THEKOGANS_STREAM_SOCKET connection;
-                /// \brief
-                /// Buffer used with AcceptEx.
-                char acceptBuffer[256];
-                /// \brief
-                /// Count used with AcceptEx.
-                DWORD bytesReceived;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this AcceptOverlapped.
-                /// \param[in] family Address family specification.
-                /// \param[in] type Socket type specification.
-                /// \param[in] protocol Socket protocol specification.
-                AcceptOverlapped (
-                        Stream &stream,
-                        int family,
-                        int type,
-                        int protocol) :
-                        Overlapped (stream, Stream::AsyncInfo::EventConnect),
-                        connection (WSASocketW (family, type, protocol, 0, 0, WSA_FLAG_OVERLAPPED)),
-                        bytesReceived (0) {
-                    if (connection == THEKOGANS_STREAM_INVALID_SOCKET) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
-                }
-                /// \brief
-                /// dtor.
-                /// Close the socket if no one claimed it.
-                virtual ~AcceptOverlapped () {
-                    if (connection != THEKOGANS_STREAM_INVALID_SOCKET) {
-                        closesocket (connection);
-                    }
-                }
-
-                /// \brief
-                /// AcceptOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (AcceptOverlapped)
-            };
-            /// \struct TCPSocket::ShutdownOverlapped TCPSocket.h thekogans/stream/TCPSocket.h
-            ///
-            /// \brief
-            /// ShutdownOverlapped is a helper class. It reduces code clutter and makes
-            /// instantiating Overlapped used by \see{TCPSocket::Shutdown} easier.
-            struct ShutdownOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ShutdownOverlapped)
-
-                /// \brief
-                /// ShutdownOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ShutdownOverlapped, util::SpinLock)
-
-                /// \brief
-                /// TCPSocket to shutdown.
-                TCPSocket &tcpSocket;
-                /// \brief
-                /// Type of shutdown performed on (Secure)TCPSocket.
-                ShutdownType shutdownType;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] tcpSocket_ TCPSocket to shutdown.
-                /// \param[in] shutdownType_ Type of shutdown performed on (Secure)TCPSocket.
-                ShutdownOverlapped (
-                    TCPSocket &tcpSocket_,
-                    ShutdownType shutdownType_) :
-                    Overlapped (tcpSocket_, AsyncInfo::EventShutdown),
-                    tcpSocket (tcpSocket_),
-                    shutdownType (shutdownType_) {}
-
-                /// \brief
-                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                /// the Overlapped to perform post op housekeeping prior to
-                /// calling GetError.
-                virtual void Prolog () throw () {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode =
-                        tcpSocket.ShutdownHelper (shutdownType);
-                    SetError (
-                        errorCode == THEKOGANS_STREAM_SOCKET_ERROR ?
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE :
-                        ERROR_SUCCESS);
-                }
-
-                /// \brief
-                /// ShutdownOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ShutdownOverlapped)
-            };
-            /// \brief
-            /// Windows helper used by (Secure)TCPSocket.
-            void UpdateConnectContext ();
             /// \brief
             /// Windows helper used by Server(Secure)TCPSocket.
             /// \param[in] listenningSocket Socket to use to
@@ -393,104 +444,18 @@ namespace thekogans {
             static void UpdateAcceptContext (
                 THEKOGANS_UTIL_HANDLE listenningSocket,
                 THEKOGANS_UTIL_HANDLE acceptedSocket);
-            /// \brief
-            /// Return true if client socket is bound.
-            /// \return true if client socket is bound.
-            bool IsBound () const;
-            /// \brief
-            /// Initiate an overlapped Shutdown.
-            /// \param[in] shutdownType ShutdownRead, ShutdownWrite or ShutdownBoth.
-            void PostAsyncShutdown (ShutdownType shutdownType);
-            /// \brief
-            /// Initiate an overlapped WSARecv.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}.
-            void PostAsyncRead (bool useGetBuffer = true);
-            /// \brief
-            /// Initiate an overlapped WSASend.
-            /// \param[in] buffer Buffer to send.
-            /// \param[in] count Length of buffer.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}.
-            void PostAsyncWrite (
-                const void *buffer,
-                std::size_t count,
-                bool useGetBuffer = true);
-            /// \brief
-            /// Initiate an overlapped AcceptEx.
-            void PostAsyncAccept ();
-            /// \brief
-            /// Used by \see{AsyncIoEventQueue::WaitForEvents} to notify the
-            /// stream that an overlapped operation has completed successfully.
-            /// \param[in] overlapped Overlapped that completed successfully.
-            virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \struct TCPSocket::ShutdownOverlapped TCPSocket.h thekogans/stream/TCPSocket.h
-            ///
-            /// \brief
-            /// Shutdown the socket after all async writes have completed.
-            struct ShutdownOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// ShutdownOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ShutdownOverlapped, util::SpinLock)
-
-                /// \brief
-                /// \see{TCPSocket} to shutdown.
-                TCPSocket &tcpSocket;
-                /// \brief
-                /// One of ShutdownRead, ShutdownWrite or ShutdownBoth.
-                ShutdownType shutdownType;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] tcpSocket_ \see{TCPSocket} to shutdown.
-                /// \param[in] shutdownType One of ShutdownRead,
-                /// ShutdownWrite or ShutdownBoth.
-                ShutdownOverlapped (
-                    TCPSocket &tcpSocket_,
-                    ShutdownType shutdownType_) :
-                    Overlapped (tcpSocket_, AsyncInfo::EventShutdown),
-                    tcpSocket (tcpSocket_),
-                    shutdownType (shutdownType_) {}
-
-                /// \brief
-                /// Used by \see{AsyncInfo::PumpAsyncIo} to write
-                /// the buffer to the given stream.
-                /// \return Count of bytes written.
-                virtual ssize_t Prolog ();
-                /// \brief
-                /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
-                /// the write operation and notify \see{AsyncIoEventSink}.
-                /// \return true = \see{AsyncIoEventSink} was notified,
-                /// false = \see{AsyncIoEventSink} was not notified.
-                virtual bool Epilog ();
-
-                /// \brief
-                /// ShutdownOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ShutdownOverlapped)
-            };
-            /// \brief
-            /// Used by \see{AsyncIoEventQueue::WaitForEvents} to notify the
-            /// stream of pending io events.
-            /// \param[in] event \see{AsyncIoEventQueue} events enum.
-            virtual void HandleAsyncEvent (util::ui32 event) throw ();
         #endif // defined (TOOLCHAIN_OS_Windows)
 
+            /// \brief
+            /// Accept a pending connection.
+            /// NOTE: This is a blocking function.
+            /// \return Handle to new connection.
+            THEKOGANS_STREAM_SOCKET AcceptHelper ();
             /// \brief
             /// Used by sync and async shutdown.
             /// \param[in] shutdownType One of ShutdownRead, ShutdownWrite or ShutdownBoth.
             /// \return Result of calling shutdown.
             THEKOGANS_UTIL_ERROR_CODE ShutdownHelper (ShutdownType shutdownType);
-
-            /// \brief
-            /// \see{ServerTCPSocket} needs access to UpdateAcceptContext.
-            friend struct ServerTCPSocket;
-            /// \brief
-            /// \see{ServerSecureTCPSocket} needs access to UpdateAcceptContext.
-            friend struct ServerSecureTCPSocket;
-
-            /// \brief
-            /// Streams are neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (TCPSocket)
         };
 
     } // namespace stream

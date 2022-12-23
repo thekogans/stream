@@ -43,18 +43,18 @@ namespace thekogans {
             /// \param[in] buffer The new datagram.
             /// \param[in] address Peer address that sent the datagram.
             virtual void OnUDPSocketReadFrom (
-                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
-                util::Buffer buffer,
-                const Address &address) throw ();
+                util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
+                const util::Buffer & /*buffer*/,
+                const Address & /*address*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a (Secure)UDPSocket.
             /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
             /// \param[in] buffer The written datagram.
             /// \param[in] address Peer address that received the datagram.
             virtual void OnUDPSocketWriteTo (
-                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
-                util::Buffer buffer,
-                const Address &address) throw ();
+                util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
+                const util::Buffer & /*buffer*/,
+                const Address & /*address*/) throw () {}
 
             /// \brief
             /// Called when a new datagram has arrived on a (Secure)UDPSocket.
@@ -63,10 +63,10 @@ namespace thekogans {
             /// \param[in] from Peer address that sent the datagram.
             /// \param[in] to Local address that received the datagram.
             virtual void OnUDPSocketReadMsg (
-                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
-                util::Buffer buffer,
-                const Address &from,
-                 const Address &to) throw ();
+                util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
+                const util::Buffer & /*buffer*/,
+                const Address & /*from*/,
+                const Address & /*to*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a (Secure)UDPSocket.
             /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
@@ -74,10 +74,10 @@ namespace thekogans {
             /// \param[in] from Local address from which the datagram was sent.
             /// \param[in] to Peer address that will receive the datagram.
             virtual void OnUDPSocketWriteMsg (
-                util::RefCounted::SharedPtr<UDPSocket> udpSocket,
-                util::Buffer buffer,
-                const Address &from,
-                const Address &to) throw ();
+                util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
+                const util::Buffer & /*buffer*/,
+                const Address & /*from*/,
+                const Address & /*to*/) throw () {}
         };
 
         /// \struct UDPSocket UDPSocket.h thekogans/stream/UDPSocket.h
@@ -107,21 +107,16 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL UDPSocket :
                 public Socket,
-                public thekogans::util::Producer<UDPSocketEvents> {
+                public util::Producer<UDPSocketEvents> {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (UDPSocket)
-
-            /// \brief
-            /// UDPSocket has a private heap to help with memory
-            /// management, performance, and global heap fragmentation.
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (UDPSocket, util::SpinLock)
+            /// UDPSocket is a \see{Stream}.
+            THEKOGANS_STREAM_DECLARE_STREAM (UDPSocket)
 
             /// \brief
             /// ctor.
             /// Wrap an OS handle.
             /// \param[in] handle OS stream handle to wrap.
-            UDPSocket (THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE) :
+            UDPSocket (THEKOGANS_UTIL_HANDLE handle) :
                 Socket (handle) {}
             /// \brief
             /// ctor.
@@ -149,50 +144,18 @@ namespace thekogans {
             /// Bind will receive datagrams from this address only. Combined
             /// with \see{Connect}, you can then use Read/Write instead of
             /// ReadFrom/WriteTo.
-            explicit UDPSocket (const Address &address);
-
-            /// \brief
-            /// Read bytes from the stream.
-            /// NOTE: This method can only be called after calling \see{Connect}.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually placed in the buffer.
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count);
-            /// \brief
-            /// Write bytes to the stream.
-            /// NOTE: This method can only be called after calling \see{Connect}.
-            /// \param[in] buffer Bytes to write.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually written.
-            virtual std::size_t Write (
-                const void *buffer,
-                std::size_t count);
-            /// \brief
-            /// Async write a buffer to the stream.
-            /// NOTE: This method can only be called after calling \see{Connect}.
-            /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer buffer);
+            UDPSocket (const Address &address);
 
             /// \brief
             /// Read a datagram and the address it was sent from.
-            /// \param[out] buffer Buffer to write the datagram to.
-            /// \param[in] count size of buffer.
-            /// \param[out] address Peer address the datagram was sent from.
-            /// \return Number of bytes read.
-            virtual std::size_t ReadFrom (
-                void *buffer,
-                std::size_t count,
-                Address &address);
+            void ReadFrom (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
             /// \brief
             /// Write a datagram to the given address.
             /// NOTE: If you called \see{Connect} address is ignored.
             /// \param[in] buffer Buffer representing the datagram.
             /// \param[in] count Size of buffer.
             /// \param[in] address Address the datagram is sent to.
-            /// \return Number of bytes written.
-            virtual std::size_t WriteTo (
+            void WriteTo (
                 const void *buffer,
                 std::size_t count,
                 const Address &address);
@@ -201,7 +164,7 @@ namespace thekogans {
             /// NOTE: If you called \see{Connect} address is ignored.
             /// \param[in] buffer Buffer representing the datagram.
             /// \param[in] address Address the datagram is sent to.
-            virtual void WriteBufferTo (
+            void WriteTo (
                 util::Buffer buffer,
                 const Address &address);
 
@@ -210,16 +173,7 @@ namespace thekogans {
             /// is useful when you need to know both the sending
             /// as well as the receiving addresses. To get the
             /// receiving address, you must call SetRecvPktInfo first.
-            /// \param[out] buffer Buffer that will receive the message.
-            /// \param[in] count Buffer length.
-            /// \param[out] from The address of the host that sent the message.
-            /// \param[out] to The local interface address that received the message.
-            /// \return Number of bytes received.
-            virtual std::size_t ReadMsg (
-                void *buffer,
-                std::size_t count,
-                Address &from,
-                Address &to);
+            void ReadMsg (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
             /// \brief
             /// Use WSASendMsg/sendmsg to write a message. This api
             /// is useful when you need to know both the sending
@@ -230,7 +184,7 @@ namespace thekogans {
             /// \param[in] from The local interface address from which the message is sent.
             /// \param[in] to The address of the host that receive the message.
             /// \return Number of bytes sent.
-            virtual std::size_t WriteMsg (
+            void WriteMsg (
                 const void *buffer,
                 std::size_t count,
                 const Address &from,
@@ -240,7 +194,7 @@ namespace thekogans {
             /// \param[in] buffer Buffer that holds the message to be sent.
             /// \param[in] from The local interface address from which the message is sent.
             /// \param[in] to The address of the host that will receive the message.
-            virtual void WriteBufferMsg (
+            void WriteMsg (
                 util::Buffer buffer,
                 const Address &from,
                 const Address &to);
@@ -350,368 +304,29 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Used by the AsyncIoEventQueue to allow the stream to
-            /// initialize itself. When this function is called, the
-            /// stream is already async, and \see{Stream::AsyncInfo}
-            /// has been created. At this point the stream should do
-            /// whatever stream specific initialization it needs to
-            /// do.
-            virtual void InitAsyncIo ();
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \struct UDPSocket::ReadFromWriteToOverlapped UDPSocket.h thekogans/stream/UDPSocket.h
-            ///
-            /// \brief
-            /// ReadFromWriteToOverlapped is a helper class. It reduces code clutter and
-            /// makes instantiating Overlapped used by \see{UDPSocket::ReadFrom} and
-            /// \see{UDPSocket::WriteTo} easier.
-            struct ReadFromWriteToOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ReadFromWriteToOverlapped)
-
-                /// \brief
-                /// ReadFromWriteToOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ReadFromWriteToOverlapped, util::SpinLock)
-
-                /// \brief
-                /// Buffer used by UDPSocket::ReadFrom/WriteTo.
-                util::Buffer buffer;
-                /// \brief
-                /// Address used by UDPSocket::ReadFrom/WriteTo.
-                Address address;
-                /// \brief
-                /// WSARecvFrom/SendTo buffer.
-                WSABUF wsaBuf;
-                /// \brief
-                /// WSARecvFrom/SendTo flags.
-                DWORD flags;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this ReadFromWriteToOverlapped.
-                /// \param[in] count Length of buffer to allocate for reading.
-                /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                ReadFromWriteToOverlapped (
-                    UDPSocket &udpSocket,
-                    std::size_t count,
-                    bool useGetBuffer = true);
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this ReadFromWriteToOverlapped.
-                /// \param[in] buffer_ Buffer to write.
-                /// \param[in] count Lenght of buffer.
-                /// \param[in] address_ Used by \see{UDPSocket::PostAsyncWriteTo}.
-                /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                ReadFromWriteToOverlapped (
-                    UDPSocket &udpSocket,
-                    const void *buffer_,
-                    std::size_t count,
-                    const Address &address_,
-                    bool useGetBuffer = true);
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this ReadFromWriteToOverlapped.
-                /// \param[in] buffer_ Buffer to write.
-                /// \param[in] address_ Used by \see{UDPSocket::PostAsyncWriteTo}.
-                ReadFromWriteToOverlapped (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer_,
-                        const Address &address_) :
-                        Overlapped (udpSocket, Stream::AsyncInfo::EventWriteTo),
-                        buffer (std::move (buffer_)),
-                        address (address_),
-                        flags (0) {
-                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
-                    wsaBuf.buf = (char *)buffer.GetReadPtr ();
-                }
-
-                /// \brief
-                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                /// the ReadFromWriteToOverlapped to perform post op housekeeping.
-                virtual void Epilog () throw ();
-
-                /// \brief
-                /// ReadFromWriteToOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ReadFromWriteToOverlapped)
-            };
-            /// \struct UDPSocket::ReadMsgWriteMsgOverlapped UDPSocket.h thekogans/stream/UDPSocket.h
-            ///
-            /// \brief
-            /// ReadMsgWriteMsgOverlapped is a helper class. It reduces code clutter and
-            /// makes instantiating Overlapped used by \see{UDPSocket::PostAsyncReadMsg}
-            /// easier.
-            struct ReadMsgWriteMsgOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ReadMsgWriteMsgOverlapped)
-
-                /// \brief
-                /// ReadMsgWriteMsgOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ReadMsgWriteMsgOverlapped, util::SpinLock)
-
-                /// \brief
-                /// Buffer used by Stream::Read/Write.
-                util::Buffer buffer;
-                /// \brief
-                /// Address from which the message was sent.
-                Address from;
-                /// \brief
-                /// Address to which the message is sent.
-                Address to;
-                /// \brief
-                /// Used by WSA[Recv | Send]Msg.
-                MsgHdr msgHdr;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this ReadMsgOverlapped.
-                /// \param[in] count Length of buffer to allocate for reading.
-                /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                ReadMsgWriteMsgOverlapped (
-                    UDPSocket &udpSocket,
-                    std::size_t count,
-                    bool useGetBuffer = true);
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this WriteMsgOverlapped.
-                /// \param[in] buffer Buffer to write.
-                /// \param[in] count Lenght of buffer.
-                /// \param[in] from Used by \see{UDPSocket::PostAsyncWriteMsg}.
-                /// \param[in] to Used by \see{UDPSocket::PostAsyncWriteMsg}.
-                /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                ReadMsgWriteMsgOverlapped (
-                    UDPSocket &udpSocket,
-                    const void *buffer_,
-                    std::size_t count,
-                    const Address &from_,
-                    const Address &to_,
-                    bool useGetBuffer = true);
-                /// \brief
-                /// ctor.
-                /// \param[in] stream Stream that created this WriteMsgOverlapped.
-                /// \param[in] buffer Buffer to write.
-                /// \param[in] from Used by \see{UDPSocket::PostAsyncWriteMsg}.
-                /// \param[in] to Used by \see{UDPSocket::PostAsyncWriteMsg}.
-                ReadMsgWriteMsgOverlapped (
-                    UDPSocket &udpSocket,
-                    util::Buffer buffer_,
-                    const Address &from_,
-                    const Address &to_) :
-                    Overlapped (udpSocket, Stream::AsyncInfo::EventWriteMsg),
-                    buffer (std::move (buffer_)),
-                    from (from_),
-                    to (to_),
-                    msgHdr (
-                        buffer.GetReadPtr (),
-                        buffer.GetDataAvailableForReading (),
-                        from,
-                        to) {}
-
-                /// \brief
-                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                /// the ReadMsgWriteMsgOverlapped to perform post op housekeeping.
-                virtual void Epilog () throw ();
-
-                /// \brief
-                /// ReadMsgWriteMsgOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ReadMsgWriteMsgOverlapped)
-            };
-            /// \brief
-            /// Initiate an overlapped WSARecv.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-            void PostAsyncRead (bool useGetBuffer = true);
-            /// \brief
-            /// Initiate an overlapped WSASend.
-            /// \param[in] buffer Buffer to send.
-            /// \param[in] count Length of buffer.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-            void PostAsyncWrite (
-                const void *buffer,
-                std::size_t count,
-                bool useGetBuffer = true);
-            /// \brief
-            /// Initiate an overlapped WSARecvFrom.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-            void PostAsyncReadFrom (bool useGetBuffer = true);
-            /// \brief
-            /// Initiate an overlapped WSASendTo.
-            /// \param[in] buffer Buffer to send.
-            /// \param[in] count Length of buffer.
-            /// \param[in] address Peer address to send the buffer to.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-            void PostAsyncWriteTo (
-                const void *buffer,
-                std::size_t count,
-                const Address &address,
-                bool useGetBuffer = true);
-            /// \brief
-            /// Initiate an overlapped WSARecvMsg.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-            void PostAsyncReadMsg (bool useGetBuffer = true);
-            /// \brief
-            /// Initiate an overlapped WSASendMsg.
-            /// \param[in] buffer Buffer to send.
-            /// \param[in] count Length of buffer.
-            /// \param[in] address Peer address to send the buffer to.
-            /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-            void PostAsyncWriteMsg (
-                const void *buffer,
-                std::size_t count,
-                const Address &from,
-                const Address &to,
-                bool useGetBuffer = true);
-            /// \brief
             /// Used by AsyncIoEventQueue to notify the stream that
             /// an overlapped operation has completed successfully.
             /// \param[in] overlapped Overlapped that completed successfully.
-            virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \struct UDPSocket::WriteToOverlapped UDPSocket.h thekogans/stream/UDPSocket.h
-            ///
-            /// \brief
-            /// Uses sendto to write the buffer to the stream.
-            struct WriteToOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// WriteToOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteToOverlapped, util::SpinLock)
+            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
 
-                /// \brief
-                /// \see{UDPSocket} to write to.
-                UDPSocket &udpSocket;
-                /// \brief
-                /// \see{util::Buffer} to write.
-                util::Buffer buffer;
-                /// \brief
-                /// Peer \see{Address} to write to.
-                Address address;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] udpSocket_ \see{UDPSocket} to write to.
-                /// \param[in] buffer_ \see{util::Buffer} to write.
-                /// \param[in] count \see{util::Buffer} length.
-                /// \param[in] address_ Peer \see{Address} to write to.
-                /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                WriteToOverlapped (
-                    UDPSocket &udpSocket_,
-                    const void *buffer_,
-                    std::size_t count,
-                    const Address &address_,
-                    bool useGetBuffer = true);
-                /// \brief
-                /// ctor.
-                /// \param[in] udpSocket_ \see{UDPSocket} to write to.
-                /// \param[in] buffer_ \see{util::Buffer} to write.
-                /// \param[in] address_ Peer \see{Address} to write to.
-                WriteToOverlapped (
-                    UDPSocket &udpSocket_,
-                    util::Buffer buffer_,
-                    const Address &address_) :
-                    Overlapped (udpSocket_, AsyncInfo::EventWriteTo),
-                    udpSocket (udpSocket_),
-                    buffer (std::move (buffer_)),
-                    address (address_) {}
-
-                /// \brief
-                /// Used by \see{AsyncInfo::PumpAsyncIo} to write
-                /// the buffer to the given stream.
-                /// \return Count of bytes written.
-                virtual ssize_t Prolog ();
-                /// \brief
-                /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
-                /// the write operation and notify \see{AsyncIoEventSink}.
-                /// \return true = \see{AsyncIoEventSink} was notified,
-                /// false = \see{AsyncIoEventSink} was not notified.
-                virtual bool Epilog ();
-
-                /// \brief
-                /// WriteToOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteToOverlapped)
-            };
-            /// \struct UDPSocket::WriteMsgOverlapped UDPSocket.h thekogans/stream/UDPSocket.h
-            ///
-            /// \brief
-            /// Uses sendmsg to write the buffer to the stream.
-            struct WriteMsgOverlapped : public AsyncInfo::Overlapped {
-                /// \brief
-                /// WriteMsgOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteMsgOverlapped, util::SpinLock)
-
-                /// \brief
-                /// \see{UDPSocket} to write to.
-                UDPSocket &udpSocket;
-                /// \brief
-                /// \see{util::Buffer} to write.
-                util::Buffer buffer;
-                /// \brief
-                /// Local \see{Address} from which the message will be written.
-                Address from;
-                /// \brief
-                /// Peer \see{Address} that will recieve the datagram.
-                Address to;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] udpSocket_ \see{UDPSocket} to write to.
-                /// \param[in] buffer_ \see{util::Buffer} to write.
-                /// \param[in] count \see{util::Buffer} length.
-                /// \param[in] from_ Local \see{Address} to write from.
-                /// \param[in] to_ Peer \see{Address} to write to.
-                /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                WriteMsgOverlapped (
-                    UDPSocket &udpSocket_,
-                    const void *buffer_,
-                    std::size_t count,
-                    const Address &from_,
-                    const Address &to_,
-                    bool useGetBuffer = true);
-                /// \brief
-                /// ctor.
-                /// \param[in] udpSocket_ \see{UDPSocket} to write to.
-                /// \param[in] buffer_ \see{util::Buffer} to write.
-                /// \param[in] from_ Local \see{Address} to write from.
-                /// \param[in] to_ Peer \see{Address} to write to.
-                WriteMsgOverlapped (
-                    UDPSocket &udpSocket_,
-                    util::Buffer buffer_,
-                    const Address &from_,
-                    const Address &to_) :
-                    Overlapped (udpSocket_, AsyncInfo::EventWriteMsg),
-                    udpSocket (udpSocket_),
-                    buffer (std::move (buffer_)),
-                    from (from_),
-                    to (to_) {}
-
-                /// \brief
-                /// Used by \see{AsyncInfo::PumpAsyncIo} to write
-                /// the buffer to the given stream.
-                /// \return Count of bytes written.
-                virtual ssize_t Prolog ();
-                /// \brief
-                /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
-                /// the write operation and notify \see{AsyncIoEventSink}.
-                /// \return true = \see{AsyncIoEventSink} was notified,
-                /// false = \see{AsyncIoEventSink} was not notified.
-                virtual bool Epilog ();
-
-                /// \brief
-                /// WriteMsgOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteMsgOverlapped)
-            };
-            /// \brief
-            /// Used by AsyncIoEventQueue to notify the stream of
-            /// pending io events.
-            /// \param[in] events \see{AsyncIoEventQueue} events enum.
-            virtual void HandleAsyncEvent (util::ui32 event) throw ();
-        #endif // defined (TOOLCHAIN_OS_Windows)
-
-            /// \brief
-            /// Streams are neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (UDPSocket)
+            std::size_t ReadFromHelper (
+                void *buffer,
+                std::size_t count,
+                Address &address);
+            std::size_t WriteToHelper (
+                const void *buffer,
+                std::size_t count,
+                const Address &address);
+            std::size_t ReadMsgHelper (
+                void *buffer,
+                std::size_t count,
+                Address &from,
+                Address &to);
+            std::size_t WriteMsgHelper (
+                const void *buffer,
+                std::size_t count,
+                const Address &from,
+                const Address &to);
         };
 
     } // namespace stream

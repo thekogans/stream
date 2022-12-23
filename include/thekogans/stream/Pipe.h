@@ -29,14 +29,6 @@
 
 namespace thekogans {
     namespace stream {
-
-        /// \brief
-        /// Forward declaration of \see{StreamSelector}.
-        struct StreamSelector;
-        /// \brief
-        /// Forward declaration of \see{AsyncIoEventQueue}.
-        struct AsyncIoEventQueue;
-
         /// \struct Pipe Pipe.h thekogans/stream/Pipe.h
         ///
         /// \brief
@@ -44,104 +36,60 @@ namespace thekogans {
         /// actually created from named pipes so that we can take
         /// advantage of overlapped (async) io.
 
-        struct _LIB_THEKOGANS_STREAM_DECL Pipe :
-                public Stream,
-                public util::Producer<StreamEvents> {
+        struct _LIB_THEKOGANS_STREAM_DECL Pipe : public Stream {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Pipe)
-
-            /// \brief
-            /// Pipe has a private heap to help with memory management.
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (Pipe, util::SpinLock)
+            /// Pipe is a \see{Stream}.
+            THEKOGANS_STREAM_DECLARE_STREAM (Pipe)
 
             /// \brief
             /// ctor. \see{Stream}
             /// Used as input to Pipe::Create.
             /// \param[in] handle OS stream handle to wrap.
-            explicit Pipe (THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE) :
-                Stream (handle) {}
+            Pipe (THEKOGANS_UTIL_HANDLE handle);
 
             /// \brief
             /// Create both ends of the pipe.
             /// \param[out] readPipe The reading end of the pipe.
             /// \param[out] writePipe The writing end of the pipe.
             static void Create (
-                Pipe &readPipe,
-                Pipe &writePipe);
+                Pipe::SharedPtr &readPipe,
+                Pipe::SharedPtr &writePipe);
 
             // Stream
             /// \brief
-            /// Read bytes from the stream.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually placed in the buffer.
-            /// NOTE: This api is to be called by blocking
-            /// streams only. Async stream will listen for
-            /// incoming data, and notify AsyncIoEventSink.
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count);
+            /// Async read bytes from the stream.
+            virtual void Read () override;
             /// \brief
-            /// Write bytes to the stream.
+            /// Async write a buffer to the stream.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Buffer length.
-            /// \return Count of bytes actually written.
-            virtual std::size_t Write (
+            virtual void Write (
                 const void *buffer,
-                std::size_t count);
-
+                std::size_t count) override;
             /// \brief
             /// Async write a buffer to the stream.
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer buffer);
+            virtual void Write (util::Buffer buffer) override;
 
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            std::size_t GetDataAvailable ();
+            virtual std::size_t GetDataAvailable () const override;
 
         protected:
-            // Stream
-            /// \brief
-            /// Used by the AsyncIoEventQueue to allow the stream to
-            /// initialize itself. When this function is called, the
-            /// stream is already async, and \see{Stream::AsyncInfo}
-            /// has been created. At this point the stream should do
-            /// whatever stream specific initialization it needs to
-            /// do.
-            virtual void InitAsyncIo ();
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Initiate an overlapped ReadFile.
-            void PostAsyncRead ();
-            /// \brief
-            /// Used by \see{AsyncIoEventQueue} to notify the stream that
-            /// an overlapped operation has completed successfully.
-            /// \param[in] overlapped \see{Overlapped} that completed successfully.
-            virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
-        #else // defined (TOOLCHAIN_OS_Windows)
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Put the pipe in (non-)blocking mode.
             /// \param[in] blocking true = blocking, false = non-blocking
             void SetBlocking (bool blocking);
-            /// \brief
-            /// Used by AsyncIoEventQueue to notify the stream of
-            /// pending io events.
-            /// \param[in] event \see{AsyncIoEventQueue} events enum.
-            virtual void HandleAsyncEvent (util::ui32 event) throw ();
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
-            /// \brief
-            /// StreamSelector needs access to SetBlocking.
-            friend struct StreamSelector;
-            /// \brief
-            /// AsyncIoEventQueue needs access to SetBlocking.
-            friend struct AsyncIoEventQueue;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-
-            /// \brief
-            /// Streams are neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Pipe)
+            virtual std::size_t ReadHelper (
+                void *buffer,
+                std::size_t count) override;
+            virtual std::size_t WriteHelper (
+                const void *buffer,
+                std::size_t count) override;
         };
 
     } // namespace stream

@@ -31,59 +31,6 @@ namespace thekogans {
 
         THEKOGANS_STREAM_IMPLEMENT_STREAM (ClientNamedPipe)
 
-        const char * const ClientNamedPipe::Context::VALUE_CLIENT_NAMED_PIPE =
-            "ClientNamedPipe";
-        const char * const ClientNamedPipe::Context::TAG_PIPE_TYPE = "PipeType";
-        const char * const ClientNamedPipe::Context::VALUE_BYTE = "byte";
-        const char * const ClientNamedPipe::Context::VALUE_MESSAGE = "message";
-
-        void ClientNamedPipe::Context::Parse (const pugi::xml_node &node) {
-            Stream::Context::Parse (node);
-            assert (streamType == VALUE_CLIENT_NAMED_PIPE);
-            if (streamType == VALUE_CLIENT_NAMED_PIPE) {
-                for (pugi::xml_node child = node.first_child ();
-                        !child.empty (); child = child.next_sibling ()) {
-                    if (child.type () == pugi::node_element) {
-                        std::string childName = child.name ();
-                        if (childName == Address::TAG_ADDRESS) {
-                            address.Parse (child);
-                            assert (address.GetFamily () == AF_LOCAL);
-                        }
-                        else if (childName == TAG_PIPE_TYPE) {
-                            pipeType = std::string (child.text ().get ()) == VALUE_BYTE ?
-                                NamedPipe::Byte : NamedPipe::Message;
-                        }
-                    }
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unexpected context type: %s (%s)",
-                    streamType.c_str (),
-                    VALUE_CLIENT_NAMED_PIPE);
-            }
-        }
-
-        std::string ClientNamedPipe::Context::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            if (tagName != 0) {
-                std::ostringstream stream;
-                stream <<
-                    Stream::Context::ToString (indentationLevel, tagName) <<
-                        address.ToString (indentationLevel + 1) <<
-                        util::OpenTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
-                            (pipeType == NamedPipe::Byte ? VALUE_BYTE : VALUE_MESSAGE) <<
-                        util::CloseTag (indentationLevel + 1, TAG_PIPE_TYPE) <<
-                    util::CloseTag (indentationLevel, tagName);
-                return stream.str ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
         bool ClientNamedPipe::Wait (DWORD timeout) {
             return WaitNamedPipeW (
                 util::UTF8ToUTF16 (address.GetPath ()).c_str (),
@@ -117,28 +64,32 @@ namespace thekogans {
         }
 
         void ClientNamedPipe::InitAsyncIo () {
-            AsyncInfo::Overlapped::SharedPtr overlapped (
-                new AsyncInfo::Overlapped (*this, AsyncInfo::EventConnect));
+            Overlapped::SharedPtr overlapped (new Overlapped (*this, EventConnect));
             if (!PostQueuedCompletionStatus (
-                    asyncInfo->eventQueue.GetHandle (),
+                    eventQueue.GetHandle (),
                     0,
                     (ULONG_PTR)this,
-                    overlapped.Get ())) {
+                    overlapped.get ())) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
             overlapped.Release ();
         }
 
-        void ClientNamedPipe::HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw () {
-            if (overlapped.event == AsyncInfo::EventConnect) {
+        void ClientNamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.event == EventConnect) {
                 THEKOGANS_UTIL_TRY {
                     PostAsyncRead ();
-                    asyncInfo->eventSink.HandleClientNamedPipeConnected (*this);
+                    eventSink.HandleClientNamedPipeConnected (*this);
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
                     THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    asyncInfo->eventSink.HandleStreamError (*this, exception);
+                    Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamError,
+                            std::placeholders::_1,
+                            SharedPtr (this),
+                            exception));
                 }
             }
             else {

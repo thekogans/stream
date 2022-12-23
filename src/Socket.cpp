@@ -42,7 +42,6 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
-#include "thekogans/stream/AsyncIoEventSink.h"
 #include "thekogans/stream/Socket.h"
 
 namespace thekogans {
@@ -66,110 +65,84 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        const char * const Socket::Context::VALUE_SOCKET = "Socket";
-        const char * const Socket::Context::ATTR_FAMILY = "Family";
-        const char * const Socket::Context::ATTR_TYPE = "Type";
-        const char * const Socket::Context::ATTR_PROTOCOL = "Protocol";
-
-        void Socket::Context::Parse (const pugi::xml_node &node) {
-            Stream::Context::Parse (node);
-            family = util::stringToi32 (node.attribute (ATTR_FAMILY).value ());
-            type = util::stringToi32 (node.attribute (ATTR_TYPE).value ());
-            protocol = util::stringToi32 (node.attribute (ATTR_PROTOCOL).value ());
-        }
-
-        std::string Socket::Context::ToString (
-                std::size_t indentationLevel,
-                const char *tagName) const {
-            if (tagName != 0) {
-                util::Attributes attributes;
-                attributes.push_back (util::Attribute (ATTR_STREAM_TYPE, util::Encodestring (VALUE_SOCKET)));
-                attributes.push_back (util::Attribute (ATTR_FAMILY, util::i32Tostring (family)));
-                attributes.push_back (util::Attribute (ATTR_TYPE, util::i32Tostring (type)));
-                attributes.push_back (util::Attribute (ATTR_PROTOCOL, util::i32Tostring (protocol)));
-                return util::OpenTag (indentationLevel, tagName, attributes, false, true);
-            }
-            else {
+        Socket::Socket (
+                THEKOGANS_UTIL_HANDLE handle,
+                std::size_t bufferLength) :
+                Stream (handle, bufferLength) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            WSAPROTOCOL_INFOW protocolInfo;
+            socklen_t length = sizeof (WSAPROTOCOL_INFOW);
+            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET, SO_PROTOCOL_INFO,
+                    (char *)&protocolInfo, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
-        }
-
-        Socket::Socket (THEKOGANS_UTIL_HANDLE handle) :
-                Stream (handle) {
-            if (IsOpen ()) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                WSAPROTOCOL_INFOW protocolInfo;
-                socklen_t length = sizeof (WSAPROTOCOL_INFOW);
-                if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET, SO_PROTOCOL_INFO,
-                        (char *)&protocolInfo, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-                family = protocolInfo.iAddressFamily;
-                type = protocolInfo.iSocketType;
-                protocol = protocolInfo.iProtocol;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                socklen_t length = sizeof (int);
-            #if defined (TOOLCHAIN_OS_Linux)
-                if (getsockopt (handle, SOL_SOCKET, SO_DOMAIN, &family, &length) ==
-                        THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #elif defined (TOOLCHAIN_OS_OSX)
-                // Asshole Apple does not provide a way of getting
-                // socket family and protocol. This only works if
-                // Bind was called on the handle. If you're not
-                // calling this ctor explicitly, you have nothing
-                // to worry about as it's only used in two places
-                // by thekogans_stream; 1) Stream::StaticInit and
-                // 2) TCPSocket::Accept. The first use is just to
-                // instantiate a dummy socket, and the second will
-                // work correctly as accept will do an implicit bind.
-                // If you're calling this ctor explicitly you need to
-                // make sure you either; 1) provide valid values or
-                // 2) getsockname returns a valid address. Otherwise
-                // your socket will return bad information for type
-                // (GetType ()) and protocol (GetProtocol ()).
-                {
-                    Address address;
-                    if (getsockname ((THEKOGANS_STREAM_SOCKET)handle, (sockaddr *)&address.storage,
-                            &address.length) != THEKOGANS_STREAM_SOCKET_ERROR) {
-                        family = address.storage.ss_family;
-                    }
-                }
-            #endif // defined (TOOLCHAIN_OS_Linux)
-                if (getsockopt (handle, SOL_SOCKET, SO_TYPE, &type, &length) ==
-                        THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #if defined (TOOLCHAIN_OS_Linux)
-                if (getsockopt (handle, SOL_SOCKET, SO_PROTOCOL, &protocol, &length) ==
-                        THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #elif defined (TOOLCHAIN_OS_OSX)
-                protocol =
-                    type == SOCK_STREAM ? IPPROTO_TCP :
-                    (type == SOCK_DGRAM || type == SOCK_RAW) ? IPPROTO_UDP : 0;
-            #endif // defined (TOOLCHAIN_OS_Linux)
-            #endif // defined (TOOLCHAIN_OS_Windows)
+            family = protocolInfo.iAddressFamily;
+            type = protocolInfo.iSocketType;
+            protocol = protocolInfo.iProtocol;
+        #else // defined (TOOLCHAIN_OS_Windows)
+            socklen_t length = sizeof (int);
+        #if defined (TOOLCHAIN_OS_Linux)
+            if (getsockopt (handle, SOL_SOCKET, SO_DOMAIN, &family, &length) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            // Asshole Apple does not provide a way of getting
+            // socket family and protocol. This only works if
+            // Bind was called on the handle. If you're not
+            // calling this ctor explicitly, you have nothing
+            // to worry about as it's only used in two places
+            // by thekogans_stream; 1) Stream::StaticInit and
+            // 2) TCPSocket::Accept. The first use is just to
+            // instantiate a dummy socket, and the second will
+            // work correctly as accept will do an implicit bind.
+            // If you're calling this ctor explicitly you need to
+            // make sure you either; 1) provide valid values or
+            // 2) getsockname returns a valid address. Otherwise
+            // your socket will return bad information for type
+            // (GetType ()) and protocol (GetProtocol ()).
+            {
+                Address address;
+                if (getsockname ((THEKOGANS_STREAM_SOCKET)handle, (sockaddr *)&address.storage,
+                        &address.length) != THEKOGANS_STREAM_SOCKET_ERROR) {
+                    family = address.storage.ss_family;
+                }
+            }
+        #endif // defined (TOOLCHAIN_OS_Linux)
+            if (getsockopt (handle, SOL_SOCKET, SO_TYPE, &type, &length) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+            }
+        #if defined (TOOLCHAIN_OS_Linux)
+            if (getsockopt (handle, SOL_SOCKET, SO_PROTOCOL, &protocol, &length) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+            }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            protocol =
+                type == SOCK_STREAM ? IPPROTO_TCP :
+                (type == SOCK_DGRAM || type == SOCK_RAW) ? IPPROTO_UDP : 0;
+        #endif // defined (TOOLCHAIN_OS_Linux)
+            SetBlocking (false);
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         Socket::Socket (
                 int family_,
                 int type_,
-                int protocol_) :
-            #if defined (TOOLCHAIN_OS_Windows)
-                Stream ((THEKOGANS_UTIL_HANDLE)WSASocketW (
-                    family_, type_, protocol_, 0, 0, WSA_FLAG_OVERLAPPED)),
-            #else // defined (TOOLCHAIN_OS_Windows)
-                Stream ((THEKOGANS_UTIL_HANDLE)socket (family_, type_, protocol_)),
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                int protocol_,
+                std::size_t bufferLength) :
+                Stream (
+                #if defined (TOOLCHAIN_OS_Windows)
+                    (THEKOGANS_UTIL_HANDLE)WSASocketW (family_, type_, protocol_, 0, 0, WSA_FLAG_OVERLAPPED),
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    (THEKOGANS_UTIL_HANDLE)socket (family_, type_, protocol_),
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    bufferLength),
                 family (family_),
                 type (type_),
                 protocol (protocol_) {
@@ -177,13 +150,143 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
+        #if !defined (TOOLCHAIN_OS_Windows)
+            SetBlocking (false);
+        #endif // !defined (TOOLCHAIN_OS_Windows)
         }
 
+    #if defined (TOOLCHAIN_OS_Windows)
         Socket::~Socket () {
             THEKOGANS_UTIL_TRY {
-                Close ();
+                if (IsOpen ()) {
+                    if (closesocket ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                    }
+                    handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
+        }
+    #endif // defined (TOOLCHAIN_OS_Windows)
+
+        std::size_t Socket::GetDataAvailable () const {
+            u_long value = 0;
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+        #else // defined (TOOLCHAIN_OS_Windows)
+            if (ioctl ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+            }
+            return (std::size_t)value;
+        }
+
+        void Socket::Read (std::size_t bufferLength) {
+            THEKOGANS_UTIL_TRY {
+            #if defined (TOOLCHAIN_OS_Windows)
+                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
+                if (WSARecv (
+                        (THEKOGANS_STREAM_SOCKET)handle,
+                        &overlapped->wsaBuf,
+                        1,
+                        0,
+                        &overlapped->flags,
+                        overlapped.get (),
+                        0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                    if (errorCode != WSA_IO_PENDING) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                }
+                overlapped.release ();
+            #else // defined (TOOLCHAIN_OS_Windows)
+                EnqOverlapped (
+                    std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
+                    In);
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                HandleError (exception);
+            }
+        }
+
+        std::size_t Socket::Write (
+                const void *buffer,
+                std::size_t count) {
+            THEKOGANS_UTIL_TRY {
+                if (buffer != 0 && count > 0) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (buffer, count));
+                    if (WSASend (
+                            (THEKOGANS_STREAM_SOCKET)handle,
+                            &overlapped->wsaBuf,
+                            1,
+                            0,
+                            0,
+                            overlapped.get (),
+                            0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                        if (errorCode != WSA_IO_PENDING) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
+                    }
+                    overlapped.release ();
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    EnqOverlapped (
+                        std::unique_ptr<Overlapped> (new WriteOverlapped (buffer, count)),
+                        Out);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                HandleError (exception);
+            }
+        }
+
+        void Socket::Write (util::Buffer buffer) {
+            THEKOGANS_UTIL_TRY {
+                if (!buffer.IsEmpty ()) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
+                    if (WSASend (
+                            (THEKOGANS_STREAM_SOCKET)handle,
+                            &overlapped->wsaBuf,
+                            1,
+                            0,
+                            0,
+                            overlapped.get (),
+                            0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                        if (errorCode != WSA_IO_PENDING) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
+                    }
+                    overlapped.release ();
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    EnqOverlapped (
+                        std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
+                        Out);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+            THEKOGANS_UTIL_CATCH (util::Exception) {
+                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                HandleError (exception);
+            }
         }
 
         util::TimeSpec Socket::GetReadTimeout () const {
@@ -287,19 +390,10 @@ namespace thekogans {
             return name;
         }
 
-        std::size_t Socket::GetDataAvailable () const {
-            u_long value = 0;
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
-                    THEKOGANS_STREAM_SOCKET_ERROR) {
-        #else // defined (TOOLCHAIN_OS_Windows)
-            if (ioctl ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
-                    THEKOGANS_STREAM_SOCKET_ERROR) {
-        #endif // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return (std::size_t)value;
+        bool Socket::IsBound () const {
+            Address address;
+            return getsockname ((THEKOGANS_STREAM_SOCKET)handle,
+                (sockaddr *)&address.storage, &address.length) == 0;
         }
 
         void Socket::Bind (const Address &address) {
@@ -505,20 +599,61 @@ namespace thekogans {
             return errorCode;
         }
 
-        void Socket::Close () {
-            if (IsOpen ()) {
+        std::size_t Socket::ReadHelper (
+                void *buffer,
+                std::size_t count) {
+            if (buffer != 0 && count > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
-                if (closesocket ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                if (close ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
+                WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
+                DWORD numberOfBytesRecvd = 0;
+                DWORD flags = 0;
+                if (WSARecv ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf, 1,
+                        &numberOfBytesRecvd, &flags, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                 }
-                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                family = -1;
-                type = -1;
-                protocol = -1;
+                return numberOfBytesRecvd;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                ssize_t countRead = recv (handle, (char *)buffer, count, 0);
+                if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                }
+                return (std::size_t)countRead;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        std::size_t Socket::WriteHelper (
+                const void *buffer,
+                std::size_t count) {
+            if (buffer != 0 && count > 0) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
+                DWORD numberOfBytesSent = 0;
+                DWORD flags = 0;
+                if (WSASend ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf, 1,
+                        &numberOfBytesSent, flags, 0, 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                }
+                return numberOfBytesSent;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                ssize_t countWritten = send (handle, (const char *)buffer, count, 0);
+                if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                }
+                return (std::size_t)countWritten;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 

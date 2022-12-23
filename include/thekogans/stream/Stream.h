@@ -33,6 +33,8 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
+#include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Producer.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/Address.h"
 #include "thekogans/stream/MsgHdr.h"
@@ -41,17 +43,17 @@ namespace thekogans {
     namespace stream {
 
         /// \brief
-        /// Forward declaration of \see{StreamSelector}.
-        struct StreamSelector;
-        /// \brief
         /// Forward declaration of \see{AsyncIoEventQueue}.
         struct AsyncIoEventQueue;
         /// \brief
-        /// Forward declaration of \see{AsyncIoEventSink}.
-        struct AsyncIoEventSink;
-        /// \brief
         /// Forward declaration of Stream.
         struct Stream;
+
+        /// \brief
+        /// Convenient typedef for util::RefCounted::Registry<Stream>.
+        /// NOTE: It's one and only instance is accessed like this;
+        /// thekogans::stream::StreamRegistry::Instance ().
+        typedef util::RefCounted::Registry<Stream> StreamRegistry;
 
         struct _LIB_THEKOGANS_STREAM_DECL StreamEvents : public virtual util::RefCounted {
             /// \brief
@@ -71,9 +73,8 @@ namespace thekogans {
                 const util::Exception & /*exception*/) throw () {}
 
             /// \brief
-            /// Called to initiate stream error processing.
-            /// \param[in] stream \see{Stream} on which an error occurred.
-            /// \param[in] exception \see{util::Exception} representing the error.
+            /// Called to initiate stream normal disconnect processing.
+            /// \param[in] stream \see{Stream} that disconnected.
             virtual void OnStreamDisconnect (
                 util::RefCounted::SharedPtr<Stream> /*stream*/) throw () {}
 
@@ -83,41 +84,26 @@ namespace thekogans {
             /// \param[in] buffer The new data.
             virtual void OnStreamRead (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                util::Buffer /*buffer*/) throw () {}
+                const util::Buffer & /*buffer*/) throw () {}
             /// \brief
             /// Called when data was written to a stream.
             /// \param[in] stream Stream where data was written.
             /// \param[in] buffer The written data.
             virtual void OnStreamWrite (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                util::Buffer /*buffer*/) throw () {}
+                const util::Buffer & /*buffer*/) throw () {}
         };
-
-    #if !defined (TOOLCHAIN_OS_Windows)
-        /// \brief
-        /// Convenient typedef for util::RefCounted::Registry<Stream>.
-        typedef util::RefCounted::Registry<Stream> StreamRegistry;
-    #endif // !defined (TOOLCHAIN_OS_Windows)
-
-        // Did I mention M$ is a brain dead company? Here's another
-        // example of their stupidity and the hoops we have to jump
-        // through to get around the obstacles they throw our way.
-    #if defined (_MSC_VER)
-        #pragma warning (push)
-        #pragma warning (disable : 4275)
-    #endif // defined (_MSC_VER)
 
         /// \struct Stream Stream.h thekogans/stream/Stream.h
         ///
         /// \brief
         /// Stream is an abstract base for all other stream types.
-        /// It's main purpose is to house Context/AsyncInfo as well
-        /// as expose the api a generic stream will have. Streams are
-        /// reference counted. This makes it very easy to deal with
-        /// lifetimes of async streams (especially on Windows).
-        /// Because of the design of \see{util::RefCounted}, creating
-        /// a stream on the stack is as simple as declaring it. No
-        /// allocation/deallocation necessary.
+        /// It's main purpose is to expose the api a generic stream
+        /// will have. Streams are reference counted. This makes it
+        /// very easy to deal with lifetimes of async streams (especially
+        /// on Windows). Because of the design of \see{util::RefCounted},
+        /// creating a stream on the stack is as simple as declaring it.
+        /// No allocation/deallocation necessary.
         ///
         /// NOTE: Stream anchors a handle based stream hierarchy.
         /// On Unix this is simple as everything is handle based (int).
@@ -139,46 +125,255 @@ namespace thekogans {
         ///   Pipe\n
         /// #if defined (TOOLCHAIN_OS_Windows)
         ///   NamedPipe\n
-        ///     ClientNamedPipe\n
-        ///     ServerNamedPipe\n
         /// #endif // defined (TOOLCHAIN_OS_Windows)
         ///   Socket\n
         ///     TCPSocket\n
-        ///       ClientTCPSocket\n
-        ///       ServerTCPSocket\n
         ///     UDPSocket\n
 
         struct _LIB_THEKOGANS_STREAM_DECL Stream : public util::Producer<StreamEvents> {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
+            /// Declare \see{util::RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Stream)
 
         protected:
             /// \brief
-            /// Stream handle.
+            /// Stream os handle.
             THEKOGANS_UTIL_HANDLE handle;
+            /// \brief
+            /// This token is the key between the c++ and the c async io worlds (os).
+            /// This token is registered with os specific apis (io completion port on
+            /// windows, epoll on linux and kqueue on os x). On callback the token
+            /// is used to get a Stream::SharedPtr from the Stream::WeakPtr found in
+            /// the \see{util::RefCounted::Registry}.
+            StreamRegistry::Token token;
+        #if !defined (TOOLCHAIN_OS_Windows)
+            struct WSAOVERLAPPED {
+                THEKOGANS_UTIL_ERROR_CODE errorCode;
+                WSAOVERLAPPED () :
+                    errorCode (0) {}
+                virtual ~WSAOVERLAPPED () {}
+            };
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+            /// \struct Stream::Overlapped Stream.h thekogans/stream/Stream.h
+            ///
+            /// \brief
+            /// Overlapped extends a Windows WSAOVERLAPPED.
+            struct Overlapped : public WSAOVERLAPPED {
+                /// \brief
+                /// ctor.
+                Overlapped () {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    memset ((WSAOVERLAPPED *)this, 0, sizeof (WSAOVERLAPPED));
+                #endif defined (TOOLCHAIN_OS_Windows)
+                }
+                /// \brief
+                /// dtor.
+                virtual ~Overlapped () {}
+
+                /// \brief
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () = 0;
+                /// \brief
+                virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () {
+                    return true;
+                }
+
+                /// \brief
+                /// Return overlapped name.
+                /// \return overlapped name.
+                inline const char *GetName () const {
+                    return typeid (*this).name ();
+                }
+
+                /// \brief
+                /// Return error code.
+                /// \return Error code.
+                inline THEKOGANS_UTIL_ERROR_CODE GetError () const {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    return (THEKOGANS_UTIL_ERROR_CODE)Internal;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    return errorCode;
+                #endif defined (TOOLCHAIN_OS_Windows)
+                }
+                /// \brief
+                /// Set error code.
+                /// \param[in] error Error code.
+                inline void SetError (THEKOGANS_UTIL_ERROR_CODE errorCode_) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    Internal = (DWORD)errorCode_;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    errorCode = errorCode_;
+                #endif defined (TOOLCHAIN_OS_Windows)
+                }
+
+            #if defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// Return count of bytes read or written.
+                /// \return Count of bytes read or written.
+                inline util::ui32 GetCount () const {
+                    return InternalHigh;
+                }
+                /// \brief
+                /// Set count of bytes read or written.
+                /// \param[in] count Count of bytes read or written.
+                inline void SetCount (util::ui32 count) {
+                    InternalHigh = count_;
+                }
+            #endif defined (TOOLCHAIN_OS_Windows)
+
+                /// \brief
+                /// Overlapped is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Overlapped)
+            };
+            /// \struct Stream::ReadOverlapped Stream.h thekogans/stream/Stream.h
+            ///
+            /// \brief
+            /// ReadOverlapped is a helper class. It reduces code clutter and
+            /// makes instantiating Overlapped used by \see{Stream::Read} easier.
+            struct ReadOverlapped : public Overlapped {
+                /// \brief
+                /// ReadOverlapped has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ReadOverlapped, util::SpinLock)
+
+                /// \brief
+                /// Buffer used by Stream::Read.
+                util::Buffer buffer;
+            #if defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// WSARecv buffer.
+                WSABUF wsaBuf;
+                /// \brief
+                /// WSARecv flags.
+                DWORD flags;
+            #endif defined (TOOLCHAIN_OS_Windows)
+
+                /// \brief
+                /// Read ctor.
+                /// \param[in] bufferLength Length of buffer to allocate for reading.
+                ReadOverlapped (std::size_t bufferLength) :
+                    buffer (util::NetworkEndian, bufferLength)
+                #if defined (TOOLCHAIN_OS_Windows)
+                    , flags (0)
+                #endif defined (TOOLCHAIN_OS_Windows)
+                {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
+                    wsaBuf.buf = (char *)buffer.GetWritePtr ();
+                #endif defined (TOOLCHAIN_OS_Windows)
+                }
+
+                /// \brief
+                /// Used by \see{PumpAsyncIo} to
+                /// the buffer to the given stream.
+                /// \param[in] stream Stream that created this Overlapped.
+                /// \return Count of bytes written.
+                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override;
+                /// \brief
+                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
+                /// the ReadOverlapped to perform post op housekeeping.
+                virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () override {
+                    return !buffer.IsEmpty ();
+                }
+
+                /// \brief
+                /// ReadOverlapped is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ReadOverlapped)
+            };
+            /// \struct Stream::WrietOverlapped Stream.h thekogans/stream/Stream.h
+            ///
+            /// \brief
+            /// WriteOverlapped is a helper class. It reduces code clutter and
+            /// makes instantiating Overlapped used by \see{Stream::Write} easier.
+            struct WriteOverlapped : public Overlapped {
+                /// \brief
+                /// WriteOverlapped has a private heap to help with memory
+                /// management, performance, and global heap fragmentation.
+                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteOverlapped, util::SpinLock)
+
+                /// \brief
+                /// Buffer used by Stream::/Write.
+                util::Buffer buffer;
+            #if defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// WSASend buffer.
+                WSABUF wsaBuf;
+                /// \brief
+                /// WSASend flags.
+                DWORD flags;
+            #endif defined (TOOLCHAIN_OS_Windows)
+
+                /// \brief
+                /// Write ctor.
+                /// \param[in] buffer_ Buffer to write.
+                /// \param[in] bufferLength Lenght of buffer.
+                WriteOverlapped (
+                    const void *buffer_,
+                    std::size_t bufferLength) :
+                    buffer (
+                        util::NetworkEndian,
+                        (const util::ui8 *)buffer_,
+                        (const util::ui8 *)buffer_ + bufferLength)
+                #if defined (TOOLCHAIN_OS_Windows)
+                    , flags (0)
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
+                    wsaBuf.buf = (char *)buffer.GetReadPtr ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+                /// \brief
+                /// Write ctor.
+                /// \param[in] buffer Buffer to write.
+                WriteOverlapped (util::Buffer buffer_) :
+                    buffer (std::move (buffer_))
+                #if defined (TOOLCHAIN_OS_Windows)
+                    , flags (0)
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
+                    wsaBuf.buf = (char *)buffer.GetReadPtr ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+
+                /// \brief
+                /// Used by \see{PumpAsyncIo} to write
+                /// the buffer to the given stream.
+                /// \param[in] stream Stream that created this Overlapped.
+                /// \return Count of bytes written.
+                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override;
+                /// \brief
+                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
+                /// the WriteOverlapped to perform post op housekeeping.
+                virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () override {
+                    return buffer.IsEmpty ();
+                }
+
+                /// \brief
+                /// WriteOverlapped is neither copy constructable, nor assignable.
+                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteOverlapped)
+            };
+        #if !defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Outstanding read requests.
+            std::list<std::unique_ptr<Overlapped>> in;
+            /// \brief
+            /// Outstanding write requests.
+            std::list<std::unique_ptr<Overlapped>> out;
+            /// \brief
+            /// Lock serializing access to in and out.
+            util::SpinLock spinLock;
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
         public:
             /// \brief
             /// ctor.
-            /// Wrap an OS handle.
-            /// \param[in] handle_ OS stream handle to wrap.
-            Stream (THEKOGANS_UTIL_HANDLE handle_ = THEKOGANS_UTIL_INVALID_HANDLE_VALUE) :
-                handle (handle_) {}
+            /// \param[in] handle_ OS stream handle.
+            Stream (THEKOGANS_UTIL_HANDLE handle_);
             /// \brief
             /// dtor.
             virtual ~Stream ();
-
-        #if defined (THEKOGANS_STREAM_TYPE_Static)
-            /// \brief
-            /// Because the stream library uses dynamic initialization,
-            /// when using it in static builds call this method to have
-            /// the library explicitly include all internal stream types.
-            /// Without calling this api, the only streams that will be
-            /// available to your application are the ones you explicitly
-            /// link to.
-            static void StaticInit ();
-        #endif // defined (THEKOGANS_STREAM_TYPE_Static)
 
             /// \brief
             /// Check if stream has a valid handle.
@@ -188,598 +383,78 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Check if stream is async (\see{AsyncIoEventQueue::AddStream}
-            /// was called on the stream).
-            /// \return true = async, false = blocking.
-            inline bool IsAsync () const {
-                return asyncInfo.Get () != 0;
-            }
-
-            /// \brief
             /// Use this method if you need framework interoperability.
             /// IMPORTANT: Stream owns the handle and will close it in it's dtor.
             /// \return Native OS stream handle.
             inline THEKOGANS_UTIL_HANDLE GetHandle () const {
                 return handle;
             }
-            /// \brief
-            /// Use this method if you need framework interoperability.
-            /// IMPORTANT: You now own the handle and it's lifetime.
-            /// \return Native OS stream handle.
-            inline THEKOGANS_UTIL_HANDLE ReleaseHandle () {
-                return util::EXCHANGE (handle, THEKOGANS_UTIL_INVALID_HANDLE_VALUE);
-            }
 
-            /// \brief
-            /// Disconnect the stream from it's peer.
-            virtual void Disconnect ();
-
+            virtual std::size_t GetDataAvailable () const = 0;
+            enum {
+                /// \brief
+                /// Default buffer length for async WSARecv[From | Msg].
+                DEFAULT_BUFFER_LENGTH = 16384
+            };
             /// \brief
             /// Read bytes from the stream.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually placed in the buffer.
-            /// NOTE: This api is to be called by blocking streams only.
-            /// An async stream will listen for incoming data, and notify
-            /// \see{AsyncIoEventSink::HandleStreamRead}.
-            virtual std::size_t Read (
-                void * /*buffer*/,
-                std::size_t /*count*/) = 0;
+            /// \param[in] bufferLength Buffer length for async WSARecv[From | Msg].
+            virtual void Read (std::size_t /*bufferLength*/ = DEFAULT_BUFFER_LENGTH) = 0;
             /// \brief
             /// Write bytes to the stream.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Buffer length.
-            /// \return Count of bytes actually written.
-            /// NOTE: Blocking streams may or may not be able to write
-            /// an entire buffer all in one shot. Use the return value
-            /// to tell how many bytes were actually written. This is
-            /// why WriteFullBuffer (const void *, std::size_t) below
-            /// exists. Async streams will write the entire buffer,
-            /// and will notify \see{AsyncIoEventSink::HandleStreamWrite}
-            /// when they are done.
-            virtual std::size_t Write (
+            virtual void Write (
                 const void * /*buffer*/,
                 std::size_t /*count*/) = 0;
-
             /// \brief
-            /// Async write a buffer to the stream. This function is a
-            /// mirror image of WriteFullBuffer (const void *, std::size_t).
-            /// It is meant to be used with async streams only. The reason
-            /// this function is not supported with synchronous streams
-            /// is the util::Buffer parameter. A synchronous
-            /// stream might only write a part of the buffer, but if we
-            /// don't take ownership it will be gone when we return. The
-            /// only way we can take ownership is if we're asynchronous.
-            /// NOTE: The rational behind this function is: Async
-            /// Write (const void *, std::size_t) has no way of knowing
-            /// where it's parameters come from. To place a burden on
-            /// the user, and have her hold on to the const void *buffer
-            /// until the async Write completes is not acceptable. Async
-            /// Write (const void *, std::size_t) does the only logical
-            /// thing left for it to do, it makes a copy of the supplied
-            /// const void *buffer. As you can imagine that can be very
-            /// wasteful, and inefficient. To add insult to injury, if
-            /// the supplied buffer came from util::Buffer, which is
-            /// quite capable of managing it's own lifetime, the copy
-            /// penalty is paid for nothing. This is where this api shines.
-            /// It takes ownership of the util::Buffer buffer and no
-            /// copy is necessary.
-            /// VERY IMPORTANT: Write will start writing at buffer->readOffset!
-            /// This is a very important design element. It allows you to
-            /// build the buffer piecemeal, and write new data periodically.
-            /// To do that, the util::Buffer you pass to WriteBuffer cannot
-            /// be the owner of the data. You need to use the following
-            /// technique:
-            /// \code{.cpp}
-            /// using namespace thekogans;
-            /// // Create the owning buffer.
-            /// util::Buffer buffer (util::NetworkEndian, ...);
-            /// do {
-            ///     // Fill a portion of the buffer.
-            ///     ...
-            ///     // Send that portion to a stream for writing.
-            ///     stream->WriteBuffer (
-            ///         util::TenantReadBuffer (
-            ///             buffer.endianness,
-            ///             buffer.GetReadPtr (),
-            ///             buffer.GetDataAvailableForReading ());
-            ///     // Continue filling and sending a portion of the owning
-            ///     // buffer until done.
-            ///     // NOTE: This technique assumes that you're correctly
-            ///     // maintaining the buffer.writeOffset. If you're using
-            ///     // the various Buffer insertion operators, this is
-            ///     // done for you automatically.
-            /// } while (...);
-            /// // VERY, VERY IMPORTANT: The owning buffer created above
-            /// // must survive until every async operation based on it
-            /// // completes. That's because every TenantReadBuffer
-            /// // sent to WriteBuffer points in to it's data member.
-            /// \endcode
+            /// Write buffer the stream.
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer /*buffer*/) = 0;
-
-            /// \brief
-            /// Don't return until count of bytes is read.
-            /// This api is only useful for blocking streams, as
-            /// async streams will always read in chunks.
-            /// \param[in] buffer Where to place the bytes.
-            /// \param[in] count Buffer length.
-            void ReadFullBuffer (
-                void *buffer,
-                std::size_t count);
-
-            /// \brief
-            /// Don't return until count of bytes is written.
-            /// This api is only useful for blocking streams, as
-            /// async streams will always write full buffers.
-            /// \param[in] buffer Bytes to write.
-            /// \param[in] count Buffer length.
-            void WriteFullBuffer (
-                const void *buffer,
-                std::size_t count);
+            virtual void Write (util::Buffer /*buffer*/) = 0;
 
         protected:
-            /// \brief
-            /// Close the stream.
-            virtual void Close ();
-
-            /// \struct Stream::AsyncInfo Stream.h thekogans/stream/Stream.h
-            ///
-            /// \brief
-            /// AsyncInfo holds the async state and is created when you
-            /// call \see{AsyncIoEventQueue::AddStream}.
-            struct _LIB_THEKOGANS_STREAM_DECL AsyncInfo {
-                /// \brief
-                /// AsyncInfo has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AsyncInfo, util::SpinLock)
-
-                /// \enum
-                /// Event types.
-                enum {
-                    /// \brief
-                    /// Invalid event.
-                    EventInvalid = 0,
-                    /// \brief
-                    /// Stream has connected to the peer (\see{TCPSocket} and friends).
-                    /// Or a connection has arrived on \see{ServerTCPSocket} or
-                    /// \see{ServerSecureTCPSocket}.
-                    EventConnect = 1,
-                    /// \brief
-                    /// Stream has been disconnected
-                    /// from by the peer (\see{TCPSocket} and friends).
-                    EventDisconnect = 2,
-                    /// \brief
-                    /// Stream has been shutdown
-                    /// from by the peer (\see{TCPSocket} and friends).
-                    EventShutdown = 4,
-                    /// \brief
-                    /// Data is available for reading.
-                    EventRead = 8,
-                    /// \brief
-                    /// Stream is ready for writing.
-                    EventWrite = 16,
-                    /// \brief
-                    /// Data is available for reading.
-                    EventReadFrom = 32,
-                    /// \brief
-                    /// Stream is ready for writing.
-                    EventWriteTo = 64,
-                    /// \brief
-                    /// Data is available for reading.
-                    EventReadMsg = 128,
-                    /// \brief
-                    /// Stream is ready for writing.
-                    EventWriteMsg = 256,
-                    /// \brief
-                    /// All events.
-                    EventAll =
-                        EventConnect |
-                        EventDisconnect |
-                        EventShutdown |
-                        EventRead |
-                        EventWrite |
-                        EventReadFrom |
-                        EventWriteTo |
-                        EventReadMsg |
-                        EventWriteMsg
-                };
-
-                /// \brief
-                /// "EventInvalid"
-                static const char * const EVENT_INVALID;
-                /// \brief
-                /// "EventConnect"
-                static const char * const EVENT_CONNECT;
-                /// \brief
-                /// "EventDisconnect"
-                static const char * const EVENT_DISCONNECT;
-                /// \brief
-                /// "EventShutdown"
-                static const char * const EVENT_SHUTDOWN;
-                /// \brief
-                /// "EventRead"
-                static const char * const EVENT_READ;
-                /// \brief
-                /// "EventWrite"
-                static const char * const EVENT_WRITE;
-                /// \brief
-                /// "EventReadFrom"
-                static const char * const EVENT_READ_FROM;
-                /// \brief
-                /// "EventWriteTo"
-                static const char * const EVENT_WRITE_TO;
-                /// \brief
-                /// "EventReadMsg"
-                static const char * const EVENT_READ_MSG;
-                /// \brief
-                /// "EventWriteMsg"
-                static const char * const EVENT_WRITE_MSG;
-
-                /// \brief
-                /// Convert event to it's string equivalent.
-                /// \param[in] event Stream::AsyncInfo event.
-                /// \return String equivalent of event.
-                static std::string eventToString (util::ui32 event);
-                /// \brief
-                /// Convert string form of event in to Stream::AsyncInfo event.
-                /// \param[in] event String equivalent of event.
-                /// \return Stream::AsyncInfo event.
-                static util::ui32 stringToEvent (const std::string &event);
-
-                /// \brief
-                /// The Stream this AsyncInfo belongs to.
-                Stream &stream;
-                /// \brief
-                /// Buffer length for async WSARecv[From | Msg].
-                std::size_t bufferLength;
-                /// \brief
-                /// Forward declaration of Overlapped.
-                struct Overlapped;
-                enum {
-                    /// \brief
-                    /// OverlappedList ID.
-                    OVERLAPPED_LIST_ID
-                };
-                /// \brief
-                /// Convenient typedef for util::IntrusiveList<Overlapped, OVERLAPPED_LIST_ID>.
-                typedef util::IntrusiveList<Overlapped, OVERLAPPED_LIST_ID> OverlappedList;
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \struct Stream::AsyncInfo::Overlapped Stream.h thekogans/stream/Stream.h
-                ///
-                /// \brief
-                /// Overlapped extends a Windows WSAOVERLAPPED.
-                struct Overlapped :
-                        public WSAOVERLAPPED,
-                        public OverlappedList::Node,
-                        public util::RefCounted {
-                    /// \brief
-                    /// Declare \see{RefCounted} pointers.
-                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Overlapped)
-
-                    /// \brief
-                    /// Stream that created this Overlapped.
-                    Stream::SharedPtr stream;
-                    /// \brief
-                    /// Operation represented by this Overlapped.
-                    util::ui32 event;
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] stream_ Stream that created this Overlapped.
-                    /// \param[in] event_ Operation being performed by this Overlapped.
-                    Overlapped (
-                        Stream &stream_,
-                        util::ui32 event_);
-                    /// \brief
-                    /// dtor.
-                    virtual ~Overlapped ();
-
-                    /// \brief
-                    /// Return error code.
-                    /// \return Error code.
-                    inline THEKOGANS_UTIL_ERROR_CODE GetError () const {
-                        return (THEKOGANS_UTIL_ERROR_CODE)Internal;
-                    }
-                    /// \brief
-                    /// Set error code.
-                    /// \param[in] error Error code.
-                    inline void SetError (THEKOGANS_UTIL_ERROR_CODE error) {
-                        Internal = (ULONG_PTR)error;
-                    }
-
-                    /// \brief
-                    /// Return count of bytes read or written.
-                    /// \return Count of bytes read or written.
-                    inline DWORD GetCount () const {
-                        return (DWORD)InternalHigh;
-                    }
-                    /// \brief
-                    /// Set count of bytes read or written.
-                    /// \param[in] count Count of bytes read or written.
-                    inline void SetCount (DWORD count) {
-                        InternalHigh = (ULONG_PTR)count;
-                    }
-
-                    /// \brief
-                    /// Return offset in the stream where bytes are read or written.
-                    /// \return Offset in the stream where bytes are read or written.
-                    util::ui64 GetOffset () const;
-                    /// \brief
-                    /// Set offset in the stream where bytes are read or written.
-                    /// \param[in] offset_ Offset in the stream where bytes are read or written.
-                    void SetOffset (util::ui64 offset_);
-
-                    /// \brief
-                    /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                    /// the Overlapped to perform post op housekeeping prior to calling
-                    /// GetError.
-                    virtual void Prolog () throw () {}
-                    /// \brief
-                    /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                    /// the Overlapped to perform post op housekeeping after calling
-                    /// GetError.
-                    /// NOTE: Epiplog will not be called if GetError returns with
-                    /// anything other then ERROR_SUCCESS.
-                    virtual void Epilog () throw () {}
-
-                    /// \brief
-                    /// Overlapped is neither copy constructable, nor assignable.
-                    THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Overlapped)
-                };
-                /// \struct Stream::AsyncInfo::ReadWrietOverlapped Stream.h thekogans/stream/Stream.h
-                ///
-                /// \brief
-                /// ReadWriteOverlapped is a helper class. It reduces code clutter and
-                /// makes instantiating Overlapped used by \see{Stream::Read} and
-                /// \see{Stream::Write} easier.
-                struct ReadWriteOverlapped : public Overlapped {
-                    /// \brief
-                    /// Declare \see{RefCounted} pointers.
-                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ReadWriteOverlapped)
-
-                    /// \brief
-                    /// ReadWriteOverlapped has a private heap to help with memory
-                    /// management, performance, and global heap fragmentation.
-                    THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ReadWriteOverlapped, util::SpinLock)
-
-                    /// \brief
-                    /// Buffer used by Stream::Read/Write.
-                    util::Buffer buffer;
-                    /// \brief
-                    /// WSARecv/Send buffer.
-                    WSABUF wsaBuf;
-                    /// \brief
-                    /// WSARecv/Send flags.
-                    DWORD flags;
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] stream Stream that created this ReadOverlapped.
-                    /// \param[in] count Length of buffer to allocate for reading.
-                    /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                    ReadWriteOverlapped (
-                        Stream &stream,
-                        std::size_t count,
-                        bool useGetBuffer = true);
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] stream Stream that created this WriteOverlapped.
-                    /// \param[in] buffer_ Buffer to write.
-                    /// \param[in] count Lenght of buffer.
-                    /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                    ReadWriteOverlapped (
-                        Stream &stream,
-                        const void *buffer_,
-                        std::size_t count,
-                        bool useGetBuffer = true);
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] stream Stream that created this WriteOverlapped.
-                    /// \param[in] buffer Buffer to write.
-                    ReadWriteOverlapped (
-                            Stream &stream,
-                            util::Buffer buffer_) :
-                            Overlapped (stream, Stream::AsyncInfo::EventWrite),
-                            buffer (std::move (buffer_)),
-                            flags (0) {
-                        wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
-                        wsaBuf.buf = (char *)buffer.GetReadPtr ();
-                    }
-
-                    /// \brief
-                    /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                    /// the ReadWriteOverlapped to perform post op housekeeping.
-                    virtual void Epilog () throw ();
-
-                    /// \brief
-                    /// ReadWriteOverlapped is neither copy constructable, nor assignable.
-                    THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ReadWriteOverlapped)
-                };
-            #else // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// \see{StreamRegistry} token.
-                StreamRegistry::Token token;
-                /// \brief
-                /// Events mask that records the events this
-                /// stream is interested in.
-                util::ui32 events;
-                /// \struct Stream::AsyncInfo::Overlapped Stream.h thekogans/stream/Stream.h
-                ///
-                /// \brief
-                /// Overlapped is a virtual base for various async contexts.
-                /// Various derivatives represent concrete Overlapped for Write,
-                /// WriteTo, WriteMsg and Shutdown.
-                /// NOTE: Unlike Windows Overlapped (above), Overlapped is
-                /// entirely owned by AsyncInfo and does not need to be
-                /// reference counted.
-                struct Overlapped :
-                        public OverlappedList::Node,
-                        public util::RefCounted  {
-                    /// \brief
-                    /// Declare \see{RefCounted} pointers.
-                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Overlapped)
-
-                    /// \brief
-                    /// Stream that created this Overlapped.
-                    Stream::SharedPtr stream;
-                    /// \brief
-                    /// Write event associated with this buffer.
-                    util::ui32 event;
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] stream_ Stream that created this Overlapped.
-                    /// \param[in] event_ Write event associated with this buffer.
-                    Overlapped (
-                        Stream &stream_,
-                        util::ui32 event_) :
-                        stream (&stream_),
-                        event (event_) {}
-                    /// \brief
-                    /// Virtual dtor.
-                    virtual ~Overlapped () {}
-
-                    /// \brief
-                    /// Used by \see{AsyncInfo::PumpAsyncIo} to write the
-                    /// buffer to the given stream.
-                    /// \return Count of bytes written.
-                    virtual ssize_t Prolog () = 0;
-                    /// \brief
-                    /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
-                    /// the write operation and notify \see{AsyncIoEventSink}.
-                    /// \return true = \see{AsyncIoEventSink} was notified,
-                    /// false = \see{AsyncIoEventSink} was not notified.
-                    virtual bool Epilog () = 0;
-                };
-                /// \struct Stream::AsyncInfo::WriteOverlapped Stream.h thekogans/stream/Stream.h
-                ///
-                /// \brief
-                /// Uses send to write the buffer to the stream.
-                struct WriteOverlapped : public Overlapped {
-                    /// \brief
-                    /// WriteOverlapped has a private heap to help with memory
-                    /// management, performance, and global heap fragmentation.
-                    THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (WriteOverlapped, util::SpinLock)
-
-                    /// \brief
-                    /// Buffer to write.
-                    util::Buffer buffer;
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] stream Stream to write the buffer to.
-                    /// \param[in] buffer_ Buffer to write.
-                    /// \param[in] count Length of buffer.
-                    /// \param[in] useGetBuffer If true, call \see{AsyncIoEventSink::GetBuffer}
-                    WriteOverlapped (
-                        Stream &stream,
-                        const void *buffer_,
-                        std::size_t count,
-                        bool useGetBuffer = true);
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] stream_ Stream to write the buffer to.
-                    /// \param[in] buffer_ Buffer to write.
-                    WriteOverlapped (
-                        Stream &stream,
-                        util::Buffer buffer_) :
-                        Overlapped (stream, AsyncInfo::EventWrite),
-                        buffer (std::move (buffer_)) {}
-
-                    /// \brief
-                    /// Used by \see{AsyncInfo::PumpAsyncIo} to write
-                    /// the buffer to the given stream.
-                    /// \return Count of bytes written.
-                    virtual ssize_t Prolog ();
-                    /// \brief
-                    /// Used by \see{AsyncInfo::PumpAsyncIo} to complete
-                    /// the write operation and notify \see{AsyncIoEventSink}.
-                    /// \return true = \see{AsyncIoEventSink} was notified,
-                    /// false = \see{AsyncIoEventSink} was not notified.
-                    virtual bool Epilog ();
-
-                    /// \brief
-                    /// WriteOverlapped is neither copy constructable, nor assignable.
-                    THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (WriteOverlapped)
-                };
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Outstanding overlapped io.
-                OverlappedList overlappedList;
-                /// \brief
-                /// Lock serializing access to overlappedList.
-                util::SpinLock spinLock;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] stream_ Stream this AsyncInfo belongs to.
-                /// \param[in] bufferLength_ Buffer length for async
-                /// WSARecv(From) and ReadFile.
-                /// NOTE: For sockets if bufferLength == 0, a zero
-                /// byte read will be initiated \see{AsyncIoEventQueue::AddStream}.
-                AsyncInfo (
-                    Stream &stream_,
-                    std::size_t bufferLength_);
-                /// \brief
-                /// dtor.
-                ~AsyncInfo ();
-
-            #if !defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Used by an async \see{Stream::Write} to put a
-                /// partially written buffer back on the queue.
-                /// \param[in] buffer Buffer to queue.
-                void EnqOverlappedFront (Overlapped::SharedPtr overlapped);
-                /// \brief
-                /// When a user calls \see{Stream::Write}, if the stream
-                /// is async, to queue the buffer for writing.
-                /// \param[in] buffer Buffer to queue.
-                void EnqOverlappedBack (Overlapped::SharedPtr overlapped);
-                /// \brief
-                /// Called by PumpAsyncIo to remove the head
-                /// buffer from the queue and put it on the wire
-                /// \return Head buffer.
-                Overlapped::SharedPtr DeqOverlapped ();
-                /// \brief
-                /// Called by \see{Stream::HandleAsyncEvent} when processing
-                /// the EventWrite, EventWriteTo and EventWriteMsg events.
-                /// Writes the pending buffers to the stream.
-                void PumpAsyncIo ();
-            #endif // !defined (TOOLCHAIN_OS_Windows)
-
-                /// \brief
-                /// AsyncInfo is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (AsyncInfo)
-            };
-            /// \brief
-            /// Async state.
-            AsyncInfo::SharedPtr asyncInfo;
-
             /// \brief
             /// Used by the \see{AsyncIoEventQueue} to notify the stream
             /// of async errors.
             /// \param[in] exception Async error.
             virtual void HandleError (const util::Exception &exception) throw ();
-        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Used by the \see{AsyncIoEventQueue} to notify the stream
+            /// of async errors.
+            /// \param[in] exception Async error.
+            virtual void HandleDisconnect () throw ();
             /// \brief
             /// Used by \see{AsyncIoEventQueue} to notify the stream that
             /// an overlapped operation has completed successfully.
             /// \param[in] overlapped \see{Overlapped} that completed successfully.
-            virtual void HandleOverlapped (AsyncInfo::Overlapped & /*overlapped*/) throw () = 0;
-        #else // defined (TOOLCHAIN_OS_Windows)
+            virtual void HandleOverlapped (Overlapped & /*overlapped*/) throw () = 0;
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Used by \see{AsyncIoEventQueue} to notify the stream of
-            /// pending io event.
-            /// \param[in] event Async io event enum.
-            virtual void HandleAsyncEvent (util::ui32 /*event*/) throw () = 0;
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            void EnqOverlapped (
+                std::unique_ptr<Overlapped> overlapped,
+                std::list<std::unique_ptr<Overlapped>> &list,
+                bool front = false);
+            /// \brief
+            /// Called by PumpAsyncIo to remove the head buffer from the given list.
+            /// \param[in, out] list List of overlappeds to return the head overlapped from.
+            /// \return Head overlapped from the given list.
+            std::unique_ptr<Overlapped> DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list);
+            /// \brief
+            /// Called by \see{Stream::HandleAsyncEvent} when processing
+            /// the EventWrite, EventWriteTo and EventWriteMsg events.
+            /// Writes the pending buffers to the stream.
+            std::unique_ptr<Overlapped> PumpAsyncIo (std::list<std::unique_ptr<Overlapped>> &list);
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+
+            virtual std::size_t ReadHelper (
+                void *buffer,
+                std::size_t count) override;
+            virtual std::size_t WriteHelper (
+                const void *buffer,
+                std::size_t count) override;
 
             /// \brief
-            /// \see{StreamSelector} needs access to the handle.
-            friend struct StreamSelector;
-            /// \brief
-            /// \see{AsyncIoEventQueue} needs access to the AsyncInfo.
+            /// \see{AsyncIoEventQueue} needs access to the events.
             friend struct AsyncIoEventQueue;
 
             /// \brief
@@ -787,84 +462,23 @@ namespace thekogans {
             THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Stream)
         };
 
-    #if defined (_MSC_VER)
-        #pragma warning (pop)
-    #endif // defined (_MSC_VER)
-
         /// \def THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type, base)
         /// This macro is used in a stream declaration file (.h).
         /// It sets up everything needed for the stream to be dynamically
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type)\
+        #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
-        public:\
-            static thekogans::stream::Stream::Context::SharedPtr CreateContext (\
-                    const pugi::xml_node &node) {\
-                return thekogans::stream::Stream::Context::SharedPtr (\
-                    new type::Context (node));\
-            }
+            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (type)
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)
         /// This macro is used in the stream definition file (.cpp).
         /// It sets up everything needed for the stream to be dynamically
         /// discoverable, and creatable.
         /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)\
+        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
             THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
-    #if defined (THEKOGANS_STREAM_TYPE_Static)
-        /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
-        /// This macro is used in a stream declaration file (.h).
-        /// It sets up everything needed for the stream to be dynamically
-        /// discoverable, and creatable.
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
-            THEKOGANS_STREAM_DECLARE_STREAM_COMMON (type)\
-            static void StaticInit () {\
-                static volatile bool registered = false;\
-                static thekogans::util::SpinLock spinLock;\
-                if (!registered) {\
-                    thekogans::util::LockGuard<thekogans::util::SpinLock> guard (spinLock);\
-                    if (!registered) {\
-                        std::pair<ContextMap::iterator, bool> result =\
-                            GetContextMap ().insert (ContextMap::value_type (#type, type::CreateContext));\
-                        if (!result.second) {\
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (\
-                                "'%s' is already registered.", #type);\
-                        }\
-                        registered = true;\
-                    }\
-                }\
-            }
-
-        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
-        /// This macro is used in the stream definition file (.cpp).
-        /// It sets up everything needed for the stream to be dynamically
-        /// discoverable, and creatable.
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON (type)
-    #else // defined (THEKOGANS_STREAM_TYPE_Static)
-        /// \def THEKOGANS_STREAM_DECLARE_STREAM(type, base)
-        /// This macro is used in a stream declaration file (.h).
-        /// It sets up everything needed for the stream to be dynamically
-        /// discoverable, and creatable.
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
-            THEKOGANS_STREAM_DECLARE_STREAM_COMMON (type)\
-            static const thekogans::stream::Stream::ContextMapInitializer contextMapInitializer;
-
-        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
-        /// This macro is used in the stream definition file (.cpp).
-        /// It sets up everything needed for the stream to be dynamically
-        /// discoverable, and creatable.
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON (type)\
-            const thekogans::stream::Stream::ContextMapInitializer type::contextMapInitializer (\
-                #type, type::CreateContext);
-    #endif // defined (THEKOGANS_STREAM_TYPE_Static)
 
     } // namespace stream
 } // namespace thekogans

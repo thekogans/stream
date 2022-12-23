@@ -36,12 +36,12 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <vector>
 #include "thekogans/util/Flags.h"
+#include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/StringUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include "thekogans/stream/AsyncIoEventSink.h"
 #if defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/stream/Socket.h"
 #endif // defined (TOOLCHAIN_OS_Linux)
@@ -51,49 +51,34 @@ namespace thekogans {
     namespace stream {
 
     #if defined (TOOLCHAIN_OS_Windows)
-        AsyncIoEventQueue::AsyncIoEventQueue (util::ui32 concurrentThreads) :
+        AsyncIoEventQueue::AsyncIoEventQueue (
+                util::ui32 concurrentThreads,
+                util::i32 priority,
+                util::ui32 affinity) :
+                Thread ("AsyncIoEventQueue"),
                 handle (
                     CreateIoCompletionPort (
                         THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
                         0, 0, concurrentThreads)) {
     #elif defined (TOOLCHAIN_OS_Linux)
-        AsyncIoEventQueue::AsyncIoEventQueue (util::ui32 maxSize) :
+        AsyncIoEventQueue::AsyncIoEventQueue (
+                util::ui32 maxSize,
+                util::i32 priority,
+                util::ui32 affinity) :
+                Thread ("AsyncIoEventQueue"),
                 handle (epoll_create (maxSize)) {
     #elif defined (TOOLCHAIN_OS_OSX)
-        AsyncIoEventQueue::AsyncIoEventQueue () :
+        AsyncIoEventQueue::AsyncIoEventQueue (
+                util::i32 priority,
+                util::ui32 affinity) :
+                Thread ("AsyncIoEventQueue"),
                 handle (kqueue ()) {
     #endif // defined (TOOLCHAIN_OS_Windows)
             if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
-        #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-            Pipe::Create (readPipe, writePipe);
-            if (!readPipe.IsOpen () || !writePipe.IsOpen ()) {
-                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            readPipe.SetBlocking (false);
-            // NOTE: By making the write pipe async we guard against
-            // a pathological case where a client calls Break enough
-            // times to block forever. This combined with correct
-            // error handling in Break (below) guarantees that it
-            // should not be a problem.
-            writePipe.SetBlocking (false);
-        #if defined (TOOLCHAIN_OS_Linux)
-            epoll_event event;
-            event.events = EPOLLIN;
-            event.data.u64 = StreamRegistry::INVALID_TOKEN;
-            if (epoll_ctl (handle, EPOLL_CTL_ADD, readPipe.handle, &event) < 0) {
-        #else // defined (TOOLCHAIN_OS_Linux)
-            keventStruct event;
-            keventSet (&event, readPipe.handle, EVFILT_READ, EV_ADD, 0, 0, StreamRegistry::INVALID_TOKEN);
-            if (keventFunc (handle, &event, 1, 0, 0, 0) < 0) {
-        #endif // defined (TOOLCHAIN_OS_Linux)
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            Create (priority, affinity);
         }
 
         AsyncIoEventQueue::~AsyncIoEventQueue () {
@@ -106,24 +91,65 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void AsyncIoEventQueue::AddStream (
-                Stream &stream,
-                std::size_t bufferLength) {
-            if (stream.IsOpen () && !stream.IsAsync ()) {
-            // Adding the same stream to the queue is stupid but harmless.
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (CreateIoCompletionPort (
-                        stream.handle, handle, (ULONG_PTR)&stream, 0) == 0) {
+    #if defined (TOOLCHAIN_OS_Linux)
+        void AsyncIoEventQueue::SetStreamEventMask (Stream &stream) {
+            epoll_event event = {0};
+            event.events = EPOLLRDHUP;
+            if (!stream.in.empty () != 0) {
+                event.events |= EPOLLIN;
+            }
+            if (!stream.out.empty ()) {
+                event.events |= EPOLLOUT;
+            }
+            event.data.u64 = stream.token;
+            if (epoll_ctl (handle, EPOLL_CTL_MOD, stream.handle, &event) < 0) {
+                if (THEKOGANS_UTIL_OS_ERROR_CODE != ENOENT ||
+                        epoll_ctl (handle, EPOLL_CTL_ADD, stream.handle, &event) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
+    #elif defined (TOOLCHAIN_OS_OSX)
+        void AsyncIoEventQueue::SetStreamEventMask (Stream &stream) {
+            if (!stream.in.empty () != 0) {
+                keventStruct kqueueEvent = {0};
+                keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, stream.token);
+                if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            else {
+                keventStruct kqueueEvent = {0};
+                keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_DELETE, 0, 0, 0);
+                if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode != ENOENT) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                }
+            }
+            if (!stream.out.empty ()) {
+                keventStruct kqueueEvent = {0};
+                keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, stream.token);
+                if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            }
+            else {
+                keventStruct kqueueEvent = {0};
+                keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
+                if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode != ENOENT) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                }
+            }
+        }
+    #endif // defined (TOOLCHAIN_OS_Linux)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
@@ -145,82 +171,75 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        void AsyncIoEventQueue::WaitForEvents (
-                std::size_t maxEventsBatch,
-                util::TimeSpec timeSpec) {
-            if (maxEventsBatch > 0) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
-                ULONG count = 0;
-                if (!GetQueuedCompletionStatusEx (handle, iocpEvents.data (),
-                        (ULONG)maxEventsBatch, &count, (DWORD)timeSpec.ToMilliseconds (), FALSE)) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                    if (errorCode != WAIT_TIMEOUT) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+        void AsyncIoEventQueue::Run () throw () {
+            while (1) {
+                THEKOGANS_UTIL_TRY {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    static const ULONG maxEventsBatch = 100;
+                    std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
+                    ULONG count = 0;
+                    if (!GetQueuedCompletionStatusEx (handle, iocpEvents.data (),
+                            maxEventsBatch, &count, INFINITE, FALSE)) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        if (errorCode != WAIT_TIMEOUT) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
                     }
-                }
-                else {
-                    for (ULONG i = 0; i < count; ++i) {
-                        if (iocpEvents[i].lpOverlapped != 0) {
-                            Stream::AsyncInfo::Overlapped::SharedPtr overlapped (
-                                (Stream::AsyncInfo::Overlapped *)iocpEvents[i].lpOverlapped, false);
-                            assert ((Stream *)iocpEvents[i].lpCompletionKey == overlapped->stream.Get ());
-                            overlapped->Prolog ();
-                            THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped->GetError ();
-                            if (errorCode != ERROR_SUCCESS) {
-                                // This check is very important as it will be returned
-                                // on all outstanding io when CancelIoEx () has been called.
-                                // That happens in DeleteStream () and in all likelihood
-                                // the stream is gone. So, if we see STATUS_CANCELED, we
-                                // silently ignore it.
-                                if (errorCode != STATUS_CANCELED) {
-                                    if (errorCode == STATUS_LOCAL_DISCONNECT ||
-                                            errorCode == STATUS_REMOTE_DISCONNECT ||
-                                            errorCode == STATUS_PIPE_BROKEN ||
-                                            errorCode == STATUS_CONNECTION_RESET) {
-                                        THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
-                                            THEKOGANS_STREAM,
-                                            "errorCode: %s.\n",
-                                            ErrorCodeTostring (errorCode).c_str ());
-                                        overlapped->event = Stream::AsyncInfo::EventDisconnect;
-                                        overlapped->stream->HandleOverlapped (*overlapped);
+                    else {
+                        for (ULONG i = 0; i < count; ++i) {
+                            if (iocpEvents[i].lpOverlapped != 0) {
+                                std::unique_ptr<Stream::Overlapped> overlapped (
+                                    (Stream::Overlapped *)iocpEvents[i].lpOverlapped);
+                                Stream::SharedPtr stream = StreamRegistry::Instance ().Get (
+                                    (StreamRegistry::Token)iocpEvents[i].lpCompletionKey);
+                                if (stream.Get () != 0) {
+                                    ssize_t count = overlapped->Prolog (stream);
+                                    if (count > 0) {
+                                        if (overlapped->Epilog (stream)) {
+                                            stream->HandleOverlapped (*overlapped);
+                                        }
+                                    }
+                                    else if (count == 0) {
+                                        stream->HandleDisconnect ();
                                     }
                                     else {
-                                        overlapped->stream->HandleError (
-                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                                        THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped->GetError ();
+                                        // Convert known errors to disconnect events.
+                                        if (errorCode == STATUS_LOCAL_DISCONNECT ||
+                                                errorCode == STATUS_REMOTE_DISCONNECT ||
+                                                errorCode == STATUS_PIPE_BROKEN ||
+                                                errorCode == STATUS_CONNECTION_RESET) {
+                                            THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
+                                                THEKOGANS_STREAM,
+                                                "errorCode: %s.\n",
+                                                ErrorCodeTostring (errorCode).c_str ());
+                                            stream->HandleDisconnect ();
+                                        }
+                                        else if (errorCode != STATUS_CANCELED) {
+                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION exception (errorCode);
+                                            THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                                            stream->HandleError (exception);
+                                        }
                                     }
                                 }
                             }
-                            else {
-                                overlapped->Epilog ();
-                                overlapped->stream->HandleOverlapped (*overlapped);
-                            }
                         }
                     }
-                }
-            #elif defined (TOOLCHAIN_OS_Linux)
-                std::vector<epoll_event> epollEvents (maxEventsBatch);
-                int count = epoll_wait (handle, epollEvents.data (), maxEventsBatch,
-                    timeSpec == util::TimeSpec::Infinite ? -1 : timeSpec.ToMilliseconds ());
-                if (count < 0) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                    // EINTR means a signal interrupted our wait. Quietly
-                    // return so that the AsyncIoEventQueue owner can call
-                    // WaitForEvents again.
-                    if (errorCode != EINTR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
-                }
-                else {
-                    for (int i = 0; i < count; ++i) {
-                        if (epollEvents[i].data.u64 == StreamRegistry::INVALID_TOKEN) {
-                            std::size_t bufferSize = readPipe.GetDataAvailable ();
-                            if (bufferSize != 0) {
-                                std::vector<util::ui8> buffer (bufferSize);
-                                readPipe.Read (buffer.data (), bufferSize);
-                            }
+                #elif defined (TOOLCHAIN_OS_Linux)
+                    std::size_t maxEventsBatch = 100;
+                    std::vector<epoll_event> epollEvents (maxEventsBatch);
+                    int count = epoll_wait (handle, epollEvents.data (), maxEventsBatch, -1);
+                    if (count < 0) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        // EINTR means a signal interrupted our wait. Quietly
+                        // return so that the AsyncIoEventQueue owner can call
+                        // WaitForEvents again.
+                        if (errorCode != EINTR) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
-                        else {
+                    }
+                    else {
+                        for (int i = 0; i < count; ++i) {
                             Stream::SharedPtr stream = StreamRegistry::Instance ().Get (epollEvents[i].data.u64);
                             if (stream.Get () != 0) {
                                 if (epollEvents[i].events & EPOLLERR) {
@@ -237,7 +256,7 @@ namespace thekogans {
                                     if (socket.Get () != 0) {
                                         THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
                                         if (errorCode == EPIPE) {
-                                            socket->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                                            socket->HandleDisconnect ();
                                         }
                                         else {
                                             socket->HandleError (
@@ -246,73 +265,46 @@ namespace thekogans {
                                     }
                                     else {
                                         stream->HandleError (
-                                            THEKOGANS_UTIL_STRING_EXCEPTION (
-                                                "%s", "Unknown stream error."));
+                                            THEKOGANS_UTIL_STRING_EXCEPTION ("%s", "Unknown stream error."));
                                     }
                                 }
                                 else {
+                                    if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
+                                        stream->HandleDisconnect ();
+                                    }
                                     if (epollEvents[i].events & EPOLLIN) {
-                                        util::ui32 event =
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventRead) ? Stream::AsyncInfo::EventRead :
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventReadFrom) ? Stream::AsyncInfo::EventReadFrom :
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
-                                            Stream::AsyncInfo::EventInvalid;
-                                        if (event != Stream::AsyncInfo::EventInvalid) {
-                                            stream->HandleAsyncEvent (event);
+                                        std::unique_ptr<Stream::Overlapped> overlapped = stream->PumpAsyncIo (stream->in);
+                                        if (overlapped.get () != 0) {
+                                            stream->HandleOverlapped (*overlapped);
                                         }
                                     }
                                     if (epollEvents[i].events & EPOLLOUT) {
-                                        util::ui32 event =
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
-                                            util::Flags32 (stream->asyncInfo->events).Test (
-                                                Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
-                                            Stream::AsyncInfo::EventInvalid;
-                                        if (event != Stream::AsyncInfo::EventInvalid) {
-                                            stream->HandleAsyncEvent (event);
+                                        for (std::unique_ptr<Stream::Overlapped>
+                                                overlapped = stream->PumpAsyncIo (stream->out);
+                                                overlapped.get () != 0;
+                                                overlapped = stream->PumpAsyncIo (stream->out)) {
+                                            stream->HandleOverlapped (*overlapped);
                                         }
-                                    }
-                                    if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
-                                        stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
                                     }
                                 }
                             }
                         }
                     }
-                }
-            #elif defined (TOOLCHAIN_OS_OSX)
-                timespec timespec = timeSpec.Totimespec ();
-                std::vector<keventStruct> kqueueEvents (maxEventsBatch);
-                int count = keventFunc (handle, 0, 0, kqueueEvents.data (), maxEventsBatch,
-                    timeSpec == util::TimeSpec::Infinite ? 0 : &timespec);
-                if (count < 0) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                    // EINTR means a signal interrupted our wait. Quietly
-                    // return so that the AsyncIoEventQueue owner can call
-                    // WaitForEvents again.
-                    if (errorCode != EINTR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
-                }
-                else {
-                    for (int i = 0; i < count; ++i) {
-                        if (kqueueEvents[i].udata == StreamRegistry::INVALID_TOKEN) {
-                            std::size_t bufferSize = readPipe.GetDataAvailable ();
-                            if (bufferSize != 0) {
-                                std::vector<util::ui8> buffer (bufferSize);
-                                readPipe.Read (buffer.data (), bufferSize);
-                            }
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    static const std::size_t maxEventsBatch = 100;
+                    std::vector<keventStruct> kqueueEvents (maxEventsBatch);
+                    int count = keventFunc (handle, 0, 0, kqueueEvents.data (), maxEventsBatch, 0);
+                    if (count < 0) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        // EINTR means a signal interrupted our wait. Quietly
+                        // return so that the AsyncIoEventQueue owner can call
+                        // WaitForEvents again.
+                        if (errorCode != EINTR) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
-                        else {
+                    }
+                    else {
+                        for (int i = 0; i < count; ++i) {
                             Stream::SharedPtr stream = StreamRegistry::Instance ().Get (kqueueEvents[i].udata);
                             if (stream.Get () != 0) {
                                 if (kqueueEvents[i].flags & EV_ERROR) {
@@ -321,229 +313,38 @@ namespace thekogans {
                                             (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data));
                                 }
                                 else if (kqueueEvents[i].flags & EV_EOF) {
+                                    // *** HACK ***
                                     // If no one is listening on the other side, kqueue returns
                                     // EV_EOF instead of ECONNREFUSED. Simulate an error that would
                                     // be returned if we did a blocking connect.
-                                    if (util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventConnect)) {
+                                    if (!stream->in.empty () &&
+                                            stream->in.front ()->GetName () == TCPSocket::ConnectOverlapped::NAME) {
                                         stream->HandleError (
                                             THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (ECONNREFUSED));
                                     }
+                                    // *** HACK ***
                                     else {
-                                        stream->HandleAsyncEvent (Stream::AsyncInfo::EventDisconnect);
+                                        stream->HandleDisconnect ();
                                     }
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_READ) {
-                                    util::ui32 event =
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventRead) ? Stream::AsyncInfo::EventRead :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventReadFrom) ? Stream::AsyncInfo::EventReadFrom :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventReadMsg) ? Stream::AsyncInfo::EventReadMsg :
-                                        Stream::AsyncInfo::EventInvalid;
-                                    if (event != Stream::AsyncInfo::EventInvalid) {
-                                        stream->HandleAsyncEvent (event);
+                                    std::unique_ptr<Stream::Overlapped> overlapped = stream->PumpAsyncIo (stream->in);
+                                    if (overlapped.get () != 0) {
+                                        stream->HandleOverlapped (*overlapped);
                                     }
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_WRITE) {
-                                    util::ui32 event =
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventConnect) ? Stream::AsyncInfo::EventConnect :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventShutdown) ? Stream::AsyncInfo::EventShutdown :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventWrite) ? Stream::AsyncInfo::EventWrite :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventWriteTo) ? Stream::AsyncInfo::EventWriteTo :
-                                        util::Flags32 (stream->asyncInfo->events).Test (
-                                            Stream::AsyncInfo::EventWriteMsg) ? Stream::AsyncInfo::EventWriteMsg :
-                                        Stream::AsyncInfo::EventInvalid;
-                                    if (event != Stream::AsyncInfo::EventInvalid) {
-                                        stream->HandleAsyncEvent (event);
+                                    for (std::unique_ptr<Stream::Overlapped>
+                                            overlapped = stream->PumpAsyncIo (stream->out);
+                                            overlapped.get () != 0;
+                                            overlapped = stream->PumpAsyncIo (stream->out)) {
+                                        stream->HandleOverlapped (*overlapped);
                                     }
                                 }
                             }
                         }
                     }
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-    #if defined (TOOLCHAIN_OS_Linux)
-        void AsyncIoEventQueue::AddStreamForEvents (
-                Stream &stream,
-                util::ui32 events) {
-            util::ui32 newEvents = stream.asyncInfo->events | events;
-            if (newEvents > stream.asyncInfo->events) {
-                epoll_event event = {0};
-                if (util::Flags32 (newEvents).Test (Stream::AsyncInfo::EventDisconnect)) {
-                    event.events |= EPOLLRDHUP;
-                }
-                if (util::Flags32 (newEvents).TestAny (
-                        Stream::AsyncInfo::EventRead |
-                        Stream::AsyncInfo::EventReadFrom |
-                        Stream::AsyncInfo::EventReadMsg)) {
-                    event.events |= EPOLLIN;
-                }
-                if (util::Flags32 (newEvents).TestAny (
-                        Stream::AsyncInfo::EventConnect |
-                        Stream::AsyncInfo::EventShutdown |
-                        Stream::AsyncInfo::EventWrite |
-                        Stream::AsyncInfo::EventWriteTo |
-                        Stream::AsyncInfo::EventWriteMsg)) {
-                    event.events |= EPOLLOUT;
-                }
-                event.data.u64 = stream.asyncInfo->token;
-                if (epoll_ctl (handle,
-                        stream.asyncInfo->events == 0 ? EPOLL_CTL_ADD : EPOLL_CTL_MOD,
-                        stream.handle, &event) < 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                newEvents ^= stream.asyncInfo->events;
-                stream.asyncInfo->events |= newEvents;
-            }
-        }
-
-        void AsyncIoEventQueue::DeleteStreamForEvents (
-                Stream &stream,
-                util::ui32 events) {
-            util::ui32 newEvents = stream.asyncInfo->events & ~events;
-            if (newEvents < stream.asyncInfo->events) {
-                if (newEvents != 0) {
-                    epoll_event epollEvent = {0};
-                    if (util::Flags32 (newEvents).Test (
-                            Stream::AsyncInfo::EventDisconnect)) {
-                        epollEvent.events |= EPOLLRDHUP;
-                    }
-                    if (util::Flags32 (newEvents).TestAny (
-                            Stream::AsyncInfo::EventRead |
-                            Stream::AsyncInfo::EventReadFrom |
-                            Stream::AsyncInfo::EventReadMsg)) {
-                        epollEvent.events |= EPOLLIN;
-                    }
-                    if (util::Flags32 (newEvents).TestAny (
-                            Stream::AsyncInfo::EventConnect |
-                            Stream::AsyncInfo::EventShutdown |
-                            Stream::AsyncInfo::EventWrite |
-                            Stream::AsyncInfo::EventWriteTo |
-                            Stream::AsyncInfo::EventWriteMsg)) {
-                        epollEvent.events |= EPOLLOUT;
-                    }
-                    epollEvent.data.u64 = stream.asyncInfo->token;
-                    if (epoll_ctl (handle, EPOLL_CTL_MOD, stream.handle, &epollEvent) < 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                }
-                else if (epoll_ctl (handle, EPOLL_CTL_DEL, stream.handle, 0) < 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                stream.asyncInfo->events = newEvents;
-            }
-        }
-    #elif defined (TOOLCHAIN_OS_OSX)
-        void AsyncIoEventQueue::AddStreamForEvents (
-                Stream &stream,
-                util::ui32 events) {
-            util::ui32 newEvents = stream.asyncInfo->events | events;
-            if (newEvents > stream.asyncInfo->events) {
-                newEvents ^= stream.asyncInfo->events;
-                if (util::Flags32 (newEvents).TestAny (
-                        Stream::AsyncInfo::EventRead |
-                        Stream::AsyncInfo::EventReadFrom |
-                        Stream::AsyncInfo::EventReadMsg)) {
-                    keventStruct kqueueEvent = {0};
-                    keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, stream.asyncInfo->token);
-                    if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                }
-                if (util::Flags32 (newEvents).TestAny (
-                        Stream::AsyncInfo::EventConnect |
-                        Stream::AsyncInfo::EventShutdown |
-                        Stream::AsyncInfo::EventWrite |
-                        Stream::AsyncInfo::EventWriteTo |
-                        Stream::AsyncInfo::EventWriteMsg)) {
-                    keventStruct kqueueEvent = {0};
-                    keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, stream.asyncInfo->token);
-                    if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                }
-                stream.asyncInfo->events |= newEvents;
-            }
-        }
-
-        void AsyncIoEventQueue::DeleteStreamForEvents (
-                Stream &stream,
-                util::ui32 events) {
-            util::ui32 newEvents = stream.asyncInfo->events & ~events;
-            if (newEvents < stream.asyncInfo->events) {
-                newEvents = stream.asyncInfo->events & ~newEvents;
-                if (util::Flags32 (newEvents).TestAny (
-                        Stream::AsyncInfo::EventRead |
-                        Stream::AsyncInfo::EventReadFrom |
-                        Stream::AsyncInfo::EventReadMsg)) {
-                    keventStruct kqueueEvent = {0};
-                    keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_DELETE, 0, 0, 0);
-                    if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                }
-                if (util::Flags32 (newEvents).TestAny (
-                        Stream::AsyncInfo::EventConnect |
-                        Stream::AsyncInfo::EventShutdown |
-                        Stream::AsyncInfo::EventWrite |
-                        Stream::AsyncInfo::EventWriteTo |
-                        Stream::AsyncInfo::EventWriteMsg)) {
-                    keventStruct kqueueEvent = {0};
-                    keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
-                    if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                }
-                stream.asyncInfo->events &= ~newEvents;
-            }
-        }
-    #endif // defined (TOOLCHAIN_OS_Linux)
-
-    #if defined (TOOLCHAIN_OS_Windows)
-        GlobalAsyncIoEventQueue::GlobalAsyncIoEventQueue (
-                util::ui32 concurrentThreads,
-                util::i32 priority,
-                util::ui32 affinity) :
-                AsyncIoEventQueue (concurrentThreads),
-    #elif defined (TOOLCHAIN_OS_Linux)
-        GlobalAsyncIoEventQueue::GlobalAsyncIoEventQueue (
-                util::ui32 maxSize,
-                util::i32 priority,
-                util::ui32 affinity) :
-                AsyncIoEventQueue (maxSize),
-    #elif defined (TOOLCHAIN_OS_OSX)
-        GlobalAsyncIoEventQueue::GlobalAsyncIoEventQueue (
-                util::i32 priority,
-                util::ui32 affinity) :
-    #endif // defined (TOOLCHAIN_OS_Windows)
-                Thread ("GlobalAsyncIoEventQueue") {
-            Create (priority, affinity);
-        }
-
-        void GlobalAsyncIoEventQueue::Run () throw () {
-            while (1) {
-                THEKOGANS_UTIL_TRY {
-                    WaitForEvents ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
             }

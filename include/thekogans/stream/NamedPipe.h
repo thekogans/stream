@@ -37,15 +37,32 @@
 namespace thekogans {
     namespace stream {
 
+        struct NamedPipe;
+
+        struct _LIB_THEKOGANS_STREAM_DECL NamedPipeEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (NamedPipeEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~NamedPipeEvents () {}
+
+            /// \brief
+            /// Called to report a connection on a \see{ServerNamedPipe}.
+            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
+            /// the connection occurred.
+            virtual void OnNamedPipeAccept (
+                util::RefCounted::SharedPtr<NamedPipe> serverNamedPipe) throw ();
+        }
+
         /// \struct NamedPipe NamedPipe.h thekogans/stream/NamedPipe.h
         ///
         /// \brief
-        /// NamedPipe is the base class for both ClientNamedPipe
-        /// and ServerNamedPipe. While not an abstract base, there
-        /// is very little reason to create instances of this class.
-        /// All it does is abstract out the read and write apis.
 
-        struct _LIB_THEKOGANS_STREAM_DECL NamedPipe : public Stream {
+        struct _LIB_THEKOGANS_STREAM_DECL NamedPipe :
+                public Stream,
+                public util::Producer<NamedPipeEvents> {
             /// \enum
             /// Named pipe types.
             enum PipeType {
@@ -61,62 +78,87 @@ namespace thekogans {
             /// ctor.
             /// Wrap an OS handle.
             /// \param[in] handle OS stream handle to wrap.
-            NamedPipe (THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE) :
+            NamedPipe (THEKOGANS_UTIL_HANDLE handle) :
                 Stream (handle) {}
+            /// \brief
+            /// ctor.
+            /// Create a server side named pipe.
+            /// \param[in] address_ \see{Address} to listen on.
+            /// \param[in] pipeType_ Byte/Message (similar to Socket/ServerNamedPipe).
+            /// \param[in] bufferSize_ Size of receive buffer.
+            /// NOTE: If you plan on using the ServerNamedPipe asynchronously,
+            /// there is no need to call ServerNamedPipe::Connect, as
+            /// AsyncIoEventQueue::AddStream will do that for you.
+            NamedPipe (
+                const Address &address_,
+                PipeType pipeType_ = Byte);
+            /// \brief
+            /// ctor.
+            /// Create a ClientNamedPipe and connect to the
+            /// ServerNamedPipe at the other end of the address.
+            /// \param[in] address Address of ServerNamedPipe to connect to.
+            /// \param[in] pipeType Byte/Message (similar to Socket/UDPSocket).
+            NamedPipe (
+                const Address &address_,
+                PipeType pipeType_ = Byte,
+                LPSECURITY_ATTRIBUTES securityAttributes = 0) :
+                address (address_),
+                pipeType (pipeType_) {}
 
             // Stream
             /// \brief
+            /// Return number of bytes available for reading.
+            /// \return Number of bytes available for reading.
+            virtual std::size_t GetDataAvailable () const override;
+            /// \brief
             /// Read bytes from the stream.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually placed in the buffer.
-            /// NOTE: This api is to be called by blocking
-            /// streams only. Async stream will listen for
-            /// incoming data, and notify AsyncIoEventSink.
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count);
+            /// \param[in] bufferLength Buffer length for async WSARecv[From | Msg].
+            virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
             /// \brief
             /// Write bytes to the stream.
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Buffer length.
-            /// \return Count of bytes actually written.
-            virtual std::size_t Write (
+            virtual void Write (
                 const void *buffer,
-                std::size_t count);
-
+                std::size_t count) override;
             /// \brief
-            /// Async write a buffer to the stream.
+            /// Write buffer the stream.
             /// \param[in] buffer Buffer to write.
-            virtual void WriteBuffer (util::Buffer buffer);
+            virtual void Write (util::Buffer buffer) override;
 
             /// \brief
-            /// Return number of bytes available for reading.
-            /// \return Number of bytes available for reading.
-            std::size_t GetDataAvailable ();
+            /// Listen for an incoming connection.
+            void Accept ();
+
+            /// \brief
+            /// Disconnect the client end of the named pipe.
+            /// \param[in] flushBuffers Call FlushFileBuffers before disconnecting.
+            void Disconnect (bool flushBuffers = true);
+
+            /// \brief
+            /// Wait for a server side instance of the pipe to become available for connecting.
+            /// \param[in] timeout How long to wait for connection before giving up.
+            bool Wait (DWORD timeout);
+
+            /// \brief
+            /// Clone this ServerNamedPipe.
+            /// \return Cloned ServerNamedPipe.
+            NamedPipe::SharedPtr Clone () const;
 
         protected:
             // Stream
             /// \brief
-            /// Used by the AsyncIoEventQueue to allow the stream to
-            /// initialize itself. When this function is called, the
-            /// stream is already async, and Stream::AsyncInfo has
-            /// been created. At this point the stream should do
-            /// whatever stream specific initialization it needs to
-            /// do.
-            virtual void InitAsyncIo ();
-            /// \brief
-            /// Initiate an overlapped ReadFile.
-            void PostAsyncRead ();
-            /// \brief
             /// Used by AsyncIoEventQueue to notify the stream that
             /// an overlapped operation has completed successfully.
             /// \param[in] overlapped Overlapped that completed successfully.
-            virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
+            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
 
-            /// \brief
-            /// Streams are neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (NamedPipe)
+            virtual std::size_t ReadHelper (
+                void *buffer,
+                std::size_t count) override;
+            virtual std::size_t WriteHelper (
+                const void *buffer,
+                std::size_t count) override;
         };
 
     } // namespace stream

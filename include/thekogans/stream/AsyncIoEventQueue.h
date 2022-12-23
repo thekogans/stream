@@ -28,7 +28,6 @@
 #if !defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/stream/Pipe.h"
 #endif // !defined (TOOLCHAIN_OS_Windows)
-#include "thekogans/stream/AsyncIoEventSink.h"
 
 namespace thekogans {
     namespace stream {
@@ -119,6 +118,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
+            ~AsyncIoEventQueue ();
 
             /// \brief
             /// Return the queue handle.
@@ -127,51 +127,13 @@ namespace thekogans {
                 return handle;
             }
 
-            enum {
-                /// \brief
-                /// Default buffer length for async WSARecv[From | Msg].
-                DEFAULT_BUFFER_LENGTH = 16384
-            };
-
-            /// \brief
-            /// Add a given stream to the queue.
-            /// \param[in] stream Stream to add.
-            /// \param[in] bufferLength Buffer length for async
-            /// WSARecv[From | Msg] and ReadFile on Windows.
-            /// NOTE: For socket based async io, use the bufferLength
-            /// parameter to select between max throughput and max
-            /// connections. bufferLength == 0 reads will result in
-            /// the ability to handle max connections. bufferLength != 0
-            /// reads will result in max throughput (at the expense
-            /// of locking system pages).
-            /// VERY IMPORTANT: For (named) pipe io on Windows
-            /// bufferLength cannot be == 0. Windows has no concept
-            /// of zero length reads for these objects.
-            void AddStream (
-                Stream &stream,
-                std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
-
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Used internally by epoll and kqueue variants to
             /// add a 'stream is ready for events' notification.
             /// \param[in] stream Stream that wants to be notified
             /// when an event(s) it's interested in has occurred.
-            /// \param[in] events A set of events the stream is
-            /// interested in.
-            void AddStreamForEvents (
-                Stream &stream,
-                util::ui32 events);
-            /// \brief
-            /// Used internally by epoll and kqueue variants to
-            /// delete a 'stream is ready for events' notification.
-            /// \param[in] stream Stream that wants to remove
-            /// the 'stream is ready for events' notification.
-            /// \param[in] events A set of events the stream is
-            /// no longer interested in.
-            void DeleteStreamForEvents (
-                Stream &stream,
-                util::ui32 events);
+            void SetStreamEventMask (Stream &stream);
         #endif // !defined (TOOLCHAIN_OS_Windows)
 
         private:

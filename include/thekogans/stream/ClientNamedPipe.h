@@ -71,94 +71,6 @@ namespace thekogans {
             };
 
         private:
-            /// \struct ClientNamedPipe::Context ClientNamedPipe.h thekogans/stream/ClientNamedPipe.h
-            ///
-            /// \brief
-            /// ClientNamedPipe::Context represents the state
-            /// of a ClientNamedPipe at rest. At any time you want
-            /// to reconstitute a ClientNamedPipe from rest,
-            /// feed a parsed (pugi::xml_node) one of:
-            /// <tagName StreamType = "ClientNamedPipe">
-            ///     <Address Family = "local"
-            ///              Path = "Properly formated named pipe address."/>
-            ///     <PipeType>byte or message</PipeType>
-            /// </tagName>
-            /// to: thekogans::stream::Stream::GetContext (), and it will
-            /// return back to you a properly constructed, initialized and
-            /// connected ClientNamedPipe.
-            struct _LIB_THEKOGANS_STREAM_DECL Context : public Stream::Context {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
-
-                /// \brief
-                /// "ClientNamedPipe"
-                static const char * const VALUE_CLIENT_NAMED_PIPE;
-                /// \brief
-                /// "PipeType"
-                static const char * const TAG_PIPE_TYPE;
-                /// \brief
-                /// "byte"
-                static const char * const VALUE_BYTE;
-                /// \brief
-                /// "message"
-                static const char * const VALUE_MESSAGE;
-
-                /// \brief
-                /// Address of ServerNamedPipe to connect to.
-                Address address;
-                /// \brief
-                /// Pipe type (Byte or Message).
-                PipeType pipeType;
-
-                /// \brief
-                /// ctor. Parse the node representing a
-                /// ClientNamedPipe::Context.
-                /// \param[in] node pugi::xml_node representing
-                /// a ClientNamedPipe::Context.
-                explicit Context (const pugi::xml_node &node) :
-                        Stream::Context (VALUE_CLIENT_NAMED_PIPE),
-                        address (Address::Empty),
-                        pipeType (NamedPipe::Byte) {
-                    Parse (node);
-                }
-                /// \brief
-                /// ctor.
-                /// \param[in] address_ Address of ServerNamedPipe to connect to.
-                /// \param[in] pipeType_ Pipe type (Byte or Message).
-                Context (
-                    const Address &address_,
-                    PipeType pipeType_) :
-                    address (address_),
-                    pipeType (pipeType_) {}
-
-                /// \brief
-                /// Parse the node representing a
-                /// ClientNamedPipe::Context.
-                /// \param[in] node pugi::xml_node representing
-                /// a ClientNamedPipe::Context.
-                virtual void Parse (const pugi::xml_node &node);
-                /// \brief
-                /// Return a string representing the rest
-                /// state of the ClientNamedPipe.
-                /// \param[in] indentationLevel Pretty print parameter.
-                /// indents the tag with 4 * indentationLevel spaces.
-                /// \param[in] tagName Tag name (default to "Context").
-                /// \return String representing the rest state of the
-                /// ClientNamedPipe.
-                virtual std::string ToString (
-                    std::size_t indentationLevel = 0,
-                    const char *tagName = TAG_CONTEXT) const;
-
-                /// \brief
-                /// Create a ClientNamedPipe based on the Context parameters.
-                /// \return ClientNamedPipe based on the Context parameters.
-                virtual Stream::SharedPtr CreateStream () const {
-                    return Stream::SharedPtr (
-                        new ClientNamedPipe (address, pipeType));
-                }
-            };
-
             /// \brief
             /// Address to listen on.
             Address address;
@@ -214,10 +126,6 @@ namespace thekogans {
             /// an overlapped operation has completed successfully.
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (AsyncInfo::Overlapped &overlapped) throw ();
-
-            /// \brief
-            /// Streams are neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ClientNamedPipe)
         };
 
     } // namespace stream
