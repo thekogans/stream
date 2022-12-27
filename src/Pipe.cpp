@@ -69,9 +69,8 @@ namespace thekogans {
 
         void Pipe::Read (std::size_t bufferLength) {
             THEKOGANS_UTIL_TRY {
+                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
             #if defined (TOOLCHAIN_OS_Windows)
-                std::unique_ptr<ReadOverlapped> overlapped (
-                    new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
                         overlapped->buffer.GetWritePtr (),
@@ -85,9 +84,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
-                    in);
+                EnqOverlapped (std::move (overlapped), in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -96,49 +93,11 @@ namespace thekogans {
             }
         }
 
-        void Pipe::Write (
-                const void *buffer,
-                std::size_t count) {
-            THEKOGANS_UTIL_TRY {
-                if (buffer != 0 && count > 0) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    std::unique_ptr<WriteOverlapped> overlapped (
-                        new WriteOverlapped (buffer, count));
-                    if (!WriteFile (
-                            handle,
-                            overlapped->buffer.GetReadPtr (),
-                            (DWORD)overlapped->buffer.GetDataAvailableForReading (),
-                            0,
-                            overlapped.get ())) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode != ERROR_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                    }
-                    overlapped.release ();
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    EnqOutOverlapped (
-                        std::unique_ptr<Overlapped> (new WriteOverlapped (buffer, count)),
-                        out);
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
-            }
-        }
-
         void Pipe::Write (util::Buffer buffer) {
-            THEKOGANS_UTIL_TRY {
-                if (!buffer.IsEmpty ()) {
+            if (!buffer.IsEmpty ()) {
+                THEKOGANS_UTIL_TRY {
+                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
                 #if defined (TOOLCHAIN_OS_Windows)
-                    std::unique_ptr<WriteOverlapped> overlapped (
-                        new WriteOverlapped (std::move (buffer)));
                     if (!WriteFile (
                             handle,
                             overlapped->buffer.GetReadPtr (),
@@ -152,19 +111,17 @@ namespace thekogans {
                     }
                     overlapped.release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    EnqOutOverlapped (
-                        std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
-                        out);
+                    EnqOverlapped (std::move (overlapped), out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    HandleError (exception);
                 }
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 

@@ -127,8 +127,8 @@ namespace thekogans {
                 type == SOCK_STREAM ? IPPROTO_TCP :
                 (type == SOCK_DGRAM || type == SOCK_RAW) ? IPPROTO_UDP : 0;
         #endif // defined (TOOLCHAIN_OS_Linux)
-            SetBlocking (false);
         #endif // defined (TOOLCHAIN_OS_Windows)
+            SetBlocking (false);
         }
 
         Socket::Socket (
@@ -146,13 +146,7 @@ namespace thekogans {
                 family (family_),
                 type (type_),
                 protocol (protocol_) {
-            if (!IsOpen ()) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-        #if !defined (TOOLCHAIN_OS_Windows)
             SetBlocking (false);
-        #endif // !defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -187,8 +181,8 @@ namespace thekogans {
 
         void Socket::Read (std::size_t bufferLength) {
             THEKOGANS_UTIL_TRY {
-            #if defined (TOOLCHAIN_OS_Windows)
                 std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
+            #if defined (TOOLCHAIN_OS_Windows)
                 if (WSARecv (
                         (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->wsaBuf,
@@ -204,48 +198,8 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
-                    In);
+                EnqOverlapped (std::move (overlapped), in);
             #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
-            }
-        }
-
-        std::size_t Socket::Write (
-                const void *buffer,
-                std::size_t count) {
-            THEKOGANS_UTIL_TRY {
-                if (buffer != 0 && count > 0) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (buffer, count));
-                    if (WSASend (
-                            (THEKOGANS_STREAM_SOCKET)handle,
-                            &overlapped->wsaBuf,
-                            1,
-                            0,
-                            0,
-                            overlapped.get (),
-                            0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                        if (errorCode != WSA_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                    }
-                    overlapped.release ();
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    EnqOverlapped (
-                        std::unique_ptr<Overlapped> (new WriteOverlapped (buffer, count)),
-                        Out);
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
@@ -254,10 +208,10 @@ namespace thekogans {
         }
 
         void Socket::Write (util::Buffer buffer) {
-            THEKOGANS_UTIL_TRY {
-                if (!buffer.IsEmpty ()) {
-                #if defined (TOOLCHAIN_OS_Windows)
+            if (!buffer.IsEmpty ()) {
+                THEKOGANS_UTIL_TRY {
                     std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
+                #if defined (TOOLCHAIN_OS_Windows)
                     if (WSASend (
                             (THEKOGANS_STREAM_SOCKET)handle,
                             &overlapped->wsaBuf,
@@ -273,107 +227,13 @@ namespace thekogans {
                     }
                     overlapped.release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    EnqOverlapped (
-                        std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
-                        Out);
+                    EnqOverlapped (std::move (overlapped), out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    HandleError (exception);
                 }
-            }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
-            }
-        }
-
-        util::TimeSpec Socket::GetReadTimeout () const {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD value = 0;
-            socklen_t length = sizeof (value);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_RCVTIMEO, (char *)&value, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec::FromMilliseconds (value);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            timeval timeVal;
-            socklen_t length = sizeof (timeval);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_RCVTIMEO, (char *)&timeVal, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec (timeVal);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        void Socket::SetReadTimeout (const util::TimeSpec &timeSpec) {
-            if (timeSpec != util::TimeSpec::Infinite) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD value = (DWORD)timeSpec.ToMilliseconds ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_RCVTIMEO, (char *)&value, sizeof (DWORD)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                timeval timeVal = timeSpec.Totimeval ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_RCVTIMEO, (char *)&timeVal, sizeof (timeval)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        util::TimeSpec Socket::GetWriteTimeout () const {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD value = 0;
-            socklen_t length = sizeof (value);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_SNDTIMEO, (char *)&value, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec::FromMilliseconds (value);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            timeval timeVal;
-            socklen_t length = sizeof (timeval);
-            if (getsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                    SO_SNDTIMEO, (char *)&timeVal, &length) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return util::TimeSpec (timeVal);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        void Socket::SetWriteTimeout (const util::TimeSpec &timeSpec) {
-            if (timeSpec != util::TimeSpec::Infinite) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD value = (DWORD)timeSpec.ToMilliseconds ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_SNDTIMEO, (char *)&value, sizeof (DWORD)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                timeval timeVal = timeSpec.Totimeval ();
-                if (setsockopt ((THEKOGANS_STREAM_SOCKET)handle, SOL_SOCKET,
-                        SO_SNDTIMEO, (char *)&timeVal, sizeof (timeval)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -422,20 +282,6 @@ namespace thekogans {
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
             return address;
-        }
-
-        void Socket::SetBlocking (bool blocking) {
-            u_long arg = !blocking ? 1 : 0;
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONBIO, &arg) ==
-                    THEKOGANS_STREAM_SOCKET_ERROR) {
-        #else // defined (TOOLCHAIN_OS_Windows)
-            if (ioctl ((THEKOGANS_STREAM_SOCKET)handle, FIONBIO, &arg) ==
-                    THEKOGANS_STREAM_SOCKET_ERROR) {
-        #endif // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
         }
 
         bool Socket::IsIPV6Only () const {
@@ -597,6 +443,20 @@ namespace thekogans {
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
             return errorCode;
+        }
+
+        void Socket::SetBlocking (bool blocking) {
+            u_long arg = !blocking ? 1 : 0;
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONBIO, &arg) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+        #else // defined (TOOLCHAIN_OS_Windows)
+            if (ioctl ((THEKOGANS_STREAM_SOCKET)handle, FIONBIO, &arg) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+            }
         }
 
         std::size_t Socket::ReadHelper (

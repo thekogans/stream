@@ -57,24 +57,16 @@ namespace thekogans {
 
             // Stream
             /// \brief
-            /// Async read bytes from the stream.
-            virtual void Read () override;
+            /// Return number of bytes available for reading.
+            /// \return Number of bytes available for reading.
+            virtual std::size_t GetDataAvailable () const override;
             /// \brief
-            /// Async write a buffer to the stream.
-            /// \param[in] buffer Bytes to write.
-            /// \param[in] count Buffer length.
-            virtual void Write (
-                const void *buffer,
-                std::size_t count) override;
+            /// Async read bytes from the stream.
+            virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
             /// \brief
             /// Async write a buffer to the stream.
             /// \param[in] buffer Buffer to write.
             virtual void Write (util::Buffer buffer) override;
-
-            /// \brief
-            /// Return number of bytes available for reading.
-            /// \return Number of bytes available for reading.
-            virtual std::size_t GetDataAvailable () const override;
 
         protected:
         #if !defined (TOOLCHAIN_OS_Windows)

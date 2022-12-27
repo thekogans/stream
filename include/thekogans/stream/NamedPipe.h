@@ -50,10 +50,9 @@ namespace thekogans {
 
             /// \brief
             /// Called to report a connection on a \see{ServerNamedPipe}.
-            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which
-            /// the connection occurred.
+            /// \param[in] namedPipe \see{NamedPipe} on which the connection occurred.
             virtual void OnNamedPipeAccept (
-                util::RefCounted::SharedPtr<NamedPipe> serverNamedPipe) throw ();
+                util::RefCounted::SharedPtr<NamedPipe> namedPipe) throw ();
         }
 
         /// \struct NamedPipe NamedPipe.h thekogans/stream/NamedPipe.h
@@ -114,13 +113,6 @@ namespace thekogans {
             /// Read bytes from the stream.
             /// \param[in] bufferLength Buffer length for async WSARecv[From | Msg].
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
-            /// \brief
-            /// Write bytes to the stream.
-            /// \param[in] buffer Bytes to write.
-            /// \param[in] count Buffer length.
-            virtual void Write (
-                const void *buffer,
-                std::size_t count) override;
             /// \brief
             /// Write buffer the stream.
             /// \param[in] buffer Buffer to write.

@@ -35,31 +35,18 @@
 namespace thekogans {
     namespace stream {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Stream::ReadOverlapped, util::SpinLock)
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (Stream::ReadOverlapped)
 
         ssize_t Stream::ReadOverlapped::Prolog (Stream::SharedPtr stream) throw () {
         #if defined (TOOLCHAIN_OS_Windows)
             if (GetError () != ERROR_SUCCESS) {
                 return -1;
             }
-            // bufferLength == 0 on Windows means that nothing
-            // has been written to our buffer and that the data
-            // still resides in the os buffers. We'll need to
-            // resize our buffer to the number of bytes received
-            // and read the os buffer (below).
-            if (bufferLength == 0) {
-                bufferLength = GetCount ();
-            }
-            else {
-                buffer.AdvanceWriteOffset (GetCount ());
-            }
+            buffer.AdvanceWriteOffset (GetCount ());
         #endif // defined (TOOLCHAIN_OS_Windows)
             if (buffer.IsEmpty ()) {
                 THEKOGANS_UTIL_TRY {
-                    if (bufferLength == 0) {
-                        bufferLength = stream->GetDataAvailable ();
-                    }
-                    buffer.Resize (bufferLength);
+                    buffer.Resize (stream->GetDataAvailable ());
                     buffer.AdvanceWriteOffset (
                         stream->ReadHelper (
                             buffer.GetWritePtr (),
@@ -73,7 +60,7 @@ namespace thekogans {
             return buffer.GetDataAvailableForReading ();
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (Stream::WriteOverlapped, util::SpinLock)
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (Stream::WriteOverlapped)
 
         ssize_t Stream::WriteOverlapped::Prolog (Stream::SharedPtr stream) throw () {
         #if defined (TOOLCHAIN_OS_Windows)
@@ -124,6 +111,22 @@ namespace thekogans {
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
+        }
+
+        void Stream::Write (
+                const void *buffer,
+                std::size_t count) {
+            if (buffer != 0 && count > 0) {
+                util::Buffer buffer_ (
+                    util::NetworkEndian,
+                    (const util::ui8 *)buffer,
+                    (const util::ui8 *)buffer + count);
+                Write (std::move (buffer_));
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
         }
 
         void Stream::HandleError (const util::Exception &exception) throw () {
@@ -192,11 +195,7 @@ namespace thekogans {
                 while (1) {
                     ssize_t result = overlapped->Prolog (SharedPtr (this));
                     if (result > 0) {
-                        if (!overlapped->Epilog (SharedPtr (this))) {
-                            EnqOverlapped (std::move (overlapped), list, true);
-                            break;
-                        }
-                        else {
+                        if (overlapped->Epilog (SharedPtr (this))) {
                             return overlapped;
                         }
                     }
@@ -223,7 +222,7 @@ namespace thekogans {
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         void Stream::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetName () == ReadOverlapped::NAME) {
+            if (overlapped.GetType () == ReadOverlapped::TYPE) {
                 ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
                 util::Producer<StreamEvents>::Produce (
                     std::bind (
@@ -232,7 +231,7 @@ namespace thekogans {
                         SharedPtr (this),
                         std::move (readOverlapped.buffer)));
             }
-            else if (overlapped.GetName () == WriteOverlapped::NAME) {
+            else if (overlapped.GetType () == WriteOverlapped::TYPE) {
                 WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
                 util::Producer<StreamEvents>::Produce (
                     std::bind (

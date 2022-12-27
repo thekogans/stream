@@ -429,23 +429,6 @@ namespace thekogans {
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
 
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Windows helper used by Server(Secure)TCPSocket.
-            /// \param[in] listenningSocket Socket to use to
-            /// update this sockets accept context.
-            void UpdateAcceptContext (THEKOGANS_UTIL_HANDLE listenningSocket);
-            /// \brief
-            /// Windows helper used by Server(Secure)TCPSocket.
-            /// \param[in] listenningSocket Socket to use to
-            /// update the accepedSocket accept context.
-            /// \param[in] acceptedSocket Socket whos accept
-            /// context needs to be updated.
-            static void UpdateAcceptContext (
-                THEKOGANS_UTIL_HANDLE listenningSocket,
-                THEKOGANS_UTIL_HANDLE acceptedSocket);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-
             /// \brief
             /// Accept a pending connection.
             /// NOTE: This is a blocking function.
@@ -454,8 +437,7 @@ namespace thekogans {
             /// \brief
             /// Used by sync and async shutdown.
             /// \param[in] shutdownType One of ShutdownRead, ShutdownWrite or ShutdownBoth.
-            /// \return Result of calling shutdown.
-            THEKOGANS_UTIL_ERROR_CODE ShutdownHelper (ShutdownType shutdownType);
+            void ShutdownHelper (ShutdownType shutdownType);
         };
 
     } // namespace stream

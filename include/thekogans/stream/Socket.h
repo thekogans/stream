@@ -85,38 +85,10 @@ namespace thekogans {
             /// Read bytes from the stream.
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
             /// \brief
-            /// Write bytes to the stream.
-            /// NOTE: This method can only be called after calling \see{Connect}.
-            /// \param[in] buffer Bytes to write.
-            /// \param[in] count Buffer length.
-            /// \return Count of bytes actually written.
-            virtual void Write (
-                const void *buffer,
-                std::size_t count) override;
-            /// \brief
             /// Async write a buffer to the stream.
             /// NOTE: This method can only be called after calling \see{Connect}.
             /// \param[in] buffer Buffer to write.
             virtual void Write (util::Buffer buffer) override;
-
-            // Stream
-            /// \brief
-            /// Return read timeout value.
-            /// \return Read timeout value.
-            util::TimeSpec GetReadTimeout () const;
-            /// \brief
-            /// Set read timeout.
-            /// \param[in] timeSpec Read timeout.
-            void SetReadTimeout (const util::TimeSpec &timeSpec);
-
-            /// \brief
-            /// Return write timeout value.
-            /// \return Write timeout value.
-            util::TimeSpec GetWriteTimeout () const;
-            /// \brief
-            /// Set write timeout.
-            /// \param[in] timeSpec Write timeout.
-            void SetWriteTimeout (const util::TimeSpec &timeSpec);
 
             /// \brief
             /// Return the host name.
@@ -166,11 +138,6 @@ namespace thekogans {
             /// Get socket peer address.
             /// \return Socket peer address.
             Address GetPeerAddress () const;
-
-            /// \brief
-            /// Put the socket in (non-)blocking mode.
-            /// \param[in] blocking true = blocking, false = non-blocking
-            void SetBlocking (bool blocking);
 
             /// \brief
             /// Return true if level = IPPROTO_IPV6 option name = IPV6_V6ONLY is set.
@@ -237,6 +204,11 @@ namespace thekogans {
             THEKOGANS_UTIL_ERROR_CODE GetErrorCode () const;
 
         protected:
+            /// \brief
+            /// Put the socket in (non-)blocking mode.
+            /// \param[in] blocking true = blocking, false = non-blocking
+            void SetBlocking (bool blocking);
+
             virtual std::size_t ReadHelper (
                 void *buffer,
                 std::size_t count) override;

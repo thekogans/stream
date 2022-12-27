@@ -26,26 +26,82 @@
 namespace thekogans {
     namespace stream {
 
-        void NamedPipe::NamedPipe (
-                LPSECURITY_ATTRIBUTES securityAttributes) :
-                Stream (CreateFileW (
+        namespace {
+            inline THEKOGANS_UTIL_HANDLE CreateNamedPipe () {
+                SECURITY_DESCRIPTOR sd;
+                InitializeSecurityDescriptor (&sd, SECURITY_DESCRIPTOR_REVISION);
+                SetSecurityDescriptorDacl (&sd, TRUE, 0, FALSE);
+                SECURITY_ATTRIBUTES sa;
+                sa.nLength = sizeof (SECURITY_ATTRIBUTES);
+                sa.lpSecurityDescriptor = &sd;
+                sa.bInheritHandle = FALSE;
+                DWORD dwPipeMode = PIPE_WAIT;
+                if (pipeType == Byte) {
+                    dwPipeMode |= PIPE_TYPE_BYTE | PIPE_READMODE_BYTE;
+                }
+                else {
+                    dwPipeMode |= PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE;
+                }
+                handle = CreateNamedPipeW (
+                    path,
+                    PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
+                    dwPipeMode,
+                    PIPE_UNLIMITED_INSTANCES,
+                    bufferSize,
+                    bufferSize,
+                    INFINITE,
+                    &sa);
+                if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                return handle;
+            }
+        }
+
+        ServerNamedPipe::ServerNamedPipe (
+            const Address &address_,
+            PipeType pipeType_) :
+            Stream (
+                CreateNamedPipe (
                     util::UTF8ToUTF16 (address.GetPath ()).c_str (),
+                    pipeType_),
+                address (address_),
+                pipeType (pipeType_) {}
+
+        namespace {
+            inline THEKOGANS_UTIL_HANDLE CreateFile (
+                    const char *path,
+                    LPSECURITY_ATTRIBUTES securityAttributes) {
+                THEKOGANS_UTIL_HANDLE handle = CreateFileW (
+                    path,
                     GENERIC_READ | GENERIC_WRITE,
                     0,
                     securityAttributes,
                     OPEN_EXISTING,
                     FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED,
                     0);
-                if (IsOpen ()) {
-                    if (pipeType == Message) {
-                        DWORD dwMode = PIPE_READMODE_MESSAGE;
-                        if (!SetNamedPipeHandleState (handle, &dwMode, 0, 0)) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE);
-                        }
-                    }
+                if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
-                else {
+                return handle;
+            }
+        }
+
+        void NamedPipe::NamedPipe (
+                const Address &address_,
+                PipeType pipeType_,
+                LPSECURITY_ATTRIBUTES securityAttributes) :
+                Stream (
+                    CreateFile (
+                        util::UTF8ToUTF16 (address.GetPath ()).c_str (),
+                        securityAttributes)),
+                address (address_),
+                pipeType (pipeType_) {
+            if (pipeType == Message) {
+                DWORD dwMode = PIPE_READMODE_MESSAGE;
+                if (!SetNamedPipeHandleState (handle, &dwMode, 0, 0)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -62,9 +118,9 @@ namespace thekogans {
         }
 
         void NamedPipe::Read (std::size_t bufferLength) {
-            THEKOGANS_UTIL_TRY {
-                if (bufferLength != 0) {
-                    ReadOverlapped::SharedPtr overlapped (
+            if (bufferLength != 0) {
+                THEKOGANS_UTIL_TRY {
+                    std::unique_ptr<ReadOverlapped> overlapped (
                         new ReadOverlapped (bufferLength));
                     if (!ReadFile (
                             handle,
@@ -77,54 +133,23 @@ namespace thekogans {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
-                    overlapped.Release ();
+                    overlapped.release ();
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
-            }
-        }
-
-        void NamedPipe::Write (
-                void *buffer,
-                std::size_t bufferLength) {
-            THEKOGANS_UTIL_TRY {
-                if (buffer != 0 && bufferLength > 0) {
-                    WriteOverlapped::SharedPtr overlapped (
-                        new WriteOverlapped (buffer, bufferLength)));
-                    if (!WriteFile (
-                            handle,
-                            overlapped->buffer.GetReadPtr (),
-                            (ULONG)overlapped->buffer.GetDataAvailableForReading (),
-                            0,
-                            overlapped.get ())) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode != ERROR_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
-                    }
-                    overlapped.Release ();
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    HandleError (exception);
                 }
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
         void NamedPipe::Write (util::Buffer buffer) {
-            THEKOGANS_UTIL_TRY {
-                if (!buffer.IsEmpty ()) {
-                    WriteOverlapped::SharedPtr overlapped (
+            if (!buffer.IsEmpty ()) {
+                THEKOGANS_UTIL_TRY {
+                    std::unique_ptr<WriteOverlapped> overlapped (
                         new WriteOverlapped (std::move (buffer)));
                     if (!WriteFile (
                             handle,
@@ -137,32 +162,38 @@ namespace thekogans {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
                     }
-                    overlapped.Release ();
+                    overlapped.release ();
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                    HandleError (exception);
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void NamedPipe::Accept () {
+            THEKOGANS_UTIL_TRY {
+                std::unique_ptr<Overlapped> overlapped (new AcceptOverlapped);
+                if (!ConnectNamedPipe (handle, overlapped.get ())) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode == ERROR_PIPE_CONNECTED) {
+                        HandleOverlapped (*overlapped);
+                        return;
+                    }
+                    else if (errorCode != ERROR_IO_PENDING) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                }
+                overlapped.release ();
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
                 HandleError (exception);
             }
-        }
-
-        void NamedPipe::Accept () {
-            std::unique_ptr<Overlapped> overlapped (new AcceptOverlapped);
-            if (!ConnectNamedPipe (handle, overlapped.get ())) {
-                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                if (errorCode == ERROR_PIPE_CONNECTED) {
-                    HandleOverlapped (*overlapped);
-                    return;
-                }
-                else if (errorCode != ERROR_IO_PENDING) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-            }
-            overlapped.Release ();
         }
 
         void NamedPipe::Disconnect (bool flushBuffers) {
@@ -183,25 +214,15 @@ namespace thekogans {
         }
 
         void NamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
-
-                THEKOGANS_UTIL_TRY {
-                    PostAsyncRead ();
-                    eventSink.HandleServerNamedPipeConnection (*this);
-                }
-                THEKOGANS_UTIL_CATCH (util::Exception) {
-                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                }
-            }
-        }
-
-        void NamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
             if (overlapped.GetName () == AcceptOverlapped::NAME) {
-                util::Producer<NamedPipeEv>::Produce (
+                util::Producer<NamedPipeEvents>::Produce (
                     std::bind (
-                        &StreamEvents::OnStreamError,
+                        &NamedPipeEvents::OnNamedPipeAccept,
                         std::placeholders::_1,
-                        SharedPtr (this),
-                        exception));
+                        SharedPtr (this)));
+            }
+            else {
+                Stream::HandleOverlapped (overlapped);
             }
         }
 

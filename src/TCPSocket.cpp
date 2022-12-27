@@ -143,15 +143,9 @@ namespace thekogans {
         }
 
         namespace {
-            struct ConnectOverlapped : public Overlapped {
+            struct ConnectOverlapped : public Stream::Overlapped {
                 /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ConnectOverlapped)
-
-                /// \brief
-                /// ConnectOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ConnectOverlapped, util::SpinLock)
+                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ConnectOverlapped)
 
                 /// \brief
                 /// Address used by async TCPSocket::Connect.
@@ -188,13 +182,9 @@ namespace thekogans {
                     return 1;
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
-
-                /// \brief
-                /// ConnectOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ConnectOverlapped)
             };
 
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (ConnectOverlapped, util::SpinLock)
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ConnectOverlapped)
         }
 
         void TCPSocket::Connect (const Address &address) {
@@ -243,22 +233,17 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
-            struct DisconnectOverlapped : public Overlapped {
+            struct DisconnectOverlapped : public Stream::Overlapped {
                 /// \brief
-                /// DisconnectOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (DisconnectOverlapped, util::SpinLock)
+                /// DisconnectOverlapped is an \see{Stream::Overlapped}.
+                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (DisconnectOverlapped)
 
                 virtual ssize_t Prolog (Stream::SharePtr stream) {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
-
-                /// \brief
-                /// DisconnectOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (DisconnectOverlapped)
             };
 
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (DisconnectOverlapped, util::SpinLock)
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (DisconnectOverlapped)
         }
 
         void TCPSocket::Disconnect (bool reuseSocket) {
@@ -305,9 +290,8 @@ namespace thekogans {
         namespace {
             struct AcceptOverlapped : public Overlapped {
                 /// \brief
-                /// AcceptOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (AcceptOverlapped, util::SpinLock)
+                /// AcceptOverlapped is an \see{Stream::Overlapped}.
+                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (AcceptOverlapped)
 
             #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
@@ -360,13 +344,9 @@ namespace thekogans {
                         return -1;
                     }
                 }
-
-                /// \brief
-                /// AcceptOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (AcceptOverlapped)
             };
 
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (AcceptOverlapped, util::SpinLock)
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (AcceptOverlapped)
         }
 
         void TCPSocket::Accept () {
@@ -567,13 +547,8 @@ namespace thekogans {
         namespace {
             struct ShutdownOverlapped : public Overlapped {
                 /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ShutdownOverlapped)
-
-                /// \brief
-                /// ShutdownOverlapped has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (ShutdownOverlapped, util::SpinLock)
+                /// ShutdownOverlapped is an \see{Stream::Overlapped}.
+                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ShutdownOverlapped)
 
                 /// \brief
                 /// Type of shutdown performed on (Secure)TCPSocket.
@@ -600,13 +575,9 @@ namespace thekogans {
                         return -1;
                     }
                 }
-
-                /// \brief
-                /// ShutdownOverlapped is neither copy constructable, nor assignable.
-                THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (ShutdownOverlapped)
             };
 
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (ShutdownOverlapped, util::SpinLock)
+            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ShutdownOverlapped)
         }
 
         void TCPSocket::Shutdown (ShutdownType shutdownType) {
@@ -632,7 +603,7 @@ namespace thekogans {
         }
 
         void TCPSocket::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetName () == ConnectOverlapped::NAME) {
+            if (overlapped.GetType () == ConnectOverlapped::TYPE) {
                 ConnectOverlapped &connectOverlapped = (ConnectOverlapped &)overlapped;
                 util::Producer<TCPSocketEvents>::Produce (
                     std::bind (
@@ -642,11 +613,11 @@ namespace thekogans {
                         connectOverlapped.address));
             }
         #if defined (TOOLCHAIN_OS_Windows)
-            else if (overlapped.GetName () == DisconnectOverlapped::NAME) {
+            else if (overlapped.GetType () == DisconnectOverlapped::TYPE) {
                 HandleDisconnect ();
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
-            else if (overlapped.GetName () == AcceptOverlapped::NAME) {
+            else if (overlapped.GetType () == AcceptOverlapped::TYPE) {
                 AcceptOverlapped &acceptOverlapped = (AcceptOverlapped &)overlapped;
                 util::Producer<TCPSocketEvents>::Produce (
                     std::bind (
@@ -655,7 +626,7 @@ namespace thekogans {
                         SharedPtr (this),
                         acceptOverlapped.connection));
             }
-            else if (overlapped.GetName () == ShutdownOverlapped::NAME) {
+            else if (overlapped.GetType () == ShutdownOverlapped::TYPE) {
                 ShutdownOverlapped &shutdownOverlapped = (ShutdownOverlapped &)overlapped;
                 util::Producer<TCPSocketEvents>::Produce (
                     std::bind (
