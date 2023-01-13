@@ -1,0 +1,130 @@
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
+//
+// This file is part of libthekogans_stream.
+//
+// libthekogans_stream is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// libthekogans_stream is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
+
+#if !defined (__thekogans_stream_ServerNamedPipe_h)
+#define __thekogans_stream_ServerNamedPipe_h
+
+#include "thekogans/util/Environment.h"
+
+#if defined (TOOLCHAIN_OS_Windows)
+
+#if !defined (_WINDOWS_)
+    #if !defined (WIN32_LEAN_AND_MEAN)
+        #define WIN32_LEAN_AND_MEAN
+    #endif // !defined (WIN32_LEAN_AND_MEAN)
+    #if !defined (NOMINMAX)
+        #define NOMINMAX
+    #endif // !defined (NOMINMAX)
+    #include <windows.h>
+#endif // !defined (_WINDOWS_)
+#include "thekogans/stream/Config.h"
+#include "thekogans/stream/NamedPipe.h"
+
+namespace thekogans {
+    namespace stream {
+
+        struct ServerNamedPipe;
+
+        struct _LIB_THEKOGANS_STREAM_DECL ServerNamedPipeEvents : public virtual util::RefCounted {
+            /// \brief
+            /// Declare \see{util::RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ServerNamedPipeEvents)
+
+            /// \brief
+            /// dtor.
+            virtual ~ServerNamedPipeEvents () {}
+
+            /// \brief
+            /// Called to report a connection on a \see{ServerNamedPipe}.
+            /// \param[in] serverNamedPipe \see{ServerNamedPipe} on which the connection occurred.
+            virtual void OnServerNamedPipeConnected (
+                util::RefCounted::SharedPtr<ServerNamedPipe> serverNamedPipe) throw ();
+        }
+
+        /// \struct ServerNamedPipe ServerNamedPipe.h thekogans/stream/ServerNamedPipe.h
+        ///
+        /// \brief
+
+        struct _LIB_THEKOGANS_STREAM_DECL ServerNamedPipe :
+                public NamedPipe,
+                public util::Producer<ServerNamedPipeEvents> {
+            /// \brief
+            /// ServerNamedPipe is a \see{Stream}.
+            THEKOGANS_STREAM_DECLARE_STREAM (ServerNamedPipe)
+
+            /// \brief
+            /// ctor.
+            /// Create a server side named pipe.
+            /// \param[in] name
+            ServerNamedPipe (
+                LPCWSTR name_,
+                DWORD openMode_ = PIPE_ACCESS_DUPLEX,
+                DWORD pipeMode_ = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
+                DWORD maxInstances_ = PIPE_UNLIMITED_INSTANCES,
+                DWORD outBufferSize_ = DEFAULT_BUFFER_LENGTH,
+                DWORD inBufferSize_ = DEFAULT_BUFFER_LENGTH,
+                DWORD defaultTimeOut_ = INFINITE,
+                LPSECURITY_ATTRIBUTES securityAttributes_ = DefaultSecurityAttributes ());
+
+            /// \brief
+            /// Listen for an incoming connection.
+            void Connect ();
+
+            /// \brief
+            /// Disconnect the server end of the named pipe.
+            /// \param[in] flushBuffers Call FlushFileBuffers before disconnecting.
+            void Disconnect (bool flushBuffers = true);
+
+            inline ServerNamedPipe::SharedPtr Clone () const {
+                return ServerNamedPipe::SharedPtr (
+                    new ServerNamedPipe (
+                        name.c_str (),
+                        openMode,
+                        pipeMode,
+                        maxInstances,
+                        outBufferSize,
+                        inBufferSize,
+                        defaultTimeOut,
+                        securityAttributes));
+            }
+
+        protected:
+            std::wstring name;
+            DWORD openMode;
+            DWORD pipeMode;
+            DWORD maxInstances;
+            DWORD outBufferSize;
+            DWORD inBufferSize;
+            DWORD defaultTimeOut;
+            LPSECURITY_ATTRIBUTES securityAttributes;
+
+            // Stream
+            /// \brief
+            /// Used by \see{AsyncIoEventQueue} to notify the stream that
+            /// an overlapped operation has completed successfully.
+            /// \param[in] overlapped Overlapped that completed successfully.
+            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
+
+            static LPSECURITY_ATTRIBUTES DefaultSecurityAttributes ();
+        };
+
+    } // namespace stream
+} // namespace thekogans
+
+#endif // defined (TOOLCHAIN_OS_Windows)
+
+#endif // !defined (__thekogans_stream_NamedPipe_h)
