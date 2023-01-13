@@ -58,7 +58,7 @@ namespace thekogans {
             /// ctor.
             /// Wrap an OS handle.
             /// \param[in] handle OS stream handle to wrap.
-            Socket (THEKOGANS_UTIL_HANDLE handle);
+            explicit Socket (THEKOGANS_UTIL_HANDLE handle);
             /// \brief
             /// ctor.
             /// \param[in] family_ Socket family specification.
@@ -77,10 +77,6 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             // Stream
-            /// \brief
-            /// Return number of bytes available for reading.
-            /// \return Number of bytes available for reading.
-            virtual std::size_t GetDataAvailable () const override;
             /// \brief
             /// Read bytes from the stream.
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
@@ -198,9 +194,9 @@ namespace thekogans {
             void SetReceiveBufferSize (std::size_t size);
 
             /// \brief
-            /// Return the last error that ocured on this socket.
+            /// Return the last error that occurred on this socket.
             /// This api should only be used by \see{AsyncIoEventQueue}.
-            /// \return Last error that ocured on this socket.
+            /// \return Last error that occurred on this socket.
             THEKOGANS_UTIL_ERROR_CODE GetErrorCode () const;
 
         protected:
@@ -209,6 +205,11 @@ namespace thekogans {
             /// \param[in] blocking true = blocking, false = non-blocking
             void SetBlocking (bool blocking);
 
+            // Stream
+            /// \brief
+            /// Return number of bytes available for reading.
+            /// \return Number of bytes available for reading.
+            virtual std::size_t GetDataAvailableForReading () const override;
             virtual std::size_t ReadHelper (
                 void *buffer,
                 std::size_t count) override;

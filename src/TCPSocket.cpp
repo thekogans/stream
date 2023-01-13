@@ -238,7 +238,7 @@ namespace thekogans {
                 /// DisconnectOverlapped is an \see{Stream::Overlapped}.
                 THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (DisconnectOverlapped)
 
-                virtual ssize_t Prolog (Stream::SharePtr stream) {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
             };
@@ -288,7 +288,7 @@ namespace thekogans {
         }
 
         namespace {
-            struct AcceptOverlapped : public Overlapped {
+            struct AcceptOverlapped : public Stream::Overlapped {
                 /// \brief
                 /// AcceptOverlapped is an \see{Stream::Overlapped}.
                 THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (AcceptOverlapped)
@@ -319,7 +319,7 @@ namespace thekogans {
                     bytesReceived (0) {}
             #endif // defined (TOOLCHAIN_OS_Windows)
 
-                virtual ssize_t Prolog (Stream::SharePtr stream) {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) {
                     THEKOGANS_UTIL_TRY {
                     #if defined (TOOLCHAIN_OS_Windows)
                         if (GetError () != ERROR_SUCCESS) {
@@ -585,7 +585,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 std::unique_ptr<ShutdownOverlapped> overlapped (
                     new ShutdownOverlapped (shutdownType));
-                if (!PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)this, overlapped.get ())) {
+                if (!PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token, overlapped.get ())) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }

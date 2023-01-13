@@ -67,21 +67,21 @@ namespace thekogans {
             /// \brief
             /// ctor. Used by ReadMsg.
             /// \param[out] buffer Buffer that will receive the message.
-            /// \param[in] count Buffer length.
+            /// \param[in] bufferLength Buffer length.
             /// \param[out] address Local address on which the message arrived.
             MsgHdr (
                 void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 Address &address);
             /// \brief
             /// ctor. Used by WriteMsg.
             /// \param[in] buffer Buffer to write.
-            /// \param[in] count Length of buffer.
+            /// \param[in] bufferLength Length of buffer.
             /// \param[in] from Local address from which the message is sent to the peer.
             /// \param[in] to Peer address that will receive the message.
             MsgHdr (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &from,
                 const Address &to);
 

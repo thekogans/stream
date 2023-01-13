@@ -133,7 +133,7 @@ namespace thekogans {
             /// add a 'stream is ready for events' notification.
             /// \param[in] stream Stream that wants to be notified
             /// when an event(s) it's interested in has occurred.
-            void SetStreamEventMask (Stream &stream);
+            void SetStreamEventMask (const Stream &stream);
         #endif // !defined (TOOLCHAIN_OS_Windows)
 
         private:

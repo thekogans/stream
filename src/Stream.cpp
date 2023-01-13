@@ -46,7 +46,13 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             if (buffer.IsEmpty ()) {
                 THEKOGANS_UTIL_TRY {
-                    buffer.Resize (stream->GetDataAvailable ());
+                    // The ReadOverlapped ctor will resize the buffer
+                    // using the bufferLength that was passed in. If
+                    // that value was 0, than try to grab all
+                    // available data.
+                    if (buffer.GetLength () == 0) {
+                        buffer.Resize (stream->GetDataAvailableForReading ());
+                    }
                     buffer.AdvanceWriteOffset (
                         stream->ReadHelper (
                             buffer.GetWritePtr (),
@@ -82,7 +88,7 @@ namespace thekogans {
         Stream::Stream (THEKOGANS_UTIL_HANDLE handle_) :
                 handle (handle_),
                 token (this) {
-            if (IsOpen ()) {
+            if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (CreateIoCompletionPort (
                         handle, AsyncIoEventQueue::Instance ().GetHandle (), (ULONG_PTR)token, 0) == 0) {
@@ -99,7 +105,7 @@ namespace thekogans {
 
         Stream::~Stream () {
             THEKOGANS_UTIL_TRY {
-                if (IsOpen ()) {
+                if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (!::CloseHandle (handle)) {
                 #else // defined (TOOLCHAIN_OS_Windows)
@@ -108,6 +114,7 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE);
                     }
+                    handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
@@ -115,12 +122,12 @@ namespace thekogans {
 
         void Stream::Write (
                 const void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
+                std::size_t bufferLength) {
+            if (buffer != 0 && bufferLength > 0) {
                 util::Buffer buffer_ (
                     util::NetworkEndian,
                     (const util::ui8 *)buffer,
-                    (const util::ui8 *)buffer + count);
+                    (const util::ui8 *)buffer + bufferLength);
                 Write (std::move (buffer_));
             }
             else {

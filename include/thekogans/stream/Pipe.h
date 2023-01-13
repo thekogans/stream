@@ -45,7 +45,7 @@ namespace thekogans {
             /// ctor. \see{Stream}
             /// Used as input to Pipe::Create.
             /// \param[in] handle OS stream handle to wrap.
-            Pipe (THEKOGANS_UTIL_HANDLE handle);
+            explicit Pipe (THEKOGANS_UTIL_HANDLE handle);
 
             /// \brief
             /// Create both ends of the pipe.
@@ -56,10 +56,6 @@ namespace thekogans {
                 Pipe::SharedPtr &writePipe);
 
             // Stream
-            /// \brief
-            /// Return number of bytes available for reading.
-            /// \return Number of bytes available for reading.
-            virtual std::size_t GetDataAvailable () const override;
             /// \brief
             /// Async read bytes from the stream.
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
@@ -76,12 +72,17 @@ namespace thekogans {
             void SetBlocking (bool blocking);
         #endif // !defined (TOOLCHAIN_OS_Windows)
 
+            // Stream
+            /// \brief
+            /// Return number of bytes available for reading.
+            /// \return Number of bytes available for reading.
+            virtual std::size_t GetDataAvailableForReading () const override;
             virtual std::size_t ReadHelper (
                 void *buffer,
-                std::size_t count) override;
+                std::size_t bufferLength) override;
             virtual std::size_t WriteHelper (
                 const void *buffer,
-                std::size_t count) override;
+                std::size_t bufferLength) override;
         };
 
     } // namespace stream

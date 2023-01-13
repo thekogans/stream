@@ -30,11 +30,11 @@ namespace thekogans {
 
         MsgHdr::MsgHdr (
                 void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 Address &address) {
         #if defined (TOOLCHAIN_OS_Windows)
             wsaBuf.buf = (char *)buffer;
-            wsaBuf.len = (ULONG)count;
+            wsaBuf.len = (ULONG)bufferLength;
             name = &address.address;
             namelen = address.length;
             lpBuffers = &wsaBuf;
@@ -44,7 +44,7 @@ namespace thekogans {
             dwFlags = 0;
         #else // defined (TOOLCHAIN_OS_Windows)
             ioVec.iov_base = buffer;
-            ioVec.iov_len = count;
+            ioVec.iov_len = bufferLength;
             msg_name = &address.address;
             msg_namelen = address.length;
             msg_iov = &ioVec;
@@ -57,12 +57,12 @@ namespace thekogans {
 
         MsgHdr::MsgHdr (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &from,
                 const Address &to) {
         #if defined (TOOLCHAIN_OS_Windows)
             wsaBuf.buf = (char *)buffer;
-            wsaBuf.len = (ULONG)count;
+            wsaBuf.len = (ULONG)bufferLength;
             name = (LPSOCKADDR)&to.address;
             namelen = to.length;
             lpBuffers = &wsaBuf;
@@ -91,7 +91,7 @@ namespace thekogans {
             dwFlags = 0;
         #else // defined (TOOLCHAIN_OS_Windows)
             ioVec.iov_base = (void *)buffer;
-            ioVec.iov_len = count;
+            ioVec.iov_len = bufferLength;
             msg_iov = &ioVec;
             msg_iovlen = 1;
             msg_name = (void *)&to.address;

@@ -69,8 +69,8 @@ namespace thekogans {
 
         void Pipe::Read (std::size_t bufferLength) {
             THEKOGANS_UTIL_TRY {
-                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
             #if defined (TOOLCHAIN_OS_Windows)
+                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
                         overlapped->buffer.GetWritePtr (),
@@ -84,7 +84,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (std::move (overlapped), in);
+                EnqOverlapped (std::unique_ptr<dOverlapped> (new ReadOverlapped (bufferLength)), in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -96,8 +96,8 @@ namespace thekogans {
         void Pipe::Write (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
                 THEKOGANS_UTIL_TRY {
-                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
                 #if defined (TOOLCHAIN_OS_Windows)
+                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
                     if (!WriteFile (
                             handle,
                             overlapped->buffer.GetReadPtr (),
@@ -111,7 +111,7 @@ namespace thekogans {
                     }
                     overlapped.release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    EnqOverlapped (std::move (overlapped), out);
+                    EnqOverlapped (std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))), out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -125,7 +125,7 @@ namespace thekogans {
             }
         }
 
-        std::size_t Pipe::GetDataAvailable () const {
+        std::size_t Pipe::GetDataAvailableForReading () const {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD totalBytesAvailable = 0;
             if (!PeekNamedPipe (handle, 0, 0, 0, &totalBytesAvailable, 0)) {
@@ -161,17 +161,17 @@ namespace thekogans {
 
         std::size_t Pipe::ReadHelper (
                 void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
+                std::size_t bufferLength) {
+            if (buffer != 0 && bufferLength > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD countRead = 0;
-                if (!ReadFile (handle, buffer, (DWORD)count, &countRead, 0)) {
+                if (!ReadFile (handle, buffer, (DWORD)bufferLength, &countRead, 0)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
                 return countRead;
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countRead = read (handle, buffer, count);
+                ssize_t countRead = read (handle, buffer, bufferLength);
                 if (countRead < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -187,17 +187,17 @@ namespace thekogans {
 
         std::size_t Pipe::WriteHelper (
                 const void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
+                std::size_t bufferLength) {
+            if (buffer != 0 && bufferLength > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD countWritten = 0;
-                if (!WriteFile (handle, buffer, (DWORD)count, &countWritten, 0)) {
+                if (!WriteFile (handle, buffer, (DWORD)bufferLength, &countWritten, 0)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
                 return countWritten;
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countWritten = write (handle, buffer, count);
+                ssize_t countWritten = write (handle, buffer, bufferLength);
                 if (countWritten < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);

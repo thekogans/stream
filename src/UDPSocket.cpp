@@ -118,7 +118,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
 
                 ReadFromOverlapped (std::size_t bufferLength) :
-                    buffer (util::NetworkEndian, count)
+                    buffer (util::NetworkEndian, bufferLength)
                 #if defined (TOOLCHAIN_OS_Windows)
                     , flags (0)
                 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -138,7 +138,13 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     if (buffer.IsEmpty ()) {
                         THEKOGANS_UTIL_TRY {
-                            buffer.Resize (stream->GetDataAvailable ());
+                            // The ReadFromOverlapped ctor will resize the buffer
+                            // using the bufferLength that was passed in. If
+                            // that value was 0, than try to grab all
+                            // available data.
+                            if (buffer.GetLength () == 0) {
+                                buffer.Resize (stream->GetDataAvailableForReading ());
+                            }
                             buffer.AdvanceWriteOffset (
                                 util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->ReadFromHelper (
                                     buffer.GetWritePtr (),
@@ -199,12 +205,12 @@ namespace thekogans {
 
                 WriteToOverlapped (
                     const void *buffer_,
-                    std::size_t count,
+                    std::size_t bufferLength,
                     const Address &address_) :
                     buffer (
                         util::NetworkEndian,
                         (const util::ui8 *)buffer_,
-                        (const util::ui8 *)buffer_ + count),
+                        (const util::ui8 *)buffer_ + bufferLength),
                     address (address_)
                 #if defined (TOOLCHAIN_OS_Windows)
                     , flags (0)
@@ -258,13 +264,13 @@ namespace thekogans {
 
         void UDPSocket::WriteTo (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &address) {
-            if (buffer != 0 && count > 0 && address != Address::Empty) {
+            if (buffer != 0 && bufferLength > 0 && address != Address::Empty) {
                 THEKOGANS_UTIL_TRY {
                 #if defined (TOOLCHAIN_OS_Windows)
                     std::unique_ptr<WriteToOverlapped> overlapped (
-                        new WriteToOverlapped (buffer, count, address));
+                        new WriteToOverlapped (buffer, bufferLength, address));
                     if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle,
                             &overlapped->wsaBuf,
                             1,
@@ -283,7 +289,7 @@ namespace thekogans {
                 #else // defined (TOOLCHAIN_OS_Windows)
                     EnqOverlapped (
                         std::unique_ptr<Overlapped> (
-                            new WriteToOverlapped (buffer, count, address)),
+                            new WriteToOverlapped (buffer, bufferLength, address)),
                         out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -347,11 +353,11 @@ namespace thekogans {
                 Address from;
                 Address to;
 
-                ReadMsgOverlapped (std::size_t count) :
-                    buffer (util::NetworkEndian, count),
+                ReadMsgOverlapped (std::size_t bufferLength) :
+                    buffer (util::NetworkEndian, bufferLength),
                     msgHdr (
-                        count > 0 ? buffer.GetWritePtr () : 0,
-                        count > 0 ? buffer.GetDataAvailableForWriting () : 0,
+                        bufferLength > 0 ? buffer.GetWritePtr () : 0,
+                        bufferLength > 0 ? buffer.GetDataAvailableForWriting () : 0,
                         from) {}
 
                 virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
@@ -363,7 +369,13 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     if (buffer.IsEmpty ()) {
                         THEKOGANS_UTIL_TRY {
-                            buffer.Resize (stream->GetDataAvailable ());
+                            // The ReadMsgOverlapped ctor will resize the buffer
+                            // using the bufferLength that was passed in. If
+                            // that value was 0, than try to grab all
+                            // available data.
+                            if (buffer.GetLength () == 0) {
+                                buffer.Resize (stream->GetDataAvailableForReading ());
+                            }
                             buffer.AdvanceWriteOffset (
                                 util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->ReadMsgHelper (
                                     buffer.GetWritePtr (),
@@ -434,13 +446,13 @@ namespace thekogans {
 
                 WriteMsgOverlapped (
                     const void *buffer_,
-                    std::size_t count,
+                    std::size_t bufferLength,
                     const Address &from_,
                     const Address &to_) :
                     buffer (
                         util::NetworkEndian,
                         (const util::ui8 *)buffer_,
-                        (const util::ui8 *)buffer_ + count),
+                        (const util::ui8 *)buffer_ + bufferLength),
                     from (from_),
                     to (to_),
                     msgHdr (
@@ -490,15 +502,15 @@ namespace thekogans {
 
         void UDPSocket::WriteMsg (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &from,
                 const Address &to) {
-            if (buffer != 0 && count > 0 &&
+            if (buffer != 0 && bufferLength > 0 &&
                     from != Address::Empty && to != Address::Empty) {
                 THEKOGANS_UTIL_TRY {
                 #if defined (TOOLCHAIN_OS_Windows)
                     std::unique_ptr<WriteMsgOverlapped> overlapped (
-                        new WriteMsgOverlapped (buffer, count, from, to));
+                        new WriteMsgOverlapped (buffer, bufferLength, from, to));
                     if (WindowsFunctions::Instance ().WSASendMsg (
                             (THEKOGANS_STREAM_SOCKET)handle,
                             &overlapped->msgHdr,
@@ -515,7 +527,7 @@ namespace thekogans {
                 #else // defined (TOOLCHAIN_OS_Windows)
                     EnqOverlapped (
                         std::unique_ptr<Overlapped> (
-                            new WriteMsgOverlapped (buffer, count, from, to)),
+                            new WriteMsgOverlapped (buffer, bufferLength, from, to)),
                         out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -983,11 +995,11 @@ namespace thekogans {
 
         std::size_t UDPSocket::ReadFromHelper (
                 void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 Address &address) {
-            if (buffer != 0 && count > 0) {
+            if (buffer != 0 && bufferLength > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
-                WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
+                WSABUF wsaBuf = {(ULONG)bufferLength, (char *)buffer};
                 DWORD numberOfBytesRecvd = 0;
                 DWORD flags = 0;
                 if (WSARecvFrom ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf,
@@ -999,7 +1011,7 @@ namespace thekogans {
                 return numberOfBytesRecvd;
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countRead = recvfrom (handle, (char *)buffer,
-                    count, 0, &address.address, &address.length);
+                    bufferLength, 0, &address.address, &address.length);
                 if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
@@ -1015,11 +1027,11 @@ namespace thekogans {
 
         std::size_t UDPSocket::WriteToHelper (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &address) {
-            if (buffer != 0 && count > 0 && address != Address::Empty) {
+            if (buffer != 0 && bufferLength > 0 && address != Address::Empty) {
             #if defined (TOOLCHAIN_OS_Windows)
-                WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
+                WSABUF wsaBuf = {(ULONG)bufferLength, (char *)buffer};
                 DWORD numberOfBytesSent = 0;
                 DWORD flags = 0;
                 if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf,
@@ -1031,7 +1043,7 @@ namespace thekogans {
                 return numberOfBytesSent;
             #else // defined (TOOLCHAIN_OS_Windows)
                 ssize_t countWritten = sendto (handle, (const char *)buffer,
-                    count, 0, &address.address, address.length);
+                    bufferLength, 0, &address.address, address.length);
                 if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
@@ -1047,12 +1059,12 @@ namespace thekogans {
 
         std::size_t UDPSocket::ReadMsgHelper (
                 void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 Address &from,
                 Address &to) {
-            if (buffer != 0 && count > 0) {
+            if (buffer != 0 && bufferLength > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
-                MsgHdr msgHdr (buffer, count, from);
+                MsgHdr msgHdr (buffer, bufferLength, from);
                 DWORD numberOfBytesRecvd = 0;
                 if (WindowsFunctions::Instance ().WSARecvMsg (
                         (THEKOGANS_STREAM_SOCKET)handle,
@@ -1072,7 +1084,7 @@ namespace thekogans {
                 to = msgHdr.GetToAddress (GetHostAddress ().GetPort ());
                 return numberOfBytesRecvd;
             #else // defined (TOOLCHAIN_OS_Windows)
-                MsgHdr msgHdr (buffer, count, from);
+                MsgHdr msgHdr (buffer, bufferLength, from);
                 ssize_t countRead = recvmsg (handle, &msgHdr, 0);
                 if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1099,13 +1111,13 @@ namespace thekogans {
 
         std::size_t UDPSocket::WriteMsgHelper (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &from,
                 const Address &to) {
-            if (buffer != 0 && count > 0 &&
+            if (buffer != 0 && bufferLength > 0 &&
                     from != Address::Empty && to != Address::Empty) {
             #if defined (TOOLCHAIN_OS_Windows)
-                MsgHdr msgHdr (buffer, count, from, to);
+                MsgHdr msgHdr (buffer, bufferLength, from, to);
                 DWORD numberOfBytesSent = 0;
                 if (WindowsFunctions::Instance ().WSASendMsg (
                         (THEKOGANS_STREAM_SOCKET)handle, &msgHdr, 0,
@@ -1115,7 +1127,7 @@ namespace thekogans {
                 }
                 return numberOfBytesSent;
             #else // defined (TOOLCHAIN_OS_Windows)
-                MsgHdr msgHdr (buffer, count, from, to);
+                MsgHdr msgHdr (buffer, bufferLength, from, to);
                 ssize_t countWritten = sendmsg (handle, &msgHdr, 0);
                 if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

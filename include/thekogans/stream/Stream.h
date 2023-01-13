@@ -25,10 +25,8 @@
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Constants.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/RefCounted.h"
-#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Exception.h"
@@ -137,6 +135,8 @@ namespace thekogans {
         ///   Pipe\n
         /// #if defined (TOOLCHAIN_OS_Windows)
         ///   NamedPipe\n
+        ///     ClientNamedPipe\n
+        ///     ServerNamedPipe\n
         /// #endif // defined (TOOLCHAIN_OS_Windows)
         ///   Socket\n
         ///     TCPSocket\n
@@ -337,17 +337,12 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] handle_ OS stream handle.
-            Stream (THEKOGANS_UTIL_HANDLE handle_);
+            /// NOTE: Stream wraps the handle and takes ownership of it's lifetime.
+            /// The handle will be closed when the stream dtor is called.
+            explicit Stream (THEKOGANS_UTIL_HANDLE handle_);
             /// \brief
             /// dtor.
             virtual ~Stream ();
-
-            /// \brief
-            /// Check if stream has a valid handle.
-            /// \return true = yes, false = no.
-            inline bool IsOpen () const {
-                return handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-            }
 
             /// \brief
             /// Use this method if you need framework interoperability.
@@ -356,28 +351,37 @@ namespace thekogans {
             inline THEKOGANS_UTIL_HANDLE GetHandle () const {
                 return handle;
             }
+            ///c\brief
+            /// Return the stream token.
+            /// \return Stream token.
+            inline StreamRegistry::Token GetToken () const {
+                return token;
+            }
 
-            virtual std::size_t GetDataAvailable () const = 0;
             enum {
                 /// \brief
-                /// Default buffer length for async WSARecv[From | Msg].
+                /// Default buffer length for async Read[From | Msg].
                 DEFAULT_BUFFER_LENGTH = 16384
             };
             /// \brief
-            /// Read bytes from the stream.
-            /// \param[in] bufferLength Buffer length for async WSARecv[From | Msg].
+            /// Async read bytes from the stream.
+            /// \param[in] bufferLength Number of bytes to read (for \see{Socket} this number
+            /// can and should be 0. This way you will get everything that has arrived).
             virtual void Read (std::size_t /*bufferLength*/ = DEFAULT_BUFFER_LENGTH) = 0;
             /// \brief
-            /// Write buffer the stream.
+            /// Async write \see{util::Buffer} to the stream. This method is more
+            /// efficient than writing bytes (below) as there's no copy overhead.
             /// \param[in] buffer Buffer to write.
             virtual void Write (util::Buffer /*buffer*/) = 0;
             /// \brief
-            /// Write bytes to the stream.
+            /// Async write bytes to the stream. Upon return this method will have made
+            /// a copy of the buffer contents and can be deleted by the caller without
+            /// waiting for the async write to complete.
             /// \param[in] buffer Bytes to write.
-            /// \param[in] count Buffer length.
+            /// \param[in] bufferLength Buffer length.
             void Write (
                 const void *buffer,
-                std::size_t count);
+                std::size_t bufferLength);
 
         protected:
             /// \brief
@@ -387,14 +391,13 @@ namespace thekogans {
             virtual void HandleError (const util::Exception &exception) throw ();
             /// \brief
             /// Used by the \see{AsyncIoEventQueue} to notify the stream
-            /// of async errors.
-            /// \param[in] exception Async error.
+            /// that the other side has disconnected.
             virtual void HandleDisconnect () throw ();
             /// \brief
             /// Used by \see{AsyncIoEventQueue} to notify the stream that
-            /// an overlapped operation has completed successfully.
+            /// an \see{Overlapped} operation has completed successfully.
             /// \param[in] overlapped \see{Overlapped} that completed successfully.
-            virtual void HandleOverlapped (Overlapped & /*overlapped*/) throw () = 0;
+            virtual void HandleOverlapped (Overlapped &overlapped) throw ();
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             void EnqOverlapped (
@@ -402,7 +405,7 @@ namespace thekogans {
                 std::list<std::unique_ptr<Overlapped>> &list,
                 bool front = false);
             /// \brief
-            /// Called by PumpAsyncIo to remove the head buffer from the given list.
+            /// Called by PumpAsyncIo to remove the head \see{Overlapped} from the given list.
             /// \param[in, out] list List of overlappeds to return the head overlapped from.
             /// \return Head overlapped from the given list.
             std::unique_ptr<Overlapped> DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list);
@@ -410,16 +413,30 @@ namespace thekogans {
             std::unique_ptr<Overlapped> PumpAsyncIo (std::list<std::unique_ptr<Overlapped>> &list);
         #endif // !defined (TOOLCHAIN_OS_Windows)
 
+            /// \brief
+            /// Return the number of bytes available to read from the OS buffers.
+            /// \return The number of bytes available to read from the OS buffers.
+            virtual std::size_t GetDataAvailableForReading () const = 0;
+            /// \brief
+            /// ReadHelper needs to be implemented by every concrete class to provide
+            /// blocking reads. It's called by the framework to perform data extraction
+            /// from os to application buffers after we've been informed of it's arrival.
+            /// NOTE: The framework exopects this function to throw on error.
+            /// \param[out] buffer Where to read the data.
+            /// \param[in] bufferLength Size of buffer.
+            /// \return Count of bytes actually read.
             virtual std::size_t ReadHelper (
                 void *buffer,
-                std::size_t count) = 0;
+                std::size_t bufferLength) = 0;
             virtual std::size_t WriteHelper (
                 const void *buffer,
-                std::size_t count) = 0;
+                std::size_t bufferLength) = 0;
 
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// \see{AsyncIoEventQueue} needs access to the events.
+            /// \see{AsyncIoEventQueue} needs access to in and out.
             friend struct AsyncIoEventQueue;
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Stream is neither copy constructable, nor assignable.
@@ -428,8 +445,6 @@ namespace thekogans {
 
         /// \def THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type, base)
         /// This macro is used in a stream declaration file (.h).
-        /// It sets up everything needed for the stream to be dynamically
-        /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
@@ -438,8 +453,6 @@ namespace thekogans {
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)
         /// This macro is used in the stream definition file (.cpp).
-        /// It sets up everything needed for the stream to be dynamically
-        /// discoverable, and creatable.
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
             THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)

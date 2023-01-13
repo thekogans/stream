@@ -293,7 +293,7 @@ namespace thekogans {
             /// ctor.
             /// Wrap an OS handle.
             /// \param[in] handle OS stream handle to wrap.
-            TCPSocket (THEKOGANS_UTIL_HANDLE handle) :
+            explicit TCPSocket (THEKOGANS_UTIL_HANDLE handle) :
                 Socket (handle) {}
             /// \brief
             /// ctor.

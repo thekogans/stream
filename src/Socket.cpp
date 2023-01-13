@@ -65,10 +65,8 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        Socket::Socket (
-                THEKOGANS_UTIL_HANDLE handle,
-                std::size_t bufferLength) :
-                Stream (handle, bufferLength) {
+        Socket::Socket (THEKOGANS_UTIL_HANDLE handle) :
+                Stream (handle) {
         #if defined (TOOLCHAIN_OS_Windows)
             WSAPROTOCOL_INFOW protocolInfo;
             socklen_t length = sizeof (WSAPROTOCOL_INFOW);
@@ -134,15 +132,13 @@ namespace thekogans {
         Socket::Socket (
                 int family_,
                 int type_,
-                int protocol_,
-                std::size_t bufferLength) :
+                int protocol_) :
                 Stream (
                 #if defined (TOOLCHAIN_OS_Windows)
-                    (THEKOGANS_UTIL_HANDLE)WSASocketW (family_, type_, protocol_, 0, 0, WSA_FLAG_OVERLAPPED),
+                    (THEKOGANS_UTIL_HANDLE)WSASocketW (family_, type_, protocol_, 0, 0, WSA_FLAG_OVERLAPPED)),
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    (THEKOGANS_UTIL_HANDLE)socket (family_, type_, protocol_),
+                    (THEKOGANS_UTIL_HANDLE)socket (family_, type_, protocol_)),
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                    bufferLength),
                 family (family_),
                 type (type_),
                 protocol (protocol_) {
@@ -152,7 +148,7 @@ namespace thekogans {
     #if defined (TOOLCHAIN_OS_Windows)
         Socket::~Socket () {
             THEKOGANS_UTIL_TRY {
-                if (IsOpen ()) {
+                if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                     if (closesocket ((THEKOGANS_STREAM_SOCKET)handle) == THEKOGANS_STREAM_SOCKET_ERROR) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_STREAM_SOCKET_ERROR_CODE);
@@ -164,7 +160,7 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        std::size_t Socket::GetDataAvailable () const {
+        std::size_t Socket::GetDataAvailableForReading () const {
             u_long value = 0;
         #if defined (TOOLCHAIN_OS_Windows)
             if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
@@ -181,8 +177,8 @@ namespace thekogans {
 
         void Socket::Read (std::size_t bufferLength) {
             THEKOGANS_UTIL_TRY {
-                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
             #if defined (TOOLCHAIN_OS_Windows)
+                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
                 if (WSARecv (
                         (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->wsaBuf,
@@ -198,7 +194,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (std::move (overlapped), in);
+                EnqOverlapped (std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)), in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -210,8 +206,8 @@ namespace thekogans {
         void Socket::Write (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
                 THEKOGANS_UTIL_TRY {
-                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
                 #if defined (TOOLCHAIN_OS_Windows)
+                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
                     if (WSASend (
                             (THEKOGANS_STREAM_SOCKET)handle,
                             &overlapped->wsaBuf,
@@ -227,7 +223,7 @@ namespace thekogans {
                     }
                     overlapped.release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    EnqOverlapped (std::move (overlapped), out);
+                    EnqOverlapped (std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))), out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -461,10 +457,10 @@ namespace thekogans {
 
         std::size_t Socket::ReadHelper (
                 void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
+                std::size_t bufferLength) {
+            if (buffer != 0 && bufferLength > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
-                WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
+                WSABUF wsaBuf = {(ULONG)bufferLength, (char *)buffer};
                 DWORD numberOfBytesRecvd = 0;
                 DWORD flags = 0;
                 if (WSARecv ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf, 1,
@@ -474,7 +470,7 @@ namespace thekogans {
                 }
                 return numberOfBytesRecvd;
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countRead = recv (handle, (char *)buffer, count, 0);
+                ssize_t countRead = recv (handle, (char *)buffer, bufferLength, 0);
                 if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);
@@ -490,10 +486,10 @@ namespace thekogans {
 
         std::size_t Socket::WriteHelper (
                 const void *buffer,
-                std::size_t count) {
-            if (buffer != 0 && count > 0) {
+                std::size_t bufferLength) {
+            if (buffer != 0 && bufferLength > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
-                WSABUF wsaBuf = {(ULONG)count, (char *)buffer};
+                WSABUF wsaBuf = {(ULONG)bufferLength, (char *)buffer};
                 DWORD numberOfBytesSent = 0;
                 DWORD flags = 0;
                 if (WSASend ((THEKOGANS_STREAM_SOCKET)handle, &wsaBuf, 1,
@@ -503,7 +499,7 @@ namespace thekogans {
                 }
                 return numberOfBytesSent;
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countWritten = send (handle, (const char *)buffer, count, 0);
+                ssize_t countWritten = send (handle, (const char *)buffer, bufferLength, 0);
                 if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_STREAM_SOCKET_ERROR_CODE);

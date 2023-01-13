@@ -92,7 +92,7 @@ namespace thekogans {
         }
 
     #if defined (TOOLCHAIN_OS_Linux)
-        void AsyncIoEventQueue::SetStreamEventMask (Stream &stream) {
+        void AsyncIoEventQueue::SetStreamEventMask (const Stream &stream) {
             epoll_event event = {0};
             event.events = EPOLLRDHUP;
             if (!stream.in.empty () != 0) {
@@ -101,10 +101,10 @@ namespace thekogans {
             if (!stream.out.empty ()) {
                 event.events |= EPOLLOUT;
             }
-            event.data.u64 = stream.token;
-            if (epoll_ctl (handle, EPOLL_CTL_MOD, stream.handle, &event) < 0) {
+            event.data.u64 = stream.GetToken ();
+            if (epoll_ctl (handle, EPOLL_CTL_MOD, stream.GetHandle (), &event) < 0) {
                 if (THEKOGANS_UTIL_OS_ERROR_CODE != ENOENT ||
-                        epoll_ctl (handle, EPOLL_CTL_ADD, stream.handle, &event) < 0) {
+                        epoll_ctl (handle, EPOLL_CTL_ADD, stream.GetHandle (), &event) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -273,8 +273,10 @@ namespace thekogans {
                                         stream->HandleDisconnect ();
                                     }
                                     if (epollEvents[i].events & EPOLLIN) {
-                                        std::unique_ptr<Stream::Overlapped> overlapped = stream->PumpAsyncIo (stream->in);
-                                        if (overlapped.get () != 0) {
+                                        for (std::unique_ptr<Stream::Overlapped>
+                                                overlapped = stream->PumpAsyncIo (stream->in);
+                                                overlapped.get () != 0;
+                                                overlapped = stream->PumpAsyncIo (stream->in)) {
                                             stream->HandleOverlapped (*overlapped);
                                         }
                                     }
@@ -328,8 +330,10 @@ namespace thekogans {
                                     }
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_READ) {
-                                    std::unique_ptr<Stream::Overlapped> overlapped = stream->PumpAsyncIo (stream->in);
-                                    if (overlapped.get () != 0) {
+                                    for (std::unique_ptr<Stream::Overlapped>
+                                            overlapped = stream->PumpAsyncIo (stream->in);
+                                            overlapped.get () != 0;
+                                            overlapped = stream->PumpAsyncIo (stream->in)) {
                                         stream->HandleOverlapped (*overlapped);
                                     }
                                 }

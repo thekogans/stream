@@ -116,7 +116,7 @@ namespace thekogans {
             /// ctor.
             /// Wrap an OS handle.
             /// \param[in] handle OS stream handle to wrap.
-            UDPSocket (THEKOGANS_UTIL_HANDLE handle) :
+            explicit UDPSocket (THEKOGANS_UTIL_HANDLE handle) :
                 Socket (handle) {}
             /// \brief
             /// ctor.
@@ -153,11 +153,11 @@ namespace thekogans {
             /// Write a datagram to the given address.
             /// NOTE: If you called \see{Connect} address is ignored.
             /// \param[in] buffer Buffer representing the datagram.
-            /// \param[in] count Size of buffer.
+            /// \param[in] bufferLength Size of buffer.
             /// \param[in] address Address the datagram is sent to.
             void WriteTo (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &address);
             /// \brief
             /// Async write a datagram to the given address.
@@ -180,13 +180,13 @@ namespace thekogans {
             /// as well as the receiving addresses. To use the
             /// sending address, you must call SetRecvPktInfo first.
             /// \param[in] buffer Buffer that holds the message to be sent.
-            /// \param[in] count Buffer length.
+            /// \param[in] bufferLength Buffer length.
             /// \param[in] from The local interface address from which the message is sent.
             /// \param[in] to The address of the host that receive the message.
             /// \return Number of bytes sent.
             void WriteMsg (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &from,
                 const Address &to);
             /// \brief
@@ -311,20 +311,20 @@ namespace thekogans {
 
             std::size_t ReadFromHelper (
                 void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 Address &address);
             std::size_t WriteToHelper (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &address);
             std::size_t ReadMsgHelper (
                 void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 Address &from,
                 Address &to);
             std::size_t WriteMsgHelper (
                 const void *buffer,
-                std::size_t count,
+                std::size_t bufferLength,
                 const Address &from,
                 const Address &to);
         };
