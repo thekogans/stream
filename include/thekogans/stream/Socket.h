@@ -78,6 +78,10 @@ namespace thekogans {
 
             // Stream
             /// \brief
+            /// Close the OS handle associated with the stream.
+            virtual void Close () override;
+
+            /// \brief
             /// Read bytes from the stream.
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
             /// \brief

@@ -327,6 +327,11 @@ namespace thekogans {
                 std::size_t bufferLength,
                 const Address &from,
                 const Address &to);
+
+            friend struct ReadFromOverlapped;
+            friend struct WriteToOverlapped;
+            friend struct ReadMsgOverlapped;
+            friend struct WriteMsgOverlapped;
         };
 
     } // namespace stream

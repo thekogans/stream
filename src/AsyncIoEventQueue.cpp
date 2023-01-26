@@ -111,10 +111,10 @@ namespace thekogans {
             }
         }
     #elif defined (TOOLCHAIN_OS_OSX)
-        void AsyncIoEventQueue::SetStreamEventMask (Stream &stream) {
+        void AsyncIoEventQueue::SetStreamEventMask (const Stream &stream) {
             if (!stream.in.empty () != 0) {
                 keventStruct kqueueEvent = {0};
-                keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, stream.token);
+                keventSet (&kqueueEvent, stream.handle, EVFILT_READ, EV_ADD, 0, 0, stream.GetToken ());
                 if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -132,7 +132,7 @@ namespace thekogans {
             }
             if (!stream.out.empty ()) {
                 keventStruct kqueueEvent = {0};
-                keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, stream.token);
+                keventSet (&kqueueEvent, stream.handle, EVFILT_WRITE, EV_ADD, 0, 0, stream.GetToken ());
                 if (keventFunc (handle, &kqueueEvent, 1, 0, 0, 0) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -150,26 +150,6 @@ namespace thekogans {
             }
         }
     #endif // defined (TOOLCHAIN_OS_Linux)
-
-    #if defined (TOOLCHAIN_OS_Windows)
-        namespace {
-            #define STATUS_CANCELED 0xC0000120
-            #define STATUS_LOCAL_DISCONNECT 0xC000013B
-            #define STATUS_REMOTE_DISCONNECT 0xC000013C
-            #define STATUS_PIPE_BROKEN 0xC000014b
-            #define STATUS_CONNECTION_RESET 0xC000020D
-
-            std::string ErrorCodeTostring (THEKOGANS_UTIL_ERROR_CODE errorCode) {
-                return
-                    errorCode == STATUS_CANCELED ? "STATUS_CANCELED" :
-                    errorCode == STATUS_LOCAL_DISCONNECT ? "STATUS_LOCAL_DISCONNECT" :
-                    errorCode == STATUS_REMOTE_DISCONNECT ? "STATUS_REMOTE_DISCONNECT" :
-                    errorCode == STATUS_PIPE_BROKEN ? "STATUS_PIPE_BROKEN" :
-                    errorCode == STATUS_CONNECTION_RESET ? "STATUS_CONNECTION_RESET" :
-                    util::FormatString ("Unknown code: %x", errorCode);
-            }
-        }
-    #endif // defined (TOOLCHAIN_OS_Windows)
 
         void AsyncIoEventQueue::Run () throw () {
             while (1) {
@@ -191,36 +171,9 @@ namespace thekogans {
                                 std::unique_ptr<Stream::Overlapped> overlapped (
                                     (Stream::Overlapped *)iocpEvents[i].lpOverlapped);
                                 Stream::SharedPtr stream = StreamRegistry::Instance ().Get (
-                                    (StreamRegistry::Token)iocpEvents[i].lpCompletionKey);
+                                    (StreamRegistry::Token::Type)iocpEvents[i].lpCompletionKey);
                                 if (stream.Get () != 0) {
-                                    ssize_t count = overlapped->Prolog (stream);
-                                    if (count > 0) {
-                                        if (overlapped->Epilog (stream)) {
-                                            stream->HandleOverlapped (*overlapped);
-                                        }
-                                    }
-                                    else if (count == 0) {
-                                        stream->HandleDisconnect ();
-                                    }
-                                    else {
-                                        THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped->GetError ();
-                                        // Convert known errors to disconnect events.
-                                        if (errorCode == STATUS_LOCAL_DISCONNECT ||
-                                                errorCode == STATUS_REMOTE_DISCONNECT ||
-                                                errorCode == STATUS_PIPE_BROKEN ||
-                                                errorCode == STATUS_CONNECTION_RESET) {
-                                            THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
-                                                THEKOGANS_STREAM,
-                                                "errorCode: %s.\n",
-                                                ErrorCodeTostring (errorCode).c_str ());
-                                            stream->HandleDisconnect ();
-                                        }
-                                        else if (errorCode != STATUS_CANCELED) {
-                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION exception (errorCode);
-                                            THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                                            stream->HandleError (exception);
-                                        }
-                                    }
+                                    stream->ExecOverlapped (std::move (overlapped));
                                 }
                             }
                         }
@@ -274,18 +227,22 @@ namespace thekogans {
                                     }
                                     if (epollEvents[i].events & EPOLLIN) {
                                         for (std::unique_ptr<Stream::Overlapped>
-                                                overlapped = stream->PumpAsyncIo (stream->in);
+                                                overlapped = stream->DeqOverlapped (stream->in);
                                                 overlapped.get () != 0;
-                                                overlapped = stream->PumpAsyncIo (stream->in)) {
-                                            stream->HandleOverlapped (*overlapped);
+                                                overlapped = stream->DeqOverlapped (stream->in)) {
+                                            if (!stream->ExecOverlapped (std::move (overlapped), stream->in)) {
+                                                break;
+                                            }
                                         }
                                     }
                                     if (epollEvents[i].events & EPOLLOUT) {
                                         for (std::unique_ptr<Stream::Overlapped>
-                                                overlapped = stream->PumpAsyncIo (stream->out);
+                                                overlapped = stream->DeqOverlapped (stream->out);
                                                 overlapped.get () != 0;
-                                                overlapped = stream->PumpAsyncIo (stream->out)) {
-                                            stream->HandleOverlapped (*overlapped);
+                                                overlapped = stream->DeqOverlapped (stream->out)) {
+                                            if (!stream->ExecOverlapped (std::move (overlapped), stream->out)) {
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -320,7 +277,7 @@ namespace thekogans {
                                     // EV_EOF instead of ECONNREFUSED. Simulate an error that would
                                     // be returned if we did a blocking connect.
                                     if (!stream->in.empty () &&
-                                            stream->in.front ()->GetName () == TCPSocket::ConnectOverlapped::NAME) {
+                                            stream->in.front ()->GetType () == TCPSocket::ConnectOverlapped::TYPE) {
                                         stream->HandleError (
                                             THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (ECONNREFUSED));
                                     }
@@ -331,18 +288,22 @@ namespace thekogans {
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_READ) {
                                     for (std::unique_ptr<Stream::Overlapped>
-                                            overlapped = stream->PumpAsyncIo (stream->in);
+                                            overlapped = stream->DeqOverlapped (stream->in);
                                             overlapped.get () != 0;
-                                            overlapped = stream->PumpAsyncIo (stream->in)) {
-                                        stream->HandleOverlapped (*overlapped);
+                                            overlapped = stream->DeqOverlapped (stream->in)) {
+                                        if (!stream->ExecOverlapped (std::move (overlapped), stream->in)) {
+                                            break;
+                                        }
                                     }
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_WRITE) {
                                     for (std::unique_ptr<Stream::Overlapped>
-                                            overlapped = stream->PumpAsyncIo (stream->out);
+                                            overlapped = stream->DeqOverlapped (stream->out);
                                             overlapped.get () != 0;
-                                            overlapped = stream->PumpAsyncIo (stream->out)) {
-                                        stream->HandleOverlapped (*overlapped);
+                                            overlapped = stream->DeqOverlapped (stream->out)) {
+                                        if (!stream->ExecOverlapped (std::move (overlapped), stream->out)) {
+                                            break;
+                                        }
                                     }
                                 }
                             }

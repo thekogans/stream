@@ -69,7 +69,22 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// Create a server side named pipe.
-            /// \param[in] name
+            /// https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-createnamedpipew
+            /// \param[in] name_ The unique pipe name. This string must have the following form: \\.\pipe\pipename
+            /// \param[in] openMode_ Open mode.
+            /// \param[in] pipeMode_ Pipe mode.
+            /// \param[in] maxInstances_ Maximumum concurrent pipe instances.
+            /// \param[in] outBufferSize_ The number of bytes to reserve for the output buffer.
+            /// \param[in] inBufferSize_ The number of bytes to reserve for the input buffer.
+            /// \param[in] defaultTimeOut_ The default time-out value, in milliseconds, if the WaitNamedPipe
+            /// function specifies NMPWAIT_USE_DEFAULT_WAIT. Each instance of a named pipe must specify the
+            /// same value.
+            /// \param[in] securityAttributes_ A pointer to a SECURITY_ATTRIBUTES structure that specifies a
+            /// security descriptor for the new named pipe and determines whether child processes can inherit
+            /// the returned handle. If lpSecurityAttributes is NULL, the named pipe gets a default security
+            /// descriptor and the handle cannot be inherited. The ACLs in the default security descriptor for
+            /// a named pipe grant full control to the LocalSystem account, administrators, and the creator
+            /// owner. They also grant read access to members of the Everyone group and the anonymous account.
             ServerNamedPipe (
                 LPCWSTR name_,
                 DWORD openMode_ = PIPE_ACCESS_DUPLEX,
@@ -85,7 +100,7 @@ namespace thekogans {
             void Connect ();
 
             /// \brief
-            /// Disconnect the server end of the named pipe.
+            /// Disconnect the server end of the \see{NamedPipe}.
             /// \param[in] flushBuffers Call FlushFileBuffers before disconnecting.
             void Disconnect (bool flushBuffers = true);
 
@@ -116,7 +131,7 @@ namespace thekogans {
             /// \brief
             /// Used by \see{AsyncIoEventQueue} to notify the stream that
             /// an overlapped operation has completed successfully.
-            /// \param[in] overlapped Overlapped that completed successfully.
+            /// \param[in] overlapped \see{Overlapped} that completed successfully.
             virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
 
             static LPSECURITY_ATTRIBUTES DefaultSecurityAttributes ();

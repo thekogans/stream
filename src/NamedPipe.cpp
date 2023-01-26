@@ -26,15 +26,6 @@
 namespace thekogans {
     namespace stream {
 
-        std::size_t NamedPipe::GetDataAvailableForReading () const {
-            DWORD totalBytesAvailable = 0;
-            if (!PeekNamedPipe (handle, 0, 0, 0, &totalBytesAvailable, 0)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            return totalBytesAvailable;
-        }
-
         void NamedPipe::Read (std::size_t bufferLength) {
             if (bufferLength != 0) {
                 THEKOGANS_UTIL_TRY {
@@ -98,6 +89,15 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
+        }
+
+        std::size_t NamedPipe::GetDataAvailableForReading () const {
+            DWORD totalBytesAvailable = 0;
+            if (!PeekNamedPipe (handle, 0, 0, 0, &totalBytesAvailable, 0)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            return totalBytesAvailable;
         }
 
         std::size_t NamedPipe::ReadHelper (

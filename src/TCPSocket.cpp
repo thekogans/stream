@@ -157,30 +157,22 @@ namespace thekogans {
                 ConnectOverlapped (const Address &address_) :
                     address (address_) {}
 
-                ssize_t Prolog (Stream::SharedPtr stream) {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
                     }
-                    THEKOGANS_UTIL_TRY {
-                        if (setsockopt (
-                                (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
-                                SOL_SOCKET,
-                                SO_UPDATE_CONNECT_CONTEXT,
-                                0,
-                                0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                        }
-                        return 1;
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        SetError (exception.GetErrorCode ());
+                    if (setsockopt (
+                            (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
+                            SOL_SOCKET,
+                            SO_UPDATE_CONNECT_CONTEXT,
+                            0,
+                            0) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                        SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                         return -1;
                     }
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    return 1;
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    return 1;
                 }
             };
 
@@ -238,7 +230,7 @@ namespace thekogans {
                 /// DisconnectOverlapped is an \see{Stream::Overlapped}.
                 THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (DisconnectOverlapped)
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
             };
@@ -287,67 +279,71 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            struct AcceptOverlapped : public Stream::Overlapped {
-                /// \brief
-                /// AcceptOverlapped is an \see{Stream::Overlapped}.
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (AcceptOverlapped)
+        struct AcceptOverlapped : public Stream::Overlapped {
+            /// \brief
+            /// AcceptOverlapped is an \see{Stream::Overlapped}.
+            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (AcceptOverlapped)
 
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Buffer used with AcceptEx.
-                char acceptBuffer[256];
-                /// \brief
-                /// Count used with AcceptEx.
-                DWORD bytesReceived;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Pending TCPSocket.
-                TCPSocket::SharedPtr connection;
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Buffer used with AcceptEx.
+            char acceptBuffer[256];
+            /// \brief
+            /// Count used with AcceptEx.
+            DWORD bytesReceived;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Pending TCPSocket.
+            TCPSocket::SharedPtr connection;
 
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// ctor.
-                /// \param[in] family Address family specification.
-                /// \param[in] type Socket type specification.
-                /// \param[in] protocol Socket protocol specification.
-                AcceptOverlapped (
-                    int family,
-                    int type,
-                    int protocol) :
-                    connection (new TCPSocket (WSASocketW (family, type, protocol, 0, 0, WSA_FLAG_OVERLAPPED))),
-                    bytesReceived (0) {}
-            #endif // defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// ctor.
+            /// \param[in] family Address family specification.
+            /// \param[in] type Socket type specification.
+            /// \param[in] protocol Socket protocol specification.
+            AcceptOverlapped (
+                int family,
+                int type,
+                int protocol) :
+                connection (new TCPSocket (WSASocketW (family, type, protocol, 0, 0, WSA_FLAG_OVERLAPPED))),
+                bytesReceived (0) {}
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// ctor.
+            AcceptOverlapped () {}
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) {
-                    THEKOGANS_UTIL_TRY {
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        if (GetError () != ERROR_SUCCESS) {
-                            return -1;
-                        }
-                        if (setsockopt (
-                                (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
-                                SOL_SOCKET,
-                                SO_UPDATE_ACCEPT_CONTEXT,
-                                (char *)&stream->handle,
-                                sizeof (THEKOGANS_STREAM_SOCKET)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                        }
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        connection.Reset (new TCPSocket ((THEKOGANS_UTIL_HANDLE)stream->AcceptHelper ()));
-                    #endif // defined (TOOLCHAIN_OS_Windows)
-                        return 1;
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        SetError (exception.GetErrorCode ());
+            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                THEKOGANS_UTIL_TRY {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    if (GetError () != ERROR_SUCCESS) {
                         return -1;
                     }
+                    if (setsockopt (
+                            (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
+                            SOL_SOCKET,
+                            SO_UPDATE_ACCEPT_CONTEXT,
+                            (char *)&stream->handle,
+                            sizeof (THEKOGANS_STREAM_SOCKET)) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                    }
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    connection.Reset (
+                        new TCPSocket ((THEKOGANS_UTIL_HANDLE)
+                            util::dynamic_refcounted_sharedptr_cast<TCPSocket> (stream)->AcceptHelper ()));
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    return 1;
                 }
-            };
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    SetError (exception.GetErrorCode ());
+                    return -1;
+                }
+            }
+        };
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (AcceptOverlapped)
-        }
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (AcceptOverlapped)
 
         void TCPSocket::Accept () {
             THEKOGANS_UTIL_TRY {
@@ -544,41 +540,39 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            struct ShutdownOverlapped : public Overlapped {
-                /// \brief
-                /// ShutdownOverlapped is an \see{Stream::Overlapped}.
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ShutdownOverlapped)
+        struct ShutdownOverlapped : public Stream::Overlapped {
+            /// \brief
+            /// ShutdownOverlapped is an \see{Stream::Overlapped}.
+            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ShutdownOverlapped)
 
-                /// \brief
-                /// Type of shutdown performed on (Secure)TCPSocket.
-                ShutdownType shutdownType;
+            /// \brief
+            /// Type of shutdown performed on (Secure)TCPSocket.
+            TCPSocket::ShutdownType shutdownType;
 
-                /// \brief
-                /// ctor.
-                /// \param[in] tcpSocket_ TCPSocket to shutdown.
-                /// \param[in] shutdownType_ Type of shutdown performed on (Secure)TCPSocket.
-                ShutdownOverlapped (ShutdownType shutdownType_) :
-                    shutdownType (shutdownType_) {}
+            /// \brief
+            /// ctor.
+            /// \param[in] tcpSocket_ TCPSocket to shutdown.
+            /// \param[in] shutdownType_ Type of shutdown performed on (Secure)TCPSocket.
+            ShutdownOverlapped (TCPSocket::ShutdownType shutdownType_) :
+                shutdownType (shutdownType_) {}
 
-                /// \brief
-                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                /// the Overlapped to perform post op housekeeping prior to
-                /// calling GetError.
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                    THEKOGANS_UTIL_TRY {
-                        util::dynamic_refcounted_sharedptr_cast<TCPSocket> (stream)->ShutdownHelper (shutdownType);
-                        return 1;
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        SetError (exception.GetErrorCode ());
-                        return -1;
-                    }
+            /// \brief
+            /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
+            /// the Overlapped to perform post op housekeeping prior to
+            /// calling GetError.
+            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                THEKOGANS_UTIL_TRY {
+                    util::dynamic_refcounted_sharedptr_cast<TCPSocket> (stream)->ShutdownHelper (shutdownType);
+                    return 1;
                 }
-            };
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    SetError (exception.GetErrorCode ());
+                    return -1;
+                }
+            }
+        };
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ShutdownOverlapped)
-        }
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ShutdownOverlapped)
 
         void TCPSocket::Shutdown (ShutdownType shutdownType) {
             THEKOGANS_UTIL_TRY {

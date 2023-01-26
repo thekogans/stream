@@ -106,62 +106,62 @@ namespace thekogans {
             Bind (address);
         }
 
-        namespace {
-            struct ReadFromOverlapped : public Stream::Overlapped {
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ReadFromOverlapped)
+        struct ReadFromOverlapped : public Stream::Overlapped {
+            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ReadFromOverlapped)
 
-                util::Buffer buffer;
-                Address address;
+        public:
+            util::Buffer buffer;
+            Address address;
+        #if defined (TOOLCHAIN_OS_Windows)
+            WSABUF wsaBuf;
+            DWORD flags;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+
+            ReadFromOverlapped (std::size_t bufferLength) :
+                buffer (util::NetworkEndian, bufferLength)
             #if defined (TOOLCHAIN_OS_Windows)
-                WSABUF wsaBuf;
-                DWORD flags;
+                , flags (0)
             #endif // defined (TOOLCHAIN_OS_Windows)
+            {
+            #if defined (TOOLCHAIN_OS_Windows)
+                wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
+                wsaBuf.buf = (char *)buffer.GetWritePtr ();
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
 
-                ReadFromOverlapped (std::size_t bufferLength) :
-                    buffer (util::NetworkEndian, bufferLength)
-                #if defined (TOOLCHAIN_OS_Windows)
-                    , flags (0)
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
-                    wsaBuf.buf = (char *)buffer.GetWritePtr ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
+            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (GetError () != ERROR_SUCCESS) {
+                    return -1;
                 }
-
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    if (GetError () != ERROR_SUCCESS) {
+                buffer.AdvanceWriteOffset (GetCount ());
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                if (buffer.IsEmpty ()) {
+                    THEKOGANS_UTIL_TRY {
+                        // The ReadFromOverlapped ctor will resize the buffer
+                        // using the bufferLength that was passed in. If
+                        // that value was 0, than try to grab all
+                        // available data.
+                        if (buffer.GetLength () == 0) {
+                            buffer.Resize (
+                                util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->GetDataAvailableForReading ());
+                        }
+                        buffer.AdvanceWriteOffset (
+                            util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->ReadFromHelper (
+                                buffer.GetWritePtr (),
+                                buffer.GetDataAvailableForWriting (),
+                                address));
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        SetError (exception.GetErrorCode ());
                         return -1;
                     }
-                    buffer.AdvanceWriteOffset (GetCount ());
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    if (buffer.IsEmpty ()) {
-                        THEKOGANS_UTIL_TRY {
-                            // The ReadFromOverlapped ctor will resize the buffer
-                            // using the bufferLength that was passed in. If
-                            // that value was 0, than try to grab all
-                            // available data.
-                            if (buffer.GetLength () == 0) {
-                                buffer.Resize (stream->GetDataAvailableForReading ());
-                            }
-                            buffer.AdvanceWriteOffset (
-                                util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->ReadFromHelper (
-                                    buffer.GetWritePtr (),
-                                    buffer.GetDataAvailableForWriting ()),
-                                address);
-                        }
-                        THEKOGANS_UTIL_CATCH (util::Exception) {
-                            SetError (exception.GetErrorCode ());
-                            return -1;
-                        }
-                    }
-                    return buffer.GetDataAvailableForReading ();
                 }
-            };
+                return buffer.GetDataAvailableForReading ();
+            }
+        };
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ReadFromOverlapped)
-        }
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ReadFromOverlapped)
 
         void UDPSocket::ReadFrom (std::size_t bufferLength) {
             THEKOGANS_UTIL_TRY {
@@ -194,73 +194,74 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            struct WriteToOverlapped : public Stream::Overlapped {
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (WriteToOverlapped)
+        struct WriteToOverlapped : public Stream::Overlapped {
+            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (WriteToOverlapped)
 
-                util::Buffer buffer;
-                Address address;
-                WSABUF wsaBuf;
-                DWORD flags;
+        public:
+            util::Buffer buffer;
+            Address address;
+        #if defined (TOOLCHAIN_OS_Windows)
+            WSABUF wsaBuf;
+            DWORD flags;
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
-                WriteToOverlapped (
-                    const void *buffer_,
-                    std::size_t bufferLength,
-                    const Address &address_) :
-                    buffer (
-                        util::NetworkEndian,
-                        (const util::ui8 *)buffer_,
-                        (const util::ui8 *)buffer_ + bufferLength),
-                    address (address_)
-                #if defined (TOOLCHAIN_OS_Windows)
-                    , flags (0)
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
-                    wsaBuf.buf = (char *)buffer.GetReadPtr ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
+            WriteToOverlapped (
+                const void *buffer_,
+                std::size_t bufferLength,
+                const Address &address_) :
+                buffer (
+                    util::NetworkEndian,
+                    (const util::ui8 *)buffer_,
+                    (const util::ui8 *)buffer_ + bufferLength),
+                address (address_)
+            #if defined (TOOLCHAIN_OS_Windows)
+                , flags (0)
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            {
+            #if defined (TOOLCHAIN_OS_Windows)
+                wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
+                wsaBuf.buf = (char *)buffer.GetReadPtr ();
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            WriteToOverlapped (
+                util::Buffer buffer_,
+                const Address &address_) :
+                buffer (std::move (buffer_)),
+                address (address_)
+            #if defined (TOOLCHAIN_OS_Windows)
+                , flags (0)
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            {
+            #if defined (TOOLCHAIN_OS_Windows)
+                wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
+                wsaBuf.buf = (char *)buffer.GetReadPtr ();
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+
+            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return GetError () == ERROR_SUCCESS ? buffer.AdvanceReadOffset (GetCount ()) : -1;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_TRY {
+                    return buffer.AdvanceReadOffset (
+                        util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->WriteToHelper (
+                            buffer.GetReadPtr (),
+                            buffer.GetDataAvailableForReading (),
+                            address));
                 }
-                WriteToOverlapped (
-                    util::Buffer buffer_,
-                    const Address &address_) :
-                    buffer (std::move (buffer_)),
-                    address (address_)
-                #if defined (TOOLCHAIN_OS_Windows)
-                    , flags (0)
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
-                    wsaBuf.buf = (char *)buffer.GetReadPtr ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    SetError (exception.GetErrorCode ());
+                    return -1;
                 }
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ? buffer.AdvanceReadOffset (GetCount ()) : -1;
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_TRY {
-                        return buffer.AdvanceReadOffset (
-                            util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->WriteToHelper (
-                                buffer.GetReadPtr (),
-                                buffer.GetDataAvailableForReading (),
-                                address));
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        SetError (exception.GetErrorCode ());
-                        return -1;
-                    }
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
+            virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () override {
+                return buffer.IsEmpty ();
+            }
+        };
 
-                virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () override {
-                    return buffer.IsEmpty ();
-                }
-            };
-
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (WriteToOverlapped)
-        }
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (WriteToOverlapped)
 
         void UDPSocket::WriteTo (
                 const void *buffer,
@@ -344,68 +345,68 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            struct ReadMsgOverlapped : public Overlapped {
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ReadMsgOverlapped)
+        struct ReadMsgOverlapped : public Stream::Overlapped {
+            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ReadMsgOverlapped)
 
-                util::Buffer buffer;
-                MsgHdr msgHdr;
-                Address from;
-                Address to;
+        public:
+            util::Buffer buffer;
+            MsgHdr msgHdr;
+            Address from;
+            Address to;
 
-                ReadMsgOverlapped (std::size_t bufferLength) :
-                    buffer (util::NetworkEndian, bufferLength),
-                    msgHdr (
-                        bufferLength > 0 ? buffer.GetWritePtr () : 0,
-                        bufferLength > 0 ? buffer.GetDataAvailableForWriting () : 0,
-                        from) {}
+            ReadMsgOverlapped (std::size_t bufferLength) :
+                buffer (util::NetworkEndian, bufferLength),
+                msgHdr (
+                    bufferLength > 0 ? buffer.GetWritePtr () : 0,
+                    bufferLength > 0 ? buffer.GetDataAvailableForWriting () : 0,
+                    from) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    if (GetError () != ERROR_SUCCESS) {
+            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (GetError () != ERROR_SUCCESS) {
+                    return -1;
+                }
+                buffer.AdvanceWriteOffset (GetCount ());
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                if (buffer.IsEmpty ()) {
+                    THEKOGANS_UTIL_TRY {
+                        // The ReadMsgOverlapped ctor will resize the buffer
+                        // using the bufferLength that was passed in. If
+                        // that value was 0, than try to grab all
+                        // available data.
+                        if (buffer.GetLength () == 0) {
+                            buffer.Resize (
+                                util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->GetDataAvailableForReading ());
+                        }
+                        buffer.AdvanceWriteOffset (
+                            util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->ReadMsgHelper (
+                                buffer.GetWritePtr (),
+                                buffer.GetDataAvailableForWriting (),
+                                from,
+                                to));
+                    }
+                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                        SetError (exception.GetErrorCode ());
                         return -1;
                     }
-                    buffer.AdvanceWriteOffset (GetCount ());
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    if (buffer.IsEmpty ()) {
-                        THEKOGANS_UTIL_TRY {
-                            // The ReadMsgOverlapped ctor will resize the buffer
-                            // using the bufferLength that was passed in. If
-                            // that value was 0, than try to grab all
-                            // available data.
-                            if (buffer.GetLength () == 0) {
-                                buffer.Resize (stream->GetDataAvailableForReading ());
-                            }
-                            buffer.AdvanceWriteOffset (
-                                util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->ReadMsgHelper (
-                                    buffer.GetWritePtr (),
-                                    buffer.GetDataAvailableForWriting (),
-                                    from,
-                                    to));
-                        }
-                        THEKOGANS_UTIL_CATCH (util::Exception) {
-                            SetError (exception.GetErrorCode ());
-                            return -1;
-                        }
-                    }
-                #if defined (TOOLCHAIN_OS_Windows)
-                    else {
-                        if (from.GetFamily () == AF_INET) {
-                            from.length = sizeof (sockaddr_in);
-                        }
-                        else if (from.GetFamily () == AF_INET6) {
-                            from.length = sizeof (sockaddr_in6);
-                        }
-                        to = msgHdr.GetToAddress (
-                            util::dynamic_refcounted_sharedptr_cast<Socket> (stream)->GetHostAddress ().GetPort ());
-                    }
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    return buffer.GetDataAvailableForReading ();
                 }
-            };
+            #if defined (TOOLCHAIN_OS_Windows)
+                else {
+                    if (from.GetFamily () == AF_INET) {
+                        from.length = sizeof (sockaddr_in);
+                    }
+                    else if (from.GetFamily () == AF_INET6) {
+                        from.length = sizeof (sockaddr_in6);
+                    }
+                    to = msgHdr.GetToAddress (
+                        util::dynamic_refcounted_sharedptr_cast<Socket> (stream)->GetHostAddress ().GetPort ());
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                return buffer.GetDataAvailableForReading ();
+            }
+        };
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ReadMsgOverlapped)
-        }
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ReadMsgOverlapped)
 
         void UDPSocket::ReadMsg (std::size_t bufferLength) {
             THEKOGANS_UTIL_TRY {
@@ -435,70 +436,69 @@ namespace thekogans {
             }
         }
 
-        namespace {
-            struct WriteMsgOverlapped : public Overlapped {
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (WriteMsgOverlapped)
+        struct WriteMsgOverlapped : public Stream::Overlapped {
+            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (WriteMsgOverlapped)
 
-                util::Buffer buffer;
-                Address from;
-                Address to;
-                MsgHdr msgHdr;
+        public:
+            util::Buffer buffer;
+            Address from;
+            Address to;
+            MsgHdr msgHdr;
 
-                WriteMsgOverlapped (
-                    const void *buffer_,
-                    std::size_t bufferLength,
-                    const Address &from_,
-                    const Address &to_) :
-                    buffer (
-                        util::NetworkEndian,
-                        (const util::ui8 *)buffer_,
-                        (const util::ui8 *)buffer_ + bufferLength),
-                    from (from_),
-                    to (to_),
-                    msgHdr (
-                        buffer.GetReadPtr (),
-                        buffer.GetDataAvailableForReading (),
-                        from,
-                        to) {}
-                WriteMsgOverlapped (
-                    util::Buffer buffer_,
-                    const Address &from_,
-                    const Address &to_) :
-                    buffer (std::move (buffer_)),
-                    from (from_),
-                    to (to_),
-                    msgHdr (
-                        buffer.GetReadPtr (),
-                        buffer.GetDataAvailableForReading (),
-                        from,
-                        to) {}
+            WriteMsgOverlapped (
+                const void *buffer_,
+                std::size_t bufferLength,
+                const Address &from_,
+                const Address &to_) :
+                buffer (
+                    util::NetworkEndian,
+                    (const util::ui8 *)buffer_,
+                    (const util::ui8 *)buffer_ + bufferLength),
+                from (from_),
+                to (to_),
+                msgHdr (
+                    buffer.GetReadPtr (),
+                    buffer.GetDataAvailableForReading (),
+                    from,
+                    to) {}
+            WriteMsgOverlapped (
+                util::Buffer buffer_,
+                const Address &from_,
+                const Address &to_) :
+                buffer (std::move (buffer_)),
+                from (from_),
+                to (to_),
+                msgHdr (
+                    buffer.GetReadPtr (),
+                    buffer.GetDataAvailableForReading (),
+                    from,
+                    to) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ? buffer.AdvanceReadOffset (GetCount ()) : -1;
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_TRY {
-                        return buffer.AdvanceReadOffset (
-                            util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->WriteMsgHelper (
-                                buffer.GetReadPtr (),
-                                buffer.GetDataAvailableForReading (),
-                                from,
-                                to));
-                    }
-                    THEKOGANS_UTIL_CATCH (util::Exception) {
-                        SetError (exception.GetErrorCode ());
-                        return -1;
-                    }
-                #endif // defined (TOOLCHAIN_OS_Windows)
+            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+            #if defined (TOOLCHAIN_OS_Windows)
+                return GetError () == ERROR_SUCCESS ? buffer.AdvanceReadOffset (GetCount ()) : -1;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_TRY {
+                    return buffer.AdvanceReadOffset (
+                        util::dynamic_refcounted_sharedptr_cast<UDPSocket> (stream)->WriteMsgHelper (
+                            buffer.GetReadPtr (),
+                            buffer.GetDataAvailableForReading (),
+                            from,
+                            to));
                 }
-
-                virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () override {
-                    return buffer.IsEmpty ();
+                THEKOGANS_UTIL_CATCH (util::Exception) {
+                    SetError (exception.GetErrorCode ());
+                    return -1;
                 }
-            };
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (WriteMsgOverlapped)
-        }
+            virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () override {
+                return buffer.IsEmpty ();
+            }
+        };
+
+        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (WriteMsgOverlapped)
 
         void UDPSocket::WriteMsg (
                 const void *buffer,
@@ -948,7 +948,7 @@ namespace thekogans {
         void UDPSocket::HandleOverlapped (Overlapped &overlapped) throw () {
             if (overlapped.GetType () == ReadFromOverlapped::TYPE) {
                 ReadFromOverlapped &readFromOverlapped = (ReadFromOverlapped &)overlapped;
-                util::Producer::UDPSocketEvents>::Produce (
+                util::Producer<UDPSocketEvents>::Produce (
                     std::bind (
                         &UDPSocketEvents::OnUDPSocketReadFrom,
                         std::placeholders::_1,
@@ -958,7 +958,7 @@ namespace thekogans {
             }
             else if (overlapped.GetType () == WriteToOverlapped::TYPE) {
                 WriteToOverlapped &writeToOverlapped = (WriteToOverlapped &)overlapped;
-                util::Producer::UDPSocketEvents>::Produce (
+                util::Producer<UDPSocketEvents>::Produce (
                     std::bind (
                         &UDPSocketEvents::OnUDPSocketWriteTo,
                         std::placeholders::_1,
@@ -968,25 +968,25 @@ namespace thekogans {
             }
             else if (overlapped.GetType () == ReadMsgOverlapped::TYPE) {
                 ReadMsgOverlapped &readMsgOverlapped = (ReadMsgOverlapped &)overlapped;
-                util::Producer::UDPSocketEvents>::Produce (
+                util::Producer<UDPSocketEvents>::Produce (
                     std::bind (
                         &UDPSocketEvents::OnUDPSocketReadMsg,
                         std::placeholders::_1,
                         SharedPtr (this),
                         std::move (readMsgOverlapped.buffer),
                         readMsgOverlapped.from,
-                        readMsgOverlapped.to);
+                        readMsgOverlapped.to));
             }
             else if (overlapped.GetType () == WriteMsgOverlapped::TYPE) {
                 WriteMsgOverlapped &writeMsgOverlapped = (WriteMsgOverlapped &)overlapped;
-                util::Producer::UDPSocketEvents>::Produce (
+                util::Producer<UDPSocketEvents>::Produce (
                     std::bind (
                         &UDPSocketEvents::OnUDPSocketWriteMsg,
                         std::placeholders::_1,
                         SharedPtr (this),
                         std::move (writeMsgOverlapped.buffer),
                         writeMsgOverlapped.from,
-                        writeMsgOverlapped.to);
+                        writeMsgOverlapped.to));
             }
             else {
                 Socket::HandleOverlapped (overlapped);

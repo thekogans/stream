@@ -84,7 +84,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (std::unique_ptr<dOverlapped> (new ReadOverlapped (bufferLength)), in);
+                EnqOverlapped (std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)), in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -125,6 +125,22 @@ namespace thekogans {
             }
         }
 
+    #if !defined (TOOLCHAIN_OS_Windows)
+        void Pipe::SetBlocking (bool blocking) {
+            int flags = fcntl (handle, F_GETFL, 0);
+            if (blocking) {
+                flags &= ~O_NONBLOCK;
+            }
+            else {
+                flags |= O_NONBLOCK;
+            }
+            if (fcntl (handle, F_SETFL, flags) < 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
+
         std::size_t Pipe::GetDataAvailableForReading () const {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD totalBytesAvailable = 0;
@@ -142,22 +158,6 @@ namespace thekogans {
             return value;
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
-
-    #if !defined (TOOLCHAIN_OS_Windows)
-        void Pipe::SetBlocking (bool blocking) {
-            int flags = fcntl (handle, F_GETFL, 0);
-            if (blocking) {
-                flags &= ~O_NONBLOCK;
-            }
-            else {
-                flags |= O_NONBLOCK;
-            }
-            if (fcntl (handle, F_SETFL, flags) < 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         std::size_t Pipe::ReadHelper (
                 void *buffer,

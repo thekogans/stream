@@ -105,19 +105,23 @@ namespace thekogans {
 
         Stream::~Stream () {
             THEKOGANS_UTIL_TRY {
-                if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    if (!::CloseHandle (handle)) {
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    if (close (handle) < 0) {
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                    handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                }
+                Close ();
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
+        }
+
+        void Stream::Close () {
+            if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (!::CloseHandle (handle)) {
+            #else // defined (TOOLCHAIN_OS_Windows)
+                if (close (handle) < 0) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+                handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+            }
         }
 
         void Stream::Write (
@@ -178,9 +182,9 @@ namespace thekogans {
         }
 
         std::unique_ptr<Stream::Overlapped> Stream::DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list) {
+            std::unique_ptr<Overlapped> overlapped;
             THEKOGANS_UTIL_TRY {
                 util::LockGuard<util::SpinLock> guard (spinLock);
-                std::unique_ptr<Overlapped> overlapped;
                 if (!list.empty ()) {
                     overlapped = std::move (list.front ());
                     list.pop_front ();
@@ -188,45 +192,79 @@ namespace thekogans {
                         AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
                     }
                 }
-                return overlapped;
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
                 THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
                 HandleError (exception);
             }
+            return overlapped;
         }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
-        std::unique_ptr<Stream::Overlapped> Stream::PumpAsyncIo (std::list<std::unique_ptr<Overlapped>> &list) {
-            for (std::unique_ptr<Overlapped> overlapped = DeqOverlapped (list);
-                    overlapped.get () != 0; overlapped = DeqOverlapped (list)) {
+    #if defined (TOOLCHAIN_OS_Windows)
+        namespace {
+            #define STATUS_CANCELED 0xC0000120
+            #define STATUS_LOCAL_DISCONNECT 0xC000013B
+            #define STATUS_REMOTE_DISCONNECT 0xC000013C
+            #define STATUS_PIPE_BROKEN 0xC000014b
+            #define STATUS_CONNECTION_RESET 0xC000020D
+
+            std::string ErrorCodeTostring (THEKOGANS_UTIL_ERROR_CODE errorCode) {
+                return
+                    errorCode == STATUS_CANCELED ? "STATUS_CANCELED" :
+                    errorCode == STATUS_LOCAL_DISCONNECT ? "STATUS_LOCAL_DISCONNECT" :
+                    errorCode == STATUS_REMOTE_DISCONNECT ? "STATUS_REMOTE_DISCONNECT" :
+                    errorCode == STATUS_PIPE_BROKEN ? "STATUS_PIPE_BROKEN" :
+                    errorCode == STATUS_CONNECTION_RESET ? "STATUS_CONNECTION_RESET" :
+                    util::FormatString ("Unknown code: %x", errorCode);
+            }
+        }
+    #endif // defined (TOOLCHAIN_OS_Windows)
+
+        bool Stream::ExecOverlapped (
+                std::unique_ptr<Overlapped> overlapped
+            #if !defined (TOOLCHAIN_OS_Windows)
+                , std::list<std::unique_ptr<Overlapped>> &list
+            #endif // !defined (TOOLCHAIN_OS_Windows)
+                ) {
+            if (overlapped.get () != 0) {
                 while (1) {
                     ssize_t result = overlapped->Prolog (SharedPtr (this));
                     if (result > 0) {
                         if (overlapped->Epilog (SharedPtr (this))) {
-                            return overlapped;
+                            HandleOverlapped (*overlapped);
+                            return true;
                         }
                     }
                     else if (result == 0) {
                         HandleDisconnect ();
-                        return std::unique_ptr<Stream::Overlapped> ();
+                        return false;
                     }
                     else {
                         THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped->GetError ();
+                    #if defined (TOOLCHAIN_OS_Windows)
+                        // Convert known errors to disconnect events.
+                        if (errorCode == STATUS_LOCAL_DISCONNECT ||
+                                errorCode == STATUS_REMOTE_DISCONNECT ||
+                                errorCode == STATUS_PIPE_BROKEN ||
+                                errorCode == STATUS_CONNECTION_RESET) {
+                            HandleDisconnect ();
+                        }
+                        else if (errorCode != STATUS_CANCELED) {
+                    #else // defined (TOOLCHAIN_OS_Windows)
                         if (errorCode == EAGAIN || errorCode == EWOULDBLOCK) {
                             EnqOverlapped (std::move (overlapped), list, true);
                         }
                         else {
-                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION exception (errorCode);
-                            THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                            HandleError (exception);
+                    #endif // defined (TOOLCHAIN_OS_Windows)
+                            HandleError (THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
                         }
-                        return std::unique_ptr<Stream::Overlapped> ();
+                        return false;
                     }
                 }
             }
-            return std::unique_ptr<Stream::Overlapped> ();
+            return false;
         }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         void Stream::HandleOverlapped (Overlapped &overlapped) throw () {
             if (overlapped.GetType () == ReadOverlapped::TYPE) {

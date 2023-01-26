@@ -438,6 +438,9 @@ namespace thekogans {
             /// Used by sync and async shutdown.
             /// \param[in] shutdownType One of ShutdownRead, ShutdownWrite or ShutdownBoth.
             void ShutdownHelper (ShutdownType shutdownType);
+
+            friend struct AcceptOverlapped;
+            friend struct ShutdownOverlapped;
         };
 
     } // namespace stream
