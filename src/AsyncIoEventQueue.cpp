@@ -173,7 +173,7 @@ namespace thekogans {
                                 Stream::SharedPtr stream = StreamRegistry::Instance ().Get (
                                     (StreamRegistry::Token::Type)iocpEvents[i].lpCompletionKey);
                                 if (stream.Get () != 0) {
-                                    stream->ExecOverlapped (std::move (overlapped));
+                                    stream->ExecOverlapped (*overlapped);
                                 }
                             }
                         }
@@ -225,25 +225,33 @@ namespace thekogans {
                                     if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
                                         stream->HandleDisconnect ();
                                     }
-                                    if (epollEvents[i].events & EPOLLIN) {
-                                        for (std::unique_ptr<Stream::Overlapped>
-                                                overlapped = stream->DeqOverlapped (stream->in);
-                                                overlapped.get () != 0;
-                                                overlapped = stream->DeqOverlapped (stream->in)) {
-                                            if (!stream->ExecOverlapped (std::move (overlapped), stream->in)) {
-                                                break;
+                                    THEKOGANS_UTIL_TRY {
+                                        if (epollEvents[i].events & EPOLLIN) {
+                                            for (std::unique_ptr<Stream::Overlapped>
+                                                    overlapped = stream->DeqOverlapped (stream->in);
+                                                    overlapped.get () != 0;
+                                                    overlapped = stream->DeqOverlapped (stream->in)) {
+                                                if (!stream->ExecOverlapped (*overlapped)) {
+                                                    stream->EnqOverlapped (std::move (overlapped), stream->in, true);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        if (epollEvents[i].events & EPOLLOUT) {
+                                            for (std::unique_ptr<Stream::Overlapped>
+                                                    overlapped = stream->DeqOverlapped (stream->out);
+                                                    overlapped.get () != 0;
+                                                    overlapped = stream->DeqOverlapped (stream->out)) {
+                                                if (!stream->ExecOverlapped (*overlapped)) {
+                                                    stream->EnqOverlapped (std::move (overlapped), stream->out, true);
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
-                                    if (epollEvents[i].events & EPOLLOUT) {
-                                        for (std::unique_ptr<Stream::Overlapped>
-                                                overlapped = stream->DeqOverlapped (stream->out);
-                                                overlapped.get () != 0;
-                                                overlapped = stream->DeqOverlapped (stream->out)) {
-                                            if (!stream->ExecOverlapped (std::move (overlapped), stream->out)) {
-                                                break;
-                                            }
-                                        }
+                                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                                        stream->HandleError (exception);
                                     }
                                 }
                             }
@@ -287,23 +295,37 @@ namespace thekogans {
                                     }
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_READ) {
-                                    for (std::unique_ptr<Stream::Overlapped>
-                                            overlapped = stream->DeqOverlapped (stream->in);
-                                            overlapped.get () != 0;
-                                            overlapped = stream->DeqOverlapped (stream->in)) {
-                                        if (!stream->ExecOverlapped (std::move (overlapped), stream->in)) {
-                                            break;
+                                    THEKOGANS_UTIL_TRY {
+                                        for (std::unique_ptr<Stream::Overlapped>
+                                                overlapped = stream->DeqOverlapped (stream->in);
+                                                overlapped.get () != 0;
+                                                overlapped = stream->DeqOverlapped (stream->in)) {
+                                            if (!stream->ExecOverlapped (*overlapped)) {
+                                                stream->EnqOverlapped (std::move (overlapped), stream->in, true);
+                                                break;
+                                            }
                                         }
+                                    }
+                                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                                        stream->HandleError (exception);
                                     }
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_WRITE) {
-                                    for (std::unique_ptr<Stream::Overlapped>
-                                            overlapped = stream->DeqOverlapped (stream->out);
-                                            overlapped.get () != 0;
-                                            overlapped = stream->DeqOverlapped (stream->out)) {
-                                        if (!stream->ExecOverlapped (std::move (overlapped), stream->out)) {
-                                            break;
+                                    THEKOGANS_UTIL_TRY {
+                                        for (std::unique_ptr<Stream::Overlapped>
+                                                overlapped = stream->DeqOverlapped (stream->out);
+                                                overlapped.get () != 0;
+                                                overlapped = stream->DeqOverlapped (stream->out)) {
+                                            if (!stream->ExecOverlapped (*overlapped)) {
+                                                stream->EnqOverlapped (std::move (overlapped), stream->out, true);
+                                                break;
+                                            }
                                         }
+                                    }
+                                    THEKOGANS_UTIL_CATCH (util::Exception) {
+                                        THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
+                                        stream->HandleError (exception);
                                     }
                                 }
                             }

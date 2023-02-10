@@ -444,12 +444,7 @@ namespace thekogans {
             /// NOTE: If all went well, \see{HandleOverlapped} was called.
             /// If an error occured, \see{HandleError} was called. If
             /// the stream disconnected, \see{HandleDisconnect} was called.
-            bool ExecOverlapped (
-                std::unique_ptr<Overlapped> overlapped
-            #if !defined (TOOLCHAIN_OS_Windows)
-                , std::list<std::unique_ptr<Overlapped>> &list
-            #endif // !defined (TOOLCHAIN_OS_Windows)
-                );
+            bool ExecOverlapped (Overlapped &overlapped);
 
             /// \brief
             /// Return the number of bytes available to read from the OS buffers.

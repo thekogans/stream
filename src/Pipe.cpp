@@ -84,7 +84,9 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)), in);
+                EnqOverlapped (
+                    std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
+                    in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             THEKOGANS_UTIL_CATCH (util::Exception) {
@@ -111,7 +113,9 @@ namespace thekogans {
                     }
                     overlapped.release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
-                    EnqOverlapped (std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))), out);
+                    EnqOverlapped (
+                        std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
+                        out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 THEKOGANS_UTIL_CATCH (util::Exception) {

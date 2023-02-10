@@ -289,8 +289,7 @@ namespace thekogans {
                     overlapped.release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
                     EnqOverlapped (
-                        std::unique_ptr<Overlapped> (
-                            new WriteToOverlapped (buffer, bufferLength, address)),
+                        std::unique_ptr<Overlapped> (new WriteToOverlapped (buffer, bufferLength, address)),
                         out);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }

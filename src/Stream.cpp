@@ -157,45 +157,63 @@ namespace thekogans {
                     SharedPtr (this)));
         }
 
+        void Stream::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.GetType () == ReadOverlapped::TYPE) {
+                ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
+                util::Producer<StreamEvents>::Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamRead,
+                        std::placeholders::_1,
+                        SharedPtr (this),
+                        std::move (readOverlapped.buffer)));
+            }
+            else if (overlapped.GetType () == WriteOverlapped::TYPE) {
+                WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
+                util::Producer<StreamEvents>::Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamWrite,
+                        std::placeholders::_1,
+                        SharedPtr (this),
+                        std::move (writeOverlapped.buffer)));
+            }
+        }
+
     #if !defined (TOOLCHAIN_OS_Windows)
         void Stream::EnqOverlapped (
                 std::unique_ptr<Overlapped> overlapped,
                 std::list<std::unique_ptr<Overlapped>> &list,
                 bool front) {
-            THEKOGANS_UTIL_TRY {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                bool setMask = list.empty ();
-                if (front) {
-                    list.push_front (std::move (overlapped));
+            util::LockGuard<util::SpinLock> guard (spinLock);
+            bool setMask = list.empty ();
+            if (front) {
+                list.push_front (std::move (overlapped));
+            }
+            else {
+                // If this is the very first overlapped on this list
+                // try executing it to optimize away the SetStreamEventMask
+                // below.
+                if (setMask && ExecOverlapped (*overlapped)) {
+                    setMask = false;
                 }
                 else {
                     list.push_back (std::move (overlapped));
                 }
-                if (setMask) {
-                    AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
-                }
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
+            if (setMask) {
+                AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
             }
         }
 
-        std::unique_ptr<Stream::Overlapped> Stream::DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list) {
+        std::unique_ptr<Stream::Overlapped> Stream::DeqOverlapped (
+                std::list<std::unique_ptr<Overlapped>> &list) {
             std::unique_ptr<Overlapped> overlapped;
-            THEKOGANS_UTIL_TRY {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                if (!list.empty ()) {
-                    overlapped = std::move (list.front ());
-                    list.pop_front ();
-                    if (list.empty ()) {
-                        AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
-                    }
+            util::LockGuard<util::SpinLock> guard (spinLock);
+            if (!list.empty ()) {
+                overlapped = std::move (list.front ());
+                list.pop_front ();
+                if (list.empty ()) {
+                    AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
                 }
-            }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
             }
             return overlapped;
         }
@@ -221,69 +239,40 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        bool Stream::ExecOverlapped (
-                std::unique_ptr<Overlapped> overlapped
-            #if !defined (TOOLCHAIN_OS_Windows)
-                , std::list<std::unique_ptr<Overlapped>> &list
-            #endif // !defined (TOOLCHAIN_OS_Windows)
-                ) {
-            if (overlapped.get () != 0) {
-                while (1) {
-                    ssize_t result = overlapped->Prolog (SharedPtr (this));
-                    if (result > 0) {
-                        if (overlapped->Epilog (SharedPtr (this))) {
-                            HandleOverlapped (*overlapped);
-                            return true;
-                        }
+        bool Stream::ExecOverlapped (Overlapped &overlapped) {
+            while (1) {
+                ssize_t result = overlapped.Prolog (SharedPtr (this));
+                if (result > 0) {
+                    if (overlapped.Epilog (SharedPtr (this))) {
+                        HandleOverlapped (overlapped);
+                        return true;
                     }
-                    else if (result == 0) {
+                }
+                else if (result == 0) {
+                    HandleDisconnect ();
+                    return true;
+                }
+                else {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped.GetError ();
+                #if defined (TOOLCHAIN_OS_Windows)
+                    // Convert known errors to disconnect events.
+                    if (errorCode == STATUS_LOCAL_DISCONNECT ||
+                            errorCode == STATUS_REMOTE_DISCONNECT ||
+                            errorCode == STATUS_PIPE_BROKEN ||
+                            errorCode == STATUS_CONNECTION_RESET) {
                         HandleDisconnect ();
+                    }
+                    else if (errorCode != STATUS_CANCELED) {
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    if (errorCode == EAGAIN || errorCode == EWOULDBLOCK) {
                         return false;
                     }
                     else {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped->GetError ();
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        // Convert known errors to disconnect events.
-                        if (errorCode == STATUS_LOCAL_DISCONNECT ||
-                                errorCode == STATUS_REMOTE_DISCONNECT ||
-                                errorCode == STATUS_PIPE_BROKEN ||
-                                errorCode == STATUS_CONNECTION_RESET) {
-                            HandleDisconnect ();
-                        }
-                        else if (errorCode != STATUS_CANCELED) {
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        if (errorCode == EAGAIN || errorCode == EWOULDBLOCK) {
-                            EnqOverlapped (std::move (overlapped), list, true);
-                        }
-                        else {
-                    #endif // defined (TOOLCHAIN_OS_Windows)
-                            HandleError (THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                        }
-                        return false;
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                        HandleError (THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
                     }
+                    return true;
                 }
-            }
-            return false;
-        }
-
-        void Stream::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetType () == ReadOverlapped::TYPE) {
-                ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamRead,
-                        std::placeholders::_1,
-                        SharedPtr (this),
-                        std::move (readOverlapped.buffer)));
-            }
-            else if (overlapped.GetType () == WriteOverlapped::TYPE) {
-                WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamWrite,
-                        std::placeholders::_1,
-                        SharedPtr (this),
-                        std::move (writeOverlapped.buffer)));
             }
         }
 
