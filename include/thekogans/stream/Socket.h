@@ -82,6 +82,10 @@ namespace thekogans {
             virtual void Close () override;
 
             /// \brief
+            /// Return number of bytes available for reading.
+            /// \return Number of bytes available for reading.
+            virtual std::size_t GetDataAvailableForReading () const override;
+            /// \brief
             /// Read bytes from the stream.
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
             /// \brief
@@ -210,10 +214,6 @@ namespace thekogans {
             void SetBlocking (bool blocking);
 
             // Stream
-            /// \brief
-            /// Return number of bytes available for reading.
-            /// \return Number of bytes available for reading.
-            virtual std::size_t GetDataAvailableForReading () const override;
             /// \brief
             /// ReadHelper needs to be implemented by every concrete class to provide
             /// blocking reads. It's called by the framework to perform data extraction

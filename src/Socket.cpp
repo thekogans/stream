@@ -171,6 +171,21 @@ namespace thekogans {
             }
         }
 
+        std::size_t Socket::GetDataAvailableForReading () const {
+            u_long value = 0;
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+        #else // defined (TOOLCHAIN_OS_Windows)
+            if (ioctl ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+            }
+            return (std::size_t)value;
+        }
+
         void Socket::Read (std::size_t bufferLength) {
             THEKOGANS_UTIL_TRY {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -455,21 +470,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
-        }
-
-        std::size_t Socket::GetDataAvailableForReading () const {
-            u_long value = 0;
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
-                    THEKOGANS_STREAM_SOCKET_ERROR) {
-        #else // defined (TOOLCHAIN_OS_Windows)
-            if (ioctl ((THEKOGANS_STREAM_SOCKET)handle, FIONREAD, &value) ==
-                    THEKOGANS_STREAM_SOCKET_ERROR) {
-        #endif // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return (std::size_t)value;
         }
 
         std::size_t Socket::ReadHelper (
