@@ -190,6 +190,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
+                util::LockGuard<util::SpinLock> guard (spinLock);
                 EnqOverlapped (
                     std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
                     in);
@@ -221,6 +222,7 @@ namespace thekogans {
                     }
                     overlapped.release ();
                 #else // defined (TOOLCHAIN_OS_Windows)
+                    util::LockGuard<util::SpinLock> guard (spinLock);
                     EnqOverlapped (
                         std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
                         out);

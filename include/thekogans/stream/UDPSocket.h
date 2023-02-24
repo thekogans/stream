@@ -308,30 +308,6 @@ namespace thekogans {
             /// an overlapped operation has completed successfully.
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
-
-            std::size_t ReadFromHelper (
-                void *buffer,
-                std::size_t bufferLength,
-                Address &address);
-            std::size_t WriteToHelper (
-                const void *buffer,
-                std::size_t bufferLength,
-                const Address &address);
-            std::size_t ReadMsgHelper (
-                void *buffer,
-                std::size_t bufferLength,
-                Address &from,
-                Address &to);
-            std::size_t WriteMsgHelper (
-                const void *buffer,
-                std::size_t bufferLength,
-                const Address &from,
-                const Address &to);
-
-            friend struct ReadFromOverlapped;
-            friend struct WriteToOverlapped;
-            friend struct ReadMsgOverlapped;
-            friend struct WriteMsgOverlapped;
         };
 
     } // namespace stream

@@ -42,9 +42,7 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/StringUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
-#if defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/stream/Socket.h"
-#endif // defined (TOOLCHAIN_OS_Linux)
 #include "thekogans/stream/AsyncIoEventQueue.h"
 
 namespace thekogans {
@@ -221,11 +219,12 @@ namespace thekogans {
                                             THEKOGANS_UTIL_STRING_EXCEPTION ("%s", "Unknown stream error."));
                                     }
                                 }
+                                else if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
+                                    stream->HandleDisconnect ();
+                                }
                                 else {
-                                    if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {
-                                        stream->HandleDisconnect ();
-                                    }
                                     THEKOGANS_UTIL_TRY {
+                                        util::LockGuard<util::SpinLock> guard (stream->spinLock);
                                         if (epollEvents[i].events & EPOLLIN) {
                                             for (std::unique_ptr<Stream::Overlapped>
                                                     overlapped = stream->DeqOverlapped (stream->in);
@@ -280,22 +279,26 @@ namespace thekogans {
                                             (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data));
                                 }
                                 else if (kqueueEvents[i].flags & EV_EOF) {
-                                    // *** HACK ***
                                     // If no one is listening on the other side, kqueue returns
-                                    // EV_EOF instead of ECONNREFUSED. Simulate an error that would
-                                    // be returned if we did a blocking connect.
-                                    if (!stream->in.empty () &&
-                                            stream->in.front ()->GetType () == TCPSocket::ConnectOverlapped::TYPE) {
-                                        stream->HandleError (
-                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (ECONNREFUSED));
+                                    // EV_EOF instead of an appropriate error code. Simulate an
+                                    // error that would be returned if we did a blocking connect.
+                                    Socket::SharedPtr socket = util::dynamic_refcounted_sharedptr_cast<Socket> (stream);
+                                    if (socket.Get () != 0) {
+                                        THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
+                                        if (errorCode == ETIMEDOUT ||
+                                                errorCode == ECONNREFUSED ||
+                                                errorCode == EHOSTUNREACH) {
+                                            stream->HandleError (
+                                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                                        }
                                     }
-                                    // *** HACK ***
                                     else {
                                         stream->HandleDisconnect ();
                                     }
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_READ) {
                                     THEKOGANS_UTIL_TRY {
+                                        util::LockGuard<util::SpinLock> guard (stream->spinLock);
                                         for (std::unique_ptr<Stream::Overlapped>
                                                 overlapped = stream->DeqOverlapped (stream->in);
                                                 overlapped.get () != 0;
@@ -313,6 +316,7 @@ namespace thekogans {
                                 }
                                 else if (kqueueEvents[i].filter == EVFILT_WRITE) {
                                     THEKOGANS_UTIL_TRY {
+                                        util::LockGuard<util::SpinLock> guard (stream->spinLock);
                                         for (std::unique_ptr<Stream::Overlapped>
                                                 overlapped = stream->DeqOverlapped (stream->out);
                                                 overlapped.get () != 0;

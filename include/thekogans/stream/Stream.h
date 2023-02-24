@@ -235,7 +235,7 @@ namespace thekogans {
             /// makes instantiating Overlapped used by \see{Stream::Read} easier.
             struct ReadOverlapped : public Overlapped {
                 /// \brief
-                /// ReadOverlapped has an \see{Overlapped}.
+                /// ReadOverlapped is an \see{Overlapped}.
                 THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ReadOverlapped)
 
                 /// \brief
@@ -280,11 +280,11 @@ namespace thekogans {
             /// makes instantiating Overlapped used by \see{Stream::Write} easier.
             struct WriteOverlapped : public Overlapped {
                 /// \brief
-                /// WriteOverlapped has an \see{Overlapped}.
+                /// WriteOverlapped is an \see{Overlapped}.
                 THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (WriteOverlapped)
 
                 /// \brief
-                /// Buffer used by Stream::/Write.
+                /// Buffer used by Stream::Write.
                 util::Buffer buffer;
             #if defined (TOOLCHAIN_OS_Windows)
                 /// \brief
@@ -326,7 +326,7 @@ namespace thekogans {
 
         protected:
             /// \brief
-            /// Stream os handle.
+            /// OS handle.
             THEKOGANS_UTIL_HANDLE handle;
             /// \brief
             /// This token is the key between the c++ and the c async io worlds (os).
@@ -376,6 +376,10 @@ namespace thekogans {
             /// Close the OS handle associated with the stream.
             virtual void Close ();
 
+            /// \brief
+            /// Return the number of bytes available to read from the OS buffers.
+            /// \return The number of bytes available to read from the OS buffers.
+            virtual std::size_t GetDataAvailableForReading () const = 0;
             enum {
                 /// \brief
                 /// Default buffer length for async Read[From | Msg].
@@ -446,10 +450,6 @@ namespace thekogans {
             /// the stream disconnected, \see{HandleDisconnect} was called.
             bool ExecOverlapped (Overlapped &overlapped);
 
-            /// \brief
-            /// Return the number of bytes available to read from the OS buffers.
-            /// \return The number of bytes available to read from the OS buffers.
-            virtual std::size_t GetDataAvailableForReading () const = 0;
             /// \brief
             /// ReadHelper needs to be implemented by every concrete class to provide
             /// blocking reads. It's called by the framework to perform data extraction

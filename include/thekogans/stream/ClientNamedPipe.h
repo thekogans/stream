@@ -43,13 +43,64 @@ namespace thekogans {
 
         struct _LIB_THEKOGANS_STREAM_DECL ClientNamedPipe : public NamedPipe {
             /// \brief
-            /// NamedPipe is a \see{Stream}.
+            /// ClientNamedPipe is a \see{Stream}.
             THEKOGANS_STREAM_DECLARE_STREAM (ClientNamedPipe)
 
             /// \brief
             /// ctor.
             /// Create a client side named pipe.
             /// \param[in] name Name of pipe to connect to..
+            /// \param[in] desiredAccess The requested access to the file or device,
+            /// which can be summarized as read, write, both or neither zero).
+            /// +------------------+----------------------------+
+            /// | Constant         | Generic meaning            |
+            /// +------------------+----------------------------+
+            /// | GENERIC_ALL      | All possible access rights |
+            /// +------------------+----------------------------+
+            /// | GENERIC_EXECUTE  | Execute access             |
+            /// +------------------+----------------------------+
+            /// | GENERIC_READ     | Read access                |
+            /// +------------------+----------------------------+
+            /// | GENERIC_WRITE    | Write access               |
+            /// +------------------+----------------------------+
+            /// \param[in] shareMode The requested sharing mode of the file or device,
+            /// which can be read, write, both, delete, all of these, or none.
+            /// +--------------------+---------------------------------------------------------------------------+
+            /// | Value              | Meaning                                                                   |
+            /// +--------------------+---------------------------------------------------------------------------+
+            /// | 0                  | Prevents subsequent open operations on a file or device if they request   |
+            /// | 0x00000000         | delete, read, or write access.                                            |
+            /// +--------------------+---------------------------------------------------------------------------+
+            /// | FILE_SHARE_DELETE  | Enables subsequent open operations on a file or device to request delete  |
+            /// | 0x00000004         | access. Otherwise, no process can open the file or device if it requests  |
+            /// |                    | delete access. If this flag is not specified, but the file or device has  |
+            /// |                    | been opened for delete access, the function fails. Note Delete access     |
+            /// |                    | allows both delete and rename operations.                                 |
+            /// +--------------------+---------------------------------------------------------------------------+
+            /// | FILE_SHARE_READ    | Enables subsequent open operations on a file or device to request read    |
+            /// | 0x00000001         | access. Otherwise, no process can open the file or device if it requests  |
+            /// |                    | read access. If this flag is not specified, but the file or device has    |
+            /// |                    | been opened for read access, the function fails.                          |
+            /// +--------------------+---------------------------------------------------------------------------+
+            /// | FILE_SHARE_WRITE   | Enables subsequent open operations on a file or device to request write   |
+            /// | 0x00000002         | access. Otherwise, no process can open the file or device if it requests  |
+            /// |                    | write access. If this flag is not specified, but the file or device has   |
+            /// |                    | been opened for write access or has a file mapping with write access,     |
+            /// |                    | the function fails.                                                       |
+            /// +--------------------+---------------------------------------------------------------------------+
+            /// \param[in] securityAttributes A pointer to a SECURITY_ATTRIBUTES structure that contains two
+            /// separate but related data members: an optional security descriptor, and a Boolean value that
+            /// determines whether the returned handle can be inherited by child processes.
+            /// This parameter can be NULL.
+            /// If this parameter is NULL, the handle returned by CreateFile cannot be inherited by any child
+            /// processes the application may create and the file or device associated with the returned handle
+            /// gets a default security descriptor.
+            /// The lpSecurityDescriptor member of the structure specifies a SECURITY_DESCRIPTOR for a file or
+            /// device. If this member is NULL, the file or device associated with the returned handle is assigned
+            /// a default security descriptor.
+            /// CreateFile ignores the lpSecurityDescriptor member when opening an existing file or device, but
+            /// continues to use the bInheritHandle member.
+            /// The bInheritHandle member of the structure specifies whether the returned handle can be inherited.
             ClientNamedPipe (
                 LPCWSTR name,
                 DWORD desiredAccess = GENERIC_READ | GENERIC_WRITE,

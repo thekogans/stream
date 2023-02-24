@@ -183,21 +183,12 @@ namespace thekogans {
                 std::unique_ptr<Overlapped> overlapped,
                 std::list<std::unique_ptr<Overlapped>> &list,
                 bool front) {
-            util::LockGuard<util::SpinLock> guard (spinLock);
             bool setMask = list.empty ();
             if (front) {
                 list.push_front (std::move (overlapped));
             }
             else {
-                // If this is the very first overlapped on this list
-                // try executing it to optimize away the SetStreamEventMask
-                // below.
-                if (setMask && ExecOverlapped (*overlapped)) {
-                    setMask = false;
-                }
-                else {
-                    list.push_back (std::move (overlapped));
-                }
+                list.push_back (std::move (overlapped));
             }
             if (setMask) {
                 AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
@@ -207,7 +198,6 @@ namespace thekogans {
         std::unique_ptr<Stream::Overlapped> Stream::DeqOverlapped (
                 std::list<std::unique_ptr<Overlapped>> &list) {
             std::unique_ptr<Overlapped> overlapped;
-            util::LockGuard<util::SpinLock> guard (spinLock);
             if (!list.empty ()) {
                 overlapped = std::move (list.front ());
                 list.pop_front ();
@@ -261,8 +251,12 @@ namespace thekogans {
                             errorCode == STATUS_PIPE_BROKEN ||
                             errorCode == STATUS_CONNECTION_RESET) {
                         HandleDisconnect ();
+                        return true;
                     }
-                    else if (errorCode != STATUS_CANCELED) {
+                    else if (errorCode == STATUS_CANCELED) {
+                        return true;
+                    }
+                    else {
                 #else // defined (TOOLCHAIN_OS_Windows)
                     if (errorCode == EAGAIN || errorCode == EWOULDBLOCK) {
                         return false;
@@ -270,8 +264,8 @@ namespace thekogans {
                     else {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                         HandleError (THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                        return true;
                     }
-                    return true;
                 }
             }
         }

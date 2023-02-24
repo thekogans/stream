@@ -32,6 +32,20 @@ namespace thekogans {
         /// Forward declaration of \see{TCPSocket}.
         struct TCPSocket;
 
+        /// \brief
+        /// Shutdown type.
+        enum ShutdownType {
+            /// \brief
+            /// Shutdown the read end.
+            ShutdownRead,
+            /// \brief
+            /// Shutdown the write end.
+            ShutdownWrite,
+            /// \brief
+            /// Shutdown both the read and the write ends.
+            ShutdownBoth
+        };
+
         struct _LIB_THEKOGANS_STREAM_DECL TCPSocketEvents : public virtual util::RefCounted {
             /// \brief
             /// Declare \see{util::RefCounted} pointers.
@@ -63,7 +77,7 @@ namespace thekogans {
             /// \param[in] shutdownType One of \see{TCPSocket::ShutdownType}.
             virtual void OnTCPSocketShutdown (
                 util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
-                TCPSocket::ShutdownType /*shutdownType*/) throw () {}
+                ShutdownType /*shutdownType*/) throw () {}
         };
 
         /// \struct TCPSocket TCPSocket.h thekogans/stream/TCPSocket.h
@@ -148,10 +162,10 @@ namespace thekogans {
         ///                 util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
         ///                     new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
         ///                         jobQueue)));
-        ///             util::Subscriber<stream::ClientTCPSocketEvents>::Subscribe (
+        ///             util::Subscriber<stream::TCPSocketEvents>::Subscribe (
         ///                 *clientSocket,
-        ///                 util::Producer<stream::ClientTCPSocketEvents>::EventDeliveryPolicy::SharedPtr (
-        ///                     new util::Producer<stream::ClientTCPSocketEvents>::RunLoopEventDeliveryPolicy (
+        ///                 util::Producer<stream::TCPSocketEvents>::EventDeliveryPolicy::SharedPtr (
+        ///                     new util::Producer<stream::TCPSocketEvents>::RunLoopEventDeliveryPolicy (
         ///                         jobQueue)));
         ///             // The socket is now async. All appropriate notification channels are open.
         ///             // Fire up a connect attempt.
@@ -402,19 +416,6 @@ namespace thekogans {
             void SetLinger (const Linger &linger);
 
             /// \brief
-            /// Shutdown type.
-            enum ShutdownType {
-                /// \brief
-                /// Shutdown the read end.
-                ShutdownRead,
-                /// \brief
-                /// Shutdown the write end.
-                ShutdownWrite,
-                /// \brief
-                /// Shutdown both the read and the write ends.
-                ShutdownBoth
-            };
-            /// \brief
             /// Async shutdown either the read or the write end of the
             /// socket without closing it.
             /// \param[in] shutdownType One of ShutdownRead,
@@ -428,19 +429,6 @@ namespace thekogans {
             /// stream that an overlapped operation has completed successfully.
             /// \param[in] overlapped Overlapped that completed successfully.
             virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
-
-            /// \brief
-            /// Accept a pending connection.
-            /// NOTE: This is a blocking function.
-            /// \return Handle to new connection.
-            THEKOGANS_STREAM_SOCKET AcceptHelper ();
-            /// \brief
-            /// Used by sync and async shutdown.
-            /// \param[in] shutdownType One of ShutdownRead, ShutdownWrite or ShutdownBoth.
-            void ShutdownHelper (ShutdownType shutdownType);
-
-            friend struct AcceptOverlapped;
-            friend struct ShutdownOverlapped;
         };
 
     } // namespace stream

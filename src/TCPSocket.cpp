@@ -205,6 +205,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
+                util::LockGuard<util::SpinLock> guard (Stream::spinLock);
                 EnqOverlapped (
                     std::unique_ptr<Overlapped> (new ConnectOverlapped (address)),
                     out);
@@ -212,6 +213,7 @@ namespace thekogans {
                         THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                     if (errorCode != EINPROGRESS) {
+                        DeqOverlapped (out);
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
@@ -315,31 +317,41 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                THEKOGANS_UTIL_TRY {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    if (GetError () != ERROR_SUCCESS) {
-                        return -1;
-                    }
-                    if (setsockopt (
-                            (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
-                            SOL_SOCKET,
-                            SO_UPDATE_ACCEPT_CONTEXT,
-                            (char *)&stream->handle,
-                            sizeof (THEKOGANS_STREAM_SOCKET)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    }
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    connection.Reset (
-                        new TCPSocket ((THEKOGANS_UTIL_HANDLE)
-                            util::dynamic_refcounted_sharedptr_cast<TCPSocket> (stream)->AcceptHelper ()));
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    return 1;
-                }
-                THEKOGANS_UTIL_CATCH (util::Exception) {
-                    SetError (exception.GetErrorCode ());
+            #if defined (TOOLCHAIN_OS_Windows)
+                if (GetError () != ERROR_SUCCESS) {
                     return -1;
                 }
+                char acceptBuffer[256];
+                DWORD bytesReceived = 0;
+                if (!WindowsFunctions::Instance ().AcceptEx (
+                        (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
+                        (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
+                        acceptBuffer,
+                        0,
+                        128,
+                        128,
+                        &bytesReceived,
+                        0) ||
+                    setsockopt (
+                        (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
+                        SOL_SOCKET,
+                        SO_UPDATE_ACCEPT_CONTEXT,
+                        (char *)&stream->handle,
+                        sizeof (THEKOGANS_STREAM_SOCKET)) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                    closesocket (socket);
+                    SetError (errorCode);
+                    return -1;
+                }
+            #else // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_STREAM_SOCKET socket = accept ((THEKOGANS_STREAM_SOCKET)stream->GetHandle (), 0, 0);
+                if (socket == THEKOGANS_STREAM_INVALID_SOCKET) {
+                    SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                    return -1;
+                }
+                connection.Reset (new TCPSocket ((THEKOGANS_UTIL_HANDLE)socket));
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                return 1;
             }
         };
 
@@ -366,6 +378,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
+                util::LockGuard<util::SpinLock> guard (Stream::spinLock);
                 EnqOverlapped (
                     std::unique_ptr<Overlapped> (new AcceptOverlapped),
                     in);
@@ -547,13 +560,13 @@ namespace thekogans {
 
             /// \brief
             /// Type of shutdown performed on (Secure)TCPSocket.
-            TCPSocket::ShutdownType shutdownType;
+            ShutdownType shutdownType;
 
             /// \brief
             /// ctor.
             /// \param[in] tcpSocket_ TCPSocket to shutdown.
             /// \param[in] shutdownType_ Type of shutdown performed on (Secure)TCPSocket.
-            ShutdownOverlapped (TCPSocket::ShutdownType shutdownType_) :
+            ShutdownOverlapped (ShutdownType shutdownType_) :
                 shutdownType (shutdownType_) {}
 
             /// \brief
@@ -561,14 +574,38 @@ namespace thekogans {
             /// the Overlapped to perform post op housekeeping prior to
             /// calling GetError.
             virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                THEKOGANS_UTIL_TRY {
-                    util::dynamic_refcounted_sharedptr_cast<TCPSocket> (stream)->ShutdownHelper (shutdownType);
-                    return 1;
+                int how;
+                switch (shutdownType) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    case ShutdownRead:
+                        how = SD_RECEIVE;
+                        break;
+                    case ShutdownWrite:
+                        how = SD_SEND;
+                        break;
+                    case ShutdownBoth:
+                        how = SD_BOTH;
+                        break;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    case ShutdownRead:
+                        how = SHUT_RD;
+                        break;
+                    case ShutdownWrite:
+                        how = SHUT_WR;
+                        break;
+                    case ShutdownBoth:
+                        how = SHUT_RDWR;
+                        break;
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    default:
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
-                THEKOGANS_UTIL_CATCH (util::Exception) {
-                    SetError (exception.GetErrorCode ());
+                if (shutdown ((THEKOGANS_STREAM_SOCKET)stream->GetHandle (), how) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                    SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                     return -1;
                 }
+                return 1;
             }
         };
 
@@ -585,6 +622,7 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
+                util::LockGuard<util::SpinLock> guard (Stream::spinLock);
                 EnqOverlapped (
                     std::unique_ptr<Overlapped> (new ShutdownOverlapped (shutdownType)),
                     out);
@@ -631,70 +669,6 @@ namespace thekogans {
             }
             else {
                 Socket::HandleOverlapped (overlapped);
-            }
-        }
-
-        THEKOGANS_STREAM_SOCKET TCPSocket::AcceptHelper () {
-            THEKOGANS_STREAM_SOCKET connection = THEKOGANS_STREAM_INVALID_SOCKET;
-        #if defined (TOOLCHAIN_OS_Windows)
-            connection = WSASocketW (GetFamily (), GetType (),
-                GetProtocol (), 0, 0, WSA_FLAG_OVERLAPPED);
-            char acceptBuffer[256];
-            DWORD bytesReceived = 0;
-            if (connection != THEKOGANS_STREAM_INVALID_SOCKET) {
-                if (!WindowsFunctions::Instance ().AcceptEx (
-                        (THEKOGANS_STREAM_SOCKET)handle, connection,
-                        acceptBuffer, 0, 128, 128, &bytesReceived, 0)) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                    closesocket (connection);
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            connection = accept ((THEKOGANS_STREAM_SOCKET)handle, 0, 0);
-            if (connection == THEKOGANS_STREAM_INVALID_SOCKET) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            return connection;
-        }
-
-        void TCPSocket::ShutdownHelper (ShutdownType shutdownType) {
-            int how;
-            switch (shutdownType) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                case ShutdownRead:
-                    how = SD_RECEIVE;
-                    break;
-                case ShutdownWrite:
-                    how = SD_SEND;
-                    break;
-                case ShutdownBoth:
-                    how = SD_BOTH;
-                    break;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                case ShutdownRead:
-                    how = SHUT_RD;
-                    break;
-                case ShutdownWrite:
-                    how = SHUT_WR;
-                    break;
-                case ShutdownBoth:
-                    how = SHUT_RDWR;
-                    break;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                default:
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            if (shutdown ((THEKOGANS_STREAM_SOCKET)handle, how) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
         }
 
