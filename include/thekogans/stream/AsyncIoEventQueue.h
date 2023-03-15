@@ -35,38 +35,8 @@ namespace thekogans {
         /// \struct AsyncIoEventQueue AsyncIoEventQueue.h thekogans/stream/AsyncIoEventQueue.h
         ///
         /// \brief
-        /// An AsyncIoEventQueue is an event queue for monitoring
-        /// asynchronous streams. It provides a simple, and
-        /// (mostly) uniform api around platform specific interfaces
-        /// (Windows - iocp, Linux - epoll, and OS X - kqueue).
-        ///
-        /// The unfortunate part is that while all three platforms
-        /// provide native apis for such things, their semantics are
-        /// quite different. Windows uses a pro-active approach (start
-        /// an overlapped operation, and monitor it's completion
-        /// status), while Linux and OS X use a reactive approach
-        /// (monitor these handles, and let me know when an event I am
-        /// interested in occurs). These two different philosophies
-        /// mean that, while the AsyncIoEventQueue interface to the
-        /// platform specific event queues is the same on all
-        /// platforms, it's semantics are not. The stream library
-        /// paves over this inconsistency by providing a single
-        /// hybrid model that is maintained by all other classes.
-        /// The model uses the best features from both approaches
-        /// to provide a simple and elegant solution to async io.
-        /// It's hybrid because on the read side it uses a POSIX
-        /// reactive approach (let me know when a buffer arrived),
-        /// and on the write side it uses a Windows pro-active
-        /// approach (write this buffer, and let me know when done).
-        /// Again, unfortunately, due to the semantic differences
-        /// between the two approaches, I can't sweep all the
-        /// details under a rug. This is why there are multiple
-        /// versions of the ctor. One for Windows, one for Linux
-        /// and one for OS X. I provided what I would consider
-        /// sensible defaults, and if they work for you, great!
-        /// Your code will truly be platform independent. If
-        /// not, you will need to provide your own values using
-        /// a #if defined (TOOLCHAIN_OS_[Windows | Linux | OSX]).
+        /// An AsyncIoEventQueue \see{util::Singleton} is a background \see{util::Thread} for
+        /// monitoring asynchronous streams.
 
         struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue :
                 public util::Singleton<AsyncIoEventQueue, util::SpinLock>,
@@ -118,6 +88,8 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 util::ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY);
+            /// \brief
+            /// dtor.
             ~AsyncIoEventQueue ();
 
             /// \brief

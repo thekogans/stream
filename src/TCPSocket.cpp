@@ -321,26 +321,14 @@ namespace thekogans {
                 if (GetError () != ERROR_SUCCESS) {
                     return -1;
                 }
-                char acceptBuffer[256];
-                DWORD bytesReceived = 0;
-                if (!WindowsFunctions::Instance ().AcceptEx (
-                        (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
-                        (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
-                        acceptBuffer,
-                        0,
-                        128,
-                        128,
-                        &bytesReceived,
-                        0) ||
-                    setsockopt (
+                THEKOGANS_STREAM_SOCKET handle = (THEKOGANS_STREAM_SOCKET)stream->GetHandle ();
+                if (setsockopt (
                         (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
                         SOL_SOCKET,
                         SO_UPDATE_ACCEPT_CONTEXT,
-                        (char *)&stream->handle,
+                        (char *)&handle,
                         sizeof (THEKOGANS_STREAM_SOCKET)) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                    closesocket (socket);
-                    SetError (errorCode);
+                    SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                     return -1;
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
@@ -364,7 +352,7 @@ namespace thekogans {
                     new AcceptOverlapped (GetFamily (), GetType (), GetProtocol ()));
                 if (!WindowsFunctions::Instance ().AcceptEx (
                         (THEKOGANS_STREAM_SOCKET)handle,
-                        overlapped->connection,
+                        (THEKOGANS_STREAM_SOCKET)overlapped->connection->GetHandle (),
                         overlapped->acceptBuffer,
                         0,
                         128,

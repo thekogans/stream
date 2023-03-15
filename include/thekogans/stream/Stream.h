@@ -439,12 +439,9 @@ namespace thekogans {
             /// \brief
             /// Execute the given overlapped.
             /// \param[in] overlapped \see{Overlapped} to execute.
-            /// \param[in, out] list If we could nat complete the given
-            /// \see{Overlapped} put it back at the head of this list.
             /// \return true == The given \see{Overlapped} was sccessfuly completed.
-            /// false == either an error occurred or the stream disconnected or the
-            /// given overlapped had to be put back on the queue because it could
-            /// not complete.
+            /// false == The given overlapped should to be put back at the front of
+            /// the queue because it would block (Linux and OS X).
             /// NOTE: If all went well, \see{HandleOverlapped} was called.
             /// If an error occured, \see{HandleError} was called. If
             /// the stream disconnected, \see{HandleDisconnect} was called.
@@ -454,13 +451,22 @@ namespace thekogans {
             /// ReadHelper needs to be implemented by every concrete class to provide
             /// blocking reads. It's called by the framework to perform data extraction
             /// from os to application buffers after we've been informed of it's arrival.
-            /// NOTE: The framework exopects this function to throw on error.
+            /// NOTE: The framework expects this function to throw on error.
             /// \param[out] buffer Where to read the data.
             /// \param[in] bufferLength Size of buffer.
             /// \return Count of bytes actually read.
             virtual std::size_t ReadHelper (
                 void *buffer,
                 std::size_t bufferLength) = 0;
+            /// \brief
+            /// WriteHelper needs to be implemented by every concrete class to provide
+            /// blocking writes. It's called by the framework to perform data insertion
+            /// from application to os buffers after we've been informed there's room
+            /// available.
+            /// NOTE: The framework expects this function to throw on error.
+            /// \param[out] buffer Data to write.
+            /// \param[in] bufferLength Size of buffer.
+            /// \return Count of bytes actually written.
             virtual std::size_t WriteHelper (
                 const void *buffer,
                 std::size_t bufferLength) = 0;

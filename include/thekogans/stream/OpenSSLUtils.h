@@ -116,7 +116,6 @@ namespace thekogans {
             /// \param[in] multiThreaded true = initialize thread support.
             /// \param[in] entropyNeeded Number of entropy bytes to use to seed the PRNG.
             /// \param[in] workingSetSize Physical pages to reserve.
-            /// \param[in] opensslDir Path to openssl.cnf.
             /// \param[in] engine OpenSSL engine object used to accelerate cryptographic operations.
             /// \param[in] loadSystemCACertificates true == Call
             /// crypto::SystemCACertificates::Load (loadSystemRootCACertificatesOnly);
@@ -126,7 +125,6 @@ namespace thekogans {
                 bool multiThreaded = true,
                 util::ui32 entropyNeeded = DEFAULT_ENTROPY_NEEDED,
                 util::ui64 workingSetSize = DEFAULT_WORKING_SET_SIZE,
-                const std::string &opensslDir = std::string (),
                 ENGINE *engine = 0,
                 bool loadSystemCACertificates = true,
                 bool loadSystemRootCACertificatesOnly = true);

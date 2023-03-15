@@ -87,16 +87,10 @@ namespace thekogans {
                 bool multiThreaded,
                 util::ui32 entropyNeeded,
                 util::ui64 workingSetSize,
-                const std::string &opensslDir,
                 ENGINE *engine,
                 bool loadSystemCACertificates,
                 bool loadSystemRootCACertificatesOnly) :
-                crypto::OpenSSLInit (
-                    multiThreaded,
-                    entropyNeeded,
-                    workingSetSize,
-                    opensslDir,
-                    engine) {
+                crypto::OpenSSLInit (multiThreaded, entropyNeeded, workingSetSize, engine) {
             {
                 util::LockGuard<util::SpinLock> guard (spinLock);
                 if (SSLSecureSocketIndex == -1) {

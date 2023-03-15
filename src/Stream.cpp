@@ -216,16 +216,6 @@ namespace thekogans {
             #define STATUS_REMOTE_DISCONNECT 0xC000013C
             #define STATUS_PIPE_BROKEN 0xC000014b
             #define STATUS_CONNECTION_RESET 0xC000020D
-
-            std::string ErrorCodeTostring (THEKOGANS_UTIL_ERROR_CODE errorCode) {
-                return
-                    errorCode == STATUS_CANCELED ? "STATUS_CANCELED" :
-                    errorCode == STATUS_LOCAL_DISCONNECT ? "STATUS_LOCAL_DISCONNECT" :
-                    errorCode == STATUS_REMOTE_DISCONNECT ? "STATUS_REMOTE_DISCONNECT" :
-                    errorCode == STATUS_PIPE_BROKEN ? "STATUS_PIPE_BROKEN" :
-                    errorCode == STATUS_CONNECTION_RESET ? "STATUS_CONNECTION_RESET" :
-                    util::FormatString ("Unknown code: %x", errorCode);
-            }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
