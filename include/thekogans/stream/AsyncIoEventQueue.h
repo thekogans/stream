@@ -21,13 +21,10 @@
 #include <functional>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/Singleton.h"
+#include "thekogans/util/Thread.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/stream/Config.h"
-#include "thekogans/stream/Stream.h"
-#if !defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/stream/Pipe.h"
-#endif // !defined (TOOLCHAIN_OS_Windows)
 
 namespace thekogans {
     namespace stream {
@@ -36,15 +33,12 @@ namespace thekogans {
         ///
         /// \brief
         /// An AsyncIoEventQueue \see{util::Singleton} is a background \see{util::Thread} for
-        /// monitoring asynchronous streams.
+        /// monitoring asynchronous streams. On Windows it's implemented using IO completion
+        /// ports. On Linux it's implemented using epoll and on OS X using a kqueue.
 
         struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue :
                 public util::Singleton<AsyncIoEventQueue, util::SpinLock>,
                 public util::Thread {
-            /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AsyncIoEventQueue)
-
         private:
             /// \brief
             /// Handle to an OS specific async io event queue.
@@ -98,15 +92,6 @@ namespace thekogans {
             inline THEKOGANS_UTIL_HANDLE GetHandle () const {
                 return handle;
             }
-
-        #if !defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Used internally by epoll and kqueue variants to
-            /// add a 'stream is ready for events' notification.
-            /// \param[in] stream \see{Stream} that wants to be notified
-            /// when an event(s) it's interested in has occurred.
-            void SetStreamEventMask (const Stream &stream);
-        #endif // !defined (TOOLCHAIN_OS_Windows)
 
         private:
             // util::Thread

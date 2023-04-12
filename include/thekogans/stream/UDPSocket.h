@@ -38,8 +38,8 @@ namespace thekogans {
             virtual ~UDPSocketEvents () {}
 
             /// \brief
-            /// Called when a new datagram has arrived on a (Secure)UDPSocket.
-            /// \param[in] udpSocket (Secure)UDPSocket that received the datagram.
+            /// Called when a new datagram has arrived on a UDPSocket.
+            /// \param[in] udpSocket UDPSocket that received the datagram.
             /// \param[in] buffer The new datagram.
             /// \param[in] address Peer address that sent the datagram.
             virtual void OnUDPSocketReadFrom (
@@ -47,8 +47,8 @@ namespace thekogans {
                 const util::Buffer & /*buffer*/,
                 const Address & /*address*/) throw () {}
             /// \brief
-            /// Called when a datagram was written to a (Secure)UDPSocket.
-            /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
+            /// Called when a datagram was written to a UDPSocket.
+            /// \param[in] udpSocket UDPSocket where the datagram was written.
             /// \param[in] buffer The written datagram.
             /// \param[in] address Peer address that received the datagram.
             virtual void OnUDPSocketWriteTo (
@@ -57,8 +57,8 @@ namespace thekogans {
                 const Address & /*address*/) throw () {}
 
             /// \brief
-            /// Called when a new datagram has arrived on a (Secure)UDPSocket.
-            /// \param[in] udpSocket (Secure)UDPSocket that received the datagram.
+            /// Called when a new datagram has arrived on a UDPSocket.
+            /// \param[in] udpSocket UDPSocket that received the datagram.
             /// \param[in] buffer The new datagram.
             /// \param[in] from Peer address that sent the datagram.
             /// \param[in] to Local address that received the datagram.
@@ -68,8 +68,8 @@ namespace thekogans {
                 const Address & /*from*/,
                 const Address & /*to*/) throw () {}
             /// \brief
-            /// Called when a datagram was written to a (Secure)UDPSocket.
-            /// \param[in] udpSocket (Secure)UDPSocket where the datagram was written.
+            /// Called when a datagram was written to a UDPSocket.
+            /// \param[in] udpSocket UDPSocket where the datagram was written.
             /// \param[in] buffer The written datagram.
             /// \param[in] from Local address from which the datagram was sent.
             /// \param[in] to Peer address that will receive the datagram.
@@ -150,6 +150,14 @@ namespace thekogans {
             /// Read a datagram and the address it was sent from.
             void ReadFrom (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
             /// \brief
+            /// Async write a datagram to the given address.
+            /// NOTE: If you called \see{Connect} address is ignored.
+            /// \param[in] buffer Buffer representing the datagram.
+            /// \param[in] address Address the datagram is sent to.
+            void WriteTo (
+                util::Buffer buffer,
+                const Address &address);
+            /// \brief
             /// Write a datagram to the given address.
             /// NOTE: If you called \see{Connect} address is ignored.
             /// \param[in] buffer Buffer representing the datagram.
@@ -159,14 +167,6 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t bufferLength,
                 const Address &address);
-            /// \brief
-            /// Async write a datagram to the given address.
-            /// NOTE: If you called \see{Connect} address is ignored.
-            /// \param[in] buffer Buffer representing the datagram.
-            /// \param[in] address Address the datagram is sent to.
-            void WriteTo (
-                util::Buffer buffer,
-                const Address &address);
 
             /// \brief
             /// Use WSARecvMsg/recvmsg to read a message. This api
@@ -174,6 +174,15 @@ namespace thekogans {
             /// as well as the receiving addresses. To get the
             /// receiving address, you must call SetRecvPktInfo first.
             void ReadMsg (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH);
+            /// \brief
+            /// Async send message.
+            /// \param[in] buffer Buffer that holds the message to be sent.
+            /// \param[in] from The local interface address from which the message is sent.
+            /// \param[in] to The address of the host that will receive the message.
+            void WriteMsg (
+                util::Buffer buffer,
+                const Address &from,
+                const Address &to);
             /// \brief
             /// Use WSASendMsg/sendmsg to write a message. This api
             /// is useful when you need to know both the sending
@@ -187,15 +196,6 @@ namespace thekogans {
             void WriteMsg (
                 const void *buffer,
                 std::size_t bufferLength,
-                const Address &from,
-                const Address &to);
-            /// \brief
-            /// Async send message.
-            /// \param[in] buffer Buffer that holds the message to be sent.
-            /// \param[in] from The local interface address from which the message is sent.
-            /// \param[in] to The address of the host that will receive the message.
-            void WriteMsg (
-                util::Buffer buffer,
                 const Address &from,
                 const Address &to);
 

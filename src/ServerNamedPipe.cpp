@@ -60,62 +60,48 @@ namespace thekogans {
         }
 
         ServerNamedPipe::ServerNamedPipe (
-            LPCWSTR name_,
-            DWORD openMode_,
-            DWORD pipeMode_,
-            DWORD maxInstances_,
-            DWORD outBufferSize_,
-            DWORD inBufferSize_,
-            DWORD defaultTimeOut_,
-            LPSECURITY_ATTRIBUTES securityAttributes_) :
-            Stream (
+            LPCWSTR name,
+            DWORD openMode,
+            DWORD pipeMode,
+            DWORD maxInstances,
+            DWORD outBufferSize,
+            DWORD inBufferSize,
+            DWORD defaultTimeOut,
+            LPSECURITY_ATTRIBUTES securityAttributes) :
+            NamedPipe (
                 CreateNamedPipe (
-                    name_,
-                    openMode_,
-                    pipeMode_,
-                    maxInstances_,
-                    outBufferSize_,
-                    inBufferSize_,
-                    defaultTimeOut_,
-                    securityAttributes_)),
-            name (name_),
-            openMode (openMode_),
-            pipeMode (pipeMode_),
-            maxInstances (maxInstances_),
-            outBufferSize (outBufferSize_),
-            inBufferSize (inBufferSize_),
-            defaultTimeOut (defaultTimeOut_),
-            securityAttributes (securityAttributes_) {}
+                    name,
+                    openMode,
+                    pipeMode,
+                    maxInstances,
+                    outBufferSize,
+                    inBufferSize,
+                    defaultTimeOut,
+                    securityAttributes)) {}
 
         namespace {
-            struct ConnectOverlapped : public Stream::Overlapped {
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ConnectOverlapped)
+            struct ConnectOverlapped : public Overlapped {
+                THEKOGANS_STREAM_DECLARE_OVERLAPPED (ConnectOverlapped)
 
-                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) {
+                virtual ssize_t Prolog (Stream & /*stream*/) {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
             };
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ConnectOverlapped)
+            THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (ConnectOverlapped)
         }
 
         void ServerNamedPipe::Connect () {
-            THEKOGANS_UTIL_TRY {
-                std::unique_ptr<Overlapped> overlapped (new ConnectOverlapped);
-                if (!ConnectNamedPipe (handle, overlapped.get ())) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                    if ((errorCode == ERROR_PIPE_CONNECTED &&
-                            !PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token, overlapped.get ())) ||
-                            errorCode != ERROR_IO_PENDING) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
+            std::unique_ptr<Overlapped> overlapped (new ConnectOverlapped);
+            if (!ConnectNamedPipe (handle, overlapped.get ())) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                if ((errorCode == ERROR_PIPE_CONNECTED &&
+                        !PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token, overlapped.get ())) ||
+                        errorCode != ERROR_IO_PENDING) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
-                overlapped.release ();
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
-            }
+            overlapped.release ();
         }
 
         void ServerNamedPipe::Disconnect (bool flushBuffers) {

@@ -25,7 +25,6 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/stream/AsyncIoEventQueue.h"
 #include "thekogans/stream/TCPSocket.h"
 
 namespace thekogans {
@@ -143,27 +142,21 @@ namespace thekogans {
         }
 
         namespace {
-            struct ConnectOverlapped : public Stream::Overlapped {
-                /// \brief
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ConnectOverlapped)
+            struct ConnectOverlapped : public Overlapped {
+                THEKOGANS_STREAM_DECLARE_OVERLAPPED (ConnectOverlapped)
 
-                /// \brief
-                /// Address used by async TCPSocket::Connect.
                 Address address;
 
-                /// \brief
-                /// ctor.
-                /// \param[in] address Address used by \see{TCPSocket::Connect}.
                 ConnectOverlapped (const Address &address_) :
                     address (address_) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream &stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
                     }
                     if (setsockopt (
-                            (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
+                            (THEKOGANS_STREAM_SOCKET)stream.GetHandle (),
                             SOL_SOCKET,
                             SO_UPDATE_CONNECT_CONTEXT,
                             0,
@@ -176,89 +169,91 @@ namespace thekogans {
                 }
             };
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ConnectOverlapped)
+            THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (ConnectOverlapped)
         }
 
         void TCPSocket::Connect (const Address &address) {
-            THEKOGANS_UTIL_TRY {
-            #if defined (TOOLCHAIN_OS_Windows)
-                // Asshole M$ strikes again. Wasted a significant
-                // portion of my life chasing a bug that wound up
-                // being that ConnectEx needs the socket to be
-                // explicitly bound.
-                if (!IsBound ()) {
-                    Bind (Address::Any (0, address.GetFamily ()));
-                }
-                std::unique_ptr<ConnectOverlapped> overlapped (new ConnectOverlapped (address));
-                if (!WindowsFunctions::Instance ().ConnectEx (
-                        (THEKOGANS_STREAM_SOCKET)handle,
-                        &overlapped->address.address,
-                        overlapped->address.length,
-                        0,
-                        0,
-                        0,
-                        overlapped.get ())) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                    if (errorCode != WSA_IO_PENDING) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
-                }
-                overlapped.release ();
-            #else // defined (TOOLCHAIN_OS_Windows)
-                util::LockGuard<util::SpinLock> guard (Stream::spinLock);
-                EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new ConnectOverlapped (address)),
-                    out);
-                if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
-                        THEKOGANS_STREAM_SOCKET_ERROR) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                    if (errorCode != EINPROGRESS) {
-                        DeqOverlapped (out);
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
+            // Asshole M$ strikes again. Wasted a significant
+            // portion of my life chasing a bug that wound up
+            // being that ConnectEx needs the socket to be
+            // explicitly bound.
+            if (!IsBound ()) {
+                Bind (Address::Any (0, address.GetFamily ()));
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
+            std::unique_ptr<ConnectOverlapped> overlapped (new ConnectOverlapped (address));
+            if (!WindowsFunctions::Instance ().ConnectEx (
+                    (THEKOGANS_STREAM_SOCKET)handle,
+                    &overlapped->address.address,
+                    overlapped->address.length,
+                    0,
+                    0,
+                    0,
+                    overlapped.get ())) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                if (errorCode != WSA_IO_PENDING) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
             }
+            overlapped.release ();
+        #else // defined (TOOLCHAIN_OS_Windows)
+            // NOTE: Because of the way Stream is designed it's
+            // theoretically possible to create a TCPSocket and call
+            // Socket::Write without calling TCPSocket::Connect
+            // first. Since the socket has not connected yet it will
+            // just sit there waiting for write to be ready which
+            // will never come. By placing the ConnectOverlapped at
+            // the top of the out list we guarantee that a successful
+            // connect will be paired up with the ConnectOverlapped and
+            // whatever write buffers were pending before the connect
+            // attempt will be written next. Semantically this might
+            // not be the best behavior (though it's harmless) but it's
+            // a lot more desirable than complicated locking and overlapped
+            // tracking schemes that are all plagued by race conditions.
+            // ALSO: Even though there's no formal mechanism mandating it,
+            // it's assumed that the EnqOverlapped and connect (below) are
+            // an atomic operation.
+            EnqOverlapped (
+                std::unique_ptr<Overlapped> (new ConnectOverlapped (address)),
+                out,
+                true);
+            if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
+                    THEKOGANS_STREAM_SOCKET_ERROR) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                if (errorCode != EINPROGRESS) {
+                    DeqOverlapped (out);
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
-            struct DisconnectOverlapped : public Stream::Overlapped {
-                /// \brief
-                /// DisconnectOverlapped is an \see{Stream::Overlapped}.
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (DisconnectOverlapped)
+            struct DisconnectOverlapped : public Overlapped {
+                THEKOGANS_STREAM_DECLARE_OVERLAPPED (DisconnectOverlapped)
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream & /*stream*/) throw () override {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
             };
 
-            THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (DisconnectOverlapped)
+            THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (DisconnectOverlapped)
         }
 
         void TCPSocket::Disconnect (bool reuseSocket) {
-            THEKOGANS_UTIL_TRY {
-                std::unique_ptr<Overlapped> overlapped (new DisconnectOverlapped);
-                if (!WindowsFunctions::Instance ().DisconnectEx (
-                        (THEKOGANS_STREAM_SOCKET)handle,
-                        overlapped.get (),
-                        reuseSocket ? TF_REUSE_SOCKET : 0,
-                        0)) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                    if (errorCode != WSA_IO_PENDING) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
+            std::unique_ptr<Overlapped> overlapped (new DisconnectOverlapped);
+            if (!WindowsFunctions::Instance ().DisconnectEx (
+                    (THEKOGANS_STREAM_SOCKET)handle,
+                    overlapped.get (),
+                    reuseSocket ? TF_REUSE_SOCKET : 0,
+                    0)) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                if (errorCode != WSA_IO_PENDING) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
-                overlapped.release ();
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
-            }
+            overlapped.release ();
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
@@ -281,29 +276,16 @@ namespace thekogans {
             }
         }
 
-        struct AcceptOverlapped : public Stream::Overlapped {
-            /// \brief
-            /// AcceptOverlapped is an \see{Stream::Overlapped}.
-            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (AcceptOverlapped)
+        struct AcceptOverlapped : public Overlapped {
+            THEKOGANS_STREAM_DECLARE_OVERLAPPED (AcceptOverlapped)
 
         #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Buffer used with AcceptEx.
             char acceptBuffer[256];
-            /// \brief
-            /// Count used with AcceptEx.
             DWORD bytesReceived;
         #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Pending TCPSocket.
             TCPSocket::SharedPtr connection;
 
         #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// ctor.
-            /// \param[in] family Address family specification.
-            /// \param[in] type Socket type specification.
-            /// \param[in] protocol Socket protocol specification.
             AcceptOverlapped (
                 int family,
                 int type,
@@ -311,17 +293,15 @@ namespace thekogans {
                 connection (new TCPSocket (WSASocketW (family, type, protocol, 0, 0, WSA_FLAG_OVERLAPPED))),
                 bytesReceived (0) {}
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// ctor.
             AcceptOverlapped () {}
         #endif // defined (TOOLCHAIN_OS_Windows)
 
-            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+            virtual ssize_t Prolog (Stream &stream) throw () override {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (GetError () != ERROR_SUCCESS) {
                     return -1;
                 }
-                THEKOGANS_STREAM_SOCKET handle = (THEKOGANS_STREAM_SOCKET)stream->GetHandle ();
+                THEKOGANS_STREAM_SOCKET handle = (THEKOGANS_STREAM_SOCKET)stream.GetHandle ();
                 if (setsockopt (
                         (THEKOGANS_STREAM_SOCKET)connection->GetHandle (),
                         SOL_SOCKET,
@@ -332,7 +312,7 @@ namespace thekogans {
                     return -1;
                 }
             #else // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_STREAM_SOCKET socket = accept ((THEKOGANS_STREAM_SOCKET)stream->GetHandle (), 0, 0);
+                THEKOGANS_STREAM_SOCKET socket = accept ((THEKOGANS_STREAM_SOCKET)stream.GetHandle (), 0, 0);
                 if (socket == THEKOGANS_STREAM_INVALID_SOCKET) {
                     SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                     return -1;
@@ -343,39 +323,32 @@ namespace thekogans {
             }
         };
 
-        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (AcceptOverlapped)
+        THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (AcceptOverlapped)
 
         void TCPSocket::Accept () {
-            THEKOGANS_UTIL_TRY {
-            #if defined (TOOLCHAIN_OS_Windows)
-                std::unique_ptr<AcceptOverlapped> overlapped (
-                    new AcceptOverlapped (GetFamily (), GetType (), GetProtocol ()));
-                if (!WindowsFunctions::Instance ().AcceptEx (
-                        (THEKOGANS_STREAM_SOCKET)handle,
-                        (THEKOGANS_STREAM_SOCKET)overlapped->connection->GetHandle (),
-                        overlapped->acceptBuffer,
-                        0,
-                        128,
-                        128,
-                        &overlapped->bytesReceived,
-                        overlapped.get ())) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
-                    if (errorCode != WSA_IO_PENDING) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
+        #if defined (TOOLCHAIN_OS_Windows)
+            std::unique_ptr<AcceptOverlapped> overlapped (
+                new AcceptOverlapped (GetFamily (), GetType (), GetProtocol ()));
+            if (!WindowsFunctions::Instance ().AcceptEx (
+                    (THEKOGANS_STREAM_SOCKET)handle,
+                    (THEKOGANS_STREAM_SOCKET)overlapped->connection->GetHandle (),
+                    overlapped->acceptBuffer,
+                    0,
+                    128,
+                    128,
+                    &overlapped->bytesReceived,
+                    overlapped.get ())) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
+                if (errorCode != WSA_IO_PENDING) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
-                overlapped.release ();
-            #else // defined (TOOLCHAIN_OS_Windows)
-                util::LockGuard<util::SpinLock> guard (Stream::spinLock);
-                EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new AcceptOverlapped),
-                    in);
-            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
-            }
+            overlapped.release ();
+        #else // defined (TOOLCHAIN_OS_Windows)
+            EnqOverlapped (
+                std::unique_ptr<Overlapped> (new AcceptOverlapped),
+                in);
+        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
         bool TCPSocket::IsKeepAlive () const {
@@ -541,84 +514,37 @@ namespace thekogans {
             }
         }
 
-        struct ShutdownOverlapped : public Stream::Overlapped {
-            /// \brief
-            /// ShutdownOverlapped is an \see{Stream::Overlapped}.
-            THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ShutdownOverlapped)
-
-            /// \brief
-            /// Type of shutdown performed on (Secure)TCPSocket.
-            ShutdownType shutdownType;
-
-            /// \brief
-            /// ctor.
-            /// \param[in] tcpSocket_ TCPSocket to shutdown.
-            /// \param[in] shutdownType_ Type of shutdown performed on (Secure)TCPSocket.
-            ShutdownOverlapped (ShutdownType shutdownType_) :
-                shutdownType (shutdownType_) {}
-
-            /// \brief
-            /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-            /// the Overlapped to perform post op housekeeping prior to
-            /// calling GetError.
-            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
-                int how;
-                switch (shutdownType) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    case ShutdownRead:
-                        how = SD_RECEIVE;
-                        break;
-                    case ShutdownWrite:
-                        how = SD_SEND;
-                        break;
-                    case ShutdownBoth:
-                        how = SD_BOTH;
-                        break;
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    case ShutdownRead:
-                        how = SHUT_RD;
-                        break;
-                    case ShutdownWrite:
-                        how = SHUT_WR;
-                        break;
-                    case ShutdownBoth:
-                        how = SHUT_RDWR;
-                        break;
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    default:
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-                if (shutdown ((THEKOGANS_STREAM_SOCKET)stream->GetHandle (), how) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                    return -1;
-                }
-                return 1;
-            }
-        };
-
-        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (ShutdownOverlapped)
-
         void TCPSocket::Shutdown (ShutdownType shutdownType) {
-            THEKOGANS_UTIL_TRY {
+            int how;
+            switch (shutdownType) {
             #if defined (TOOLCHAIN_OS_Windows)
-                std::unique_ptr<ShutdownOverlapped> overlapped (
-                    new ShutdownOverlapped (shutdownType));
-                if (!PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token, overlapped.get ())) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                overlapped.release ();
+                case ShutdownRead:
+                    how = SD_RECEIVE;
+                    break;
+                case ShutdownWrite:
+                    how = SD_SEND;
+                    break;
+                case ShutdownBoth:
+                    how = SD_BOTH;
+                    break;
             #else // defined (TOOLCHAIN_OS_Windows)
-                util::LockGuard<util::SpinLock> guard (Stream::spinLock);
-                EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new ShutdownOverlapped (shutdownType)),
-                    out);
+                case ShutdownRead:
+                    how = SHUT_RD;
+                    break;
+                case ShutdownWrite:
+                    how = SHUT_WR;
+                    break;
+                case ShutdownBoth:
+                    how = SHUT_RDWR;
+                    break;
             #endif // defined (TOOLCHAIN_OS_Windows)
+                default:
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
+            if (shutdown ((THEKOGANS_STREAM_SOCKET)handle, how) == THEKOGANS_STREAM_SOCKET_ERROR) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
         }
 
@@ -645,15 +571,6 @@ namespace thekogans {
                         std::placeholders::_1,
                         SharedPtr (this),
                         acceptOverlapped.connection));
-            }
-            else if (overlapped.GetType () == ShutdownOverlapped::TYPE) {
-                ShutdownOverlapped &shutdownOverlapped = (ShutdownOverlapped &)overlapped;
-                util::Producer<TCPSocketEvents>::Produce (
-                    std::bind (
-                        &TCPSocketEvents::OnTCPSocketShutdown,
-                        std::placeholders::_1,
-                        SharedPtr (this),
-                        shutdownOverlapped.shutdownType));
             }
             else {
                 Socket::HandleOverlapped (overlapped);

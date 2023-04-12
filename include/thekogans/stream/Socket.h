@@ -35,7 +35,7 @@ namespace thekogans {
         /// \brief
         /// Socket is a base class for all socket derivatives. It provides
         /// all common socket apis, and let's the derivatives handle the
-        /// specifics (connecting and streaming).
+        /// specifics (connecting, accepting...).
 
         struct _LIB_THEKOGANS_STREAM_DECL Socket : public Stream {
             /// \brief
@@ -79,12 +79,8 @@ namespace thekogans {
             // Stream
             /// \brief
             /// Close the OS handle associated with the stream.
-            virtual void Close () override;
+            virtual void Close () throw () override;
 
-            /// \brief
-            /// Return number of bytes available for reading.
-            /// \return Number of bytes available for reading.
-            virtual std::size_t GetDataAvailableForReading () const override;
             /// \brief
             /// Read bytes from the stream.
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
@@ -208,26 +204,7 @@ namespace thekogans {
             THEKOGANS_UTIL_ERROR_CODE GetErrorCode () const;
 
         protected:
-            /// \brief
-            /// Put the socket in (non-)blocking mode.
-            /// \param[in] blocking true = blocking, false = non-blocking
-            void SetBlocking (bool blocking);
-
-            // Stream
-            /// \brief
-            /// ReadHelper needs to be implemented by every concrete class to provide
-            /// blocking reads. It's called by the framework to perform data extraction
-            /// from os to application buffers after we've been informed of it's arrival.
-            /// NOTE: The framework exopects this function to throw on error.
-            /// \param[out] buffer Where to read the data.
-            /// \param[in] bufferLength Size of buffer.
-            /// \return Count of bytes actually read.
-            virtual std::size_t ReadHelper (
-                void *buffer,
-                std::size_t count) override;
-            virtual std::size_t WriteHelper (
-                const void *buffer,
-                std::size_t count) override;
+            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
         };
 
     } // namespace stream

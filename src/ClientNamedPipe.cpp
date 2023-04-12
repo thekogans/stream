@@ -65,7 +65,7 @@ namespace thekogans {
             DWORD creationDisposition,
             DWORD flagsAndAttributes,
             HANDLE templateFile) :
-            Stream (
+            NamedPipe (
                 CreateFile (
                     name,
                     desiredAccess,

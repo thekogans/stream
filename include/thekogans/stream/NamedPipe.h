@@ -55,10 +55,6 @@ namespace thekogans {
 
             // Stream
             /// \brief
-            /// Return number of bytes available for reading.
-            /// \return Number of bytes available for reading.
-            virtual std::size_t GetDataAvailableForReading () const override;
-            /// \brief
             /// Read bytes from the stream.
             /// \param[in] bufferLength Buffer length for async WSARecv[From | Msg].
             virtual void Read (std::size_t bufferLength = DEFAULT_BUFFER_LENGTH) override;
@@ -71,12 +67,11 @@ namespace thekogans {
 
         protected:
             // Stream
-            virtual std::size_t ReadHelper (
-                void *buffer,
-                std::size_t bufferLength) override;
-            virtual std::size_t WriteHelper (
-                const void *buffer,
-                std::size_t bufferLength) override;
+            /// \brief
+            /// Used by \see{AsyncIoEventQueue} to notify the stream that
+            /// an overlapped operation has completed successfully.
+            /// \param[in] overlapped \see{Overlapped} that completed successfully.
+            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
         };
 
     } // namespace stream

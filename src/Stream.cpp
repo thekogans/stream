@@ -35,63 +35,21 @@
 namespace thekogans {
     namespace stream {
 
-        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (Stream::ReadOverlapped)
-
-        ssize_t Stream::ReadOverlapped::Prolog (Stream::SharedPtr stream) throw () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (GetError () != ERROR_SUCCESS) {
-                return -1;
-            }
-            buffer.AdvanceWriteOffset (GetCount ());
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            if (buffer.IsEmpty ()) {
-                THEKOGANS_UTIL_TRY {
-                    // The ReadOverlapped ctor will resize the buffer
-                    // using the bufferLength that was passed in. If
-                    // that value was 0, than try to grab all
-                    // available data.
-                    if (buffer.GetLength () == 0) {
-                        buffer.Resize (stream->GetDataAvailableForReading ());
-                    }
-                    buffer.AdvanceWriteOffset (
-                        stream->ReadHelper (
-                            buffer.GetWritePtr (),
-                            buffer.GetDataAvailableForWriting ()));
-                }
-                THEKOGANS_UTIL_CATCH (util::Exception) {
-                    SetError (exception.GetErrorCode ());
-                    return -1;
-                }
-            }
-            return buffer.GetDataAvailableForReading ();
-        }
-
-        THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED (Stream::WriteOverlapped)
-
-        ssize_t Stream::WriteOverlapped::Prolog (Stream::SharedPtr stream) throw () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            return GetError () == ERROR_SUCCESS ? buffer.AdvanceReadOffset (GetCount ()) : -1;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_TRY {
-                return buffer.AdvanceReadOffset (
-                    stream->WriteHelper (
-                        buffer.GetReadPtr (),
-                        buffer.GetDataAvailableForReading ()));
-            }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                SetError (exception.GetErrorCode ());
-                return -1;
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
         Stream::Stream (THEKOGANS_UTIL_HANDLE handle_) :
                 handle (handle_),
                 token (this) {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (CreateIoCompletionPort (
-                        handle, AsyncIoEventQueue::Instance ().GetHandle (), (ULONG_PTR)token, 0) == 0) {
+                        handle, AsyncIoEventQueue::Instance ().GetHandle (), (ULONG_PTR)token.GetValue (), 0) == 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
+            #elif defined (TOOLCHAIN_OS_Linux)
+                epoll_event event = {0};
+                event.events = EPOLLRDHUP;
+                event.data.u64 = token.GetValue ();
+                if (epoll_ctl (AsyncIoEventQueue::Instance ().GetHandle (), EPOLL_CTL_ADD, handle, &event) < 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -104,22 +62,16 @@ namespace thekogans {
         }
 
         Stream::~Stream () {
-            THEKOGANS_UTIL_TRY {
-                Close ();
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
+            Close ();
         }
 
-        void Stream::Close () {
+        void Stream::Close () throw () {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
             #if defined (TOOLCHAIN_OS_Windows)
-                if (!::CloseHandle (handle)) {
+                ::CloseHandle (handle);
             #else // defined (TOOLCHAIN_OS_Windows)
-                if (close (handle) < 0) {
+                close (handle);
             #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
         }
@@ -157,32 +109,12 @@ namespace thekogans {
                     SharedPtr (this)));
         }
 
-        void Stream::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetType () == ReadOverlapped::TYPE) {
-                ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamRead,
-                        std::placeholders::_1,
-                        SharedPtr (this),
-                        std::move (readOverlapped.buffer)));
-            }
-            else if (overlapped.GetType () == WriteOverlapped::TYPE) {
-                WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamWrite,
-                        std::placeholders::_1,
-                        SharedPtr (this),
-                        std::move (writeOverlapped.buffer)));
-            }
-        }
-
     #if !defined (TOOLCHAIN_OS_Windows)
         void Stream::EnqOverlapped (
                 std::unique_ptr<Overlapped> overlapped,
                 std::list<std::unique_ptr<Overlapped>> &list,
-                bool front) {
+                bool front) throw () {
+            util::LockGuard<util::SpinLock> guard (spinLock);
             bool setMask = list.empty ();
             if (front) {
                 list.push_front (std::move (overlapped));
@@ -191,18 +123,62 @@ namespace thekogans {
                 list.push_back (std::move (overlapped));
             }
             if (setMask) {
-                AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
+            #if defined (TOOLCHAIN_OS_Linux)
+                epoll_event event = {0};
+                event.events = EPOLLRDHUP;
+                if (!in.empty () != 0) {
+                    event.events |= EPOLLIN;
+                }
+                if (!out.empty ()) {
+                    event.events |= EPOLLOUT;
+                }
+                event.data.u64 = token.GetValue ();
+                epoll_ctl (AsyncIoEventQueue::Instance ().GetHandle (), EPOLL_CTL_MOD, handle, &event);
+            #elif defined (TOOLCHAIN_OS_OSX)
+                if (!in.empty ()) {
+                    keventStruct event = {0};
+                    keventSet (&event, handle, EVFILT_READ, EV_ADD, 0, 0, token.GetValue ());
+                    keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
+                }
+                else if (!out.empty ()) {
+                    keventStruct event = {0};
+                    keventSet (&event, handle, EVFILT_WRITE, EV_ADD, 0, 0, token.GetValue ());
+                    keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
+                }
+            #endif // defined (TOOLCHAIN_OS_Linux)
             }
         }
 
-        std::unique_ptr<Stream::Overlapped> Stream::DeqOverlapped (
-                std::list<std::unique_ptr<Overlapped>> &list) {
+        std::unique_ptr<Overlapped> Stream::DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list) throw () {
             std::unique_ptr<Overlapped> overlapped;
+            util::LockGuard<util::SpinLock> guard (spinLock);
             if (!list.empty ()) {
                 overlapped = std::move (list.front ());
                 list.pop_front ();
                 if (list.empty ()) {
-                    AsyncIoEventQueue::Instance ().SetStreamEventMask (*this);
+                #if defined (TOOLCHAIN_OS_Linux)
+                    epoll_event event = {0};
+                    event.events = EPOLLRDHUP;
+                    if (!in.empty () != 0) {
+                        event.events |= EPOLLIN;
+                    }
+                    if (!out.empty ()) {
+                        event.events |= EPOLLOUT;
+                    }
+                    event.data.u64 = token.GetValue ();
+                    epoll_ctl (AsyncIoEventQueue::Instance ().GetHandle (), EPOLL_CTL_MOD, handle, &event);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    if (in.empty ()) {
+                        keventStruct event = {0};
+                        keventSet (&event, handle, EVFILT_READ, EV_DELETE, 0, 0, 0);
+                        keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
+                    }
+                    else if (out.empty ()) {
+                        keventStruct event = {0};
+                        keventSet (&event, handle, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
+                        keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
+                    }
+                #endif // defined (TOOLCHAIN_OS_Linux)
                 }
             }
             return overlapped;
@@ -219,11 +195,11 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        bool Stream::ExecOverlapped (Overlapped &overlapped) {
+        bool Stream::ExecOverlapped (Overlapped &overlapped) throw () {
             while (1) {
-                ssize_t result = overlapped.Prolog (SharedPtr (this));
+                ssize_t result = overlapped.Prolog (*this);
                 if (result > 0) {
-                    if (overlapped.Epilog (SharedPtr (this))) {
+                    if (overlapped.Epilog (*this)) {
                         HandleOverlapped (overlapped);
                         return true;
                     }
@@ -232,7 +208,7 @@ namespace thekogans {
                     HandleDisconnect ();
                     return true;
                 }
-                else {
+                else /*result < 0*/ {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped.GetError ();
                 #if defined (TOOLCHAIN_OS_Windows)
                     // Convert known errors to disconnect events.
@@ -246,13 +222,12 @@ namespace thekogans {
                     else if (errorCode == STATUS_CANCELED) {
                         return true;
                     }
-                    else {
                 #else // defined (TOOLCHAIN_OS_Windows)
                     if (errorCode == EAGAIN || errorCode == EWOULDBLOCK) {
                         return false;
                     }
-                    else {
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    else {
                         HandleError (THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
                         return true;
                     }

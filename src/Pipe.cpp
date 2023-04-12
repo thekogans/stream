@@ -38,6 +38,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
+#include "thekogans/stream/Overlapped.h"
 #include "thekogans/stream/Pipe.h"
 
 namespace thekogans {
@@ -48,7 +49,12 @@ namespace thekogans {
         Pipe::Pipe (THEKOGANS_UTIL_HANDLE handle) :
                 Stream (handle) {
         #if !defined (TOOLCHAIN_OS_Windows)
-            SetBlocking (false);
+            int flags = fcntl (handle, F_GETFL, 0);
+            flags |= O_NONBLOCK;
+            if (fcntl (handle, F_SETFL, flags) < 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
         #endif // !defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -67,8 +73,37 @@ namespace thekogans {
             writePipe.Reset (new Pipe (handles[1]));
         }
 
+        namespace {
+            struct ReadOverlapped : public Overlapped {
+                THEKOGANS_STREAM_DECLARE_OVERLAPPED (ReadOverlapped)
+
+                util::Buffer buffer;
+
+                ReadOverlapped (std::size_t bufferLength) :
+                    buffer (util::NetworkEndian, bufferLength) {}
+
+                virtual ssize_t Prolog (Stream &stream) throw () override {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    return GetError () == ERROR_SUCCESS ? buffer.AdvanceWriteOffset (GetCount ()) : -1;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    ssize_t countRead = read (
+                        stream.GetHandle (),
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ());
+                    if (countRead < 0) {
+                        SetError (THEKOGANS_UTIL_OS_ERROR_CODE);
+                        return -1;
+                    }
+                    return buffer.AdvanceWriteOffset ((std::size_t)countRead);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+            };
+
+            THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (ReadOverlapped)
+        }
+
         void Pipe::Read (std::size_t bufferLength) {
-            THEKOGANS_UTIL_TRY {
+            if (bufferLength != 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
@@ -84,105 +119,72 @@ namespace thekogans {
                 }
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                util::LockGuard<util::SpinLock> guard (spinLock);
                 EnqOverlapped (
                     std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
                     in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            THEKOGANS_UTIL_CATCH (util::Exception) {
-                THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                HandleError (exception);
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        namespace {
+            struct WriteOverlapped : public Overlapped {
+                THEKOGANS_STREAM_DECLARE_OVERLAPPED (WriteOverlapped)
+
+                util::Buffer buffer;
+
+                WriteOverlapped (util::Buffer buffer_) :
+                    buffer (std::move (buffer_)) {}
+
+                virtual ssize_t Prolog (Stream &stream) throw () override {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    return GetError () == ERROR_SUCCESS ? buffer.AdvanceReadOffset (GetCount ()) : -1;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    ssize_t countWritten = write (
+                        stream.GetHandle (),
+                        buffer.GetReadPtr (),
+                        buffer.GetDataAvailableForReading ());
+                    if (countWritten < 0) {
+                        SetError (THEKOGANS_UTIL_OS_ERROR_CODE);
+                        return -1;
+                    }
+                    return buffer.AdvanceReadOffset ((std::size_t)countWritten);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+
+            #if !defined (TOOLCHAIN_OS_Windows)
+                virtual bool Epilog (Stream & /*stream*/) throw () override {
+                    return buffer.IsEmpty ();
+                }
+            #endif // !defined (TOOLCHAIN_OS_Windows)
+            };
+
+            THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (WriteOverlapped)
         }
 
         void Pipe::Write (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
-                THEKOGANS_UTIL_TRY {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
-                    if (!WriteFile (
-                            handle,
-                            overlapped->buffer.GetReadPtr (),
-                            (ULONG)overlapped->buffer.GetDataAvailableForReading (),
-                            0,
-                            overlapped.get ())) {
-                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-                        if (errorCode != ERROR_IO_PENDING) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                        }
+            #if defined (TOOLCHAIN_OS_Windows)
+                std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
+                if (!WriteFile (
+                        handle,
+                        overlapped->buffer.GetReadPtr (),
+                        (ULONG)overlapped->buffer.GetDataAvailableForReading (),
+                        0,
+                        overlapped.get ())) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                    if (errorCode != ERROR_IO_PENDING) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
-                    overlapped.release ();
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    util::LockGuard<util::SpinLock> guard (spinLock);
-                    EnqOverlapped (
-                        std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
-                        out);
-                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
-                THEKOGANS_UTIL_CATCH (util::Exception) {
-                    THEKOGANS_UTIL_EXCEPTION_NOTE_LOCATION (exception);
-                    HandleError (exception);
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-    #if !defined (TOOLCHAIN_OS_Windows)
-        void Pipe::SetBlocking (bool blocking) {
-            int flags = fcntl (handle, F_GETFL, 0);
-            if (blocking) {
-                flags &= ~O_NONBLOCK;
-            }
-            else {
-                flags |= O_NONBLOCK;
-            }
-            if (fcntl (handle, F_SETFL, flags) < 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-        }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
-
-        std::size_t Pipe::GetDataAvailableForReading () const {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD totalBytesAvailable = 0;
-            if (!PeekNamedPipe (handle, 0, 0, 0, &totalBytesAvailable, 0)) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            return totalBytesAvailable;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            unsigned long value = 0;
-            if (ioctl (handle, FIONREAD, &value) < 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            return value;
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        std::size_t Pipe::ReadHelper (
-                void *buffer,
-                std::size_t bufferLength) {
-            if (buffer != 0 && bufferLength > 0) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD countRead = 0;
-                if (!ReadFile (handle, buffer, (DWORD)bufferLength, &countRead, 0)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                return countRead;
+                overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countRead = read (handle, buffer, bufferLength);
-                if (countRead < 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                return (std::size_t)countRead;
+                EnqOverlapped (
+                    std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
+                    out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -191,29 +193,24 @@ namespace thekogans {
             }
         }
 
-        std::size_t Pipe::WriteHelper (
-                const void *buffer,
-                std::size_t bufferLength) {
-            if (buffer != 0 && bufferLength > 0) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD countWritten = 0;
-                if (!WriteFile (handle, buffer, (DWORD)bufferLength, &countWritten, 0)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                return countWritten;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                ssize_t countWritten = write (handle, buffer, bufferLength);
-                if (countWritten < 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-                return (std::size_t)countWritten;
-            #endif // defined (TOOLCHAIN_OS_Windows)
+        void Pipe::HandleOverlapped (Overlapped &overlapped) throw () {
+            if (overlapped.GetType () == ReadOverlapped::TYPE) {
+                ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
+                util::Producer<StreamEvents>::Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamRead,
+                        std::placeholders::_1,
+                        Stream::SharedPtr (this),
+                        std::move (readOverlapped.buffer)));
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            else if (overlapped.GetType () == WriteOverlapped::TYPE) {
+                WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
+                util::Producer<StreamEvents>::Produce (
+                    std::bind (
+                        &StreamEvents::OnStreamWrite,
+                        std::placeholders::_1,
+                        Stream::SharedPtr (this),
+                        std::move (writeOverlapped.buffer)));
             }
         }
 

@@ -85,6 +85,10 @@ namespace thekogans {
                 const Address &from,
                 const Address &to);
 
+            void SetBuffer (
+                const void *buffer,
+                std::size_t bufferLength);
+
             /// \brief
             /// Parse the control buffer, and retrieve the message to address.
             /// \param[in] port The control buffer only holds the address.

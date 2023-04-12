@@ -70,30 +70,30 @@ namespace thekogans {
             /// ctor.
             /// Create a server side named pipe.
             /// https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-createnamedpipew
-            /// \param[in] name_ The unique pipe name. This string must have the following form: \\.\pipe\pipename
-            /// \param[in] openMode_ Open mode.
-            /// \param[in] pipeMode_ Pipe mode.
-            /// \param[in] maxInstances_ Maximumum concurrent pipe instances.
-            /// \param[in] outBufferSize_ The number of bytes to reserve for the output buffer.
-            /// \param[in] inBufferSize_ The number of bytes to reserve for the input buffer.
-            /// \param[in] defaultTimeOut_ The default time-out value, in milliseconds, if the WaitNamedPipe
+            /// \param[in] name The unique pipe name. This string must have the following form: \\.\pipe\pipename
+            /// \param[in] openMode Open mode.
+            /// \param[in] pipeMode Pipe mode.
+            /// \param[in] maxInstances Maximumum concurrent pipe instances.
+            /// \param[in] outBufferSize The number of bytes to reserve for the output buffer.
+            /// \param[in] inBufferSize The number of bytes to reserve for the input buffer.
+            /// \param[in] defaultTimeOut The default time-out value, in milliseconds, if the WaitNamedPipe
             /// function specifies NMPWAIT_USE_DEFAULT_WAIT. Each instance of a named pipe must specify the
             /// same value.
-            /// \param[in] securityAttributes_ A pointer to a SECURITY_ATTRIBUTES structure that specifies a
+            /// \param[in] securityAttributes A pointer to a SECURITY_ATTRIBUTES structure that specifies a
             /// security descriptor for the new named pipe and determines whether child processes can inherit
             /// the returned handle. If lpSecurityAttributes is NULL, the named pipe gets a default security
             /// descriptor and the handle cannot be inherited. The ACLs in the default security descriptor for
             /// a named pipe grant full control to the LocalSystem account, administrators, and the creator
             /// owner. They also grant read access to members of the Everyone group and the anonymous account.
             ServerNamedPipe (
-                LPCWSTR name_,
-                DWORD openMode_ = PIPE_ACCESS_DUPLEX,
-                DWORD pipeMode_ = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
-                DWORD maxInstances_ = PIPE_UNLIMITED_INSTANCES,
-                DWORD outBufferSize_ = DEFAULT_BUFFER_LENGTH,
-                DWORD inBufferSize_ = DEFAULT_BUFFER_LENGTH,
-                DWORD defaultTimeOut_ = INFINITE,
-                LPSECURITY_ATTRIBUTES securityAttributes_ = DefaultSecurityAttributes ());
+                LPCWSTR name,
+                DWORD openMode = PIPE_ACCESS_DUPLEX,
+                DWORD pipeMode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
+                DWORD maxInstances = PIPE_UNLIMITED_INSTANCES,
+                DWORD outBufferSize = DEFAULT_BUFFER_LENGTH,
+                DWORD inBufferSize = DEFAULT_BUFFER_LENGTH,
+                DWORD defaultTimeOut = INFINITE,
+                LPSECURITY_ATTRIBUTES securityAttributes = DefaultSecurityAttributes ());
 
             /// \brief
             /// Listen for an incoming connection.
@@ -104,29 +104,7 @@ namespace thekogans {
             /// \param[in] flushBuffers Call FlushFileBuffers before disconnecting.
             void Disconnect (bool flushBuffers = true);
 
-            inline ServerNamedPipe::SharedPtr Clone () const {
-                return ServerNamedPipe::SharedPtr (
-                    new ServerNamedPipe (
-                        name.c_str (),
-                        openMode,
-                        pipeMode,
-                        maxInstances,
-                        outBufferSize,
-                        inBufferSize,
-                        defaultTimeOut,
-                        securityAttributes));
-            }
-
         protected:
-            std::wstring name;
-            DWORD openMode;
-            DWORD pipeMode;
-            DWORD maxInstances;
-            DWORD outBufferSize;
-            DWORD inBufferSize;
-            DWORD defaultTimeOut;
-            LPSECURITY_ATTRIBUTES securityAttributes;
-
             // Stream
             /// \brief
             /// Used by \see{AsyncIoEventQueue} to notify the stream that

@@ -121,6 +121,18 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
+        void MsgHdr::SetBuffer (
+                const void *buffer,
+                std::size_t bufferLength) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            wsaBuf.buf = (char *)buffer;
+            wsaBuf.len = (ULONG)bufferLength;
+        #else // defined (TOOLCHAIN_OS_Windows)
+            ioVec.iov_base = (void *)buffer;
+            ioVec.iov_len = bufferLength;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
         Address MsgHdr::GetToAddress (util::ui16 port) const {
         #if defined (TOOLCHAIN_OS_Windows)
             for (WSACMSGHDR *wsaCMsgHdr = WSA_CMSG_FIRSTHDR (this);

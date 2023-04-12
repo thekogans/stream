@@ -32,20 +32,6 @@ namespace thekogans {
         /// Forward declaration of \see{TCPSocket}.
         struct TCPSocket;
 
-        /// \brief
-        /// Shutdown type.
-        enum ShutdownType {
-            /// \brief
-            /// Shutdown the read end.
-            ShutdownRead,
-            /// \brief
-            /// Shutdown the write end.
-            ShutdownWrite,
-            /// \brief
-            /// Shutdown both the read and the write ends.
-            ShutdownBoth
-        };
-
         struct _LIB_THEKOGANS_STREAM_DECL TCPSocketEvents : public virtual util::RefCounted {
             /// \brief
             /// Declare \see{util::RefCounted} pointers.
@@ -71,13 +57,6 @@ namespace thekogans {
             virtual void OnTCPSocketAccept (
                 util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
                 util::RefCounted::SharedPtr<TCPSocket> /*connection*/) throw () {}
-            /// \brief
-            /// Called to report that the given \see{TCPSocket} has been shutdown.
-            /// \param[in] tcpSocket \see{TCPSocket} that was shutdown.
-            /// \param[in] shutdownType One of \see{TCPSocket::ShutdownType}.
-            virtual void OnTCPSocketShutdown (
-                util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
-                ShutdownType /*shutdownType*/) throw () {}
         };
 
         /// \struct TCPSocket TCPSocket.h thekogans/stream/TCPSocket.h
@@ -116,19 +95,17 @@ namespace thekogans {
         ///
         /// private:
         ///     // StreamEvents
-        ///     void OnStreamError (
+        ///     virtual void OnStreamError (
         ///             Stream::SharedPtr /*stream*/,
         ///             const util::Exception &exception) throw () {
         ///         // Log exception.
-        ///         // Perhaps wait a while between retries.
-        ///         ResetIo (true);
         ///     }
         ///
-        ///     void OnStreamDisconnect (Stream::SharedPtr /*stream*/) throw () {
-        ///         ResetIo (true);
+        ///     virtual void OnStreamDisconnect (Stream::SharedPtr /*stream*/) throw () {
+        ///         // stream disconnected.
         ///     }
         ///
-        ///     void Client::OnStreamRead (
+        ///     virtual void OnStreamRead (
         ///             Stream::SharedPtr stream,
         ///             const util::Buffer &buffer) throw () {
         ///         // Process incomming reply from the server.
@@ -137,24 +114,24 @@ namespace thekogans {
         ///     }
         ///
         ///     // TCPSocketEvents
-        ///     void Client::OnTCPSocketConnect (TCPSocket::SharedPtr tcpSocket) throw () {
+        ///     virtual void OnTCPSocketConnect (TCPSocket::SharedPtr tcpSocket) throw () {
         ///         // Send handshake packet(s).
         ///         ...
         ///         // Post an async read to get the servers response.
         ///         tcpSocket->Read (0);
         ///     }
         ///
-        ///     void Client::ResetIo (bool connect) {
+        ///     void ResetIo (bool connect) {
         ///         // Given the nature of async io, there are no guarantees that the clientSocket.Reset (...)
         ///         // call below will result in the pointer being deleted. There might be residual references
-        ///         // due to other threads in the code still doing work on the object. It is therefore
+        ///         // due to other threads in the code still working with the object. It is therefore
         ///         // imperative that we sever all communications with the old producer before creating a new one.
         ///         // Stream contamination is a dangerous thing.
         ///         util::Subscriber<stream::StreamEvents>::Unsubscribe ();
         ///         util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
         ///         clientSocket.Reset ();
         ///         if (connect) {
-        ///             // Create new async client socket.
+        ///             // Create a new client socket.
         ///             clientSocket.Reset (new stream::TCPSocket (AF_INET, SOCK_STREAM, 0));
         ///             // Setup async notifications.
         ///             util::Subscriber<stream::StreamEvents>::Subscribe (
@@ -219,12 +196,7 @@ namespace thekogans {
         ///             stream::Stream::SharedPtr stream,
         ///             const util::Exception &exception) throw () {
         ///         // Log exception.
-        ///         if (serverSocket == stream) {
-        ///             ResetIo (true);
-        ///         }
-        ///         else {
-        ///             RemoveConnection (stream);
-        ///         }
+        ///         RemoveConnection (stream);
         ///     }
         ///
         ///     virtual void OnStreamDisconnect (stream::Stream::SharedPtr stream) throw () {
@@ -285,7 +257,7 @@ namespace thekogans {
         ///         }
         ///     }
         ///
-        ///     void RemoveConnection (Stream::SharedPtr stream ) {
+        ///     void RemoveConnection (Stream::SharedPtr stream) {
         ///         std::vector<TCPSocket::SharedPtr>::iterator it =
         ///             std::find (connections.begin (), connections.end (), stream);
         ///         if (it != connections.end ()) {
@@ -328,6 +300,7 @@ namespace thekogans {
             /// ctor.
             /// \param[in] address Address to listen on.
             /// \param[in] reuseAddress Call \see{Socket::SetReuseAddress} with this parameter.
+            /// \param[in] maxPendingConnections Maximum number of waiting connections.
             TCPSocket (
                 const Address &address,
                 bool reuseAddress = false,
@@ -416,7 +389,21 @@ namespace thekogans {
             void SetLinger (const Linger &linger);
 
             /// \brief
-            /// Async shutdown either the read or the write end of the
+            /// Shutdown type.
+            enum ShutdownType {
+                /// \brief
+                /// Shutdown the read end.
+                ShutdownRead,
+                /// \brief
+                /// Shutdown the write end.
+                ShutdownWrite,
+                /// \brief
+                /// Shutdown both the read and the write ends.
+                ShutdownBoth
+            };
+
+            /// \brief
+            /// Shutdown either the read, write or both ends of the
             /// socket without closing it.
             /// \param[in] shutdownType One of ShutdownRead,
             /// ShutdownWrite or ShutdownBoth.

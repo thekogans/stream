@@ -18,11 +18,7 @@
 #if !defined (__thekogans_stream_Stream_h)
 #define __thekogans_stream_Stream_h
 
-#include <memory>
-#include <utility>
-#include <string>
-#include <map>
-#include "pugixml/pugixml.hpp"
+#include <list>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
@@ -30,12 +26,11 @@
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/Address.h"
-#include "thekogans/stream/MsgHdr.h"
+#include "thekogans/stream/Overlapped.h"
 
 namespace thekogans {
     namespace stream {
@@ -47,11 +42,9 @@ namespace thekogans {
         /// Forward declaration of Stream.
         struct Stream;
 
+        /// \struct StreamEvents Stream.h thekogans/stream/Stream.h
+        ///
         /// \brief
-        /// Convenient typedef for util::RefCounted::Registry<Stream>.
-        /// NOTE: It's one and only instance is accessed like this;
-        /// thekogans::stream::StreamRegistry::Instance ().
-        typedef util::RefCounted::Registry<Stream> StreamRegistry;
 
         struct _LIB_THEKOGANS_STREAM_DECL StreamEvents : public virtual util::RefCounted {
             /// \brief
@@ -92,33 +85,11 @@ namespace thekogans {
                 const util::Buffer & /*buffer*/) throw () {}
         };
 
-        /// \def THEKOGANS_STREAM_DECLARE_STREAM_COMMON(type, base)
-        /// This macro is used in a stream declaration file (.h).
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (type)\
-        public:
-
-        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM_COMMON(type)
-        /// This macro is used in the stream definition file (.cpp).
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
-
-        #define THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED(type)\
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
-            static const char *TYPE;\
-            virtual const char *GetType () const override {\
-                return TYPE;\
-            }\
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (type)\
-        public:
-
-        #define THEKOGANS_STREAM_IMPLEMENT_STREAM_OVERLAPPED(type)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
-            const char *type::TYPE = #type;
+        /// \brief
+        /// Convenient typedef for util::RefCounted::Registry<Stream>.
+        /// NOTE: It's one and only instance is accessed like this;
+        /// thekogans::stream::StreamRegistry::Instance ().
+        typedef util::RefCounted::Registry<Stream> StreamRegistry;
 
         /// \struct Stream Stream.h thekogans/stream/Stream.h
         ///
@@ -126,10 +97,7 @@ namespace thekogans {
         /// Stream is an abstract base for all other stream types.
         /// It's main purpose is to expose the api a generic stream
         /// will have. Streams are reference counted. This makes it
-        /// very easy to deal with lifetimes of async streams (especially
-        /// on Windows). Because of the design of \see{util::RefCounted},
-        /// creating a stream on the stack is as simple as declaring it.
-        /// No allocation/deallocation necessary.
+        /// very easy to deal with lifetimes of async streams.
         ///
         /// NOTE: Stream anchors a handle based stream hierarchy.
         /// On Unix this is simple as everything is handle based (int).
@@ -157,176 +125,16 @@ namespace thekogans {
         ///   Socket\n
         ///     TCPSocket\n
         ///     UDPSocket\n
+        ///
 
         struct _LIB_THEKOGANS_STREAM_DECL Stream : public util::Producer<StreamEvents> {
             /// \brief
             /// Declare \see{util::RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Stream)
 
-        #if !defined (TOOLCHAIN_OS_Windows)
-            struct WSAOVERLAPPED {
-                THEKOGANS_UTIL_ERROR_CODE errorCode;
-                WSAOVERLAPPED () :
-                    errorCode (0) {}
-                virtual ~WSAOVERLAPPED () {}
-            };
-        #endif // !defined (TOOLCHAIN_OS_Windows)
-
-            /// \struct Stream::Overlapped Stream.h thekogans/stream/Stream.h
-            ///
-            /// \brief
-            /// Overlapped extends a Windows WSAOVERLAPPED.
-            struct Overlapped : public WSAOVERLAPPED {
-                /// \brief
-                /// ctor.
-                Overlapped () {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    memset ((WSAOVERLAPPED *)this, 0, sizeof (WSAOVERLAPPED));
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-                /// \brief
-                /// dtor.
-                virtual ~Overlapped () {}
-
-                /// \brief
-                virtual const char *GetType () const = 0;
-                /// \brief
-                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () = 0;
-                /// \brief
-                virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () {
-                    return true;
-                }
-
-                /// \brief
-                /// Return error code.
-                /// \return Error code.
-                inline THEKOGANS_UTIL_ERROR_CODE GetError () const {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    return (THEKOGANS_UTIL_ERROR_CODE)Internal;
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    return errorCode;
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-                /// \brief
-                /// Set error code.
-                /// \param[in] error Error code.
-                inline void SetError (THEKOGANS_UTIL_ERROR_CODE errorCode_) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    Internal = (DWORD)errorCode_;
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    errorCode = errorCode_;
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Return count of bytes read.
-                /// \return Count of bytes read.
-                inline util::ui32 GetCount () const {
-                    return InternalHigh;
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            };
-
-            /// \struct Stream::ReadOverlapped Stream.h thekogans/stream/Stream.h
-            ///
-            /// \brief
-            /// ReadOverlapped is a helper class. It reduces code clutter and
-            /// makes instantiating Overlapped used by \see{Stream::Read} easier.
-            struct ReadOverlapped : public Overlapped {
-                /// \brief
-                /// ReadOverlapped is an \see{Overlapped}.
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (ReadOverlapped)
-
-                /// \brief
-                /// Buffer used by Stream::Read.
-                util::Buffer buffer;
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// WSARecv buffer.
-                WSABUF wsaBuf;
-                /// \brief
-                /// WSARecv flags.
-                DWORD flags;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-
-                /// \brief
-                /// Read ctor.
-                /// \param[in] bufferLength Length of buffer to allocate for reading.
-                ReadOverlapped (std::size_t bufferLength) :
-                    buffer (util::NetworkEndian, bufferLength)
-                #if defined (TOOLCHAIN_OS_Windows)
-                    , flags (0)
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
-                    wsaBuf.buf = (char *)buffer.GetWritePtr ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-
-                /// \brief
-                /// Used by \see{ExecOverlapped} to
-                /// the buffer to the given stream.
-                /// \param[in] stream Stream that created this Overlapped.
-                /// \return Count of bytes written.
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override;
-            };
-
-            /// \struct Stream::WrietOverlapped Stream.h thekogans/stream/Stream.h
-            ///
-            /// \brief
-            /// WriteOverlapped is a helper class. It reduces code clutter and
-            /// makes instantiating Overlapped used by \see{Stream::Write} easier.
-            struct WriteOverlapped : public Overlapped {
-                /// \brief
-                /// WriteOverlapped is an \see{Overlapped}.
-                THEKOGANS_STREAM_DECLARE_STREAM_OVERLAPPED (WriteOverlapped)
-
-                /// \brief
-                /// Buffer used by Stream::Write.
-                util::Buffer buffer;
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// WSASend buffer.
-                WSABUF wsaBuf;
-                /// \brief
-                /// WSASend flags.
-                DWORD flags;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-
-                /// \brief
-                /// Write ctor.
-                /// \param[in] buffer Buffer to write.
-                WriteOverlapped (util::Buffer buffer_) :
-                    buffer (std::move (buffer_))
-                #if defined (TOOLCHAIN_OS_Windows)
-                    , flags (0)
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    wsaBuf.len = (ULONG)buffer.GetDataAvailableForReading ();
-                    wsaBuf.buf = (char *)buffer.GetReadPtr ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                }
-
-                /// \brief
-                /// Used by \see{ExecOverlapped} to write
-                /// the buffer to the given stream.
-                /// \param[in] stream Stream that created this Overlapped.
-                /// \return Count of bytes written.
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override;
-                /// \brief
-                /// Called by \see{AsyncIoEventQueue::WaitForEvents} to allow
-                /// the WriteOverlapped to perform post op housekeeping.
-                virtual bool Epilog (Stream::SharedPtr /*stream*/) throw () override {
-                    return buffer.IsEmpty ();
-                }
-            };
-
         protected:
             /// \brief
-            /// OS handle.
+            /// OS stream handle.
             THEKOGANS_UTIL_HANDLE handle;
             /// \brief
             /// This token is the key between the c++ and the c async io worlds (os).
@@ -365,21 +173,13 @@ namespace thekogans {
             inline THEKOGANS_UTIL_HANDLE GetHandle () const {
                 return handle;
             }
-            ///c\brief
-            /// Return the stream token.
-            /// \return Stream token.
-            inline StreamRegistry::Token::ValueType GetToken () const {
-                return token.GetValue ();
-            }
 
             /// \brief
             /// Close the OS handle associated with the stream.
-            virtual void Close ();
+            /// NOTE: Close does not throw. It's end state is an invalid
+            /// handle regardless if we closed the actual handle.
+            virtual void Close () throw ();
 
-            /// \brief
-            /// Return the number of bytes available to read from the OS buffers.
-            /// \return The number of bytes available to read from the OS buffers.
-            virtual std::size_t GetDataAvailableForReading () const = 0;
             enum {
                 /// \brief
                 /// Default buffer length for async Read[From | Msg].
@@ -389,6 +189,10 @@ namespace thekogans {
             /// Async read bytes from the stream.
             /// \param[in] bufferLength Number of bytes to read (for \see{Socket} this number
             /// can and should be 0. This way you will get everything that has arrived).
+            /// IMPORTANT: bufferLength specifies the max number of bytes that
+            /// will be returned by this read. If there are fewer bytes available
+            /// then fewer than requested will be returned. It's up to the caller
+            /// to continue calling Read (in OnStreamRead) to get more bytes.
             virtual void Read (std::size_t /*bufferLength*/ = DEFAULT_BUFFER_LENGTH) = 0;
             /// \brief
             /// Async write \see{util::Buffer} to the stream. This method is more
@@ -419,7 +223,8 @@ namespace thekogans {
             /// Used by \see{ExecOverlapped} to notify the stream that
             /// an \see{Overlapped} operation has completed successfully.
             /// \param[in,out] overlapped \see{Overlapped} that completed successfully.
-            virtual void HandleOverlapped (Overlapped &overlapped) throw ();
+            virtual void HandleOverlapped (Overlapped &overlapped) throw () = 0;
+
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Enqueue the given \see{Overlapped} on to the given list (in or out).
@@ -429,12 +234,12 @@ namespace thekogans {
             void EnqOverlapped (
                 std::unique_ptr<Overlapped> overlapped,
                 std::list<std::unique_ptr<Overlapped>> &list,
-                bool front = false);
+                bool front = false) throw ();
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given list.
             /// \param[in, out] list List to return the head \see{Overlapped} from.
             /// \return Head overlapped from the given list.
-            std::unique_ptr<Overlapped> DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list);
+            std::unique_ptr<Overlapped> DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list) throw ();
         #endif // !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Execute the given overlapped.
@@ -445,31 +250,7 @@ namespace thekogans {
             /// NOTE: If all went well, \see{HandleOverlapped} was called.
             /// If an error occured, \see{HandleError} was called. If
             /// the stream disconnected, \see{HandleDisconnect} was called.
-            bool ExecOverlapped (Overlapped &overlapped);
-
-            /// \brief
-            /// ReadHelper needs to be implemented by every concrete class to provide
-            /// blocking reads. It's called by the framework to perform data extraction
-            /// from os to application buffers after we've been informed of it's arrival.
-            /// NOTE: The framework expects this function to throw on error.
-            /// \param[out] buffer Where to read the data.
-            /// \param[in] bufferLength Size of buffer.
-            /// \return Count of bytes actually read.
-            virtual std::size_t ReadHelper (
-                void *buffer,
-                std::size_t bufferLength) = 0;
-            /// \brief
-            /// WriteHelper needs to be implemented by every concrete class to provide
-            /// blocking writes. It's called by the framework to perform data insertion
-            /// from application to os buffers after we've been informed there's room
-            /// available.
-            /// NOTE: The framework expects this function to throw on error.
-            /// \param[out] buffer Data to write.
-            /// \param[in] bufferLength Size of buffer.
-            /// \return Count of bytes actually written.
-            virtual std::size_t WriteHelper (
-                const void *buffer,
-                std::size_t bufferLength) = 0;
+            bool ExecOverlapped (Overlapped &overlapped) throw ();
 
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -481,6 +262,21 @@ namespace thekogans {
             /// Stream is neither copy constructable, nor assignable.
             THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Stream)
         };
+
+        /// \def THEKOGANS_STREAM_DECLARE_STREAM(type)
+        /// This macro is used in a stream declaration file (.h).
+        /// \param[in] type Stream class name.
+        #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
+            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
+            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (type)\
+        public:
+
+        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
+        /// This macro is used in the stream definition file (.cpp).
+        /// \param[in] type Stream class name.
+        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
 
     } // namespace stream
 } // namespace thekogans
