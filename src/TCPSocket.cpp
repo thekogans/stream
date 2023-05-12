@@ -181,7 +181,7 @@ namespace thekogans {
             if (!IsBound ()) {
                 Bind (Address::Any (0, address.GetFamily ()));
             }
-            std::unique_ptr<ConnectOverlapped> overlapped (new ConnectOverlapped (address));
+            ConnectOverlapped::UniquePtr overlapped (new ConnectOverlapped (address));
             if (!WindowsFunctions::Instance ().ConnectEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->address.address,
@@ -214,7 +214,7 @@ namespace thekogans {
             // it's assumed that the EnqOverlapped and connect (below) are
             // an atomic operation.
             EnqOverlapped (
-                std::unique_ptr<Overlapped> (new ConnectOverlapped (address)),
+                Overlapped::UniquePtr (new ConnectOverlapped (address)),
                 out,
                 true);
             if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
@@ -242,7 +242,7 @@ namespace thekogans {
         }
 
         void TCPSocket::Disconnect (bool reuseSocket) {
-            std::unique_ptr<Overlapped> overlapped (new DisconnectOverlapped);
+            Overlapped::UniquePtr overlapped (new DisconnectOverlapped);
             if (!WindowsFunctions::Instance ().DisconnectEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     overlapped.get (),
@@ -327,7 +327,7 @@ namespace thekogans {
 
         void TCPSocket::Accept () {
         #if defined (TOOLCHAIN_OS_Windows)
-            std::unique_ptr<AcceptOverlapped> overlapped (
+            AcceptOverlapped::UniquePtr overlapped (
                 new AcceptOverlapped (GetFamily (), GetType (), GetProtocol ()));
             if (!WindowsFunctions::Instance ().AcceptEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
@@ -346,7 +346,7 @@ namespace thekogans {
             overlapped.release ();
         #else // defined (TOOLCHAIN_OS_Windows)
             EnqOverlapped (
-                std::unique_ptr<Overlapped> (new AcceptOverlapped),
+                Overlapped::UniquePtr (new AcceptOverlapped),
                 in);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }

@@ -97,24 +97,24 @@ namespace thekogans {
         ///     // StreamEvents
         ///     virtual void OnStreamError (
         ///             Stream::SharedPtr /*stream*/,
-        ///             const util::Exception &exception) throw () {
+        ///             const util::Exception &exception) throw () override {
         ///         // Log exception.
         ///     }
         ///
-        ///     virtual void OnStreamDisconnect (Stream::SharedPtr /*stream*/) throw () {
+        ///     virtual void OnStreamDisconnect (Stream::SharedPtr /*stream*/) throw () override {
         ///         // stream disconnected.
         ///     }
         ///
         ///     virtual void OnStreamRead (
         ///             Stream::SharedPtr stream,
-        ///             const util::Buffer &buffer) throw () {
+        ///             const util::Buffer &buffer) throw () override {
         ///         // Process incomming reply from the server.
         ///         // Post an async read to get the servers response.
         ///         stream->Read (0);
         ///     }
         ///
         ///     // TCPSocketEvents
-        ///     virtual void OnTCPSocketConnect (TCPSocket::SharedPtr tcpSocket) throw () {
+        ///     virtual void OnTCPSocketConnect (TCPSocket::SharedPtr tcpSocket) throw () override {
         ///         // Send handshake packet(s).
         ///         ...
         ///         // Post an async read to get the servers response.
@@ -194,18 +194,18 @@ namespace thekogans {
         ///     // StreamEvents
         ///     virtual void OnStreamError (
         ///             stream::Stream::SharedPtr stream,
-        ///             const util::Exception &exception) throw () {
+        ///             const util::Exception &exception) throw () override {
         ///         // Log exception.
         ///         RemoveConnection (stream);
         ///     }
         ///
-        ///     virtual void OnStreamDisconnect (stream::Stream::SharedPtr stream) throw () {
+        ///     virtual void OnStreamDisconnect (stream::Stream::SharedPtr stream) throw () override {
         ///         RemoveConnection (stream);
         ///     }
         ///
         ///     virtual void OnStreamRead (
         ///             stream::Stream::SharedPtr stream,
-        ///             const util::Buffer &buffer) throw () {
+        ///             const util::Buffer &buffer) throw () override {
         ///         // Process incomming request from a client.
         ///         // Initiate an async read to listen for client requests.
         ///         stream->Read (0);
@@ -214,7 +214,7 @@ namespace thekogans {
         ///     // TCPSocketEvents
         ///     virtual void OnTCPSocketAccept (
         ///             stream::TCPSocket::SharedPtr /*tcpSocket*/,
-        ///             stream::TCPSocket::SharedPtr connection) throw () {
+        ///             stream::TCPSocket::SharedPtr connection) throw () override {
         ///         // Setup async notifications.
         ///         util::Subscriber<stream::StreamEvents>::Subscribe (
         ///             *connection,

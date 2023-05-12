@@ -26,7 +26,14 @@
 namespace thekogans {
     namespace stream {
 
+        /// \brief
+        /// Forward declaration of \see{UDPSocket}.
         struct UDPSocket;
+
+        /// \struct UDPSocketEvents UDPSocket.h thekogans/stream/UDPSocket.h
+        ///
+        /// \brief
+        /// Subscribe to UDPSocketEvents to receive \see{UDPSocket} event notifications.
 
         struct _LIB_THEKOGANS_STREAM_DECL UDPSocketEvents : public virtual util::RefCounted {
             /// \brief

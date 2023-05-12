@@ -18,6 +18,7 @@
 #if !defined (__thekogans_stream_Overlapped_h)
 #define __thekogans_stream_Overlapped_h
 
+#include <list>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
@@ -55,6 +56,14 @@ namespace thekogans {
         /// Overlapped extends a Windows WSAOVERLAPPED.
 
         struct _LIB_THEKOGANS_STREAM_DECL Overlapped : public WSAOVERLAPPED {
+            /// \brief
+            /// Convenient typedef for std::unique_ptr<Overlapped>.
+            typedef std::unique_ptr<Overlapped> UniquePtr;
+
+            /// \brief
+            /// Convenient typedef for std::list<Overlapped::UniquePtr>.
+            typedef std::list<Overlapped::UniquePtr> Queue;
+
             /// \brief
             /// ctor.
             Overlapped () {
@@ -110,6 +119,7 @@ namespace thekogans {
         };
 
         #define THEKOGANS_STREAM_DECLARE_OVERLAPPED(type)\
+            typedef std::unique_ptr<type> UniquePtr;\
             THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
             static const char *TYPE;\
             virtual const char *GetType () const override {\

@@ -70,7 +70,7 @@ namespace thekogans {
                 util::RefCounted::SharedPtr<Stream> /*stream*/) throw () {}
 
             /// \brief
-            /// Called when new data has arrived on a stream.
+            /// Called when new data has arrived for the given stream.
             /// \param[in] stream \see{Stream} that received the data.
             /// \param[in] buffer The new data.
             virtual void OnStreamRead (
@@ -146,10 +146,10 @@ namespace thekogans {
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Outstanding read requests.
-            std::list<std::unique_ptr<Overlapped>> in;
+            Overlapped::Queue in;
             /// \brief
             /// Outstanding write requests.
-            std::list<std::unique_ptr<Overlapped>> out;
+            Overlapped::Queue out;
             /// \brief
             /// Lock serializing access to in and out.
             util::SpinLock spinLock;
@@ -229,17 +229,17 @@ namespace thekogans {
             /// \brief
             /// Enqueue the given \see{Overlapped} on to the given list (in or out).
             /// \param[in] overlapped \see{Overlapped} to enqueue.
-            /// \param[in, out] list List to enqueue the given \see{Overlapped} on.
+            /// \param[in, out] queue Queue to enqueue the given \see{Overlapped} on.
             /// \param[in] front true == put at the front of the list.
             void EnqOverlapped (
-                std::unique_ptr<Overlapped> overlapped,
-                std::list<std::unique_ptr<Overlapped>> &list,
+                Overlapped::UniquePtr overlapped,
+                Overlapped::Queue &queue,
                 bool front = false) throw ();
             /// \brief
-            /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given list.
-            /// \param[in, out] list List to return the head \see{Overlapped} from.
-            /// \return Head overlapped from the given list.
-            std::unique_ptr<Overlapped> DeqOverlapped (std::list<std::unique_ptr<Overlapped>> &list) throw ();
+            /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given queue.
+            /// \param[in, out] queue Queue to return the head \see{Overlapped} from.
+            /// \return Head overlapped from the given queue.
+            Overlapped::UniquePtr DeqOverlapped (Overlapped::Queue &queue) throw ();
         #endif // !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Execute the given overlapped.

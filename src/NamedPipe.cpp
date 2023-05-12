@@ -19,7 +19,6 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include <cassert>
 #include "thekogans/util/Exception.h"
 #include "thekogans/stream/NamedPipe.h"
 
@@ -45,7 +44,7 @@ namespace thekogans {
 
         void NamedPipe::Read (std::size_t bufferLength) {
             if (bufferLength != 0) {
-                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
+                ReadOverlapped::UniquePtr overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
                         overlapped->buffer.GetWritePtr (),
@@ -84,7 +83,7 @@ namespace thekogans {
 
         void NamedPipe::Write (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
-                std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
+                WriteOverlapped::UniquePtr overlapped (new WriteOverlapped (std::move (buffer)));
                 if (!WriteFile (
                         handle,
                         overlapped->buffer.GetReadPtr (),

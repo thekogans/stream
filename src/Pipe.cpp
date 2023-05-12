@@ -105,7 +105,7 @@ namespace thekogans {
         void Pipe::Read (std::size_t bufferLength) {
             if (bufferLength != 0) {
             #if defined (TOOLCHAIN_OS_Windows)
-                std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
+                ReadOverlapped::UniquePtr overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
                         overlapped->buffer.GetWritePtr (),
@@ -120,7 +120,7 @@ namespace thekogans {
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
                 EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
+                    Overlapped::UniquePtr (new ReadOverlapped (bufferLength)),
                     in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
@@ -168,7 +168,7 @@ namespace thekogans {
         void Pipe::Write (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
+                WriteOverlapped::UniquePtr overlapped (new WriteOverlapped (std::move (buffer)));
                 if (!WriteFile (
                         handle,
                         overlapped->buffer.GetReadPtr (),
@@ -183,7 +183,7 @@ namespace thekogans {
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
                 EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
+                    Overlapped::UniquePtr (new WriteOverlapped (std::move (buffer))),
                     out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }

@@ -64,6 +64,7 @@ namespace thekogans {
             } winSockInit;
         }
     #else // defined (TOOLCHAIN_OS_Windows)
+        #define closesocket close
         #define ioctlsocket ioctl
     #endif // defined (TOOLCHAIN_OS_Windows)
 
@@ -165,11 +166,7 @@ namespace thekogans {
 
         void Socket::Close () throw () {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-            #if defined (TOOLCHAIN_OS_Windows)
                 closesocket ((THEKOGANS_STREAM_SOCKET)handle);
-            #else // defined (TOOLCHAIN_OS_Windows)
-                close ((THEKOGANS_STREAM_SOCKET)handle);
-            #endif // defined (TOOLCHAIN_OS_Windows)
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
                 family = -1;
                 type = -1;
@@ -254,7 +251,7 @@ namespace thekogans {
 
         void Socket::Read (std::size_t bufferLength) {
         #if defined (TOOLCHAIN_OS_Windows)
-            std::unique_ptr<ReadOverlapped> overlapped (new ReadOverlapped (bufferLength));
+            ReadOverlapped::UniquePtr overlapped (new ReadOverlapped (bufferLength));
             if (WSARecv (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf,
@@ -271,7 +268,7 @@ namespace thekogans {
             overlapped.release ();
         #else // defined (TOOLCHAIN_OS_Windows)
             EnqOverlapped (
-                std::unique_ptr<Overlapped> (new ReadOverlapped (bufferLength)),
+                Overlapped::UniquePtr (new ReadOverlapped (bufferLength)),
                 in);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -323,7 +320,7 @@ namespace thekogans {
         void Socket::Write (util::Buffer buffer) {
             if (!buffer.IsEmpty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                std::unique_ptr<WriteOverlapped> overlapped (new WriteOverlapped (std::move (buffer)));
+                WriteOverlapped::UniquePtr overlapped (new WriteOverlapped (std::move (buffer)));
                 if (WSASend (
                         (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->wsaBuf,
@@ -340,7 +337,7 @@ namespace thekogans {
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
                 EnqOverlapped (
-                    std::unique_ptr<Overlapped> (new WriteOverlapped (std::move (buffer))),
+                    Overlapped::UniquePtr (new WriteOverlapped (std::move (buffer))),
                     out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }

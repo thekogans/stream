@@ -19,8 +19,8 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include <cassert>
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/WindowsUtils.h"
 #include "thekogans/stream/ClinetNamedPipe.h"
 
 namespace thekogans {
@@ -28,7 +28,7 @@ namespace thekogans {
 
         namespace {
             inline THEKOGANS_UTIL_HANDLE CreateFile (
-                    LPCWSTR name,
+                    const std::string &name,
                     DWORD desiredAccess,
                     DWORD shareMode,
                     LPSECURITY_ATTRIBUTES securityAttributes,
@@ -37,7 +37,7 @@ namespace thekogans {
                     HANDLE templateFile) {
                 if (name != 0) {
                     THEKOGANS_UTIL_HANDLE handle = CreateFileW (
-                        name,
+                        util::UTF8ToUTF16 (name).c_str (),
                         desiredAccess,
                         shareMode,
                         securityAttributes,
@@ -58,7 +58,7 @@ namespace thekogans {
         }
 
         void ClientNamedPipe::ClientNamedPipe (
-            LPCWSTR name,
+            const std::string &name,
             DWORD desiredAccess,
             DWORD shareMode,
             LPSECURITY_ATTRIBUTES securityAttributes,
@@ -76,9 +76,9 @@ namespace thekogans {
                     templateFile)) {}
 
         bool ClientNamedPipe::WaitForServer (
-                const char *name,
+                const std::string &name,
                 DWORD timeout) {
-            return WaitNamedPipeW (name, timeout) == TRUE;
+            return WaitNamedPipeW (util::UTF8ToUTF16 (name).c_str (), timeout) == TRUE;
         }
 
     } // namespace stream

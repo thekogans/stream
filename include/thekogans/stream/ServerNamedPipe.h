@@ -86,7 +86,7 @@ namespace thekogans {
             /// a named pipe grant full control to the LocalSystem account, administrators, and the creator
             /// owner. They also grant read access to members of the Everyone group and the anonymous account.
             ServerNamedPipe (
-                LPCWSTR name,
+                const std::string &name,
                 DWORD openMode = PIPE_ACCESS_DUPLEX,
                 DWORD pipeMode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
                 DWORD maxInstances = PIPE_UNLIMITED_INSTANCES,

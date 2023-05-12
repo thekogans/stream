@@ -40,6 +40,9 @@ namespace thekogans {
         /// \struct ClientNamedPipe ClientNamedPipe.h thekogans/stream/ClientNamedPipe.h
         ///
         /// \brief
+        /// ClientNamedPipe represents the client side of the named pipe. It's responsible
+        /// for connecting to the \see{ServerNamedPipe} using it's one and only ctor. Unlike
+        /// \see{TCPSocket} clients
 
         struct _LIB_THEKOGANS_STREAM_DECL ClientNamedPipe : public NamedPipe {
             /// \brief
@@ -49,7 +52,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// Create a client side named pipe.
-            /// \param[in] name Name of pipe to connect to..
+            /// \param[in] name Name of pipe to connect to.
             /// \param[in] desiredAccess The requested access to the file or device,
             /// which can be summarized as read, write, both or neither zero).
             /// +------------------+----------------------------+
@@ -102,7 +105,7 @@ namespace thekogans {
             /// continues to use the bInheritHandle member.
             /// The bInheritHandle member of the structure specifies whether the returned handle can be inherited.
             ClientNamedPipe (
-                LPCWSTR name,
+                const std::string &name,
                 DWORD desiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD shareMode = 0,
                 LPSECURITY_ATTRIBUTES securityAttributes = 0,
@@ -112,9 +115,12 @@ namespace thekogans {
 
             /// \brief
             /// Wait for a server side instance of the pipe to become available for connecting.
+            /// \param[in] name Name of pipe to wait for.
             /// \param[in] timeout How long to wait for connection before giving up.
+            /// \return true == An instance of the server pipe with the given name
+            /// is available for connecting to.
             static bool WaitForServer (
-                LPCWSTR name,
+                const std::string &name,
                 DWORD timeout);
         };
 

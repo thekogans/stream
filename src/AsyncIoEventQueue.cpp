@@ -94,7 +94,7 @@ namespace thekogans {
                 GetQueuedCompletionStatusEx (handle, iocpEvents.data (), maxEventsBatch, &count, INFINITE, FALSE);
                 for (ULONG i = 0; i < count; ++i) {
                     if (iocpEvents[i].lpOverlapped != 0) {
-                        std::unique_ptr<Overlapped> overlapped ((Overlapped *)iocpEvents[i].lpOverlapped);
+                        Overlapped::UniquePtr overlapped ((Overlapped *)iocpEvents[i].lpOverlapped);
                         Stream::SharedPtr stream = StreamRegistry::Instance ().Get (
                             (StreamRegistry::Token::Type)iocpEvents[i].lpCompletionKey);
                         if (stream.Get () != 0) {
@@ -139,7 +139,7 @@ namespace thekogans {
                         }
                         else {
                             if (epollEvents[i].events & EPOLLIN) {
-                                for (std::unique_ptr<Overlapped>
+                                for (Overlapped::UniquePtr
                                         overlapped = stream->DeqOverlapped (stream->in);
                                         overlapped.get () != 0;
                                         overlapped = stream->DeqOverlapped (stream->in)) {
@@ -150,7 +150,7 @@ namespace thekogans {
                                 }
                             }
                             if (epollEvents[i].events & EPOLLOUT) {
-                                for (std::unique_ptr<Overlapped>
+                                for (Overlapped::UniquePtr
                                         overlapped = stream->DeqOverlapped (stream->out);
                                         overlapped.get () != 0;
                                         overlapped = stream->DeqOverlapped (stream->out)) {
@@ -190,7 +190,7 @@ namespace thekogans {
                             stream->HandleDisconnect ();
                         }
                         else if (kqueueEvents[i].filter == EVFILT_READ) {
-                            for (std::unique_ptr<Overlapped>
+                            for (Overlapped::UniquePtr
                                     overlapped = stream->DeqOverlapped (stream->in);
                                     overlapped.get () != 0;
                                     overlapped = stream->DeqOverlapped (stream->in)) {
@@ -201,7 +201,7 @@ namespace thekogans {
                             }
                         }
                         else if (kqueueEvents[i].filter == EVFILT_WRITE) {
-                            for (std::unique_ptr<Overlapped>
+                            for (Overlapped::UniquePtr
                                     overlapped = stream->DeqOverlapped (stream->out);
                                     overlapped.get () != 0;
                                     overlapped = stream->DeqOverlapped (stream->out)) {

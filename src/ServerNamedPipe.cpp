@@ -19,8 +19,8 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include <cassert>
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/WindowsUtils.h"
 #include "thekogans/stream/ServerNamedPipe.h"
 
 namespace thekogans {
@@ -28,7 +28,7 @@ namespace thekogans {
 
         namespace {
             inline THEKOGANS_UTIL_HANDLE CreateNamedPipe (
-                    LPCWSTR name,
+                    const std::string &name,
                     DWORD openMode,
                     DWORD pipeMode,
                     DWORD maxInstances,
@@ -38,7 +38,7 @@ namespace thekogans {
                     LPSECURITY_ATTRIBUTES securityAttributes) {
                 if (name != 0) {
                     THEKOGANS_UTIL_HANDLE handle = CreateNamedPipeW (
-                        name,
+                        util::UTF8ToUTF16 (name).c_str (),
                         openMode | FILE_FLAG_OVERLAPPED,
                         pipeMode,
                         maxInstances,
@@ -60,7 +60,7 @@ namespace thekogans {
         }
 
         ServerNamedPipe::ServerNamedPipe (
-            LPCWSTR name,
+            const std::string &name,
             DWORD openMode,
             DWORD pipeMode,
             DWORD maxInstances,
@@ -92,11 +92,11 @@ namespace thekogans {
         }
 
         void ServerNamedPipe::Connect () {
-            std::unique_ptr<Overlapped> overlapped (new ConnectOverlapped);
+            Overlapped::UniquePtr overlapped (new ConnectOverlapped);
             if (!ConnectNamedPipe (handle, overlapped.get ())) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                 if ((errorCode == ERROR_PIPE_CONNECTED &&
-                        !PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token, overlapped.get ())) ||
+                        !PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token.GetValue (), overlapped.get ())) ||
                         errorCode != ERROR_IO_PENDING) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
