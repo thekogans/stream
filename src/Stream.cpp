@@ -126,7 +126,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Linux)
                 epoll_event event = {0};
                 event.events = EPOLLRDHUP;
-                if (!in.empty () != 0) {
+                if (!in.empty ()) {
                     event.events |= EPOLLIN;
                 }
                 if (!out.empty ()) {
@@ -140,7 +140,7 @@ namespace thekogans {
                     keventSet (&event, handle, EVFILT_READ, EV_ADD, 0, 0, token.GetValue ());
                     keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
                 }
-                else if (!out.empty ()) {
+                if (!out.empty ()) {
                     keventStruct event = {0};
                     keventSet (&event, handle, EVFILT_WRITE, EV_ADD, 0, 0, token.GetValue ());
                     keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
@@ -159,7 +159,7 @@ namespace thekogans {
                 #if defined (TOOLCHAIN_OS_Linux)
                     epoll_event event = {0};
                     event.events = EPOLLRDHUP;
-                    if (!in.empty () != 0) {
+                    if (!in.empty ()) {
                         event.events |= EPOLLIN;
                     }
                     if (!out.empty ()) {
@@ -173,7 +173,7 @@ namespace thekogans {
                         keventSet (&event, handle, EVFILT_READ, EV_DELETE, 0, 0, 0);
                         keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
                     }
-                    else if (out.empty ()) {
+                    if (out.empty ()) {
                         keventStruct event = {0};
                         keventSet (&event, handle, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
                         keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
@@ -184,16 +184,6 @@ namespace thekogans {
             return overlapped;
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
-
-    #if defined (TOOLCHAIN_OS_Windows)
-        namespace {
-            #define STATUS_CANCELED 0xC0000120
-            #define STATUS_LOCAL_DISCONNECT 0xC000013B
-            #define STATUS_REMOTE_DISCONNECT 0xC000013C
-            #define STATUS_PIPE_BROKEN 0xC000014b
-            #define STATUS_CONNECTION_RESET 0xC000020D
-        }
-    #endif // defined (TOOLCHAIN_OS_Windows)
 
         bool Stream::ExecOverlapped (Overlapped &overlapped) throw () {
             while (1) {
@@ -212,6 +202,11 @@ namespace thekogans {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped.GetError ();
                 #if defined (TOOLCHAIN_OS_Windows)
                     // Convert known errors to disconnect events.
+                    #define STATUS_CANCELED 0xC0000120
+                    #define STATUS_LOCAL_DISCONNECT 0xC000013B
+                    #define STATUS_REMOTE_DISCONNECT 0xC000013C
+                    #define STATUS_PIPE_BROKEN 0xC000014b
+                    #define STATUS_CONNECTION_RESET 0xC000020D
                     if (errorCode == STATUS_LOCAL_DISCONNECT ||
                             errorCode == STATUS_REMOTE_DISCONNECT ||
                             errorCode == STATUS_PIPE_BROKEN ||

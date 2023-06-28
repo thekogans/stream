@@ -45,6 +45,9 @@ namespace thekogans {
         /// \struct StreamEvents Stream.h thekogans/stream/Stream.h
         ///
         /// \brief
+        /// Every Stream is able to fire the followig events. To receive a
+        /// particular Stream's events you need to subscribe to it's events.
+        /// See \see{TCPSocket.h} for an example.
 
         struct _LIB_THEKOGANS_STREAM_DECL StreamEvents : public virtual util::RefCounted {
             /// \brief

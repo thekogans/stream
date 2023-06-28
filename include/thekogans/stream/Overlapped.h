@@ -115,6 +115,12 @@ namespace thekogans {
             inline util::ui32 GetCount () const {
                 return InternalHigh;
             }
+            /// \brief
+            /// Set the count of bytes read.
+            /// \param[in] count Count of bytes read.
+            inline void SetCount (util::ui32 count) {
+                InternalHigh = (DWORD)count;
+            }
         #endif // defined (TOOLCHAIN_OS_Windows)
         };
 

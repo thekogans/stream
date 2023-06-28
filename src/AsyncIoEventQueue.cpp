@@ -96,7 +96,7 @@ namespace thekogans {
                     if (iocpEvents[i].lpOverlapped != 0) {
                         Overlapped::UniquePtr overlapped ((Overlapped *)iocpEvents[i].lpOverlapped);
                         Stream::SharedPtr stream = StreamRegistry::Instance ().Get (
-                            (StreamRegistry::Token::Type)iocpEvents[i].lpCompletionKey);
+                            (StreamRegistry::Token::ValueType)iocpEvents[i].lpCompletionKey);
                         if (stream.Get () != 0) {
                             stream->ExecOverlapped (*overlapped);
                         }
@@ -189,25 +189,23 @@ namespace thekogans {
                             }
                             stream->HandleDisconnect ();
                         }
-                        else if (kqueueEvents[i].filter == EVFILT_READ) {
-                            for (Overlapped::UniquePtr
-                                    overlapped = stream->DeqOverlapped (stream->in);
-                                    overlapped.get () != 0;
-                                    overlapped = stream->DeqOverlapped (stream->in)) {
-                                if (!stream->ExecOverlapped (*overlapped)) {
-                                    stream->EnqOverlapped (std::move (overlapped), stream->in, true);
-                                    break;
-                                }
+                        else {
+                            Overlapped::Queue *queue = 0;
+                            if (kqueueEvents[i].filter == EVFILT_READ) {
+                                queue = &stream->in;
                             }
-                        }
-                        else if (kqueueEvents[i].filter == EVFILT_WRITE) {
-                            for (Overlapped::UniquePtr
-                                    overlapped = stream->DeqOverlapped (stream->out);
-                                    overlapped.get () != 0;
-                                    overlapped = stream->DeqOverlapped (stream->out)) {
-                                if (!stream->ExecOverlapped (*overlapped)) {
-                                    stream->EnqOverlapped (std::move (overlapped), stream->out, true);
-                                    break;
+                            else if (kqueueEvents[i].filter == EVFILT_WRITE) {
+                                queue = &stream->out;
+                            }
+                            if (queue != 0) {
+                                for (Overlapped::UniquePtr
+                                        overlapped = stream->DeqOverlapped (*queue);
+                                        overlapped.get () != 0;
+                                        overlapped = stream->DeqOverlapped (*queue)) {
+                                    if (!stream->ExecOverlapped (*overlapped)) {
+                                        stream->EnqOverlapped (std::move (overlapped), *queue, true);
+                                        break;
+                                    }
                                 }
                             }
                         }

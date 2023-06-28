@@ -241,6 +241,9 @@ namespace thekogans {
                             return -1;
                         }
                         buffer.AdvanceWriteOffset ((std::size_t)countRead);
+                    #if defined (TOOLCHAIN_OS_Windows)
+                        SetCount (countRead);
+                    #endif // defined (TOOLCHAIN_OS_Windows)
                     }
                     return buffer.GetDataAvailableForReading ();
                 }
