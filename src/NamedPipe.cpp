@@ -25,6 +25,60 @@
 namespace thekogans {
     namespace stream {
 
+        bool NamedPipe::Wait (
+                const std::string &name,
+                DWORD timeout) {
+            return WaitNamedPipeW (util::UTF8ToUTF16 (name).c_str (), timeout) == TRUE;
+        }
+
+        NamedPipe::SharedPtr NamedPipe::CreateClientNamedPipe (
+                const std::string &name,
+                DWORD desiredAccess,
+                DWORD shareMode,
+                LPSECURITY_ATTRIBUTES securityAttributes,
+                DWORD creationDisposition,
+                DWORD flagsAndAttributes,
+                HANDLE templateFile) {
+            THEKOGANS_UTIL_HANDLE handle = CreateFileW (
+                util::UTF8ToUTF16 (name).c_str (),
+                desiredAccess,
+                shareMode,
+                securityAttributes,
+                creationDisposition,
+                flagsAndAttributes | FILE_FLAG_OVERLAPPED,
+                templateFile);
+            if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            return SharedPtr (new NamedPipe (handle));
+        }
+
+        NamedPipe::SharedPtr ::CreateServerNamedPipe (
+                const std::string &name,
+                DWORD openMode,
+                DWORD pipeMode,
+                DWORD maxInstances,
+                DWORD outBufferSize,
+                DWORD inBufferSize,
+                DWORD defaultTimeOut,
+                LPSECURITY_ATTRIBUTES securityAttributes) {
+            THEKOGANS_UTIL_HANDLE handle = CreateNamedPipeW (
+                util::UTF8ToUTF16 (name).c_str (),
+                openMode | FILE_FLAG_OVERLAPPED,
+                pipeMode,
+                maxInstances,
+                outBufferSize,
+                inBufferSize,
+                defaultTimeOut,
+                securityAttributes);
+            if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            return SharedPtr (new NamedPipe (handle));
+        }
+
         namespace {
             struct ReadOverlapped : public Overlapped {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ReadOverlapped)
@@ -103,6 +157,38 @@ namespace thekogans {
             }
         }
 
+        namespace {
+            struct ConnectOverlapped : public Overlapped {
+                THEKOGANS_STREAM_DECLARE_OVERLAPPED (ConnectOverlapped)
+
+                virtual ssize_t Prolog (Stream & /*stream*/) {
+                    return GetError () == ERROR_SUCCESS ? 1 : -1;
+                }
+            };
+
+            THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (ConnectOverlapped)
+        }
+
+        void ServerNamedPipe::Connect () {
+            Overlapped::UniquePtr overlapped (new ConnectOverlapped);
+            if (!ConnectNamedPipe (handle, overlapped.get ())) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                if ((errorCode == ERROR_PIPE_CONNECTED &&
+                        !PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token.GetValue (), overlapped.get ())) ||
+                        errorCode != ERROR_IO_PENDING) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
+            }
+            overlapped.release ();
+        }
+
+        void ServerNamedPipe::Disconnect (bool flushBuffers) {
+            if ((flushBuffers && !FlushFileBuffers (handle)) || !DisconnectNamedPipe (handle)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        }
+
         void NamedPipe::SetMode (DWORD pipeMode) {
             if (!SetNamedPipeHandleState (handle, &pipeMode, 0, 0)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -111,7 +197,14 @@ namespace thekogans {
         }
 
         void NamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetType () == ReadOverlapped::TYPE) {
+            if (overlapped.GetName () == ConnectOverlapped::NAME) {
+                util::Producer<ServerNamedPipeEvents>::Produce (
+                    std::bind (
+                        &ServerNamedPipeEvents::OnServerNamedPipeConnected,
+                        std::placeholders::_1,
+                        SharedPtr (this)));
+            }
+            else if (overlapped.GetType () == ReadOverlapped::TYPE) {
                 ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
                 util::Producer<StreamEvents>::Produce (
                     std::bind (
@@ -129,6 +222,30 @@ namespace thekogans {
                         Stream::SharedPtr (this),
                         std::move (writeOverlapped.buffer)));
             }
+        }
+
+        namespace {
+            struct SecurityDescriptor : public SECURITY_DESCRIPTOR {
+                SecurityDescriptor () {
+                    InitializeSecurityDescriptor ((SECURITY_DESCRIPTOR *)this, SECURITY_DESCRIPTOR_REVISION);
+                    SetSecurityDescriptorDacl ((SECURITY_DESCRIPTOR *)this, TRUE, 0, FALSE);
+                }
+            };
+
+            struct SecurityAttributes : public SECURITY_ATTRIBUTES {
+                SecurityDescriptor securityDescriptor;
+                SecurityAttributes () {
+                    memset ((SECURITY_ATTRIBUTES *)this, 0, sizeof (SECURITY_ATTRIBUTES));
+                    nLength = sizeof (SECURITY_ATTRIBUTES);
+                    lpSecurityDescriptor = &securityDescriptor;
+                    bInheritHandle = FALSE;
+                }
+            }
+        }
+
+        LPSECURITY_ATTRIBUTES NamedPipe::DefaultSecurityAttributes () {
+            static SecurityAttributes securityAttributes;
+            return (LPSECURITY_ATTRIBUTES)&securityAttributes;
         }
 
     } // namespace stream

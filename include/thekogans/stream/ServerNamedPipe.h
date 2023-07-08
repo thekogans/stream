@@ -120,4 +120,4 @@ namespace thekogans {
 
 #endif // defined (TOOLCHAIN_OS_Windows)
 
-#endif // !defined (__thekogans_stream_NamedPipe_h)
+#endif // !defined (__thekogans_stream_ServerNamedPipe_h)

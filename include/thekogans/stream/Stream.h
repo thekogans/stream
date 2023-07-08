@@ -122,13 +122,10 @@ namespace thekogans {
         ///   Pipe\n
         /// #if defined (TOOLCHAIN_OS_Windows)
         ///   NamedPipe\n
-        ///     ClientNamedPipe\n
-        ///     ServerNamedPipe\n
         /// #endif // defined (TOOLCHAIN_OS_Windows)
         ///   Socket\n
         ///     TCPSocket\n
         ///     UDPSocket\n
-        ///
 
         struct _LIB_THEKOGANS_STREAM_DECL Stream : public util::Producer<StreamEvents> {
             /// \brief
