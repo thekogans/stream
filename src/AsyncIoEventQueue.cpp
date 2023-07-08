@@ -139,23 +139,27 @@ namespace thekogans {
                         }
                         else {
                             if (epollEvents[i].events & EPOLLIN) {
-                                for (Overlapped::UniquePtr
-                                        overlapped = stream->DeqOverlapped (stream->in);
-                                        overlapped.get () != 0;
-                                        overlapped = stream->DeqOverlapped (stream->in)) {
-                                    if (!stream->ExecOverlapped (*overlapped)) {
-                                        stream->EnqOverlapped (std::move (overlapped), stream->in, true);
+                                for (Overlapped *
+                                        overlapped = stream->GetOverlapped (stream->in);
+                                        overlapped != 0;
+                                        overlapped = stream->GetOverlapped (stream->in)) {
+                                    if (stream->ExecOverlapped (*overlapped)) {
+                                        stream->DeqOverlapped (stream->in);
+                                    }
+                                    else {
                                         break;
                                     }
                                 }
                             }
                             if (epollEvents[i].events & EPOLLOUT) {
-                                for (Overlapped::UniquePtr
-                                        overlapped = stream->DeqOverlapped (stream->out);
-                                        overlapped.get () != 0;
-                                        overlapped = stream->DeqOverlapped (stream->out)) {
-                                    if (!stream->ExecOverlapped (*overlapped)) {
-                                        stream->EnqOverlapped (std::move (overlapped), stream->out, true);
+                                for (Overlapped *
+                                        overlapped = stream->GetOverlapped (stream->out);
+                                        overlapped != 0;
+                                        overlapped = stream->GetOverlapped (stream->out)) {
+                                    if (stream->ExecOverlapped (*overlapped)) {
+                                        stream->DeqOverlapped (stream->out);
+                                    }
+                                    else {
                                         break;
                                     }
                                 }
@@ -198,12 +202,14 @@ namespace thekogans {
                                 queue = &stream->out;
                             }
                             if (queue != 0) {
-                                for (Overlapped::UniquePtr
-                                        overlapped = stream->DeqOverlapped (*queue);
-                                        overlapped.get () != 0;
-                                        overlapped = stream->DeqOverlapped (*queue)) {
+                                for (Overlapped *
+                                        overlapped = stream->GetOverlapped (*queue);
+                                        overlapped != 0;
+                                        overlapped = stream->GetOverlapped (*queue)) {
                                     if (!stream->ExecOverlapped (*overlapped)) {
-                                        stream->EnqOverlapped (std::move (overlapped), *queue, true);
+                                        stream->DeqOverlapped (*queue);
+                                    }
+                                    else {
                                         break;
                                     }
                                 }

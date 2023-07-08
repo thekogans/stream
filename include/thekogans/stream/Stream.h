@@ -230,16 +230,21 @@ namespace thekogans {
             /// Enqueue the given \see{Overlapped} on to the given list (in or out).
             /// \param[in] overlapped \see{Overlapped} to enqueue.
             /// \param[in, out] queue Queue to enqueue the given \see{Overlapped} on.
-            /// \param[in] front true == put at the front of the list.
             void EnqOverlapped (
                 Overlapped::UniquePtr overlapped,
-                Overlapped::Queue &queue,
-                bool front = false) throw ();
+                Overlapped::Queue &queue) throw ();
+            /// \brief
+            /// Return the head \see{Overlapped} from the given queue.
+            /// \param[in, out] queue \see{Overlapped::Queue} to return the head \see{Overlapped} from.
+            /// \return Head \see{Overlapped} or 0 if the queue is empty.
+            /// NOTE: The \see{Overlapped} pointer is returned without dequeueing the head \see{Overlapped}.
+            /// This is done to prevent thread races to and maintain causality. After calling ExecOverlapped
+            /// bellow if it returns true call DeqOverlapped to remove it from the queue.
+            Overlapped *GetOverlapped (Overlapped::Queue &queue) throw ();
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given queue.
             /// \param[in, out] queue Queue to return the head \see{Overlapped} from.
-            /// \return Head overlapped from the given queue.
-            Overlapped::UniquePtr DeqOverlapped (Overlapped::Queue &queue) throw ();
+            void DeqOverlapped (Overlapped::Queue &queue) throw ();
         #endif // !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Execute the given overlapped.

@@ -112,17 +112,10 @@ namespace thekogans {
     #if !defined (TOOLCHAIN_OS_Windows)
         void Stream::EnqOverlapped (
                 Overlapped::UniquePtr overlapped,
-                Overlapped::Queue &queue,
-                bool front) throw () {
+                Overlapped::Queue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            bool setMask = queue.empty ();
-            if (front) {
-                queue.push_front (std::move (overlapped));
-            }
-            else {
-                queue.push_back (std::move (overlapped));
-            }
-            if (setMask) {
+            queue.push_back (std::move (overlapped));
+            if (queue.size () == 1) {
             #if defined (TOOLCHAIN_OS_Linux)
                 epoll_event event = {0};
                 event.events = EPOLLRDHUP;
@@ -149,11 +142,14 @@ namespace thekogans {
             }
         }
 
-        Overlapped::UniquePtr Stream::DeqOverlapped (Overlapped::Queue &queue) throw () {
-            Overlapped::UniquePtr overlapped;
+        Overlapped *Stream::GetOverlapped (Overlapped::Queue &queue) throw () {
+            util::LockGuard<util::SpinLock> guard (spinLock);
+            return !queue.empty () ? queue.front ().get () : 0;
+        }
+
+        void Stream::DeqOverlapped (Overlapped::Queue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
             if (!queue.empty ()) {
-                overlapped = std::move (queue.front ());
                 queue.pop_front ();
                 if (queue.empty ()) {
                 #if defined (TOOLCHAIN_OS_Linux)
@@ -181,7 +177,6 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Linux)
                 }
             }
-            return overlapped;
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 

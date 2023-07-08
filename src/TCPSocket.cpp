@@ -202,21 +202,8 @@ namespace thekogans {
             // Socket::Write without calling TCPSocket::Connect
             // first. Since the socket has not connected yet it will
             // just sit there waiting for write to be ready which
-            // will never come. By placing the ConnectOverlapped at
-            // the top of the out list we guarantee that a successful
-            // connect will be paired up with the ConnectOverlapped and
-            // whatever write buffers were pending before the connect
-            // attempt will be written next. Semantically this might
-            // not be the best behavior (though it's harmless) but it's
-            // a lot more desirable than complicated locking and overlapped
-            // tracking schemes that are all plagued by race conditions.
-            // ALSO: Even though there's no formal mechanism mandating it,
-            // it's assumed that the EnqOverlapped and connect (below) are
-            // an atomic operation.
-            EnqOverlapped (
-                Overlapped::UniquePtr (new ConnectOverlapped (address)),
-                out,
-                true);
+            // will never come.
+            EnqOverlapped (Overlapped::UniquePtr (new ConnectOverlapped (address)), out);
             if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
                     THEKOGANS_STREAM_SOCKET_ERROR) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
