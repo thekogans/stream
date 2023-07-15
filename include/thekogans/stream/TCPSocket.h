@@ -264,7 +264,10 @@ namespace thekogans {
         ///
         ///     void RemoveConnection (Stream::SharedPtr stream) {
         ///         std::vector<TCPSocket::SharedPtr>::iterator it =
-        ///             std::find (connections.begin (), connections.end (), stream);
+        ///             std::find (
+        ///                 connections.begin (),
+        ///                 connections.end (),
+        ///                 util::dynamic_refcounted_sharedptr_cast<TCPSocket> (stream));
         ///         if (it != connections.end ()) {
         ///             util::Subscriber<stream::StreamEvents>::Unsubscribe (**it);
         ///             connections.erase (it);

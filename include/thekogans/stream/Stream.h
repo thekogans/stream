@@ -39,15 +39,16 @@ namespace thekogans {
         /// Forward declaration of \see{AsyncIoEventQueue}.
         struct AsyncIoEventQueue;
         /// \brief
-        /// Forward declaration of Stream.
+        /// Forward declaration of \see{Stream}.
         struct Stream;
 
         /// \struct StreamEvents Stream.h thekogans/stream/Stream.h
         ///
         /// \brief
-        /// Every Stream is able to fire the followig events. To receive a
+        /// Every \see{Stream} is able to fire the followig events. To receive a
         /// particular Stream's events you need to subscribe to it's events.
-        /// See \see{TCPSocket.h} for an example.
+        /// See \see{Pipe}, \see{NamedPipe}, \see{TCPSocket} and \see{UDPSocket}
+        /// for examples on how to use that particular stream.
 
         struct _LIB_THEKOGANS_STREAM_DECL StreamEvents : public virtual util::RefCounted {
             /// \brief
