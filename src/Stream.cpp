@@ -128,23 +128,18 @@ namespace thekogans {
                 event.data.u64 = token.GetValue ();
                 epoll_ctl (AsyncIoEventQueue::Instance ().GetHandle (), EPOLL_CTL_MOD, handle, &event);
             #elif defined (TOOLCHAIN_OS_OSX)
-                if (!in.empty ()) {
+                if (in.size () == 1) {
                     keventStruct event = {0};
                     keventSet (&event, handle, EVFILT_READ, EV_ADD, 0, 0, token.GetValue ());
                     keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
                 }
-                if (!out.empty ()) {
+                else if (out.size () == 1) {
                     keventStruct event = {0};
                     keventSet (&event, handle, EVFILT_WRITE, EV_ADD, 0, 0, token.GetValue ());
                     keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
                 }
             #endif // defined (TOOLCHAIN_OS_Linux)
             }
-        }
-
-        Overlapped *Stream::GetOverlapped (Overlapped::Queue &queue) throw () {
-            util::LockGuard<util::SpinLock> guard (spinLock);
-            return !queue.empty () ? queue.front ().get () : 0;
         }
 
         void Stream::DeqOverlapped (Overlapped::Queue &queue) throw () {
@@ -169,7 +164,7 @@ namespace thekogans {
                         keventSet (&event, handle, EVFILT_READ, EV_DELETE, 0, 0, 0);
                         keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
                     }
-                    if (out.empty ()) {
+                    else if (out.empty ()) {
                         keventStruct event = {0};
                         keventSet (&event, handle, EVFILT_WRITE, EV_DELETE, 0, 0, 0);
                         keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);
@@ -177,6 +172,12 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Linux)
                 }
             }
+        }
+
+        bool Stream::ExecOverlapped (Overlapped::Queue &queue) throw () {
+            // NOTE: No lock is being taken here as we're not
+            // modifying the queue, just accessing the head element.
+            return !queue.empty () && ExecOverlapped (*queue.front ());
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 

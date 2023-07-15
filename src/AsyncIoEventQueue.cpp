@@ -122,10 +122,10 @@ namespace thekogans {
                             if (socket.Get () != 0) {
                                 THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
                                 if (errorCode == EPIPE) {
-                                    socket->HandleDisconnect ();
+                                    stream->HandleDisconnect ();
                                 }
                                 else {
-                                    socket->HandleError (
+                                    stream->HandleError (
                                         THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
                                 }
                             }
@@ -139,29 +139,13 @@ namespace thekogans {
                         }
                         else {
                             if (epollEvents[i].events & EPOLLIN) {
-                                for (Overlapped *
-                                        overlapped = stream->GetOverlapped (stream->in);
-                                        overlapped != 0;
-                                        overlapped = stream->GetOverlapped (stream->in)) {
-                                    if (stream->ExecOverlapped (*overlapped)) {
-                                        stream->DeqOverlapped (stream->in);
-                                    }
-                                    else {
-                                        break;
-                                    }
+                                while (stream->ExecOverlapped (stream->in)) {
+                                    stream->DeqOverlapped (stream->in);
                                 }
                             }
                             if (epollEvents[i].events & EPOLLOUT) {
-                                for (Overlapped *
-                                        overlapped = stream->GetOverlapped (stream->out);
-                                        overlapped != 0;
-                                        overlapped = stream->GetOverlapped (stream->out)) {
-                                    if (stream->ExecOverlapped (*overlapped)) {
-                                        stream->DeqOverlapped (stream->out);
-                                    }
-                                    else {
-                                        break;
-                                    }
+                                while (stream->ExecOverlapped (stream->out)) {
+                                    stream->DeqOverlapped (stream->out);
                                 }
                             }
                         }
@@ -193,26 +177,14 @@ namespace thekogans {
                             }
                             stream->HandleDisconnect ();
                         }
-                        else {
-                            Overlapped::Queue *queue = 0;
-                            if (kqueueEvents[i].filter == EVFILT_READ) {
-                                queue = &stream->in;
+                        else if (kqueueEvents[i].filter == EVFILT_READ) {
+                            while (stream->ExecOverlapped (stream->in)) {
+                                stream->DeqOverlapped (stream->in);
                             }
-                            else if (kqueueEvents[i].filter == EVFILT_WRITE) {
-                                queue = &stream->out;
-                            }
-                            if (queue != 0) {
-                                for (Overlapped *
-                                        overlapped = stream->GetOverlapped (*queue);
-                                        overlapped != 0;
-                                        overlapped = stream->GetOverlapped (*queue)) {
-                                    if (!stream->ExecOverlapped (*overlapped)) {
-                                        stream->DeqOverlapped (*queue);
-                                    }
-                                    else {
-                                        break;
-                                    }
-                                }
+                        }
+                        else if (kqueueEvents[i].filter == EVFILT_WRITE) {
+                            while (stream->ExecOverlapped (stream->out)) {
+                                stream->DeqOverlapped (stream->out);
                             }
                         }
                     }

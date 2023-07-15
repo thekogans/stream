@@ -169,7 +169,7 @@ namespace thekogans {
             THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (ConnectOverlapped)
         }
 
-        void ServerNamedPipe::Connect () {
+        void NamedPipe::Connect () {
             Overlapped::UniquePtr overlapped (new ConnectOverlapped);
             if (!ConnectNamedPipe (handle, overlapped.get ())) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -182,7 +182,7 @@ namespace thekogans {
             overlapped.release ();
         }
 
-        void ServerNamedPipe::Disconnect (bool flushBuffers) {
+        void NamedPipe::Disconnect (bool flushBuffers) {
             if ((flushBuffers && !FlushFileBuffers (handle)) || !DisconnectNamedPipe (handle)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -198,9 +198,9 @@ namespace thekogans {
 
         void NamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
             if (overlapped.GetName () == ConnectOverlapped::NAME) {
-                util::Producer<ServerNamedPipeEvents>::Produce (
+                util::Producer<NamedPipeEvents>::Produce (
                     std::bind (
-                        &ServerNamedPipeEvents::OnServerNamedPipeConnected,
+                        &NamedPipeEvents::OnNamedPipeConnected,
                         std::placeholders::_1,
                         SharedPtr (this)));
             }

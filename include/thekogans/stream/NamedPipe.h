@@ -37,7 +37,13 @@
 namespace thekogans {
     namespace stream {
 
+        /// \brief
+        /// Forward declaration of \see{NamedPipe}.
         struct NamedPipe;
+
+        /// \struct NamedPipeEvents NamedPipe.h thekogans/stream/NamedPipe.h
+        ///
+        /// \brief
 
         struct _LIB_THEKOGANS_STREAM_DECL NamedPipeEvents : public virtual util::RefCounted {
             /// \brief

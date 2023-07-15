@@ -32,6 +32,11 @@ namespace thekogans {
         /// Forward declaration of \see{TCPSocket}.
         struct TCPSocket;
 
+        /// \struct TCPSocketEvents TCPSocket.h thekogans/stream/TCPSocket.h
+        ///
+        /// \brief
+        /// Subscribe to TCPSocketEvents to receive \see{TCPSocket} event notifications.
+
         struct _LIB_THEKOGANS_STREAM_DECL TCPSocketEvents : public virtual util::RefCounted {
             /// \brief
             /// Declare \see{util::RefCounted} pointers.

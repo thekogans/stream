@@ -27,6 +27,8 @@
 namespace thekogans {
     namespace stream {
 
+        /// \brief
+        /// Forward declaration of \see{Stream}.
         struct Stream;
 
     #if !defined (TOOLCHAIN_OS_Windows)
@@ -38,12 +40,16 @@ namespace thekogans {
 
         struct WSAOVERLAPPED {
             /// \brief
-            /// All we need is an error code.
+            /// Error code.
             THEKOGANS_UTIL_ERROR_CODE errorCode;
+            /// \brief
+            /// Number of bytes received/transfered.
+            util::ui32 count;
             /// \brief
             /// ctor.
             WSAOVERLAPPED () :
-                errorCode (0) {}
+                errorCode (0),
+                count (0) {}
             /// \brief
             /// dtor.
             virtual ~WSAOVERLAPPED () {}
@@ -108,20 +114,26 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
-        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Return count of bytes read.
             /// \return Count of bytes read.
             inline util::ui32 GetCount () const {
+            #if defined (TOOLCHAIN_OS_Windows)
                 return InternalHigh;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                return count;
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             /// \brief
             /// Set the count of bytes read.
             /// \param[in] count Count of bytes read.
-            inline void SetCount (util::ui32 count) {
-                InternalHigh = (DWORD)count;
+            inline void SetCount (util::ui32 count_) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                InternalHigh = (DWORD)count_;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                count = count_;
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-        #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         #define THEKOGANS_STREAM_DECLARE_OVERLAPPED(type)\

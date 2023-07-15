@@ -233,35 +233,28 @@ namespace thekogans {
             void EnqOverlapped (
                 Overlapped::UniquePtr overlapped,
                 Overlapped::Queue &queue) throw ();
-            /// \brief
-            /// Return the head \see{Overlapped} from the given queue.
-            /// \param[in, out] queue \see{Overlapped::Queue} to return the head \see{Overlapped} from.
-            /// \return Head \see{Overlapped} or 0 if the queue is empty.
-            /// NOTE: The \see{Overlapped} pointer is returned without dequeueing the head \see{Overlapped}.
-            /// This is done to prevent thread races to and maintain causality. After calling ExecOverlapped
-            /// bellow if it returns true call DeqOverlapped to remove it from the queue.
-            Overlapped *GetOverlapped (Overlapped::Queue &queue) throw ();
+        private:
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given queue.
             /// \param[in, out] queue Queue to return the head \see{Overlapped} from.
             void DeqOverlapped (Overlapped::Queue &queue) throw ();
-        #endif // !defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Execute the given overlapped.
+            /// Execute the head \see{Overlapped} from the given queue.
+            /// \param[in, out] queue Queue from which to execute the head \see{Overlapped}.
+            /// \return true == The head \see{Overlapped} from the given queue was sccessfuly
+            /// completed and should be removed from the queue (\see{DeqOverlapped} above).
+            bool ExecOverlapped (Overlapped::Queue &queue) throw ();
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+        private:
+            /// \brief
+            /// Execute the given \see{Overlapped}.
             /// \param[in] overlapped \see{Overlapped} to execute.
             /// \return true == The given \see{Overlapped} was sccessfuly completed.
-            /// false == The given overlapped should to be put back at the front of
-            /// the queue because it would block (Linux and OS X).
-            /// NOTE: If all went well, \see{HandleOverlapped} was called.
-            /// If an error occured, \see{HandleError} was called. If
-            /// the stream disconnected, \see{HandleDisconnect} was called.
             bool ExecOverlapped (Overlapped &overlapped) throw ();
 
-        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// \see{AsyncIoEventQueue} needs access to in and out.
+            /// \see{AsyncIoEventQueue} needs access to private members.
             friend struct AsyncIoEventQueue;
-        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Stream is neither copy constructable, nor assignable.

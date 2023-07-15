@@ -202,13 +202,12 @@ namespace thekogans {
             // Socket::Write without calling TCPSocket::Connect
             // first. Since the socket has not connected yet it will
             // just sit there waiting for write to be ready which
-            // will never come.
+            // will never come. Always call Connect first.
             EnqOverlapped (Overlapped::UniquePtr (new ConnectOverlapped (address)), out);
             if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
                     THEKOGANS_STREAM_SOCKET_ERROR) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                 if (errorCode != EINPROGRESS) {
-                    DeqOverlapped (out);
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
