@@ -1,0 +1,27 @@
+<thekogans_make organization = "thekogans"
+                project = "stream_tcpecho_client"
+                project_type = "program"
+                major_version = "0"
+                minor_version = "2"
+                patch_version = "0"
+                guid = "2aafcdf3b6c805a57d38f09ce92e055a"
+                schema_version = "2">
+  <dependencies>
+    <dependency organization = "thekogans"
+                name = "util"/>
+    <dependency organization = "thekogans"
+                name = "stream"/>
+  </dependencies>
+  <cpp_headers prefix = "include">
+    <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
+  </cpp_headers>
+  <cpp_sources prefix = "src">
+    <cpp_source>Options.cpp</cpp_source>
+    <cpp_source>Version.cpp</cpp_source>
+    <cpp_source>main.cpp</cpp_source>
+  </cpp_sources>
+  <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+    <subsystem>Console</subsystem>
+  </if>
+</thekogans_make>

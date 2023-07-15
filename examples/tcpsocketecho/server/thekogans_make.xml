@@ -1,0 +1,38 @@
+<thekogans_make organization = "thekogans"
+                project = "stream_tcpecho_server"
+                project_type = "program"
+                major_version = "0"
+                minor_version = "2"
+                patch_version = "0"
+                guid = "51f9394b95efeb28f30e3a8869d73fa6"
+                schema_version = "2">
+  <dependencies>
+    <dependency organization = "thekogans"
+                name = "util"/>
+    <dependency organization = "thekogans"
+                name = "stream"/>
+    <choose>
+      <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
+        <library>Ws2_32.lib</library>
+        <library>Iphlpapi.lib</library>
+      </when>
+      <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
+        <framework>Foundation</framework>
+      </when>
+    </choose>
+  </dependencies>
+  <cpp_headers prefix = "include">
+    <cpp_header>$(organization)/$(project_directory)/Options.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Server.h</cpp_header>
+  </cpp_headers>
+  <cpp_sources prefix = "src">
+    <cpp_source>Options.cpp</cpp_source>
+    <cpp_source>Version.cpp</cpp_source>
+    <cpp_source>Server.cpp</cpp_source>
+    <cpp_source>main.cpp</cpp_source>
+  </cpp_sources>
+  <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+    <subsystem>Console</subsystem>
+  </if>
+</thekogans_make>
