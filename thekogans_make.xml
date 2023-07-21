@@ -6,24 +6,9 @@
                 patch_version = "0"
                 guid = "5e33fdb222451ad9697ca87aec9de144"
                 schema_version = "2">
-  <features>
-    <feature>THEKOGANS_STREAM_HAVE_OPENSSL</feature>
-  </features>
   <dependencies>
     <dependency organization = "thekogans"
                 name = "util"/>
-    <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
-      <dependency organization = "thekogans"
-                  name = "crypto"/>
-      <toolchain organization = "thekogans"
-                 name = "openssl_ssl"/>
-      <toolchain organization = "thekogans"
-                 name = "openssl_crypto"/>
-      <toolchain organization = "thekogans"
-                 name = "openssl"
-                 config = "Release"
-                 type = "Static"/>
-    </if>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <library>Ws2_32.lib</library>
@@ -57,9 +42,6 @@
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_header>$(organization)/$(project_directory)/NamedPipe.h</cpp_header>
     </if>
-    <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
-      <cpp_header>$(organization)/$(project_directory)/OpenSSLUtils.h</cpp_header>
-    </if>
   </cpp_headers>
   <cpp_sources prefix = "src">
     <cpp_source>Adapters.cpp</cpp_source>
@@ -74,9 +56,6 @@
     <cpp_source>Version.cpp</cpp_source>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <cpp_source>NamedPipe.cpp</cpp_source>
-    </if>
-    <if condition = "$(have_feature -f:THEKOGANS_STREAM_HAVE_OPENSSL)">
-      <cpp_source>OpenSSLUtils.cpp</cpp_source>
     </if>
   </cpp_sources>
 </thekogans_make>

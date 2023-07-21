@@ -179,8 +179,11 @@ namespace thekogans {
                         if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
                     #endif // defined (TOOLCHAIN_OS_Windows)
                             SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                            SetCount (0);
                             return -1;
                         }
+                        SetError (0);
+                        SetCount (countRead);
                         buffer.AdvanceWriteOffset ((std::size_t)countRead);
                     }
                     return buffer.GetDataAvailableForReading ();
@@ -250,8 +253,11 @@ namespace thekogans {
                         address.length);
                     if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
                         SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                        SetCount (0);
                         return -1;
                     }
+                    SetError (0);
+                    SetCount (countWritten);
                     return buffer.AdvanceReadOffset ((std::size_t)countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -364,9 +370,12 @@ namespace thekogans {
                         ssize_t countRead = recvmsg (stream.GetHandle (), &msgHdr, 0);
                         if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
                             SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                            SetCount (0);
                             return -1;
                         }
                     #endif // defined (TOOLCHAIN_OS_Windows)
+                        SetError (0);
+                        SetCount (countRead);
                         buffer.AdvanceWriteOffset ((std::size_t)countRead);
                     }
                     if (from.GetFamily () == AF_INET) {
@@ -440,12 +449,17 @@ namespace thekogans {
                     ssize_t countWritten = sendmsg (stream.GetHandle (), &msgHdr, 0);
                     if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
                         SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                        SetCount (0);
                         return -1;
                     }
-                    else if (countWritten > 0) {
-                        buffer.AdvanceReadOffset ((std::size_t)countWritten);
-                        if (!buffer.IsEmpty ()) {
-                            msgHdr.SetBuffer (buffer.GetReadPtr (), buffer.GetDataAvailableForReading ());
+                    else {
+                        SetError (0);
+                        SetCount (countWritten);
+                        if (countWritten > 0) {
+                            buffer.AdvanceReadOffset ((std::size_t)countWritten);
+                            if (!buffer.IsEmpty ()) {
+                                msgHdr.SetBuffer (buffer.GetReadPtr (), buffer.GetDataAvailableForReading ());
+                            }
                         }
                     }
                     return countWritten;

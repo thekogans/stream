@@ -192,7 +192,7 @@ namespace thekogans {
             /// can and should be 0. This way you will get everything that has arrived).
             /// IMPORTANT: bufferLength specifies the max number of bytes that
             /// will be returned by this read. If there are fewer bytes available
-            /// then fewer than requested will be returned. It's up to the caller
+            /// then requested, then fewer will be returned. It's up to the caller
             /// to continue calling Read (in OnStreamRead) to get more bytes.
             virtual void Read (std::size_t /*bufferLength*/ = DEFAULT_BUFFER_LENGTH) = 0;
             /// \brief
@@ -223,35 +223,35 @@ namespace thekogans {
             /// \brief
             /// Used by \see{ExecOverlapped} to notify the stream that
             /// an \see{Overlapped} operation has completed successfully.
-            /// \param[in,out] overlapped \see{Overlapped} that completed successfully.
+            /// \param[in] overlapped \see{Overlapped} that completed successfully.
             virtual void HandleOverlapped (Overlapped &overlapped) throw () = 0;
 
-        #if !defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Windows)
+        private:
             /// \brief
-            /// Enqueue the given \see{Overlapped} on to the given list (in or out).
+            /// Execute the given \see{Overlapped}.
+            /// \param[in] overlapped \see{Overlapped} to execute.
+            void ExecOverlapped (Overlapped &overlapped) throw ();
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Enqueue the given \see{Overlapped} on the given \see{Overlapped::Queue}.
             /// \param[in] overlapped \see{Overlapped} to enqueue.
-            /// \param[in, out] queue Queue to enqueue the given \see{Overlapped} on.
+            /// \param[in] queue \see{Overlapped::Queue} to enqueue the given \see{Overlapped} on.
             void EnqOverlapped (
                 Overlapped::UniquePtr overlapped,
                 Overlapped::Queue &queue) throw ();
         private:
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given queue.
-            /// \param[in, out] queue Queue to return the head \see{Overlapped} from.
+            /// \param[in] queue Queue to return the head \see{Overlapped} from.
             void DeqOverlapped (Overlapped::Queue &queue) throw ();
             /// \brief
             /// Execute the head \see{Overlapped} from the given queue.
-            /// \param[in, out] queue Queue from which to execute the head \see{Overlapped}.
+            /// \param[in] queue Queue from which to execute the head \see{Overlapped}.
             /// \return true == The head \see{Overlapped} from the given queue was sccessfuly
             /// completed and should be removed from the queue (\see{DeqOverlapped} above).
             bool ExecOverlapped (Overlapped::Queue &queue) throw ();
         #endif // !defined (TOOLCHAIN_OS_Windows)
-        private:
-            /// \brief
-            /// Execute the given \see{Overlapped}.
-            /// \param[in] overlapped \see{Overlapped} to execute.
-            /// \return true == The given \see{Overlapped} was sccessfuly completed.
-            bool ExecOverlapped (Overlapped &overlapped) throw ();
 
             /// \brief
             /// \see{AsyncIoEventQueue} needs access to private members.

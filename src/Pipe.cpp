@@ -92,8 +92,11 @@ namespace thekogans {
                         buffer.GetDataAvailableForWriting ());
                     if (countRead < 0) {
                         SetError (THEKOGANS_UTIL_OS_ERROR_CODE);
+                        SetCount (0);
                         return -1;
                     }
+                    SetError (0);
+                    SetCount (countWritten);
                     return buffer.AdvanceWriteOffset ((std::size_t)countRead);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
@@ -149,8 +152,11 @@ namespace thekogans {
                         buffer.GetDataAvailableForReading ());
                     if (countWritten < 0) {
                         SetError (THEKOGANS_UTIL_OS_ERROR_CODE);
+                        SetCount (0);
                         return -1;
                     }
+                    SetError (0);
+                    SetCount (countWritten);
                     return buffer.AdvanceReadOffset ((std::size_t)countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }

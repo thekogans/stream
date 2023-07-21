@@ -238,12 +238,12 @@ namespace thekogans {
                         if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
                     #endif // defined (TOOLCHAIN_OS_Windows)
                             SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                            SetCount (0);
                             return -1;
                         }
-                        buffer.AdvanceWriteOffset ((std::size_t)countRead);
-                    #if defined (TOOLCHAIN_OS_Windows)
+                        SetError (0);
                         SetCount (countRead);
-                    #endif // defined (TOOLCHAIN_OS_Windows)
+                        buffer.AdvanceWriteOffset ((std::size_t)countRead);
                     }
                     return buffer.GetDataAvailableForReading ();
                 }
@@ -304,8 +304,11 @@ namespace thekogans {
                         0);
                     if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
                         SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                        SetCount (0);
                         return -1;
                     }
+                    SetError (0);
+                    SetCount (countWritten);
                     return buffer.AdvanceReadOffset ((std::size_t)countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
