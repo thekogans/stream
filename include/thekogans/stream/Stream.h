@@ -147,10 +147,10 @@ namespace thekogans {
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Outstanding read requests.
-            Overlapped::Queue in;
+            OverlappedQueue in;
             /// \brief
             /// Outstanding write requests.
-            Overlapped::Queue out;
+            OverlappedQueue out;
             /// \brief
             /// Lock serializing access to in and out.
             util::SpinLock spinLock;
@@ -234,23 +234,24 @@ namespace thekogans {
             void ExecOverlapped (Overlapped &overlapped) throw ();
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Enqueue the given \see{Overlapped} on the given \see{Overlapped::Queue}.
+            /// Enqueue the given \see{Overlapped} on the given \see{OverlappedQueue}.
             /// \param[in] overlapped \see{Overlapped} to enqueue.
-            /// \param[in] queue \see{Overlapped::Queue} to enqueue the given \see{Overlapped} on.
+            /// \param[in] queue \see{OverlappedQueue} to enqueue the given \see{Overlapped} on.
             void EnqOverlapped (
                 Overlapped::UniquePtr overlapped,
-                Overlapped::Queue &queue) throw ();
+                OverlappedQueue &queue) throw ();
+
         private:
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given queue.
             /// \param[in] queue Queue to return the head \see{Overlapped} from.
-            void DeqOverlapped (Overlapped::Queue &queue) throw ();
+            void DeqOverlapped (OverlappedQueue &queue) throw ();
             /// \brief
             /// Execute the head \see{Overlapped} from the given queue.
             /// \param[in] queue Queue from which to execute the head \see{Overlapped}.
             /// \return true == The head \see{Overlapped} from the given queue was sccessfuly
             /// completed and should be removed from the queue (\see{DeqOverlapped} above).
-            bool ExecOverlapped (Overlapped::Queue &queue) throw ();
+            bool ExecOverlapped (OverlappedQueue &queue) throw ();
         #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief

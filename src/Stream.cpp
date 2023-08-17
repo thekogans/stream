@@ -70,6 +70,21 @@ namespace thekogans {
         }
 
         Stream::~Stream () {
+        #if !defined (TOOLCHAIN_OS_Windows)
+            auto deleteOverlapped = [] (Overlapped *overlapped) -> bool {
+                delete overlapped;
+                return true;
+            };
+            // NOTE: No lock is taken here as by the time we enter the
+            // dtor all shared references have been released. After
+            // that happens the Stream::WeakPtr registered with
+            // StreamRegistry will always return NULL.
+            in.clear (deleteOverlapped);
+            out.clear (deleteOverlapped);
+        #if defined (TOOLCHAIN_OS_Linux)
+            EPOLL_CTL (EPOLL_CTL_DEL);
+        #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             Close ();
         }
 
@@ -170,10 +185,10 @@ namespace thekogans {
 
         void Stream::EnqOverlapped (
                 Overlapped::UniquePtr overlapped,
-                Overlapped::Queue &queue) throw () {
+                OverlappedQueue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
             bool first = queue.empty ();
-            queue.push_back (std::move (overlapped));
+            queue.push_back (overlapped.release ());
             if (first) {
             #if defined (TOOLCHAIN_OS_Linux)
                 EPOLL_CTL (EPOLL_CTL_MOD)
@@ -183,10 +198,10 @@ namespace thekogans {
             }
         }
 
-        void Stream::DeqOverlapped (Overlapped::Queue &queue) throw () {
+        void Stream::DeqOverlapped (OverlappedQueue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
             if (!queue.empty ()) {
-                queue.pop_front ();
+                Overlapped::UniquePtr overlapped (queue.pop_front ());
                 if (queue.empty ()) {
                 #if defined (TOOLCHAIN_OS_Linux)
                     EPOLL_CTL (EPOLL_CTL_MOD)
@@ -197,7 +212,7 @@ namespace thekogans {
             }
         }
 
-        bool Stream::ExecOverlapped (Overlapped::Queue &queue) throw () {
+        bool Stream::ExecOverlapped (OverlappedQueue &queue) throw () {
             while (!queue.empty ()) {
                 ssize_t result = queue.front ()->Prolog (*this);
                 if (result > 0) {

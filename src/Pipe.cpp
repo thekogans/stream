@@ -96,7 +96,7 @@ namespace thekogans {
                         return -1;
                     }
                     SetError (0);
-                    SetCount (countWritten);
+                    SetCount (countRead);
                     return buffer.AdvanceWriteOffset ((std::size_t)countRead);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }

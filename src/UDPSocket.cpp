@@ -149,6 +149,12 @@ namespace thekogans {
                                 SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                                 return -1;
                             }
+                        #if !defined (TOOLCHAIN_OS_Windows)
+                            if (countAvailable == 0) {
+                                SetError (EWOULDBLOCK);
+                                return -1;
+                            }
+                        #endif // !defined (TOOLCHAIN_OS_Windows)
                             buffer.Resize ((std::size_t)countAvailable);
                         #if defined (TOOLCHAIN_OS_Windows)
                             wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
@@ -352,6 +358,12 @@ namespace thekogans {
                                 SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                                 return -1;
                             }
+                        #if !defined (TOOLCHAIN_OS_Windows)
+                            if (value == 0) {
+                                SetError (EWOULDBLOCK);
+                                return -1;
+                            }
+                        #endif // !defined (TOOLCHAIN_OS_Windows)
                             buffer.Resize ((std::size_t)value);
                             msgHdr.SetBuffer (buffer.GetWritePtr (), buffer.GetDataAvailableForWriting ());
                         }

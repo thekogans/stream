@@ -22,6 +22,7 @@
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
+#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/stream/Config.h"
 
 namespace thekogans {
@@ -54,6 +55,16 @@ namespace thekogans {
             /// dtor.
             virtual ~WSAOVERLAPPED () {}
         };
+
+        struct Overlapped;
+        enum {
+            /// \brief
+            /// Overlapped Queue ID.
+            OVERLAPPED_QUEUE_ID
+        };
+        /// \brief
+        /// Convenient typedef for IntrusiveList<Overlapped, OVERLAPPED_QUEUE_ID>.
+        typedef util::IntrusiveList<Overlapped, OVERLAPPED_QUEUE_ID> OverlappedQueue;
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         /// \struct Overlapped Overlapped.h thekogans/stream/Overlapped.h
@@ -61,14 +72,14 @@ namespace thekogans {
         /// \brief
         /// Overlapped extends a Windows WSAOVERLAPPED.
 
-        struct _LIB_THEKOGANS_STREAM_DECL Overlapped : public WSAOVERLAPPED {
+        struct _LIB_THEKOGANS_STREAM_DECL Overlapped :
+            #if !defined (TOOLCHAIN_OS_Windows)
+                public OverlappedQueue::Node,
+            #endif // !defined (TOOLCHAIN_OS_Windows)
+                public WSAOVERLAPPED {
             /// \brief
             /// Convenient typedef for std::unique_ptr<Overlapped>.
             typedef std::unique_ptr<Overlapped> UniquePtr;
-
-            /// \brief
-            /// Convenient typedef for std::list<Overlapped::UniquePtr>.
-            typedef std::list<Overlapped::UniquePtr> Queue;
 
             /// \brief
             /// ctor.
