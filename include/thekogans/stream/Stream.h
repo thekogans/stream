@@ -142,7 +142,7 @@ namespace thekogans {
             /// This token is registered with os specific apis (io completion port on
             /// windows, epoll on linux and kqueue on os x). On callback the token
             /// is used to get a Stream::SharedPtr from the Stream::WeakPtr found in
-            /// the \see{util::RefCounted::Registry<Stream>}.
+            /// the \see{StreamRegistry}.
             const StreamRegistry::Token token;
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief

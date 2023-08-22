@@ -130,6 +130,7 @@ namespace thekogans {
                                 }
                             }
                             else {
+                                // FIXME: Decorate the message with stream type.
                                 stream->HandleError (
                                     THEKOGANS_UTIL_STRING_EXCEPTION ("%s", "Unknown stream error."));
                             }

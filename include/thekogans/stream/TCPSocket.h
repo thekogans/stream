@@ -86,7 +86,6 @@ namespace thekogans {
         /// private:
         ///     stream::Address address;
         ///     stream::TCPSocket::SharedPtr clientSocket;
-        ///     util::JobQueue jobQueue;
         ///
         /// public:
         ///     void Start (const stream::Address &address_) {
@@ -139,16 +138,10 @@ namespace thekogans {
         ///             // Create a new client socket.
         ///             clientSocket.Reset (new stream::TCPSocket (AF_INET, SOCK_STREAM, 0));
         ///             // Setup async notifications.
-        ///             util::Subscriber<stream::StreamEvents>::Subscribe (
-        ///                 *clientSocket,
-        ///                 util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
-        ///                     new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
-        ///                         jobQueue)));
-        ///             util::Subscriber<stream::TCPSocketEvents>::Subscribe (
-        ///                 *clientSocket,
-        ///                 util::Producer<stream::TCPSocketEvents>::EventDeliveryPolicy::SharedPtr (
-        ///                     new util::Producer<stream::TCPSocketEvents>::RunLoopEventDeliveryPolicy (
-        ///                         jobQueue)));
+        ///             // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+        ///             // The reason for this is explained in \see{Stream}.
+        ///             util::Subscriber<stream::StreamEvents>::Subscribe (*clientSocket);
+        ///             util::Subscriber<stream::TCPSocketEvents>::Subscribe (*clientSocket);
         ///             // The socket is now async. All appropriate notification channels are open.
         ///             // Fire up a connect attempt.
         ///             clientSocket->Connect (address);
@@ -175,10 +168,6 @@ namespace thekogans {
         ///     util::ui32 maxPendingConnections;
         ///     stream::TCPSocket::SharedPtr serverSocket;
         ///     std::vector<TCPSocket::SharedPtr> connections;
-        ///     util::JobQueue jobQueue;
-        ///     // NOTE: Even though the server is fully async, there's no
-        ///     // need for a lock protecting it's resources as all communications
-        ///     // are seralized on the jobQueue above.
         ///
         /// public:
         ///     void Start (
@@ -201,7 +190,11 @@ namespace thekogans {
         ///             stream::Stream::SharedPtr stream,
         ///             const util::Exception &exception) throw () override {
         ///         // Log exception.
-        ///         RemoveConnection (stream);
+        ///         // Both serverSocket and connections will wind up here in case of error.
+        ///         // If it's a connection, remove it from the list.
+        ///         if (stream.Get () != serverSocket.Get ()) {
+        ///             RemoveConnection (stream);
+        ///         }
         ///     }
         ///
         ///     virtual void OnStreamDisconnect (stream::Stream::SharedPtr stream) throw () override {
@@ -221,11 +214,9 @@ namespace thekogans {
         ///             stream::TCPSocket::SharedPtr /*tcpSocket*/,
         ///             stream::TCPSocket::SharedPtr connection) throw () override {
         ///         // Setup async notifications.
-        ///         util::Subscriber<stream::StreamEvents>::Subscribe (
-        ///             *connection,
-        ///             util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
-        ///                 new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
-        ///                     jobQueue)));
+        ///         // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+        ///         // The reason for this is explained in \see{Stream}.
+        ///         util::Subscriber<stream::StreamEvents>::Subscribe (*connection);
         ///         // Initiate an async read to listen for client requests.
         ///         connection->Read (0);
         ///         connections.push_back (connection);
@@ -247,16 +238,10 @@ namespace thekogans {
         ///             // Create a listening socket.
         ///             serverSocket.Reset (new stream::TCPSocket (address, reuseAddress, maxPendingConnections));
         ///             // Setup async notifications.
-        ///             util::Subscriber<stream::StreamEvents>::Subscribe (
-        ///                 *serverSocket,
-        ///                 util::Producer<stream::StreamEvents>::EventDeliveryPolicy::SharedPtr (
-        ///                     new util::Producer<stream::StreamEvents>::RunLoopEventDeliveryPolicy (
-        ///                         jobQueue)));
-        ///             util::Subscriber<stream::TCPSocketEvents>::Subscribe (
-        ///                 *serverSocket,
-        ///                 util::Producer<stream::TCPSocketEvents>::EventDeliveryPolicy::SharedPtr (
-        ///                     new util::Producer<stream::TCPSocketEvents>::RunLoopEventDeliveryPolicy (
-        ///                         jobQueue)));
+        ///             // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+        ///             // The reason for this is explained in \see{Stream}.
+        ///             util::Subscriber<stream::StreamEvents>::Subscribe (*serverSocket);
+        ///             util::Subscriber<stream::TCPSocketEvents>::Subscribe (*serverSocket);
         ///             // We're open for business. Start listening for client connections.
         ///             serverSocket->Accept ();
         ///         }
