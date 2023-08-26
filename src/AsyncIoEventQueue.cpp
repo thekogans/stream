@@ -44,30 +44,25 @@
 namespace thekogans {
     namespace stream {
 
-    #if defined (TOOLCHAIN_OS_Windows)
         AsyncIoEventQueue::AsyncIoEventQueue (
+            #if defined (TOOLCHAIN_OS_Windows)
                 util::ui32 concurrentThreads,
+            #elif defined (TOOLCHAIN_OS_Linux)
+                util::ui32 maxSize,
+            #endif // defined (TOOLCHAIN_OS_Windows)
                 util::i32 priority,
                 util::ui32 affinity) :
                 Thread ("AsyncIoEventQueue"),
+            #if defined (TOOLCHAIN_OS_Windows)
                 handle (
                     CreateIoCompletionPort (
                         THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
                         0, 0, concurrentThreads)) {
-    #elif defined (TOOLCHAIN_OS_Linux)
-        AsyncIoEventQueue::AsyncIoEventQueue (
-                util::ui32 maxSize,
-                util::i32 priority,
-                util::ui32 affinity) :
-                Thread ("AsyncIoEventQueue"),
+            #elif defined (TOOLCHAIN_OS_Linux)
                 handle (epoll_create (maxSize)) {
-    #elif defined (TOOLCHAIN_OS_OSX)
-        AsyncIoEventQueue::AsyncIoEventQueue (
-                util::i32 priority,
-                util::ui32 affinity) :
-                Thread ("AsyncIoEventQueue"),
+            #elif defined (TOOLCHAIN_OS_OSX)
                 handle (kqueue ()) {
-    #endif // defined (TOOLCHAIN_OS_Windows)
+            #endif // defined (TOOLCHAIN_OS_Windows)
             if (handle == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
@@ -130,9 +125,10 @@ namespace thekogans {
                                 }
                             }
                             else {
-                                // FIXME: Decorate the message with stream type.
                                 stream->HandleError (
-                                    THEKOGANS_UTIL_STRING_EXCEPTION ("%s", "Unknown stream error."));
+                                    THEKOGANS_UTIL_STRING_EXCEPTION (
+                                        "Unknown stream (%s) error.",
+                                        stream->type ().name ()));
                             }
                         }
                         else if ((epollEvents[i].events & EPOLLRDHUP) || (epollEvents[i].events & EPOLLHUP)) {

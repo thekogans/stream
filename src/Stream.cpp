@@ -201,7 +201,7 @@ namespace thekogans {
         void Stream::DeqOverlapped (OverlappedQueue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
             if (!queue.empty ()) {
-                Overlapped::UniquePtr overlapped (queue.pop_front ());
+                volatile Overlapped::UniquePtr overlapped (queue.pop_front ());
                 if (queue.empty ()) {
                 #if defined (TOOLCHAIN_OS_Linux)
                     EPOLL_CTL (EPOLL_CTL_MOD)
