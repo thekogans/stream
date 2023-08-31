@@ -114,6 +114,7 @@ namespace thekogans {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ReadFromOverlapped)
 
             public:
+                std::size_t bufferLength;
                 util::Buffer buffer;
             #if defined (TOOLCHAIN_OS_Windows)
                 WSABUF wsaBuf;
@@ -121,7 +122,8 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 Address address;
 
-                ReadFromOverlapped (std::size_t bufferLength) :
+                ReadFromOverlapped (std::size_t bufferLength_) :
+                        bufferLength (bufferLength_),
                         buffer (util::NetworkEndian, bufferLength) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     wsaBuf.len = (ULONG)buffer.GetDataAvailableForWriting ();
@@ -138,11 +140,8 @@ namespace thekogans {
                     buffer.AdvanceWriteOffset (GetCount ());
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     if (buffer.IsEmpty ()) {
-                        // The ReadFromOverlapped ctor will resize the buffer
-                        // using the bufferLength that was passed in. If
-                        // that value was 0, than try to grab all
-                        // available data.
-                        if (buffer.GetLength () == 0) {
+                        // If passed in bufferLength was 0, than try to grab all available data.
+                        if (bufferLength == 0) {
                             u_long countAvailable = 0;
                             if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)stream.GetHandle (), FIONREAD, &countAvailable) ==
                                     THEKOGANS_STREAM_SOCKET_ERROR) {
@@ -193,6 +192,13 @@ namespace thekogans {
                         buffer.AdvanceWriteOffset ((std::size_t)countRead);
                     }
                     return buffer.GetDataAvailableForReading ();
+                }
+
+                virtual bool Epilog (Stream &stream) throw () override {
+                    if (stream.IsChainRead ()) {
+                        dynamic_cast<UDPSocket *> (&stream)->ReadFrom (bufferLength);
+                    }
+                    return true;
                 }
             };
 
@@ -327,12 +333,14 @@ namespace thekogans {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ReadMsgOverlapped)
 
             public:
+                std::size_t bufferLength;
                 util::Buffer buffer;
                 MsgHdr msgHdr;
                 Address from;
                 Address to;
 
-                ReadMsgOverlapped (std::size_t bufferLength) :
+                ReadMsgOverlapped (std::size_t bufferLength_) :
+                    bufferLength (bufferLength_),
                     buffer (util::NetworkEndian, bufferLength),
                     msgHdr (
                         buffer.GetWritePtr (),
@@ -347,11 +355,8 @@ namespace thekogans {
                     buffer.AdvanceWriteOffset (GetCount ());
                 #endif // defined (TOOLCHAIN_OS_Windows)
                     if (buffer.IsEmpty ()) {
-                        // The ReadMsgOverlapped ctor will resize the buffer
-                        // using the bufferLength that was passed in. If
-                        // that value was 0, than try to grab all
-                        // available data.
-                        if (buffer.GetLength () == 0) {
+                        // If passed in bufferLength was 0, than try to grab all available data.
+                        if (bufferLength == 0) {
                             u_long value = 0;
                             if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)stream.GetHandle (), FIONREAD, &value) ==
                                     THEKOGANS_STREAM_SOCKET_ERROR) {
@@ -403,6 +408,13 @@ namespace thekogans {
                 #endif // !defined (TOOLCHAIN_OS_Windows)
                     to = msgHdr.GetToAddress (((Socket *)&stream)->GetHostAddress ().GetPort ());
                     return buffer.GetDataAvailableForReading ();
+                }
+
+                virtual bool Epilog (Stream &stream) throw () override {
+                    if (stream.IsChainRead ()) {
+                        dynamic_cast<UDPSocket *> (&stream)->ReadMsg (bufferLength);
+                    }
+                    return true;
                 }
             };
 

@@ -307,6 +307,13 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 return 1;
             }
+
+            virtual bool Epilog (Stream &stream) throw () override {
+                if (stream.IsChainRead ()) {
+                    dynamic_cast<TCPSocket *> (&stream)->Accept ();
+                }
+                return true;
+            }
         };
 
         THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (AcceptOverlapped)

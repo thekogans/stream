@@ -100,6 +100,13 @@ namespace thekogans {
                     return buffer.AdvanceWriteOffset ((std::size_t)countRead);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
+
+                virtual bool Epilog (Stream &stream) throw () override {
+                    if (stream.IsChainRead ()) {
+                        stream.Read (buffer.GetLength ());
+                    }
+                    return true;
+                }
             };
 
             THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (ReadOverlapped)

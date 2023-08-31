@@ -51,7 +51,8 @@ namespace thekogans {
 
         Stream::Stream (THEKOGANS_UTIL_HANDLE handle_) :
                 handle (handle_),
-                token (this) {
+                token (this),
+                chainRead (true) {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (CreateIoCompletionPort (

@@ -144,6 +144,17 @@ namespace thekogans {
             /// is used to get a Stream::SharedPtr from the Stream::WeakPtr found in
             /// the \see{StreamRegistry}.
             const StreamRegistry::Token token;
+            /// \brief
+            /// true == Chain read requests automatically.
+            /// false == Manually post a new read request.
+            /// NOTE: Under normal circumstances the default behavior is desirable and
+            /// the framework will take care of queuing up the next read request in the
+            /// \see{Overlapped::Epilog}. If you need finer control over that set it to
+            /// false and take care of queuing read requests yourself.
+            /// IMPORTANT: Regardless of the state of chainRead, you're responsible for
+            /// kick starting the process yourself (call initial Read/Accept. Look at
+            /// \see{TCPSocket.h} for an example).
+            bool chainRead;
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Outstanding read requests.
@@ -173,6 +184,13 @@ namespace thekogans {
             /// \return Native OS stream handle.
             inline THEKOGANS_UTIL_HANDLE GetHandle () const {
                 return handle;
+            }
+
+            inline bool IsChainRead () const {
+                return chainRead;
+            }
+            inline void SetChainRead (bool chainRead_) {
+                chainRead = chainRead_;
             }
 
             /// \brief

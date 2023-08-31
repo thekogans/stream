@@ -113,8 +113,6 @@ namespace thekogans {
         ///             Stream::SharedPtr stream,
         ///             const util::Buffer &buffer) throw () override {
         ///         // Process incomming reply from the server.
-        ///         // Post an async read to get the servers response.
-        ///         stream->Read (0);
         ///     }
         ///
         ///     // TCPSocketEvents
@@ -205,8 +203,6 @@ namespace thekogans {
         ///             stream::Stream::SharedPtr stream,
         ///             const util::Buffer &buffer) throw () override {
         ///         // Process incomming request from a client.
-        ///         // Initiate an async read to listen for client requests.
-        ///         stream->Read (0);
         ///     }
         ///
         ///     // TCPSocketEvents
@@ -220,8 +216,6 @@ namespace thekogans {
         ///         // Initiate an async read to listen for client requests.
         ///         connection->Read (0);
         ///         connections.push_back (connection);
-        ///         // Listen for more client connections.
-        ///         serverSocket->Accept ();
         ///     }
         ///
         ///     void ResetIo (bool accept) {
