@@ -35,6 +35,7 @@
     #include <cassert>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <vector>
+#include "thekogans/stream/Stream.h"
 #if !defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/stream/Socket.h"
 #endif // !defined (TOOLCHAIN_OS_Windows)

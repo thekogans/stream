@@ -30,7 +30,7 @@
 namespace thekogans {
     namespace stream {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (TCPSocket, util::SpinLock)
+        THEKOGANS_STREAM_IMPLEMENT_STREAM (TCPSocket)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
@@ -219,6 +219,7 @@ namespace thekogans {
             struct DisconnectOverlapped : public Overlapped {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (DisconnectOverlapped)
 
+                DisconnectOverlapped () {}
                 virtual ssize_t Prolog (Stream & /*stream*/) throw () override {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
@@ -276,7 +277,7 @@ namespace thekogans {
                 int family,
                 int type,
                 int protocol) :
-                connection (new TCPSocket (WSASocketW (family, type, protocol, 0, 0, WSA_FLAG_OVERLAPPED))),
+                connection (new TCPSocket ((THEKOGANS_UTIL_HANDLE)WSASocketW (family, type, protocol, 0, 0, WSA_FLAG_OVERLAPPED))),
                 bytesReceived (0) {}
         #else // defined (TOOLCHAIN_OS_Windows)
             AcceptOverlapped () {}

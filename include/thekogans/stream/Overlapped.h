@@ -18,8 +18,9 @@
 #if !defined (__thekogans_stream_Overlapped_h)
 #define __thekogans_stream_Overlapped_h
 
-#include <list>
 #include "thekogans/util/Environment.h"
+
+#include <list>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/IntrusiveList.h"
@@ -97,7 +98,6 @@ namespace thekogans {
             /// \return Type name of this overlapped.
             virtual const char *GetType () const = 0;
             /// \brief
-            ///
             virtual ssize_t Prolog (Stream & /*stream*/) throw () = 0;
             /// \brief
             virtual bool Epilog (Stream & /*stream*/) throw () {
@@ -130,7 +130,7 @@ namespace thekogans {
             /// \return Count of bytes read.
             inline util::ui32 GetCount () const {
             #if defined (TOOLCHAIN_OS_Windows)
-                return InternalHigh;
+                return (util::ui32)InternalHigh;
             #else // defined (TOOLCHAIN_OS_Windows)
                 return count;
             #endif // defined (TOOLCHAIN_OS_Windows)

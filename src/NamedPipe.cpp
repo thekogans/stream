@@ -25,10 +25,12 @@
 namespace thekogans {
     namespace stream {
 
+        THEKOGANS_STREAM_IMPLEMENT_STREAM (NamedPipe)
+
         bool NamedPipe::Wait (
                 const std::string &name,
                 DWORD timeout) {
-            return WaitNamedPipeW (util::UTF8ToUTF16 (name).c_str (), timeout) == TRUE;
+            return WaitNamedPipeW (util::os::windows::UTF8ToUTF16 (name).c_str (), timeout) == TRUE;
         }
 
         NamedPipe::SharedPtr NamedPipe::CreateClientNamedPipe (
@@ -40,7 +42,7 @@ namespace thekogans {
                 DWORD flagsAndAttributes,
                 HANDLE templateFile) {
             THEKOGANS_UTIL_HANDLE handle = CreateFileW (
-                util::UTF8ToUTF16 (name).c_str (),
+                util::os::windows::UTF8ToUTF16 (name).c_str (),
                 desiredAccess,
                 shareMode,
                 securityAttributes,
@@ -54,7 +56,7 @@ namespace thekogans {
             return SharedPtr (new NamedPipe (handle));
         }
 
-        NamedPipe::SharedPtr ::CreateServerNamedPipe (
+        NamedPipe::SharedPtr NamedPipe::CreateServerNamedPipe (
                 const std::string &name,
                 DWORD openMode,
                 DWORD pipeMode,
@@ -64,7 +66,7 @@ namespace thekogans {
                 DWORD defaultTimeOut,
                 LPSECURITY_ATTRIBUTES securityAttributes) {
             THEKOGANS_UTIL_HANDLE handle = CreateNamedPipeW (
-                util::UTF8ToUTF16 (name).c_str (),
+                util::os::windows::UTF8ToUTF16 (name).c_str (),
                 openMode | FILE_FLAG_OVERLAPPED,
                 pipeMode,
                 maxInstances,
@@ -168,6 +170,7 @@ namespace thekogans {
             struct ConnectOverlapped : public Overlapped {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ConnectOverlapped)
 
+                ConnectOverlapped () {}
                 virtual ssize_t Prolog (Stream & /*stream*/) {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
@@ -204,7 +207,7 @@ namespace thekogans {
         }
 
         void NamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetName () == ConnectOverlapped::NAME) {
+            if (overlapped.GetType () == ConnectOverlapped::TYPE) {
                 util::Producer<NamedPipeEvents>::Produce (
                     std::bind (
                         &NamedPipeEvents::OnNamedPipeConnected,
@@ -247,7 +250,7 @@ namespace thekogans {
                     lpSecurityDescriptor = &securityDescriptor;
                     bInheritHandle = FALSE;
                 }
-            }
+            };
         }
 
         LPSECURITY_ATTRIBUTES NamedPipe::DefaultSecurityAttributes () {

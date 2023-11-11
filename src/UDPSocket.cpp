@@ -48,7 +48,7 @@
 namespace thekogans {
     namespace stream {
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (UDPSocket, util::SpinLock)
+        THEKOGANS_STREAM_IMPLEMENT_STREAM (UDPSocket)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {

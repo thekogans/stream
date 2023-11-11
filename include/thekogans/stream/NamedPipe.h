@@ -58,8 +58,8 @@ namespace thekogans {
             /// Called to report a connection on a \see{NamedPipe}.
             /// \param[in] namedPipe \see{NamedPipe} on which the connection occurred.
             virtual void OnNamedPipeConnected (
-                util::RefCounted::SharedPtr<NamedPipe> namedPipe) throw ();
-        }
+                util::RefCounted::SharedPtr<NamedPipe> namedPipe) throw () {}
+        };
 
         /// \struct NamedPipe NamedPipe.h thekogans/stream/NamedPipe.h
         ///
@@ -147,7 +147,7 @@ namespace thekogans {
             /// has successfuly connected. From here on out all operations are asynchronous. To avoid potential
             /// delays use Wait above (bofore calling this method) to make sure an instance of the server end
             /// of the pipe is available.
-            static SharedPtr<NamedPipe> CreateClientNamedPipe (
+            static SharedPtr CreateClientNamedPipe (
                 const std::string &name,
                 DWORD desiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD shareMode = 0,
@@ -176,7 +176,7 @@ namespace thekogans {
             /// owner. They also grant read access to members of the Everyone group and the anonymous account.
             /// NOTE: When this method returns the pipe is created and is asynchronous. Use Connect below to
             /// start waiting on incomming connection requests.
-            static SharedPtr<NamedPipe> CreateServerNamedPipe (
+            static SharedPtr CreateServerNamedPipe (
                 const std::string &name,
                 DWORD openMode = PIPE_ACCESS_DUPLEX,
                 DWORD pipeMode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,
