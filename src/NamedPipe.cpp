@@ -171,7 +171,7 @@ namespace thekogans {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ConnectOverlapped)
 
                 ConnectOverlapped () {}
-                virtual ssize_t Prolog (Stream & /*stream*/) {
+                virtual ssize_t Prolog (Stream & /*stream*/) throw () {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
             };
