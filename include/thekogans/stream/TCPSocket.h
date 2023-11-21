@@ -114,11 +114,13 @@ namespace thekogans {
         ///             Stream::SharedPtr stream,
         ///             const util::Buffer &buffer) throw () override {
         ///         // Process incomming reply from the server.
+        ///         ...
         ///     }
         ///
         ///     // TCPSocketEvents
         ///     virtual void OnTCPSocketConnect (TCPSocket::SharedPtr tcpSocket) throw () override {
         ///         // Send handshake packet(s).
+        ///         ...
         ///         // Post an async read to get the servers response.
         ///         tcpSocket->Read (0);
         ///     }
@@ -188,6 +190,7 @@ namespace thekogans {
         ///             stream::Stream::SharedPtr stream,
         ///             const util::Exception &exception) throw () override {
         ///         // Log exception.
+        ///         ...
         ///         // Both serverSocket and connections will wind up here in case of error.
         ///         // If it's a connection, remove it from the list.
         ///         if (stream != serverSocket) {
@@ -203,6 +206,7 @@ namespace thekogans {
         ///             stream::Stream::SharedPtr stream,
         ///             const util::Buffer &buffer) throw () override {
         ///         // Process incomming request from a client.
+        ///         ...
         ///     }
         ///
         ///     // TCPSocketEvents

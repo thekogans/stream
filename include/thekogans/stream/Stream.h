@@ -145,7 +145,7 @@ namespace thekogans {
             /// the \see{StreamRegistry}.
             const StreamRegistry::Token token;
             /// \brief
-            /// true == Chain read requests automatically.
+            /// true == Automatically chain read requests.
             /// false == Manually post a new read request.
             /// NOTE: Under normal circumstances the default behavior is desirable and
             /// the framework will take care of queuing up the next read request in the
