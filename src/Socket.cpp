@@ -365,15 +365,6 @@ namespace thekogans {
             }
         }
 
-        std::string Socket::GetHostName () {
-            char name[256];
-            if (gethostname (name, 256) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-            }
-            return name;
-        }
-
         bool Socket::IsBound () const {
             Address address;
             return getsockname ((THEKOGANS_STREAM_SOCKET)handle,

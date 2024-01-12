@@ -91,11 +91,6 @@ namespace thekogans {
             virtual void Write (util::Buffer buffer) override;
 
             /// \brief
-            /// Return the host name.
-            /// \return Host name.
-            static std::string GetHostName ();
-
-            /// \brief
             /// Get socket family.
             /// \return Socket family.
             inline int GetFamily () const {

@@ -277,7 +277,15 @@ namespace thekogans {
                 int family,
                 int type,
                 int protocol) :
-                connection (new TCPSocket ((THEKOGANS_UTIL_HANDLE)WSASocketW (family, type, protocol, 0, 0, WSA_FLAG_OVERLAPPED))),
+                connection (
+                    new TCPSocket (
+                        (THEKOGANS_UTIL_HANDLE)WSASocketW (
+                            family,
+                            type,
+                            protocol,
+                            0,
+                            0,
+                            WSA_FLAG_OVERLAPPED))),
                 bytesReceived (0) {}
         #else // defined (TOOLCHAIN_OS_Windows)
             AcceptOverlapped () {}
