@@ -18,7 +18,6 @@
 #if !defined (__thekogans_stream_Stream_h)
 #define __thekogans_stream_Stream_h
 
-#include <list>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"

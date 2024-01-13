@@ -20,7 +20,6 @@
 
 #include "thekogans/util/Environment.h"
 
-#include <list>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/IntrusiveList.h"

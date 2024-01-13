@@ -39,14 +39,7 @@
         #pragma warning (disable: 4251)  // using non-exported as public in exported
         #pragma warning (disable: 4786)
     #endif // defined (_MSC_VER)
-    #if !defined (_WINDOWS_)
-        #if !defined (WIN32_LEAN_AND_MEAN)
-            #define WIN32_LEAN_AND_MEAN
-        #endif // !defined (WIN32_LEAN_AND_MEAN)
-        #if !defined (NOMINMAX)
-            #define NOMINMAX
-        #endif // !defined (NOMINMAX)
-    #endif // !defined (_WINDOWS_)
+    #include "thekogans/util/WindowsHeader.h"
     #include <winsock2.h>
     #include <iphlpapi.h>
     #include <ws2tcpip.h>

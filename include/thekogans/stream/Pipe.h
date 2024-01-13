@@ -18,12 +18,7 @@
 #if !defined (__thekogans_stream_Pipe_h)
 #define __thekogans_stream_Pipe_h
 
-#include <cstdio>
-#include <memory>
-#include <string>
-#include "thekogans/util/Environment.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Exception.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/Stream.h"
 
