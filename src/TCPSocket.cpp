@@ -182,7 +182,7 @@ namespace thekogans {
                 Bind (Address::Any (0, address.GetFamily ()));
             }
             ConnectOverlapped::UniquePtr overlapped (new ConnectOverlapped (address));
-            if (!WindowsFunctions::Instance ().ConnectEx (
+            if (!WindowsFunctions::Instance ()->ConnectEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->address.address,
                     overlapped->address.length,
@@ -230,7 +230,7 @@ namespace thekogans {
 
         void TCPSocket::Disconnect (bool reuseSocket) {
             Overlapped::UniquePtr overlapped (new DisconnectOverlapped);
-            if (!WindowsFunctions::Instance ().DisconnectEx (
+            if (!WindowsFunctions::Instance ()->DisconnectEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     overlapped.get (),
                     reuseSocket ? TF_REUSE_SOCKET : 0,
@@ -331,7 +331,7 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             AcceptOverlapped::UniquePtr overlapped (
                 new AcceptOverlapped (GetFamily (), GetType (), GetProtocol ()));
-            if (!WindowsFunctions::Instance ().AcceptEx (
+            if (!WindowsFunctions::Instance ()->AcceptEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     (THEKOGANS_STREAM_SOCKET)overlapped->connection->GetHandle (),
                     overlapped->acceptBuffer,

@@ -22,6 +22,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/RefCountedRegistry.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Exception.h"
@@ -92,7 +93,7 @@ namespace thekogans {
         /// Convenient typedef for util::RefCounted::Registry<Stream>.
         /// NOTE: It's one and only instance is accessed like this;
         /// thekogans::stream::StreamRegistry::Instance ().
-        typedef util::RefCounted::Registry<Stream> StreamRegistry;
+        typedef util::RefCountedRegistry<Stream> StreamRegistry;
 
         /// \struct Stream Stream.h thekogans/stream/Stream.h
         ///
@@ -146,10 +147,10 @@ namespace thekogans {
             /// \brief
             /// true == Automatically chain read requests.
             /// false == Manually post a new read request.
-            /// NOTE: Under normal circumstances the default behavior is desirable and
-            /// the framework will take care of queuing up the next read request in the
-            /// \see{Overlapped::Epilog}. If you need finer control over that set it to
-            /// false and take care of queuing read requests yourself.
+            /// NOTE: Under normal circumstances the default behavior (See \see{Overlapped})
+            /// is desirable and the framework will take care of queuing up the next read
+            /// request in the \see{Overlapped::Epilog}. If you need finer control over that
+            /// set it to false and take care of queuing read requests yourself.
             /// IMPORTANT: Regardless of the state of chainRead, you're responsible for
             /// kick starting the process yourself (call initial Read/Accept. Look at
             /// \see{TCPSocket.h} for an example).
@@ -285,7 +286,7 @@ namespace thekogans {
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
             THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (type)\
         public:
 
@@ -293,7 +294,7 @@ namespace thekogans {
         /// This macro is used in the stream definition file (.cpp).
         /// \param[in] type Stream class name.
         #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
 
     } // namespace stream
 } // namespace thekogans

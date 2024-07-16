@@ -70,7 +70,13 @@ namespace thekogans {
         /// \struct Overlapped Overlapped.h thekogans/stream/Overlapped.h
         ///
         /// \brief
-        /// Overlapped extends a Windows WSAOVERLAPPED.
+        /// Overlapped extends a Windows WSAOVERLAPPED. Overlapped's job is to smooth
+        /// the differences between the two different approaches to async io; Namely,
+        /// the proactive approach taken by Windows and the reactive approach taken by
+        /// POSIX. This 'smoothing' is done in \see{Prolog} and \see{Epilog} below.
+        /// Stream library supports a hybrid model choosing to adopt the POSIX reactive
+        /// approach to input and Windows proactive approach to output. You can customize
+        /// that through \see{Stream::chainRead}.
 
         struct _LIB_THEKOGANS_STREAM_DECL Overlapped :
             #if !defined (TOOLCHAIN_OS_Windows)
@@ -97,8 +103,13 @@ namespace thekogans {
             /// \return Type name of this overlapped.
             virtual const char *GetType () const = 0;
             /// \brief
+            /// Called by \see{Stream::ExecOverlapped} to perform async io.
+            /// \return Number of bytes transfered.
             virtual ssize_t Prolog (Stream & /*stream*/) throw () = 0;
             /// \brief
+            /// \return true == overlapped is finished and should be retired.
+            /// (on POSIX only) false == try again later.
+            /// NOTE: On Windows Epilog must return true.
             virtual bool Epilog (Stream & /*stream*/) throw () {
                 return true;
             }
@@ -126,7 +137,7 @@ namespace thekogans {
 
             /// \brief
             /// Return count of bytes read.
-            /// \return Count of bytes read.
+            /// \return Number of bytes transfered.
             inline util::ui32 GetCount () const {
             #if defined (TOOLCHAIN_OS_Windows)
                 return (util::ui32)InternalHigh;
@@ -135,7 +146,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             /// \brief
-            /// Set the count of bytes read.
+            /// Set the number of bytes transfered.
             /// \param[in] count Count of bytes read.
             inline void SetCount (util::ui32 count_) {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -148,7 +159,7 @@ namespace thekogans {
 
         #define THEKOGANS_STREAM_DECLARE_OVERLAPPED(type)\
             typedef std::unique_ptr<type> UniquePtr;\
-            THEKOGANS_UTIL_DECLARE_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
+            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
             static const char *TYPE;\
             virtual const char *GetType () const override {\
                 return TYPE;\
@@ -157,7 +168,7 @@ namespace thekogans {
         public:
 
         #define THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED(type)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_WITH_LOCK (type, thekogans::util::SpinLock)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)\
             const char *type::TYPE = #type;
 
     } // namespace stream

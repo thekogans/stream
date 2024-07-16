@@ -20,7 +20,7 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsHeader.h"
+    #include "thekogans/util/os/windows/WindowsHeader.h"
     #include <winsock2.h>
     #include <ws2def.h>
     #include <ws2ipdef.h>

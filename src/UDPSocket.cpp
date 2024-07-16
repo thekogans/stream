@@ -17,7 +17,7 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsHeader.h"
+    #include "thekogans/util/os/windows/WindowsHeader.h"
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #include <ws2ipdef.h>
@@ -366,7 +366,7 @@ namespace thekogans {
                         }
                     #if defined (TOOLCHAIN_OS_Windows)
                         DWORD countRead = 0;
-                        if (WindowsFunctions::Instance ().WSARecvMsg (
+                        if (WindowsFunctions::Instance ()->WSARecvMsg (
                                 (THEKOGANS_STREAM_SOCKET)stream.GetHandle (),
                                 &msgHdr,
                                 &countRead,
@@ -416,7 +416,7 @@ namespace thekogans {
         void UDPSocket::ReadMsg (std::size_t bufferLength) {
         #if defined (TOOLCHAIN_OS_Windows)
             ReadMsgOverlapped::UniquePtr overlapped (new ReadMsgOverlapped (bufferLength));
-            if (WindowsFunctions::Instance ().WSARecvMsg (
+            if (WindowsFunctions::Instance ()->WSARecvMsg (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->msgHdr,
                     0,
@@ -498,7 +498,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 WriteMsgOverlapped::UniquePtr overlapped (
                     new WriteMsgOverlapped (std::move (buffer), from, to));
-                if (WindowsFunctions::Instance ().WSASendMsg (
+                if (WindowsFunctions::Instance ()->WSASendMsg (
                         (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->msgHdr,
                         0,

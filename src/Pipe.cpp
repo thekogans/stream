@@ -17,7 +17,7 @@
 
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/WindowsHeader.h"
+    #include "thekogans/util/os/windows/WindowsHeader.h"
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <sys/types.h>
     #include <sys/ioctl.h>

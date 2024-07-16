@@ -22,7 +22,7 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include "thekogans/util/WindowsHeader.h"
+#include "thekogans/util/os/windows/WindowsHeader.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/Stream.h"
 

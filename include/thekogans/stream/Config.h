@@ -39,7 +39,7 @@
         #pragma warning (disable: 4251)  // using non-exported as public in exported
         #pragma warning (disable: 4786)
     #endif // defined (_MSC_VER)
-    #include "thekogans/util/WindowsHeader.h"
+    #include "thekogans/util/os/windows/WindowsHeader.h"
     #include <winsock2.h>
     #include <iphlpapi.h>
     #include <ws2tcpip.h>

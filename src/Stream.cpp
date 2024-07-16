@@ -56,7 +56,10 @@ namespace thekogans {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (CreateIoCompletionPort (
-                        handle, AsyncIoEventQueue::Instance ().GetHandle (), (ULONG_PTR)token.GetValue (), 0) == 0) {
+                        handle,
+                        AsyncIoEventQueue::Instance ()->GetHandle (),
+                        (ULONG_PTR)token.GetValue (),
+                        0) == 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -137,7 +140,7 @@ namespace thekogans {
         void Stream::ExecOverlapped (Overlapped &overlapped) throw () {
             ssize_t result = overlapped.Prolog (*this);
             if (result > 0) {
-                // A slight departure in logic from the ExecOverlapped below.
+                // A slight departure in logic from the ExecOverlapped below (POSIX).
                 // Under normal circumstances, Epilog will (should) always return
                 // true on Windows as there are no second chances for overlapped.
                 // But even if one decides to return false we still want to call
