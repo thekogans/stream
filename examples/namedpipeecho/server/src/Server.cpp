@@ -20,7 +20,7 @@
 #include <list>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
-#include "thekogans/stream/ServerNamedPipe.h"
+#include "thekogans/stream/NamedPipe.h"
 #include "thekogans/stream/namedpipeecho/server/Server.h"
 
 namespace thekogans {
@@ -28,118 +28,77 @@ namespace thekogans {
         namespace namedpipeecho {
             namespace server {
 
-                void Server::Start (
-                        const std::list<stream::Address> &addresses,
-                        util::i32 priority) {
-                    if (done) {
-                        if (!addresses.empty ()) {
-                            eventQueue.Reset (new stream::AsyncIoEventQueue);
-                            for (std::list<stream::Address>::const_iterator
-                                    it = addresses.begin (),
-                                    end = addresses.end (); it != end; ++it) {
-                                eventQueue->AddStream (
-                                    *stream::ServerNamedPipe::SharedPtr (
-                                        new stream::ServerNamedPipe (*it)),
-                                    *this);
-                                THEKOGANS_UTIL_LOG_INFO ("Listening on: %s\n",
-                                    (*it).AddrToString ().c_str ());
-                            }
-                            done = false;
-                            Create (priority);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "%s", "Must supply at least one address to listen on.");
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_LOG_WARNING (
-                            "%s\n", "Server is already running.");
-                    }
+                void Server::Start (const std::string &address_) {
+                    address = address_;
+                    ResetIo (true);
                 }
 
                 void Server::Stop () {
-                    if (!done) {
-                        done = true;
-                        jobQueue.Stop ();
-                        eventQueue->Break ();
-                        Wait ();
-                        eventQueue.Reset ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_LOG_WARNING (
-                            "%s\n", "Server is not running.");
-                    }
+                    ResetIo (false);
                 }
 
-                void Server::Run () throw () {
-                    while (!done) {
-                        THEKOGANS_UTIL_TRY {
-                            eventQueue->WaitForEvents ();
-                        }
-                        THEKOGANS_UTIL_CATCH_AND_LOG
-                    }
-                    THEKOGANS_UTIL_LOG_INFO (
-                        "%s\n", "Server thread is exiting.");
-                }
-
-                void Server::HandleStreamError (
-                        stream::Stream &stream,
+                void Server::OnStreamError (
+                        Stream::SharedPtr stream,
                         const util::Exception &exception) throw () {
                     THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
-                    THEKOGANS_UTIL_TRY {
-                        eventQueue->DeleteStream (stream);
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
+                    RemoveConnection (stream);
                 }
 
-                void Server::HandleServerNamedPipeConnection (
-                        stream::ServerNamedPipe &serverNamedPipe) throw () {
-                    THEKOGANS_UTIL_LOG_INFO ("%s\n", "Received connection request.");
-                    THEKOGANS_UTIL_TRY {
-                        stream::ServerNamedPipe::SharedPtr newServerNamedPipe = serverNamedPipe.Clone ();
-                        eventQueue->AddStream (*newServerNamedPipe, *this);
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
-                }
-
-                void Server::HandleStreamDisconnect (stream::Stream &stream) throw () {
+                void Server::OnStreamDisconnect (Stream::SharedPtr stream) throw () {
                     THEKOGANS_UTIL_LOG_INFO ("%s\n", "Connection closed.");
-                    THEKOGANS_UTIL_TRY {
-                        eventQueue->DeleteStream (stream);
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
+                    RemoveConnection (stream);
                 }
 
-                void Server::HandleStreamRead (
-                        stream::Stream &stream,
-                        util::Buffer buffer) throw () {
-                    THEKOGANS_UTIL_TRY {
-                        if (!buffer.IsEmpty ()) {
-                            struct WriteJob : public util::RunLoop::Job {
-                                stream::Stream::SharedPtr stream;
-                                util::Buffer buffer;
-                                WriteJob (
-                                    stream::Stream &stream_,
-                                    util::Buffer buffer_) :
-                                    stream (&stream_),
-                                    buffer (std::move (buffer_)) {}
-                                // util::RunLoop::Job
-                                virtual void Execute (const std::atomic<bool> &done) throw () {
-                                    if (!ShouldStop (done)) {
-                                        THEKOGANS_UTIL_TRY {
-                                            stream->WriteBuffer (std::move (buffer));
-                                        }
-                                        THEKOGANS_UTIL_CATCH_AND_LOG
-                                    }
-                                }
-                            };
-                            jobQueue.EnqJob (
-                                util::RunLoop::Job::SharedPtr (
-                                    new WriteJob (stream, std::move (buffer))));
-                        }
+                void Server::OnStreamRead (
+                        Stream::SharedPtr stream,
+                        const util::Buffer &buffer) throw () {
+                    if (!buffer.IsEmpty ()) {
+                        util::GlobalJobQueue::Instance ()->EnqJob (
+                            [stream, buffer] (
+                                    const util::RunLoop::LambdaJob & /*job*/,
+                                    const std::atomic<bool> & /*done*/) {
+                                stream->Write (std::move (buffer));
+                            }
+                        );
                     }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
+                }
+
+                void Server::OnNamedPipeConnected (NamedPipe::SharedPtr namedPipe) throw () {
+                    THEKOGANS_UTIL_LOG_INFO ("%s\n", "Received connection request.");
+                    // Initiate an async read to listen for client requests.
+                    namedPipe->Read ();
+                    connections.push_back (namedPipe.Get ());
+                    CreateServerNamedPipe ();
+                }
+
+                void Server::ResetIo (bool accept) {
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    util::Subscriber<stream::NamedPipeEvents>::Unsubscribe ();
+                    connections.clear ();
+                    serverNamedPipe.Reset ();
+                    if (accept) {
+                        CreateServerNamedPipe ();
+                    }
+                }
+
+                void Server::RemoveConnection (Stream::SharedPtr stream) {
+                    std::vector<Stream::SharedPtr>::iterator it =
+                        std::find (connections.begin (), connections.end (), stream);
+                    if (it != connections.end ()) {
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (**it);
+                        connections.erase (it);
+                    }
+                }
+
+                void Server::CreateServerNamedPipe () {
+                    serverNamedPipe = NamedPipe::CreateServerNamedPipe (address);
+                    // Setup async notifications.
+                    // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+                    // The reason for this is explained in \see{Stream}.
+                    util::Subscriber<stream::StreamEvents>::Subscribe (*serverNamedPipe);
+                    util::Subscriber<stream::NamedPipeEvents>::Subscribe (*serverNamedPipe);
+                    // We're open for business. Start listening for client connections.
+                    serverNamedPipe->Connect ();
                 }
 
             } // namespace server

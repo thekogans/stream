@@ -21,7 +21,6 @@
 #if defined (TOOLCHAIN_OS_Windows)
 
 #include <string>
-#include <list>
 #include <pugixml/pugixml.hpp>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
@@ -29,7 +28,6 @@
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/FileLogger.h"
-#include "thekogans/stream/Address.h"
 
 namespace thekogans {
     namespace stream {
@@ -71,7 +69,7 @@ namespace thekogans {
                         }
                     } loggerMgr;
                     std::string lockFilePath;
-                    std::list<stream::Address> addresses;
+                    std::string address;
                     std::string startDirectory;
                     util::Directory::Watcher::WatchId watchId;
 

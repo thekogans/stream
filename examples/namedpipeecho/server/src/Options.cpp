@@ -44,7 +44,7 @@ namespace thekogans {
                         version (false),
                         startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
-                            util::Directory::Watcher::Instance ().AddWatch (
+                            util::Directory::Watcher::Instance ()->AddWatch (
                                 startDirectory, *this)) {
                     if (util::Path (OPTIONS_XML).Exists ()) {
                         ReadConfig ();
@@ -85,7 +85,7 @@ namespace thekogans {
                             lockFilePath = value;
                             break;
                         case 'a':
-                            addresses.push_back (stream::Address (value));
+                            address = value;
                             break;
                     }
                 }
@@ -193,14 +193,7 @@ namespace thekogans {
                             !child.empty (); child = child.next_sibling ()) {
                         if (child.type () == pugi::node_element &&
                             std::string (child.name ()) == "Address") {
-                            std::string address = util::Decodestring (child.text ().get ());
-                            if (!address.empty ()) {
-                                THEKOGANS_UTIL_TRY {
-                                    addresses.push_back (
-                                        stream::Address (address));
-                                }
-                                THEKOGANS_UTIL_CATCH_AND_LOG
-                            }
+                            address = util::Decodestring (child.text ().get ());
                         }
                     }
                 }

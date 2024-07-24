@@ -22,8 +22,13 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
+#include <string>
 #include "thekogans/util/os/windows/WindowsHeader.h"
+#include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
+#include "thekogans/util/Producer.h"
 #include "thekogans/stream/Config.h"
+#include "thekogans/stream/Overlapped.h"
 #include "thekogans/stream/Stream.h"
 
 namespace thekogans {
@@ -139,6 +144,7 @@ namespace thekogans {
             /// has successfuly connected. From here on out all operations are asynchronous. To avoid potential
             /// delays use Wait above (bofore calling this method) to make sure an instance of the server end
             /// of the pipe is available.
+            /// \return Client side named pipe already connected ready to send/receive data.
             static SharedPtr CreateClientNamedPipe (
                 const std::string &name,
                 DWORD desiredAccess = GENERIC_READ | GENERIC_WRITE,
@@ -168,6 +174,7 @@ namespace thekogans {
             /// owner. They also grant read access to members of the Everyone group and the anonymous account.
             /// NOTE: When this method returns the pipe is created and is asynchronous. Use Connect below to
             /// start waiting on incomming connection requests.
+            /// \return Server side named pipe ready to staart receiving connections.
             static SharedPtr CreateServerNamedPipe (
                 const std::string &name,
                 DWORD openMode = PIPE_ACCESS_DUPLEX,

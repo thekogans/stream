@@ -20,14 +20,12 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include <list>
+#include <string>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/Thread.h"
-#include "thekogans/util/JobQueue.h"
-#include "thekogans/stream/Address.h"
-#include "thekogans/stream/AsyncIoEventSink.h"
-#include "thekogans/stream/AsyncIoEventQueue.h"
+#include "thekogans/util/Subscriber.h"
+#include "thekogans/stream/Stream.h"
+#include "thekogans/stream/NamedPipe.h"
 
 namespace thekogans {
     namespace stream {
@@ -35,43 +33,39 @@ namespace thekogans {
             namespace server {
 
                 struct Server :
-                        public util::Singleton<Server>,
-                        public util::Thread,
-                        public stream::AsyncIoEventSink {
+                        public util::Singleton<
+                            Server,
+                            util::SpinLock,
+                            util::RefCountedInstanceCreator<Server>,
+                            util::RefCountedInstanceDestroyer<Server>>,
+                        public util::Subscriber<StreamEvents>,
+                        public util::Subscriber<NamedPipeEvents> {
                 private:
-                    util::JobQueue jobQueue;
-                    stream::AsyncIoEventQueue::SharedPtr eventQueue;
-                    volatile bool done;
+                    std::string address;
+                    NamedPipe::SharedPtr serverNamedPipe;
+                    std::vector<Stream::SharedPtr> connections;
 
                 public:
-                    Server () :
-                        done (true) {}
-
-                    void Start (
-                        const std::list<stream::Address> &addresses,
-                        util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+                    void Start (const std::string &address_);
                     void Stop ();
 
                 private:
-                    // util::Thread
-                    virtual void Run () throw ();
+                    // StreamEvents
+                    virtual void OnStreamError (
+                        Stream::SharedPtr stream,
+                        const util::Exception &exception) throw () override;
+                    virtual void OnStreamDisconnect (
+                        Stream::SharedPtr stream) throw () override;
+                    virtual void OnStreamRead (
+                        Stream::SharedPtr stream,
+                        const util::Buffer &buffer) throw () override;
+                    // NamedPipeEvents
+                    virtual void OnNamedPipeConnected (
+                        NamedPipe::SharedPtr namedPipe) throw () override;
 
-                    // util::ThreadSafeRefCounted.
-                    /// \brief
-                    /// We're a singleton. Our lifetime is forever.
-                    virtual void Harakiri () {}
-
-                    // stream::AsyncIoEventSink
-                    virtual void HandleStreamError (
-                        stream::Stream &stream,
-                        const util::Exception &exception) throw ();
-                    virtual void HandleServerNamedPipeConnection (
-                        stream::ServerNamedPipe &serverNamedPipe) throw ();
-                    virtual void HandleStreamDisconnect (
-                        stream::Stream &stream) throw ();
-                    virtual void HandleStreamRead (
-                        stream::Stream &stream,
-                        util::Buffer buffer) throw ();
+                    void ResetIo (bool accept);
+                    void RemoveConnection (Stream::SharedPtr stream);
+                    void CreateServerNamedPipe ();
                 };
 
             } // namespace server

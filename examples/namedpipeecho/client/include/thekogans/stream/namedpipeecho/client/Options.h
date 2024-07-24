@@ -37,7 +37,7 @@ namespace thekogans {
                     bool help;
                     bool version;
                     util::ui32 logLevel;
-                    std::string addr;
+                    std::string address;
 
                     Options () :
                         help (false),

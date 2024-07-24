@@ -24,7 +24,9 @@ namespace thekogans {
         namespace namedpipeecho {
             namespace client {
 
-                void Options::DoOption (char option, const std::string &value) {
+                void Options::DoOption (
+                        char option,
+                        const std::string &value) {
                     switch (option) {
                         case 'h':
                             help = true;
@@ -37,7 +39,7 @@ namespace thekogans {
                                 util::LoggerMgr::stringTolevel (value.c_str ());
                             break;
                         case 'a':
-                            addr = value;
+                            address = value;
                             break;
                     }
                 }

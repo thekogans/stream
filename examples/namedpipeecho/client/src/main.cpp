@@ -32,6 +32,7 @@
 #include "thekogans/stream/Version.h"
 #include "thekogans/stream/namedpipeecho/client/Options.h"
 #include "thekogans/stream/namedpipeecho/client/Version.h"
+#include "thekogans/stream/namedpipeecho/client/Client.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::namedpipeecho;
@@ -88,13 +89,13 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ().Parse (argc, argv, "hvla");
+    client::Options::Instance ()->Parse (argc, argv, "hvla");
     THEKOGANS_UTIL_LOG_INIT (
-        client::Options::Instance ().logLevel,
+        client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::SharedPtr (new util::ConsoleLogger));
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
-    if (client::Options::Instance ().help) {
+    if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] -a:'host address'\n\n"
             "h - Display this help message.\n"
@@ -104,7 +105,7 @@ int main (
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
-    else if (client::Options::Instance ().version) {
+    else if (client::Options::Instance ()->version) {
         THEKOGANS_UTIL_LOG_INFO (
             "libthekogans_util - %s\n"
             "libthekogans_stream - %s\n"
@@ -113,16 +114,16 @@ int main (
             stream::GetVersion ().ToString ().c_str (),
             argv[0], client::GetVersion ().ToString ().c_str ());
     }
-    else if (client::Options::Instance ().addr.empty ()) {
+    else if (client::Options::Instance ()->addr.empty ()) {
         THEKOGANS_UTIL_LOG_ERROR ("%s\n", "Empty address.");
     }
     else {
         THEKOGANS_UTIL_TRY {
             THEKOGANS_UTIL_LOG_INFO (
                 "Conducting a bandwidth test with: %s\n",
-                client::Options::Instance ().addr.c_str ());
+                client::Options::Instance ()->addr.c_str ());
             util::f32 bandwidth = GetBandwidth (
-                stream::Address (client::Options::Instance ().addr));
+                stream::Address (client::Options::Instance ()->addr));
             THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
