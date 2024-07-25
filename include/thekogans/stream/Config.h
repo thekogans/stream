@@ -81,13 +81,6 @@
     #define THEKOGANS_STREAM_SOCKET_ERROR_CODE errno
 #endif // defined (TOOLCHAIN_OS_Windows)
 
-/// \def THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN(type)
-/// A convenient macro to suppress copy construction and assignment.
-#define THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN(type)\
-private:\
-    type (const type &);\
-    type &operator = (const type &);
-
 /// \def THEKOGANS_STREAM
 /// Logging subsystem name.
 #define THEKOGANS_STREAM "thekogans_stream"

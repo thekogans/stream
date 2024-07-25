@@ -274,7 +274,7 @@ namespace thekogans {
 
             /// \brief
             /// Adapters is neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Adapters)
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Adapters)
         };
 
     } // namespace stream

@@ -101,7 +101,7 @@ namespace thekogans {
 
             /// \brief
             /// AsyncIoEventQueue is neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (AsyncIoEventQueue)
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (AsyncIoEventQueue)
         };
 
     } // namespace stream

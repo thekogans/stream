@@ -27,6 +27,7 @@
 #include "thekogans/util/ConsoleLogger.h"
 #include "thekogans/util/FileLogger.h"
 #include "thekogans/util/MainRunLoop.h"
+#include "thekogans/util/ChildProcess.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Version.h"
@@ -102,28 +103,12 @@ int main (
             stream::GetVersion ().ToString ().c_str (),
             argv[0], server::GetVersion ().ToString ().c_str ());
     }
+    else if (server::Options::Instance ()->address.empty ()) {
+        THEKOGANS_UTIL_LOG_ERROR ("%s\n", "Empty address.");
+    }
     else {
         THEKOGANS_UTIL_TRY {
-            struct LockFile {
-                util::Path path;
-                explicit LockFile (const std::string &path_) :
-                        path (path_) {
-                    if (!path.IsEmpty ()) {
-                        if (!path.Exists ()) {
-                            util::File::Touch (path_);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Lock file (%s) found.\n", path_.c_str ());
-                        }
-                    }
-                }
-                ~LockFile () {
-                    if (path.Exists ()) {
-                        path.Delete ();
-                    }
-                }
-            } lockFile (server::Options::Instance ()->lockFilePath);
+            util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
             THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
             server::Server::Instance ()->Start (server::Options::Instance ()->address);
             util::MainRunLoop::Instance ()->Start ();

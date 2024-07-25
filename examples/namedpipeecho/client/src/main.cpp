@@ -114,16 +114,16 @@ int main (
             stream::GetVersion ().ToString ().c_str (),
             argv[0], client::GetVersion ().ToString ().c_str ());
     }
-    else if (client::Options::Instance ()->addr.empty ()) {
+    else if (client::Options::Instance ()->address.empty ()) {
         THEKOGANS_UTIL_LOG_ERROR ("%s\n", "Empty address.");
     }
     else {
         THEKOGANS_UTIL_TRY {
             THEKOGANS_UTIL_LOG_INFO (
                 "Conducting a bandwidth test with: %s\n",
-                client::Options::Instance ()->addr.c_str ());
+                client::Options::Instance ()->address.c_str ());
             util::f32 bandwidth = GetBandwidth (
-                stream::Address (client::Options::Instance ()->addr));
+                stream::Address (client::Options::Instance ()->address));
             THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
         }
         THEKOGANS_UTIL_CATCH_AND_LOG

@@ -278,7 +278,7 @@ namespace thekogans {
 
             /// \brief
             /// Stream is neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (Stream)
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Stream)
         };
 
         /// \def THEKOGANS_STREAM_DECLARE_STREAM(type)
@@ -287,7 +287,7 @@ namespace thekogans {
         #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (type)\
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (type)\
         public:
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)

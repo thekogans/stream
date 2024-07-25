@@ -92,7 +92,7 @@ namespace thekogans {
 
             /// \brief
             /// MsgHdr is neither copy constructable, nor assignable.
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (MsgHdr)
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (MsgHdr)
         };
 
     } // namespace stream

@@ -164,7 +164,7 @@ namespace thekogans {
             virtual const char *GetType () const override {\
                 return TYPE;\
             }\
-            THEKOGANS_STREAM_DISALLOW_COPY_AND_ASSIGN (type)\
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (type)\
         public:
 
         #define THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED(type)\
