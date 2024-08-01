@@ -21,14 +21,13 @@
 #include <list>
 #include <string>
 #include "thekogans/util/Types.h"
-#include "thekogans/util/HRTimer.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/ConsoleLogger.h"
+#include "thekogans/util/MainRunLoop.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Address.h"
-#include "thekogans/stream/ClientNamedPipe.h"
 #include "thekogans/stream/Version.h"
 #include "thekogans/stream/namedpipeecho/client/Options.h"
 #include "thekogans/stream/namedpipeecho/client/Version.h"
@@ -55,34 +54,6 @@ namespace {
             }
         }
         return logLevelList;
-    }
-
-    util::f32 GetBandwidth (
-            const stream::Address &address,
-            util::ui32 rounds = 10,
-            util::ui32 seed = 64,
-            util::f32 a = 2.0f,
-            util::f32 b = 0.0f) {
-        util::ui32 bytes = 0;
-        util::ui64 time = 0;
-        for (util::ui32 i = 0; i < rounds; ++i) {
-            THEKOGANS_UTIL_TRY {
-                util::ui64 start = util::HRTimer::Click ();
-                {
-                    stream::ClientNamedPipe namedPipe (address);
-                    std::vector<util::ui8> buffer (seed);
-                    namedPipe.WriteFullBuffer (&buffer[0], seed);
-                    namedPipe.ReadFullBuffer (&buffer[0], seed);
-                }
-                time += util::HRTimer::Click () - start;
-                bytes += seed + seed;
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG
-            seed = (util::ui32)(a * seed + b);
-        }
-        return time > 0 ? (util::f32)
-            ((util::f64)util::HRTimer::GetFrequency () *
-                bytes * 8 / time / (1024 * 1024)) : 0.0f;
     }
 }
 
@@ -119,12 +90,11 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            THEKOGANS_UTIL_LOG_INFO (
-                "Conducting a bandwidth test with: %s\n",
-                client::Options::Instance ()->address.c_str ());
-            util::f32 bandwidth = GetBandwidth (
-                stream::Address (client::Options::Instance ()->address));
-            THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
+            THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
+            client::Client::Instance ()->Start (client::Options::Instance ()->address);
+            util::MainRunLoop::Instance ()->Start ();
+            client::Client::Instance ()->Stop ();
+            THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

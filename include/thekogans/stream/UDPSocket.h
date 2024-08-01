@@ -35,11 +35,7 @@ namespace thekogans {
         /// \brief
         /// Subscribe to UDPSocketEvents to receive \see{UDPSocket} event notifications.
 
-        struct _LIB_THEKOGANS_STREAM_DECL UDPSocketEvents : public virtual util::RefCounted {
-            /// \brief
-            /// Declare \see{util::RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (UDPSocketEvents)
-
+        struct _LIB_THEKOGANS_STREAM_DECL UDPSocketEvents {
             /// \brief
             /// dtor.
             virtual ~UDPSocketEvents () {}

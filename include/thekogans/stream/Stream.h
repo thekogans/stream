@@ -50,11 +50,7 @@ namespace thekogans {
         /// See \see{Pipe}, \see{NamedPipe}, \see{TCPSocket} and \see{UDPSocket}
         /// for examples on how to use that particular stream.
 
-        struct _LIB_THEKOGANS_STREAM_DECL StreamEvents : public virtual util::RefCounted {
-            /// \brief
-            /// Declare \see{util::RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (StreamEvents)
-
+        struct _LIB_THEKOGANS_STREAM_DECL StreamEvents {
             /// \brief
             /// dtor.
             virtual ~StreamEvents () {}

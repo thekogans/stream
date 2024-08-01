@@ -17,7 +17,6 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include <list>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/NamedPipe.h"
@@ -53,13 +52,7 @@ namespace thekogans {
                         Stream::SharedPtr stream,
                         const util::Buffer &buffer) throw () {
                     if (!buffer.IsEmpty ()) {
-                        util::GlobalJobQueue::Instance ()->EnqJob (
-                            [stream, buffer] (
-                                    const util::RunLoop::LambdaJob & /*job*/,
-                                    const std::atomic<bool> & /*done*/) {
-                                stream->Write (std::move (buffer));
-                            }
-                        );
+                        stream->Write (buffer);
                     }
                 }
 

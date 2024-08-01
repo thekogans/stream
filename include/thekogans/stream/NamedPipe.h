@@ -42,11 +42,7 @@ namespace thekogans {
         ///
         /// \brief
 
-        struct _LIB_THEKOGANS_STREAM_DECL NamedPipeEvents : public virtual util::RefCounted {
-            /// \brief
-            /// Declare \see{util::RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (NamedPipeEvents)
-
+        struct _LIB_THEKOGANS_STREAM_DECL NamedPipeEvents {
             /// \brief
             /// dtor.
             virtual ~NamedPipeEvents () {}

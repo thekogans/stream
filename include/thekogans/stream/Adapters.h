@@ -159,11 +159,7 @@ namespace thekogans {
         /// Network change notification events. See \see{util::Subscriber} for an
         /// example on how to use this class.
 
-        struct _LIB_THEKOGANS_STREAM_DECL AdaptersEvents : public virtual util::RefCounted {
-            /// \brief
-            /// Declare \see{thekogans::util::RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AdaptersEvents)
-
+        struct _LIB_THEKOGANS_STREAM_DECL AdaptersEvents {
             /// \brief
             /// dtor.
             virtual ~AdaptersEvents () {}
