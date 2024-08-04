@@ -108,7 +108,7 @@ namespace thekogans {
         ///
         ///     virtual void OnStreamRead (
         ///             Stream::SharedPtr stream,
-        ///             const util::Buffer &buffer) throw () override {
+        ///             util::Buffer::SharedPtr buffer) throw () override {
         ///         // Process incomming reply from the server.
         ///         ...
         ///     }
@@ -200,7 +200,7 @@ namespace thekogans {
         ///
         ///     virtual void OnStreamRead (
         ///             stream::Stream::SharedPtr stream,
-        ///             const util::Buffer &buffer) throw () override {
+        ///             util::Buffer::SharedPtr buffer) throw () override {
         ///         // Process incomming request from a client.
         ///         ...
         ///     }

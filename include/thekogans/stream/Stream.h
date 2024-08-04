@@ -75,14 +75,14 @@ namespace thekogans {
             /// \param[in] buffer The new data.
             virtual void OnStreamRead (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                const util::Buffer & /*buffer*/) throw () {}
+                util::Buffer::SharedPtr /*buffer*/) throw () {}
             /// \brief
             /// Called when data was written to a stream.
             /// \param[in] stream Stream where data was written.
             /// \param[in] buffer The written data.
             virtual void OnStreamWrite (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                const util::Buffer & /*buffer*/) throw () {}
+                util::Buffer::SharedPtr /*buffer*/) throw () {}
         };
 
         /// \brief
@@ -213,7 +213,7 @@ namespace thekogans {
             /// Async write \see{util::Buffer} to the stream. This method is more
             /// efficient than writing bytes (below) as there's no copy overhead.
             /// \param[in] buffer Buffer to write.
-            virtual void Write (util::Buffer /*buffer*/) = 0;
+            virtual void Write (util::Buffer::SharedPtr /*buffer*/) = 0;
             /// \brief
             /// Async write bytes to the stream. Upon return this method will have made
             /// a copy of the buffer contents and can be deleted by the caller without

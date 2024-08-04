@@ -47,7 +47,7 @@ namespace thekogans {
             /// \param[in] address Peer address that sent the datagram.
             virtual void OnUDPSocketReadFrom (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
-                const util::Buffer & /*buffer*/,
+                util::Buffer::SharedPtr /*buffer*/,
                 const Address & /*address*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a UDPSocket.
@@ -56,7 +56,7 @@ namespace thekogans {
             /// \param[in] address Peer address that received the datagram.
             virtual void OnUDPSocketWriteTo (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
-                const util::Buffer & /*buffer*/,
+                util::Buffer::SharedPtr /*buffer*/,
                 const Address & /*address*/) throw () {}
 
             /// \brief
@@ -67,7 +67,7 @@ namespace thekogans {
             /// \param[in] to Local address that received the datagram.
             virtual void OnUDPSocketReadMsg (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
-                const util::Buffer & /*buffer*/,
+                util::Buffer::SharedPtr /*buffer*/,
                 const Address & /*from*/,
                 const Address & /*to*/) throw () {}
             /// \brief
@@ -78,7 +78,7 @@ namespace thekogans {
             /// \param[in] to Peer address that will receive the datagram.
             virtual void OnUDPSocketWriteMsg (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
-                const util::Buffer & /*buffer*/,
+                util::Buffer::SharedPtr /*buffer*/,
                 const Address & /*from*/,
                 const Address & /*to*/) throw () {}
         };
@@ -158,7 +158,7 @@ namespace thekogans {
             /// \param[in] buffer Buffer representing the datagram.
             /// \param[in] address Address the datagram is sent to.
             void WriteTo (
-                util::Buffer buffer,
+                util::Buffer::SharedPtr buffer,
                 const Address &address);
             /// \brief
             /// Write a datagram to the given address.
@@ -183,7 +183,7 @@ namespace thekogans {
             /// \param[in] from The local interface address from which the message is sent.
             /// \param[in] to The address of the host that will receive the message.
             void WriteMsg (
-                util::Buffer buffer,
+                util::Buffer::SharedPtr buffer,
                 const Address &from,
                 const Address &to);
             /// \brief

@@ -69,19 +69,19 @@ namespace thekogans {
             struct ReadOverlapped : public Overlapped {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ReadOverlapped)
 
-                util::Buffer buffer;
+                util::Buffer::SharedPtr buffer;
 
                 ReadOverlapped (std::size_t bufferLength) :
-                    buffer (util::NetworkEndian, bufferLength) {}
+                    buffer (new util::Buffer (util::NetworkEndian, bufferLength)) {}
 
                 virtual ssize_t Prolog (Stream &stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ? buffer.AdvanceWriteOffset (GetCount ()) : -1;
+                    return GetError () == ERROR_SUCCESS ? buffer->AdvanceWriteOffset (GetCount ()) : -1;
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countRead = read (
                         stream.GetHandle (),
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ());
+                        buffer->GetWritePtr (),
+                        buffer->GetDataAvailableForWriting ());
                     if (countRead < 0) {
                         SetError (THEKOGANS_UTIL_OS_ERROR_CODE);
                         SetCount (0);
@@ -95,7 +95,7 @@ namespace thekogans {
 
                 virtual bool Epilog (Stream &stream) throw () override {
                     if (stream.IsChainRead ()) {
-                        stream.Read (buffer.GetLength ());
+                        stream.Read (buffer->GetLength ());
                     }
                     return true;
                 }
@@ -110,8 +110,8 @@ namespace thekogans {
                 ReadOverlapped::UniquePtr overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
-                        overlapped->buffer.GetWritePtr (),
-                        (DWORD)overlapped->buffer.GetDataAvailableForWriting (),
+                        overlapped->buffer->GetWritePtr (),
+                        (DWORD)overlapped->buffer->GetDataAvailableForWriting (),
                         0,
                         overlapped.get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -136,19 +136,19 @@ namespace thekogans {
             struct WriteOverlapped : public Overlapped {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (WriteOverlapped)
 
-                util::Buffer buffer;
+                util::Buffer::SharedPtr buffer;
 
-                WriteOverlapped (util::Buffer buffer_) :
-                    buffer (std::move (buffer_)) {}
+                WriteOverlapped (util::Buffer::SharedPtr buffer_) :
+                    buffer (buffer_) {}
 
                 virtual ssize_t Prolog (Stream &stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ? buffer.AdvanceReadOffset (GetCount ()) : -1;
+                    return GetError () == ERROR_SUCCESS ? buffer->AdvanceReadOffset (GetCount ()) : -1;
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = write (
                         stream.GetHandle (),
-                        buffer.GetReadPtr (),
-                        buffer.GetDataAvailableForReading ());
+                        buffer->GetReadPtr (),
+                        buffer->GetDataAvailableForReading ());
                     if (countWritten < 0) {
                         SetError (THEKOGANS_UTIL_OS_ERROR_CODE);
                         SetCount (0);
@@ -156,7 +156,7 @@ namespace thekogans {
                     }
                     SetError (0);
                     SetCount (countWritten);
-                    return buffer.AdvanceReadOffset ((std::size_t)countWritten);
+                    return buffer->AdvanceReadOffset ((std::size_t)countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
@@ -170,14 +170,14 @@ namespace thekogans {
             THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (WriteOverlapped)
         }
 
-        void Pipe::Write (util::Buffer buffer) {
-            if (!buffer.IsEmpty ()) {
+        void Pipe::Write (util::Buffer::SharedPtr buffer) {
+            if (!buffer->IsEmpty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                WriteOverlapped::UniquePtr overlapped (new WriteOverlapped (std::move (buffer)));
+                WriteOverlapped::UniquePtr overlapped (new WriteOverlapped (buffer));
                 if (!WriteFile (
                         handle,
-                        overlapped->buffer.GetReadPtr (),
-                        (ULONG)overlapped->buffer.GetDataAvailableForReading (),
+                        overlapped->buffer->GetReadPtr (),
+                        (ULONG)overlapped->buffer->GetDataAvailableForReading (),
                         0,
                         overlapped.get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
@@ -188,7 +188,7 @@ namespace thekogans {
                 overlapped.release ();
             #else // defined (TOOLCHAIN_OS_Windows)
                 EnqOverlapped (
-                    Overlapped::UniquePtr (new WriteOverlapped (std::move (buffer))),
+                    Overlapped::UniquePtr (new WriteOverlapped (buffer)),
                     out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
@@ -206,7 +206,7 @@ namespace thekogans {
                         &StreamEvents::OnStreamRead,
                         std::placeholders::_1,
                         Stream::SharedPtr (this),
-                        std::move (readOverlapped.buffer)));
+                        readOverlapped.buffer));
             }
             else if (overlapped.GetType () == WriteOverlapped::TYPE) {
                 WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
@@ -215,7 +215,7 @@ namespace thekogans {
                         &StreamEvents::OnStreamWrite,
                         std::placeholders::_1,
                         Stream::SharedPtr (this),
-                        std::move (writeOverlapped.buffer)));
+                        writeOverlapped.buffer));
             }
         }
 

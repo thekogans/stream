@@ -107,11 +107,11 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t bufferLength) {
             if (buffer != 0 && bufferLength > 0) {
-                util::Buffer buffer_ (
-                    util::NetworkEndian,
-                    (const util::ui8 *)buffer,
-                    (const util::ui8 *)buffer + bufferLength);
-                Write (std::move (buffer_));
+                Write (
+                    new util::Buffer (
+                        util::NetworkEndian,
+                        (const util::ui8 *)buffer,
+                        (const util::ui8 *)buffer + bufferLength));
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

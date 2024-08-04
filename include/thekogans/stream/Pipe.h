@@ -58,7 +58,7 @@ namespace thekogans {
             /// \brief
             /// Async write a buffer to the stream.
             /// \param[in] buffer Buffer to write.
-            virtual void Write (util::Buffer buffer) override;
+            virtual void Write (util::Buffer::SharedPtr buffer) override;
 
         protected:
             virtual void HandleOverlapped (Overlapped &overlapped) throw () override;

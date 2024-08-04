@@ -88,7 +88,7 @@ namespace thekogans {
             /// Async write a buffer to the stream.
             /// NOTE: This method can only be called after calling \see{Connect}.
             /// \param[in] buffer Buffer to write.
-            virtual void Write (util::Buffer buffer) override;
+            virtual void Write (util::Buffer::SharedPtr buffer) override;
 
             /// \brief
             /// Get socket family.
