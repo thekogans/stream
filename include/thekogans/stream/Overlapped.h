@@ -107,14 +107,8 @@ namespace thekogans {
             void Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) throw ();
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Convenient typedef for std::list<Overlapped::SharedPtr>.
-            struct Queue {
-                std::list<Overlapped::SharedPtr> queue;
-
-                bool Enq (Overlapped::SharedPtr overlapped);
-                bool Deq ();
-                Overlapped::SharedPtr Head ();
-            };
+            /// Convenient typedef for std::list<SharedPtr>.
+            typedef std::list<SharedPtr> Queue;
             bool Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) throw ();
         #endif // defined (TOOLCHAIN_OS_Windows)
 

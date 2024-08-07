@@ -130,7 +130,9 @@ namespace thekogans {
                 Overlapped::SharedPtr overlapped,
                 Overlapped::Queue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            if (queue.Enq (overlapped)) {
+            bool first = queue.empty ();
+            queue.push_back (overlapped);
+            if (first) {
             #if defined (TOOLCHAIN_OS_Linux)
                 EPOLL_CTL (EPOLL_CTL_MOD)
             #elif defined (TOOLCHAIN_OS_OSX)
@@ -139,20 +141,23 @@ namespace thekogans {
             }
         }
 
-        void Stream::DeqOverlapped (OverlappedQueue &queue) throw () {
+        void Stream::DeqOverlapped (Overlapped::Queue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            if (queue.Deq ()) {
-            #if defined (TOOLCHAIN_OS_Linux)
-                EPOLL_CTL (EPOLL_CTL_MOD)
-            #elif defined (TOOLCHAIN_OS_OSX)
-                KEVENT_FUNC (EV_DELETE)
-            #endif // defined (TOOLCHAIN_OS_Linux)
+            if (!queue.empty ()) {
+                queue.pop_front ();
+                if (queue.empty ()) {
+                #if defined (TOOLCHAIN_OS_Linux)
+                    EPOLL_CTL (EPOLL_CTL_MOD)
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    KEVENT_FUNC (EV_DELETE)
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                }
             }
         }
 
-        Overlapped::SharedPtr void Stream::HeadOverlapped (OverlappedQueue &queue) throw () {
+        Overlapped::SharedPtr void Stream::HeadOverlapped (Overlapped::Queue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            return queue.Head ();
+            return !queue.empty () ? queue.front () : Overlapped::SharedPtr ();
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 

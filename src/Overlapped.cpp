@@ -71,23 +71,6 @@ namespace thekogans {
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
-        bool Overlapped::Queue::Enq (Overlapped::SharedPtr overlapped) {
-            bool first = queue.empty ();
-            queue.push_back (overlapped);
-            return first;
-        }
-
-        bool Overlapped::Queue::Deq () {
-            if (!queue.empty ()) {
-                queue.pop_front ();
-            }
-            return queue.empty ();
-        }
-
-        Overlapped::SharedPtr Overlapped::Queue::Head () {
-            return !queue.empty () ? queue.front () : Overlapped::SharedPtr ();
-        }
-
         bool Overlapped::Exec (Stream::SharedPtr stream) throw () {
             ssize_t result = Prolog (stream);
             if (result > 0) {
