@@ -180,7 +180,7 @@ namespace thekogans {
                         count = keventFunc (handle, 0, 0, kqueueEvents.data (), maxEventsBatch, 0);
                         i < count; ++i) {
                     Stream::SharedPtr stream =
-                        StreamRegistry::Instance ().Get (kqueueEvents[i].udata);
+                        StreamRegistry::Instance ()->Get (kqueueEvents[i].udata);
                     if (stream.Get () != 0) {
                         if (kqueueEvents[i].flags & EV_ERROR) {
                             stream->Produce (

@@ -490,7 +490,7 @@ namespace thekogans {
                                 newAddressesMap.insert (
                                     AdapterAddressesMap::value_type (
                                         curr->ifa_name,
-                                        AdapterAddresses (
+                                        new AdapterAddresses (
                                             curr->ifa_name,
                                             if_nametoindex (curr->ifa_name),
                                             util::Flags32 (curr->ifa_flags).Test (IFF_MULTICAST))));
@@ -510,13 +510,13 @@ namespace thekogans {
                                 memcpy (&ipv4.broadcast.in, curr->ifa_broadaddr, sizeof (sockaddr_in));
                                 ipv4.broadcast.length = sizeof (sockaddr_in);
                             }
-                            it->second.ipv4.push_back (ipv4);
+                            it->second->ipv4.push_back (ipv4);
                         }
                         else if (curr->ifa_addr->sa_family == AF_INET6) {
                             Address ipv6;
                             memcpy (&ipv6.in6, curr->ifa_addr, sizeof (sockaddr_in6));
                             ipv6.length = sizeof (sockaddr_in6);
-                            it->second.ipv6.push_back (ipv6);
+                            it->second->ipv6.push_back (ipv6);
                         }
                     #if defined (TOOLCHAIN_OS_Linux)
                         else if (curr->ifa_addr->sa_family == AF_PACKET) {
@@ -529,7 +529,7 @@ namespace thekogans {
                         else if (curr->ifa_addr->sa_family == AF_LINK) {
                             const sockaddr_dl *addr = (const sockaddr_dl *)curr->ifa_addr;
                             if (addr->sdl_type == IFT_ETHER && addr->sdl_alen == util::MAC_LENGTH) {
-                                memcpy (it->second.mac, LLADDR (addr), addr->sdl_alen);
+                                memcpy (it->second->mac, LLADDR (addr), addr->sdl_alen);
                             }
                         }
                     #endif // defined (TOOLCHAIN_OS_Linux)
@@ -587,7 +587,7 @@ namespace thekogans {
                 SCDynamicStoreRef /*store*/,
                 CFArrayRef /*changedKeys*/,
                 void * /*info*/) {
-            Adapters::Instance ().NotifySubscribers ();
+            Adapters::Instance ()->NotifySubscribers ();
         }
     #endif // defined (TOOLCHAIN_OS_OSX)
 

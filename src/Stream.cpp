@@ -117,12 +117,12 @@ namespace thekogans {
             if (&queue == &in) {\
                 keventStruct event = {0};\
                 keventSet (&event, handle, EVFILT_READ, op, 0, 0, token.GetValue ());\
-                keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);\
+                keventFunc (AsyncIoEventQueue::Instance ()->GetHandle (), &event, 1, 0, 0, 0);\
             }\
             else if (&queue == &out) {\
                 keventStruct event = {0};\
                 keventSet (&event, handle, EVFILT_WRITE, op, 0, 0, token.GetValue ());\
-                keventFunc (AsyncIoEventQueue::Instance ().GetHandle (), &event, 1, 0, 0, 0);\
+                keventFunc (AsyncIoEventQueue::Instance ()->GetHandle (), &event, 1, 0, 0, 0);\
             }
     #endif // defined (TOOLCHAIN_OS_OSX)
 
@@ -155,7 +155,7 @@ namespace thekogans {
             }
         }
 
-        Overlapped::SharedPtr void Stream::HeadOverlapped (Overlapped::Queue &queue) throw () {
+        Overlapped::SharedPtr Stream::HeadOverlapped (Overlapped::Queue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
             return !queue.empty () ? queue.front () : Overlapped::SharedPtr ();
         }
