@@ -204,13 +204,6 @@ namespace thekogans {
             void Disconnect (bool flushBuffers = true);
 
         protected:
-            // Stream
-            /// \brief
-            /// Used by \see{AsyncIoEventQueue} to notify the stream that
-            /// an overlapped operation has completed successfully.
-            /// \param[in] overlapped \see{Overlapped} that completed successfully.
-            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
-
             static LPSECURITY_ATTRIBUTES DefaultSecurityAttributes ();
         };
 

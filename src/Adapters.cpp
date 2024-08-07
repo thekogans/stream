@@ -207,7 +207,9 @@ namespace thekogans {
             struct DiffProcessor {
                 AdapterAddressesList added;
                 AdapterAddressesList deleted;
-                typedef std::pair<AdapterAddresses, AdapterAddresses> AdapterAddressesPair;
+                typedef std::pair<
+                    AdapterAddresses::SharedPtr,
+                    AdapterAddresses::SharedPtr> AdapterAddressesPair;
                 typedef std::list<AdapterAddressesPair> AdapterAddressesPairList;
                 AdapterAddressesPairList changed;
 
@@ -237,7 +239,9 @@ namespace thekogans {
                         else {
                             if (originalBegin->second != currentBegin->second) {
                                 changed.push_back (
-                                    AdapterAddressesPair (originalBegin->second, currentBegin->second));
+                                    AdapterAddressesPair (
+                                        originalBegin->second,
+                                        currentBegin->second));
                             }
                             ++originalBegin;
                             ++currentBegin;
@@ -368,15 +372,18 @@ namespace thekogans {
                                 ipAdapterAddresses->AdapterName,
                                 ipAdapterAddresses->IfIndex,
                                 util::boolTostring (adapterInfo.IsMulticast ()).c_str ());
-                            AdapterAddresses addresses (
-                                ipAdapterAddresses->AdapterName,
-                                ipAdapterAddresses->IfIndex,
-                                adapterInfo.IsMulticast ());
+                            AdapterAddresses::SharedPtr addresses (
+                                new AdapterAddresses (
+                                    ipAdapterAddresses->AdapterName,
+                                    ipAdapterAddresses->IfIndex,
+                                    adapterInfo.IsMulticast ()));
                             for (PIP_ADAPTER_UNICAST_ADDRESS
                                     unicastAddress = ipAdapterAddresses->FirstUnicastAddress;
                                     unicastAddress != 0; unicastAddress = unicastAddress->Next) {
                                 if (unicastAddress->Address.lpSockaddr->sa_family == AF_INET) {
-                                    assert (unicastAddress->Address.iSockaddrLength == sizeof (sockaddr_in));
+                                    assert (
+                                        unicastAddress->Address.iSockaddrLength ==
+                                        sizeof (sockaddr_in));
                                     AdapterAddresses::IPV4 ipv4;
                                     memcpy (&ipv4.unicast.in, unicastAddress->Address.lpSockaddr,
                                         unicastAddress->Address.iSockaddrLength);
@@ -398,7 +405,7 @@ namespace thekogans {
                                             htonl (ntohl (ipv4.unicast.in.sin_addr.s_addr) | mask);
                                         ipv4.broadcast.length = sizeof (sockaddr_in);
                                     }
-                                    addresses.ipv4.push_back (ipv4);
+                                    addresses->ipv4.push_back (ipv4);
                                     THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
                                         THEKOGANS_STREAM,
                                         "IPV4;\n"
@@ -408,13 +415,15 @@ namespace thekogans {
                                         ipv4.broadcast.ToString ().c_str ());
                                 }
                                 else if (unicastAddress->Address.lpSockaddr->sa_family == AF_INET6) {
-                                    assert (unicastAddress->Address.iSockaddrLength == sizeof (sockaddr_in6));
+                                    assert (
+                                        unicastAddress->Address.iSockaddrLength ==
+                                        sizeof (sockaddr_in6));
                                     Address ipv6;
                                     memcpy (&ipv6.in6,
                                         unicastAddress->Address.lpSockaddr,
                                         unicastAddress->Address.iSockaddrLength);
                                     ipv6.length = sizeof (sockaddr_in6);
-                                    addresses.ipv6.push_back (ipv6);
+                                    addresses->ipv6.push_back (ipv6);
                                     THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
                                         THEKOGANS_STREAM,
                                         "IPV6: %s",
@@ -423,7 +432,7 @@ namespace thekogans {
                             }
                             if (ipAdapterAddresses->PhysicalAddressLength == util::MAC_LENGTH) {
                                 memcpy (
-                                    addresses.mac,
+                                    addresses->mac,
                                     ipAdapterAddresses->PhysicalAddress,
                                     ipAdapterAddresses->PhysicalAddressLength);
                                 THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
@@ -433,14 +442,15 @@ namespace thekogans {
                                         ipAdapterAddresses->PhysicalAddress,
                                         ipAdapterAddresses->PhysicalAddressLength).c_str ());
                             }
-                            if (!addresses.ipv4.empty () || !addresses.ipv6.empty ()) {
+                            if (!addresses->ipv4.empty () || !addresses->ipv6.empty ()) {
                                 THEKOGANS_UTIL_LOG_SUBSYSTEM_DEBUG (
                                     THEKOGANS_STREAM,
                                     "Added addresses for; Name: %s, Index: %u, Multicast: %s\n",
                                     ipAdapterAddresses->AdapterName,
                                     ipAdapterAddresses->IfIndex,
                                     util::boolTostring (adapterInfo.IsMulticast ()).c_str ());
-                                newAddressesMap.insert (AdapterAddressesMap::value_type (addresses.name, addresses));
+                                newAddressesMap.insert (
+                                    AdapterAddressesMap::value_type (addresses->name, addresses));
                             }
                             THEKOGANS_UTIL_LOG_FLUSH
                         }

@@ -53,12 +53,12 @@ namespace thekogans {
                     // StreamEvents
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
-                        const util::Exception &exception) throw () override;
+                        util::Exception exception) throw () override;
                     virtual void OnStreamDisconnect (
                         Stream::SharedPtr stream) throw () override;
                     virtual void OnStreamRead (
                         Stream::SharedPtr stream,
-                        const util::Buffer &buffer) throw () override;
+                        util::Buffer::SharedPtr buffer) throw () override;
                     // NamedPipeEvents
                     virtual void OnNamedPipeConnected (
                         NamedPipe::SharedPtr namedPipe) throw () override;

@@ -197,9 +197,6 @@ namespace thekogans {
             /// This api should only be used by \see{AsyncIoEventQueue}.
             /// \return Last error that occurred on this socket.
             THEKOGANS_UTIL_ERROR_CODE GetErrorCode () const;
-
-        protected:
-            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
         };
 
     } // namespace stream

@@ -88,11 +88,12 @@ namespace thekogans {
                     FALSE);
                 for (ULONG i = 0; i < count; ++i) {
                     if (iocpEvents[i].lpOverlapped != 0) {
-                        Overlapped::UniquePtr overlapped ((Overlapped *)iocpEvents[i].lpOverlapped);
+                        Overlapped::SharedPtr overlapped (
+                            (Overlapped *)iocpEvents[i].lpOverlapped, false);
                         Stream::SharedPtr stream = StreamRegistry::Instance ()->Get (
                             (StreamRegistry::Token::ValueType)iocpEvents[i].lpCompletionKey);
-                        if (stream.Get () != 0) {
-                            stream->ExecOverlapped (*overlapped);
+                        if (stream != nullptr) {
+                            overlapped->Exec (stream);
                         }
                     }
                 }
@@ -120,32 +121,52 @@ namespace thekogans {
                             if (socket.Get () != 0) {
                                 THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
                                 if (errorCode == EPIPE) {
-                                    stream->HandleDisconnect ();
+                                    stream->Produce (
+                                        std::bind (
+                                            &StreamEvents::OnStreamDisconnect,
+                                            std::placeholders::_1,
+                                            stream));
                                 }
                                 else {
-                                    stream->HandleError (
-                                        THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                                    stream->Produce (
+                                        std::bind (
+                                            &StreamEvents::OnStreamError,
+                                            std::placeholders::_1,
+                                            stream,
+                                            new THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
                                 }
                             }
                             else {
-                                stream->HandleError (
-                                    THEKOGANS_UTIL_STRING_EXCEPTION (
-                                        "Unknown stream (%s) error.",
-                                        stream->type ().name ()));
+                                stream->Produce (
+                                    std::bind (
+                                        &StreamEvents::OnStreamError,
+                                        std::placeholders::_1,
+                                        stream,
+                                        new THEKOGANS_UTIL_STRING_EXCEPTION (
+                                            "Unknown stream (%s) error.",
+                                            stream->type ().name ())));
                             }
                         }
                         else if ((epollEvents[i].events & EPOLLRDHUP) ||
                                 (epollEvents[i].events & EPOLLHUP)) {
-                            stream->HandleDisconnect ();
+                            stream->Produce (
+                                std::bind (
+                                    &StreamEvents::OnStreamDisconnect,
+                                    std::placeholders::_1,
+                                    stream));
                         }
                         else {
                             if (epollEvents[i].events & EPOLLIN) {
-                                while (stream->ExecOverlapped (stream->in)) {
+                                Overlapped::SharedPtr overlapped;
+                                while ((overlapped = stream->HeadOverlapped (stream->in)) != nullptr &&
+                                        overlapped->Exec (stream)) {
                                     stream->DeqOverlapped (stream->in);
                                 }
                             }
                             if (epollEvents[i].events & EPOLLOUT) {
-                                while (stream->ExecOverlapped (stream->out)) {
+                                Overlapped::SharedPtr overlapped;
+                                while ((overlapped = stream->HeadOverlapped (stream->out)) != nullptr &&
+                                        overlapped->Exec (stream)) {
                                     stream->DeqOverlapped (stream->out);
                                 }
                             }
@@ -162,9 +183,13 @@ namespace thekogans {
                         StreamRegistry::Instance ().Get (kqueueEvents[i].udata);
                     if (stream.Get () != 0) {
                         if (kqueueEvents[i].flags & EV_ERROR) {
-                            stream->HandleError (
-                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
-                                    (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data));
+                            stream->Produce (
+                                std::bind (
+                                    &StreamEvents::OnStreamError,
+                                    std::placeholders::_1,
+                                    stream,
+                                    new THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
+                                        (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data)));
                         }
                         else if (kqueueEvents[i].flags & EV_EOF) {
                             // If no one is listening on the other side, kqueue returns
@@ -177,20 +202,32 @@ namespace thekogans {
                                 if (errorCode == ETIMEDOUT ||
                                         errorCode == ECONNREFUSED ||
                                         errorCode == EHOSTUNREACH) {
-                                    stream->HandleError (
-                                        THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
+                                    stream->Produce (
+                                        std::bind (
+                                            &StreamEvents::OnStreamError,
+                                            std::placeholders::_1,
+                                            stream,
+                                            new THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
                                     continue;
                                 }
                             }
-                            stream->HandleDisconnect ();
+                            stream->Produce (
+                                std::bind (
+                                    &StreamEvents::OnStreamDisconnect,
+                                    std::placeholders::_1,
+                                    stream));
                         }
                         else if (kqueueEvents[i].filter == EVFILT_READ) {
-                            while (stream->ExecOverlapped (stream->in)) {
+                            Overlapped::SharedPtr overlapped;
+                            while ((overlapped = stream->HeadOverlapped (stream->in)) != nullptr &&
+                                    overlapped->Exec (stream)) {
                                 stream->DeqOverlapped (stream->in);
                             }
                         }
                         else if (kqueueEvents[i].filter == EVFILT_WRITE) {
-                            while (stream->ExecOverlapped (stream->out)) {
+                            Overlapped::SharedPtr overlapped;
+                            while ((overlapped = stream->HeadOverlapped (stream->out)) != nullptr &&
+                                    overlapped->Exec (stream)) {
                                 stream->DeqOverlapped (stream->out);
                             }
                         }

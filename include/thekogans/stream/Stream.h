@@ -19,6 +19,9 @@
 #define __thekogans_stream_Stream_h
 
 #include "thekogans/util/Environment.h"
+#if !defined (TOOLCHAIN_OS_Windows)
+    #include <list>
+#endif // !defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/RefCounted.h"
@@ -61,7 +64,7 @@ namespace thekogans {
             /// \param[in] exception \see{util::Exception} representing the error.
             virtual void OnStreamError (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                const util::Exception & /*exception*/) throw () {}
+                util::Exception::SharedPtr /*exception*/) throw () {}
 
             /// \brief
             /// Called to initiate stream normal disconnect processing.
@@ -154,10 +157,10 @@ namespace thekogans {
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Outstanding read requests.
-            OverlappedQueue in;
+            Overlapped::Queue in;
             /// \brief
             /// Outstanding write requests.
-            OverlappedQueue out;
+            Overlapped::Queue out;
             /// \brief
             /// Lock serializing access to in and out.
             util::SpinLock spinLock;
@@ -225,52 +228,27 @@ namespace thekogans {
                 std::size_t bufferLength);
 
         protected:
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Used by the \see{ExecOverlapped} to notify the stream
-            /// of async errors.
-            /// \param[in] exception Async error.
-            virtual void HandleError (const util::Exception &exception) throw ();
-            /// \brief
-            /// Used by the \see{ExecOverlapped} to notify the stream
-            /// that the other side has disconnected.
-            virtual void HandleDisconnect () throw ();
-            /// \brief
-            /// Used by \see{ExecOverlapped} to notify the stream that
-            /// an \see{Overlapped} operation has completed successfully.
-            /// \param[in] overlapped \see{Overlapped} that completed successfully.
-            virtual void HandleOverlapped (Overlapped &overlapped) throw () = 0;
-
-        #if defined (TOOLCHAIN_OS_Windows)
-        private:
-            /// \brief
-            /// Execute the given \see{Overlapped}.
-            /// \param[in] overlapped \see{Overlapped} to execute.
-            void ExecOverlapped (Overlapped &overlapped) throw ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Enqueue the given \see{Overlapped} on the given \see{OverlappedQueue}.
+            /// Enqueue the given \see{Overlapped} on the given \see{Overlapped::Queue}.
             /// \param[in] overlapped \see{Overlapped} to enqueue.
-            /// \param[in] queue \see{OverlappedQueue} to enqueue the given \see{Overlapped} on.
+            /// \param[in] queue \see{Overlapped::Queue} to enqueue the given \see{Overlapped} on.
             void EnqOverlapped (
-                Overlapped::UniquePtr overlapped,
-                OverlappedQueue &queue) throw ();
+                Overlapped::SharedPtr overlapped,
+                Overlapped::Queue &queue) throw ();
 
-        private:
             /// \brief
-            /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped} from the given queue.
-            /// \param[in] queue Queue to return the head \see{Overlapped} from.
-            void DeqOverlapped (OverlappedQueue &queue) throw ();
-            /// \brief
-            /// Execute the head \see{Overlapped} from the given queue.
-            /// \param[in] queue Queue from which to execute the head \see{Overlapped}.
-            /// \return true == The head \see{Overlapped} from the given queue was sccessfuly
-            /// completed and should be removed from the queue (\see{DeqOverlapped} above).
-            bool ExecOverlapped (OverlappedQueue &queue) throw ();
-        #endif // !defined (TOOLCHAIN_OS_Windows)
+            /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped}
+            /// from the given queue.
+            /// \param[in] queue Queue to remove the head \see{Overlapped} from.
+            void DeqOverlapped (Overlapped::Queue &queue) throw ();
+
+            Overlapped::SharedPtr HeadOverlapped (Overlapped::Queue &queue) throw ();
 
             /// \brief
             /// \see{AsyncIoEventQueue} needs access to private members.
             friend struct AsyncIoEventQueue;
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Stream is neither copy constructable, nor assignable.

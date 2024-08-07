@@ -38,7 +38,7 @@ namespace thekogans {
 
                 void Server::OnStreamError (
                         Stream::SharedPtr stream,
-                        const util::Exception &exception) throw () {
+                        util::Exception exception) throw () {
                     THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
                     RemoveConnection (stream);
                 }
@@ -50,8 +50,8 @@ namespace thekogans {
 
                 void Server::OnStreamRead (
                         Stream::SharedPtr stream,
-                        const util::Buffer &buffer) throw () {
-                    if (!buffer.IsEmpty ()) {
+                        util::Buffer::SharedPtr buffer) throw () {
+                    if (!buffer->IsEmpty ()) {
                         stream->Write (buffer);
                     }
                 }

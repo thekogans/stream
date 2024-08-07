@@ -50,7 +50,7 @@ namespace thekogans {
             /// \param[in] adress \see{Address} the client connected on.
             virtual void OnTCPSocketConnect (
                 util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
-                const Address & /*address*/) throw () {}
+                Address /*address*/) throw () {}
             /// \brief
             /// Called to report a new connection on a \see{TCPSocket}.
             /// \param[in] tcpSocket \see{TCPSocket} on which the new connection occurred.
@@ -395,14 +395,6 @@ namespace thekogans {
             /// \param[in] shutdownType One of ShutdownRead,
             /// ShutdownWrite or ShutdownBoth.
             void Shutdown (ShutdownType shutdownType = ShutdownBoth);
-
-        protected:
-            // Stream
-            /// \brief
-            /// Used by \see{AsyncIoEventQueue::WaitForEvents} to notify the
-            /// stream that an overlapped operation has completed successfully.
-            /// \param[in] overlapped Overlapped that completed successfully.
-            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
         };
 
     } // namespace stream

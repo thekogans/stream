@@ -90,13 +90,19 @@ namespace thekogans {
                 ReadOverlapped (std::size_t bufferLength) :
                     buffer (new util::Buffer (util::NetworkEndian, bufferLength)) {}
 
-                virtual ssize_t Prolog (Stream & /*stream*/) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
                     return GetError () == ERROR_SUCCESS ? buffer->AdvanceWriteOffset (GetCount ()) : -1;
                 }
 
-                virtual bool Epilog (Stream &stream) throw () override {
-                    if (stream.IsChainRead ()) {
-                        stream.Read (buffer->GetLength ());
+                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                    stream->util::Producer<StreamEvents>::Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamRead,
+                            std::placeholders::_1,
+                            stream,
+                            buffer));
+                    if (stream->IsChainRead ()) {
+                        stream->Read (buffer->GetLength ());
                     }
                     return true;
                 }
@@ -107,19 +113,19 @@ namespace thekogans {
 
         void NamedPipe::Read (std::size_t bufferLength) {
             if (bufferLength != 0) {
-                ReadOverlapped::UniquePtr overlapped (new ReadOverlapped (bufferLength));
+                ReadOverlapped::SharedPtr overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
                         overlapped->buffer->GetWritePtr (),
                         (DWORD)overlapped->buffer->GetDataAvailableForWriting (),
                         0,
-                        overlapped.get ())) {
+                        overlapped.Get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode != ERROR_IO_PENDING) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-                overlapped.release ();
+                overlapped.Release ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -136,9 +142,20 @@ namespace thekogans {
                 WriteOverlapped (util::Buffer::SharedPtr buffer_) :
                     buffer (buffer_) {}
 
-                virtual ssize_t Prolog (Stream & /*stream*/) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
                     return GetError () == ERROR_SUCCESS ? buffer->AdvanceReadOffset (GetCount ()) : -1;
                 }
+
+                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                    stream->util::Producer<StreamEvents>::Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamWrite,
+                            std::placeholders::_1,
+                            stream,
+                            buffer));
+                    return true;
+                }
+
             };
 
             THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (WriteOverlapped)
@@ -146,19 +163,19 @@ namespace thekogans {
 
         void NamedPipe::Write (util::Buffer::SharedPtr buffer) {
             if (!buffer->IsEmpty ()) {
-                WriteOverlapped::UniquePtr overlapped (new WriteOverlapped (buffer));
+                WriteOverlapped::SharedPtr overlapped (new WriteOverlapped (buffer));
                 if (!WriteFile (
                         handle,
                         overlapped->buffer->GetReadPtr (),
                         (ULONG)overlapped->buffer->GetDataAvailableForReading (),
                         0,
-                        overlapped.get ())) {
+                        overlapped.Get ())) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                     if (errorCode != ERROR_IO_PENDING) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-                overlapped.release ();
+                overlapped.Release ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -171,8 +188,19 @@ namespace thekogans {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ConnectOverlapped)
 
                 ConnectOverlapped () {}
-                virtual ssize_t Prolog (Stream & /*stream*/) throw () {
+
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
+                }
+
+                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                    NamedPipe::SharedPtr namedPipe = stream;
+                    namedPipe->util::Producer<NamedPipeEvents>::Produce (
+                        std::bind (
+                            &NamedPipeEvents::OnNamedPipeConnected,
+                            std::placeholders::_1,
+                            namedPipe));
+                    return true;
                 }
             };
 
@@ -180,16 +208,17 @@ namespace thekogans {
         }
 
         void NamedPipe::Connect () {
-            Overlapped::UniquePtr overlapped (new ConnectOverlapped);
-            if (!ConnectNamedPipe (handle, overlapped.get ())) {
+            Overlapped::SharedPtr overlapped (new ConnectOverlapped);
+            if (!ConnectNamedPipe (handle, overlapped.Get ())) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                 if ((errorCode == ERROR_PIPE_CONNECTED &&
-                        !PostQueuedCompletionStatus (handle, 0, (ULONG_PTR)token.GetValue (), overlapped.get ())) ||
+                        !PostQueuedCompletionStatus (
+                            handle, 0, (ULONG_PTR)token.GetValue (), overlapped.Get ())) ||
                         errorCode != ERROR_IO_PENDING) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
-            overlapped.release ();
+            overlapped.Release ();
         }
 
         void NamedPipe::Disconnect (bool flushBuffers) {
@@ -206,39 +235,13 @@ namespace thekogans {
             }
         }
 
-        void NamedPipe::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetType () == ConnectOverlapped::TYPE) {
-                util::Producer<NamedPipeEvents>::Produce (
-                    std::bind (
-                        &NamedPipeEvents::OnNamedPipeConnected,
-                        std::placeholders::_1,
-                        SharedPtr (this)));
-            }
-            else if (overlapped.GetType () == ReadOverlapped::TYPE) {
-                ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamRead,
-                        std::placeholders::_1,
-                        Stream::SharedPtr (this),
-                        readOverlapped.buffer));
-            }
-            else if (overlapped.GetType () == WriteOverlapped::TYPE) {
-                WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamWrite,
-                        std::placeholders::_1,
-                        Stream::SharedPtr (this),
-                        writeOverlapped.buffer));
-            }
-        }
-
         namespace {
             struct SecurityDescriptor : public SECURITY_DESCRIPTOR {
                 SecurityDescriptor () {
-                    InitializeSecurityDescriptor ((SECURITY_DESCRIPTOR *)this, SECURITY_DESCRIPTOR_REVISION);
-                    SetSecurityDescriptorDacl ((SECURITY_DESCRIPTOR *)this, TRUE, 0, FALSE);
+                    InitializeSecurityDescriptor (
+                        (SECURITY_DESCRIPTOR *)this, SECURITY_DESCRIPTOR_REVISION);
+                    SetSecurityDescriptorDacl (
+                        (SECURITY_DESCRIPTOR *)this, TRUE, 0, FALSE);
                 }
             };
 

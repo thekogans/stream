@@ -19,10 +19,16 @@
 #define __thekogans_stream_Overlapped_h
 
 #include "thekogans/util/Environment.h"
-
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/os/windows/WindowsHeader.h"
+    #include <winsock2.h>
+#else // defined (TOOLCHAIN_OS_Windows)
+    #include <list>
+    #include "thekogans/util/SpinLock.h"
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Heap.h"
-#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/stream/Config.h"
 
 namespace thekogans {
@@ -55,16 +61,6 @@ namespace thekogans {
             /// dtor.
             virtual ~WSAOVERLAPPED () {}
         };
-
-        struct Overlapped;
-        enum {
-            /// \brief
-            /// Overlapped Queue ID.
-            OVERLAPPED_QUEUE_ID
-        };
-        /// \brief
-        /// Convenient typedef for IntrusiveList<Overlapped, OVERLAPPED_QUEUE_ID>.
-        typedef util::IntrusiveList<Overlapped, OVERLAPPED_QUEUE_ID> OverlappedQueue;
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
         /// \struct Overlapped Overlapped.h thekogans/stream/Overlapped.h
@@ -79,40 +75,48 @@ namespace thekogans {
         /// that through \see{Stream::chainRead}.
 
         struct _LIB_THEKOGANS_STREAM_DECL Overlapped :
-            #if !defined (TOOLCHAIN_OS_Windows)
-                public OverlappedQueue::Node,
-            #endif // !defined (TOOLCHAIN_OS_Windows)
-                public WSAOVERLAPPED {
+                public WSAOVERLAPPED,
+                public util::RefCounted {
             /// \brief
-            /// Convenient typedef for std::unique_ptr<Overlapped>.
-            typedef std::unique_ptr<Overlapped> UniquePtr;
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Overlapped)
 
             /// \brief
             /// ctor.
             Overlapped () {
             #if defined (TOOLCHAIN_OS_Windows)
-                memset ((WSAOVERLAPPED *)this, 0, sizeof (WSAOVERLAPPED));
+                Internal = 0;
+                InternalHigh = 0;
+                Offset = 0;
+                OffsetHigh = 0;
+                hEvent = 0;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            /// \brief
-            /// dtor.
-            virtual ~Overlapped () {}
 
-            /// \brief
-            /// Return the type name of this overlapped.
-            /// \return Type name of this overlapped.
-            virtual const char *GetType () const = 0;
             /// \brief
             /// Called by \see{Stream::ExecOverlapped} to perform async io.
             /// \return Number of bytes transfered.
-            virtual ssize_t Prolog (Stream & /*stream*/) throw () = 0;
+            virtual ssize_t Prolog (util::RefCounted::SharedPtr<Stream> /*stream*/) throw () = 0;
             /// \brief
             /// \return true == overlapped is finished and should be retired.
             /// (on POSIX only) false == try again later.
             /// NOTE: On Windows Epilog must return true.
-            virtual bool Epilog (Stream & /*stream*/) throw () {
-                return true;
-            }
+            virtual bool Epilog (util::RefCounted::SharedPtr<Stream> /*stream*/) throw () = 0;
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            void Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) throw ();
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convenient typedef for std::list<Overlapped::SharedPtr>.
+            struct Queue {
+                std::list<Overlapped::SharedPtr> queue;
+
+                bool Enq (Overlapped::SharedPtr overlapped);
+                bool Deq ();
+                Overlapped::SharedPtr Head ();
+            };
+            bool Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) throw ();
+        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Return error code.
@@ -157,19 +161,14 @@ namespace thekogans {
             }
         };
 
-        #define THEKOGANS_STREAM_DECLARE_OVERLAPPED(type)\
-            typedef std::unique_ptr<type> UniquePtr;\
+        #define THEKOGANS_STREAM_DECLARE_OVERLAPPED(_T)\
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
-            static const char *TYPE;\
-            virtual const char *GetType () const override {\
-                return TYPE;\
-            }\
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (type)\
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (_T)\
         public:
 
-        #define THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED(type)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)\
-            const char *type::TYPE = #type;
+        #define THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (_T)
 
     } // namespace stream
 } // namespace thekogans

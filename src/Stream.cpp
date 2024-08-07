@@ -74,21 +74,9 @@ namespace thekogans {
         }
 
         Stream::~Stream () {
-        #if !defined (TOOLCHAIN_OS_Windows)
-            auto deleteOverlapped = [] (Overlapped *overlapped) -> bool {
-                delete overlapped;
-                return true;
-            };
-            // NOTE: No lock is taken here as by the time we enter the
-            // dtor all shared references have been released. After
-            // that happens the Stream::WeakPtr registered with
-            // StreamRegistry will always return NULL.
-            in.clear (deleteOverlapped);
-            out.clear (deleteOverlapped);
         #if defined (TOOLCHAIN_OS_Linux)
             EPOLL_CTL (EPOLL_CTL_DEL);
         #endif // defined (TOOLCHAIN_OS_Linux)
-        #endif // !defined (TOOLCHAIN_OS_Windows)
             Close ();
         }
 
@@ -100,13 +88,17 @@ namespace thekogans {
                 close (handle);
             #endif // defined (TOOLCHAIN_OS_Windows)
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+            #if !defined (TOOLCHAIN_OS_Windows)
+                in.clear ();
+                out.clear ();
+            #endif // !defined (TOOLCHAIN_OS_Windows)
             }
         }
 
         void Stream::Write (
                 const void *buffer,
                 std::size_t bufferLength) {
-            if (buffer != 0 && bufferLength > 0) {
+            if (buffer != nullptr && bufferLength > 0) {
                 Write (
                     new util::Buffer (
                         util::NetworkEndian,
@@ -119,60 +111,7 @@ namespace thekogans {
             }
         }
 
-        void Stream::HandleError (const util::Exception &exception) throw () {
-            Produce (
-                std::bind (
-                    &StreamEvents::OnStreamError,
-                    std::placeholders::_1,
-                    SharedPtr (this),
-                    exception));
-        }
-
-        void Stream::HandleDisconnect () throw () {
-            Produce (
-                std::bind (
-                    &StreamEvents::OnStreamDisconnect,
-                    std::placeholders::_1,
-                    SharedPtr (this)));
-        }
-
-    #if defined (TOOLCHAIN_OS_Windows)
-        void Stream::ExecOverlapped (Overlapped &overlapped) throw () {
-            ssize_t result = overlapped.Prolog (*this);
-            if (result > 0) {
-                // A slight departure in logic from the ExecOverlapped below (POSIX).
-                // Under normal circumstances, Epilog will (should) always return
-                // true on Windows as there are no second chances for overlapped.
-                // But even if one decides to return false we still want to call
-                // HandleOverlapped because, again, on Windows the callback is per
-                // overlapped and therefore that overlapped is handled as far as
-                // the os is concerned.
-                overlapped.Epilog (*this);
-                HandleOverlapped (overlapped);
-            }
-            else if (result == 0) {
-                HandleDisconnect ();
-            }
-            else /*result < 0*/ {
-                THEKOGANS_UTIL_ERROR_CODE errorCode = overlapped.GetError ();
-                // Convert known errors to disconnect events.
-                #define STATUS_CANCELED 0xC0000120
-                #define STATUS_LOCAL_DISCONNECT 0xC000013B
-                #define STATUS_REMOTE_DISCONNECT 0xC000013C
-                #define STATUS_PIPE_BROKEN 0xC000014b
-                #define STATUS_CONNECTION_RESET 0xC000020D
-                if (errorCode == STATUS_LOCAL_DISCONNECT ||
-                        errorCode == STATUS_REMOTE_DISCONNECT ||
-                        errorCode == STATUS_PIPE_BROKEN ||
-                        errorCode == STATUS_CONNECTION_RESET) {
-                    HandleDisconnect ();
-                }
-                else if (errorCode != STATUS_CANCELED) {
-                    HandleError (THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                }
-            }
-        }
-    #else // defined (TOOLCHAIN_OS_Windows)
+    #if !defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_OS_OSX)
         #define KEVENT_FUNC(op)\
             if (&queue == &in) {\
@@ -188,12 +127,10 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_OSX)
 
         void Stream::EnqOverlapped (
-                Overlapped::UniquePtr overlapped,
-                OverlappedQueue &queue) throw () {
+                Overlapped::SharedPtr overlapped,
+                Overlapped::Queue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            bool first = queue.empty ();
-            queue.push_back (overlapped.release ());
-            if (first) {
+            if (queue.Enq (overlapped)) {
             #if defined (TOOLCHAIN_OS_Linux)
                 EPOLL_CTL (EPOLL_CTL_MOD)
             #elif defined (TOOLCHAIN_OS_OSX)
@@ -204,45 +141,20 @@ namespace thekogans {
 
         void Stream::DeqOverlapped (OverlappedQueue &queue) throw () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            if (!queue.empty ()) {
-                volatile Overlapped::UniquePtr overlapped (queue.pop_front ());
-                if (queue.empty ()) {
-                #if defined (TOOLCHAIN_OS_Linux)
-                    EPOLL_CTL (EPOLL_CTL_MOD)
-                #elif defined (TOOLCHAIN_OS_OSX)
-                    KEVENT_FUNC (EV_DELETE)
-                #endif // defined (TOOLCHAIN_OS_Linux)
-                }
+            if (queue.Deq ()) {
+            #if defined (TOOLCHAIN_OS_Linux)
+                EPOLL_CTL (EPOLL_CTL_MOD)
+            #elif defined (TOOLCHAIN_OS_OSX)
+                KEVENT_FUNC (EV_DELETE)
+            #endif // defined (TOOLCHAIN_OS_Linux)
             }
         }
 
-        bool Stream::ExecOverlapped (OverlappedQueue &queue) throw () {
-            while (!queue.empty ()) {
-                ssize_t result = queue.front ()->Prolog (*this);
-                if (result > 0) {
-                    if (queue.front ()->Epilog (*this)) {
-                        HandleOverlapped (*queue.front ());
-                        return true;
-                    }
-                }
-                else if (result == 0) {
-                    HandleDisconnect ();
-                    return true;
-                }
-                else /*result < 0*/ {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = queue.front ()->GetError ();
-                    if (errorCode == EAGAIN || errorCode == EWOULDBLOCK) {
-                        return false;
-                    }
-                    else {
-                        HandleError (THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode));
-                        return true;
-                    }
-                }
-            }
-            return false;
+        Overlapped::SharedPtr void Stream::HeadOverlapped (OverlappedQueue &queue) throw () {
+            util::LockGuard<util::SpinLock> guard (spinLock);
+            return queue.Head ();
         }
-    #endif // defined (TOOLCHAIN_OS_Windows)
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
     } // namespace stream
 } // namespace thekogans

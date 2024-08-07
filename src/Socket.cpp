@@ -140,7 +140,8 @@ namespace thekogans {
                 int protocol_) :
                 Stream (
                 #if defined (TOOLCHAIN_OS_Windows)
-                    (THEKOGANS_UTIL_HANDLE)WSASocketW (family_, type_, protocol_, 0, 0, WSA_FLAG_OVERLAPPED)),
+                    (THEKOGANS_UTIL_HANDLE)WSASocketW (
+                        family_, type_, protocol_, 0, 0, WSA_FLAG_OVERLAPPED)),
                 #else // defined (TOOLCHAIN_OS_Windows)
                     (THEKOGANS_UTIL_HANDLE)socket (family_, type_, protocol_)),
                 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -160,6 +161,10 @@ namespace thekogans {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 closesocket ((THEKOGANS_STREAM_SOCKET)handle);
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+            #if !defined (TOOLCHAIN_OS_Windows)
+                in.clear ();
+                out.clear ();
+            #endif // !defined (TOOLCHAIN_OS_Windows)
                 family = -1;
                 type = -1;
                 protocol = -1;
@@ -187,7 +192,7 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
-                virtual ssize_t Prolog (Stream &stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -198,8 +203,9 @@ namespace thekogans {
                         // If passed in bufferLength was 0, than try to grab all available data.
                         if (bufferLength == 0) {
                             u_long value = 0;
-                            if (ioctlsocket ((THEKOGANS_STREAM_SOCKET)stream.GetHandle (), FIONREAD, &value) ==
-                                    THEKOGANS_STREAM_SOCKET_ERROR) {
+                            if (ioctlsocket (
+                                    (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
+                                    FIONREAD, &value) == THEKOGANS_STREAM_SOCKET_ERROR) {
                                 SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
                                 return -1;
                             }
@@ -219,7 +225,7 @@ namespace thekogans {
                     #if defined (TOOLCHAIN_OS_Windows)
                         DWORD countRead = 0;
                         if (WSARecv (
-                                (THEKOGANS_STREAM_SOCKET)stream.GetHandle (),
+                                (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
                                 &wsaBuf,
                                 1,
                                 &countRead,
@@ -228,7 +234,7 @@ namespace thekogans {
                                 0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                     #else // defined (TOOLCHAIN_OS_Windows)
                         ssize_t countRead = recv (
-                            stream.GetHandle (),
+                            stream->GetHandle (),
                             (char *)buffer->GetWritePtr (),
                             buffer->GetDataAvailableForWriting (),
                             0);
@@ -245,9 +251,15 @@ namespace thekogans {
                     return buffer->GetDataAvailableForReading ();
                 }
 
-                virtual bool Epilog (Stream &stream) throw () override {
-                    if (stream.IsChainRead ()) {
-                        stream.Read (bufferLength);
+                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                    stream->util::Producer<StreamEvents>::Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamRead,
+                            std::placeholders::_1,
+                            stream,
+                            buffer));
+                    if (stream->IsChainRead ()) {
+                        stream->Read (bufferLength);
                     }
                     return true;
                 }
@@ -258,25 +270,23 @@ namespace thekogans {
 
         void Socket::Read (std::size_t bufferLength) {
         #if defined (TOOLCHAIN_OS_Windows)
-            ReadOverlapped::UniquePtr overlapped (new ReadOverlapped (bufferLength));
+            ReadOverlapped::SharedPtr overlapped (new ReadOverlapped (bufferLength));
             if (WSARecv (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf,
                     1,
                     0,
                     &overlapped->flags,
-                    overlapped.get (),
+                    overlapped.Get (),
                     0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                 if (errorCode != WSA_IO_PENDING) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
-            overlapped.release ();
+            overlapped.Release ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            EnqOverlapped (
-                Overlapped::UniquePtr (new ReadOverlapped (bufferLength)),
-                in);
+            EnqOverlapped (new ReadOverlapped (bufferLength), in);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -297,12 +307,12 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
-                ssize_t Prolog (Stream &stream) throw () override {
+                ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     return GetError () == ERROR_SUCCESS ? buffer->AdvanceReadOffset (GetCount ()) : -1;
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = send (
-                        stream.GetHandle (),
+                        stream->GetHandle (),
                         buffer->GetReadPtr (),
                         buffer->GetDataAvailableForReading (),
                         0);
@@ -317,11 +327,17 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
-            #if !defined (TOOLCHAIN_OS_Windows)
-                virtual bool Epilog (Stream & /*stream*/) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                    if (buffer->IsEmpty ()) {
+                        stream->util::Producer<StreamEvents>::Produce (
+                            std::bind (
+                                &StreamEvents::OnStreamWrite,
+                                std::placeholders::_1,
+                                stream,
+                                buffer));
+                    }
                     return buffer->IsEmpty ();
                 }
-            #endif // !defined (TOOLCHAIN_OS_Windows)
             };
 
             THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (WriteOverlapped)
@@ -330,25 +346,23 @@ namespace thekogans {
         void Socket::Write (util::Buffer::SharedPtr buffer) {
             if (!buffer->IsEmpty ()) {
             #if defined (TOOLCHAIN_OS_Windows)
-                WriteOverlapped::UniquePtr overlapped (new WriteOverlapped (buffer));
+                WriteOverlapped::SharedPtr overlapped (new WriteOverlapped (buffer));
                 if (WSASend (
                         (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->wsaBuf,
                         1,
                         0,
                         0,
-                        overlapped.get (),
+                        overlapped.Get (),
                         0) == THEKOGANS_STREAM_SOCKET_ERROR) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
                     if (errorCode != WSA_IO_PENDING) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-                overlapped.release ();
+                overlapped.Release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (
-                    Overlapped::UniquePtr (new WriteOverlapped (buffer)),
-                    out);
+                EnqOverlapped (new WriteOverlapped (buffer), out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -544,27 +558,6 @@ namespace thekogans {
                     THEKOGANS_STREAM_SOCKET_ERROR_CODE);
             }
             return errorCode;
-        }
-
-        void Socket::HandleOverlapped (Overlapped &overlapped) throw () {
-            if (overlapped.GetType () == ReadOverlapped::TYPE) {
-                ReadOverlapped &readOverlapped = (ReadOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamRead,
-                        std::placeholders::_1,
-                        Stream::SharedPtr (this),
-                        readOverlapped.buffer));
-            }
-            else if (overlapped.GetType () == WriteOverlapped::TYPE) {
-                WriteOverlapped &writeOverlapped = (WriteOverlapped &)overlapped;
-                util::Producer<StreamEvents>::Produce (
-                    std::bind (
-                        &StreamEvents::OnStreamWrite,
-                        std::placeholders::_1,
-                        Stream::SharedPtr (this),
-                        writeOverlapped.buffer));
-            }
         }
 
     } // namespace stream

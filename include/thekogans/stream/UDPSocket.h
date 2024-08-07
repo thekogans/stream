@@ -48,7 +48,7 @@ namespace thekogans {
             virtual void OnUDPSocketReadFrom (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                const Address & /*address*/) throw () {}
+                Address /*address*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a UDPSocket.
             /// \param[in] udpSocket UDPSocket where the datagram was written.
@@ -57,7 +57,7 @@ namespace thekogans {
             virtual void OnUDPSocketWriteTo (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                const Address & /*address*/) throw () {}
+                Address /*address*/) throw () {}
 
             /// \brief
             /// Called when a new datagram has arrived on a UDPSocket.
@@ -68,8 +68,8 @@ namespace thekogans {
             virtual void OnUDPSocketReadMsg (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                const Address & /*from*/,
-                const Address & /*to*/) throw () {}
+                Address /*from*/,
+                Address /*to*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a UDPSocket.
             /// \param[in] udpSocket UDPSocket where the datagram was written.
@@ -79,8 +79,8 @@ namespace thekogans {
             virtual void OnUDPSocketWriteMsg (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                const Address & /*from*/,
-                const Address & /*to*/) throw () {}
+                Address /*from*/,
+                Address /*to*/) throw () {}
         };
 
         /// \struct UDPSocket UDPSocket.h thekogans/stream/UDPSocket.h
@@ -304,13 +304,6 @@ namespace thekogans {
             /// \param[in] loopback true = The packets you multicast
             /// are going to be echoed back to you.
             void SetMulticastLoopback (bool loopback);
-
-        protected:
-            /// \brief
-            /// Used by AsyncIoEventQueue to notify the stream that
-            /// an overlapped operation has completed successfully.
-            /// \param[in] overlapped Overlapped that completed successfully.
-            virtual void HandleOverlapped (Overlapped &overlapped) throw () override;
         };
 
     } // namespace stream

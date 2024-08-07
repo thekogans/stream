@@ -48,6 +48,7 @@
     <cpp_source>Address.cpp</cpp_source>
     <cpp_source>AsyncIoEventQueue.cpp</cpp_source>
     <cpp_source>MsgHdr.cpp</cpp_source>
+    <cpp_source>Overlapped.cpp</cpp_source>
     <cpp_source>Pipe.cpp</cpp_source>
     <cpp_source>Socket.cpp</cpp_source>
     <cpp_source>Stream.cpp</cpp_source>
