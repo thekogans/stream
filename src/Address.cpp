@@ -110,8 +110,8 @@ namespace thekogans {
             if (result != 0) {
                 // IPV4 or IPV6 address.
                 if (family == AF_UNSPEC) {
-                    for (const addrinfo *next = result; next != 0; next = next->ai_next) {
-                        if (result->ai_addr != 0) {
+                    for (const addrinfo *next = result; next != nullptr; next = next->ai_next) {
+                        if (result->ai_addr != nullptr) {
                             if (result->ai_addr->sa_family == AF_INET) {
                                 assert (result->ai_addrlen == sizeof (sockaddr_in));
                                 memcpy (this, result->ai_addr, sizeof (sockaddr_in));
@@ -137,8 +137,8 @@ namespace thekogans {
                 }
                 // IPV4 address.
                 else if (family == AF_INET) {
-                    for (const addrinfo *next = result; next != 0; next = next->ai_next) {
-                        if (next->ai_addr != 0 && next->ai_addr->sa_family == AF_INET) {
+                    for (const addrinfo *next = result; next != nullptr; next = next->ai_next) {
+                        if (next->ai_addr != nullptr && next->ai_addr->sa_family == AF_INET) {
                             assert (result->ai_addrlen == sizeof (sockaddr_in));
                             memcpy (this, next->ai_addr, sizeof (sockaddr_in));
                             in.sin_port = htons (port);
@@ -152,8 +152,8 @@ namespace thekogans {
                 }
                 // IPV6 address.
                 else if (family == AF_INET6) {
-                    for (const addrinfo *next = result; next != 0; next = next->ai_next) {
-                        if (next->ai_addr != 0 && next->ai_addr->sa_family == AF_INET6) {
+                    for (const addrinfo *next = result; next != nullptr; next = next->ai_next) {
+                        if (next->ai_addr != nullptr && next->ai_addr->sa_family == AF_INET6) {
                             assert (result->ai_addrlen == sizeof (sockaddr_in6));
                             memcpy (this, next->ai_addr, sizeof (sockaddr_in6));
                             in6.sin6_port = htons (port);
@@ -723,7 +723,7 @@ namespace thekogans {
         std::string Address::ToString (
                 std::size_t indentationLevel,
                 const char *tagName) const {
-            if (tagName != 0) {
+            if (tagName != nullptr) {
                 util::Attributes attributes;
                 util::ui16 family = GetFamily ();
                 if (family == AF_INET) {

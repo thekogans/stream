@@ -134,10 +134,10 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        AdapterAddressesList Adapters::GetAddressesList () {
+        AdapterAddresses::ListType Adapters::GetAddressesList () {
             util::LockGuard<util::SpinLock> guard (spinLock);
-            AdapterAddressesList addressesList;
-            for (AdapterAddressesMap::const_iterator
+            AdapterAddresses::ListType addressesList;
+            for (AdapterAddresses::MapType::const_iterator
                     it = addressesMap.begin (),
                     end = addressesMap.end (); it != end; ++it) {
                 addressesList.push_back (it->second);
@@ -205,8 +205,8 @@ namespace thekogans {
             }
 
             struct DiffProcessor {
-                AdapterAddressesList added;
-                AdapterAddressesList deleted;
+                AdapterAddresses::ListType added;
+                AdapterAddresses::ListType deleted;
                 typedef std::pair<
                     AdapterAddresses::SharedPtr,
                     AdapterAddresses::SharedPtr> AdapterAddressesPair;
@@ -220,13 +220,13 @@ namespace thekogans {
                 // This function works under the assumption that original and current
                 // are related. Since the two maps are snapshots in time of the state
                 // of adapters in the system, the assumption is satisfied.
-                AdapterAddressesMap Diff (
-                        const AdapterAddressesMap &original,
-                        const AdapterAddressesMap &current) {
-                    AdapterAddressesMap::const_iterator originalBegin = original.begin ();
-                    AdapterAddressesMap::const_iterator originalEnd = original.end ();
-                    AdapterAddressesMap::const_iterator currentBegin = current.begin ();
-                    AdapterAddressesMap::const_iterator currentEnd = current.end ();
+                AdapterAddresses::MapType Diff (
+                        const AdapterAddresses::MapType &original,
+                        const AdapterAddresses::MapType &current) {
+                    AdapterAddresses::MapType::const_iterator originalBegin = original.begin ();
+                    AdapterAddresses::MapType::const_iterator originalEnd = original.end ();
+                    AdapterAddresses::MapType::const_iterator currentBegin = current.begin ();
+                    AdapterAddresses::MapType::const_iterator currentEnd = current.end ();
                     while (originalBegin != originalEnd && currentBegin != currentEnd) {
                         if (originalBegin->second < currentBegin->second) {
                             deleted.push_back (originalBegin->second);
@@ -269,7 +269,7 @@ namespace thekogans {
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
             if (!diffProcessor.IsEmpty ()) {
-                for (AdapterAddressesList::const_iterator
+                for (AdapterAddresses::ListType::const_iterator
                         it = diffProcessor.added.begin (),
                         end = diffProcessor.added.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
@@ -278,7 +278,7 @@ namespace thekogans {
                             std::placeholders::_1,
                             *it));
                 }
-                for (AdapterAddressesList::const_iterator
+                for (AdapterAddresses::ListType::const_iterator
                         it = diffProcessor.deleted.begin (),
                         end = diffProcessor.deleted.end (); it != end; ++it) {
                     util::Producer<AdaptersEvents>::Produce (
@@ -338,8 +338,8 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        AdapterAddressesMap Adapters::GetAddressesMap () const {
-            AdapterAddressesMap newAddressesMap;
+        AdapterAddresses::MapType Adapters::GetAddressesMap () const {
+            AdapterAddresses::MapType newAddressesMap;
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD size = 0;
             std::vector<util::ui8> buffer;
@@ -450,7 +450,7 @@ namespace thekogans {
                                     ipAdapterAddresses->IfIndex,
                                     util::boolTostring (adapterInfo.IsMulticast ()).c_str ());
                                 newAddressesMap.insert (
-                                    AdapterAddressesMap::value_type (addresses->name, addresses));
+                                    AdapterAddresses::MapType::value_type (addresses->name, addresses));
                             }
                             THEKOGANS_UTIL_LOG_FLUSH
                         }
@@ -466,14 +466,14 @@ namespace thekogans {
                 addrs () :
                     head (0) {}
                 ~addrs () {
-                    if (head != 0) {
+                    if (head != nullptr) {
                         freeifaddrs (head);
                     }
                 }
             } addrs;
             if (getifaddrs (&addrs.head) == 0) {
-                for (ifaddrs *curr = addrs.head; curr != 0; curr = curr->ifa_next) {
-                    if (curr->ifa_name != 0 && curr->ifa_addr != 0 &&
+                for (ifaddrs *curr = addrs.head; curr != nullptr; curr = curr->ifa_next) {
+                    if (curr->ifa_name != nullptr && curr->ifa_addr != nullptr &&
                             (curr->ifa_addr->sa_family == AF_INET ||
                                 curr->ifa_addr->sa_family == AF_INET6 ||
                             #if defined (TOOLCHAIN_OS_Linux)
@@ -484,11 +484,11 @@ namespace thekogans {
                             util::Flags32 (curr->ifa_flags).Test (IFF_UP) &&
                             util::Flags32 (curr->ifa_flags).Test (IFF_RUNNING) &&
                             !util::Flags32 (curr->ifa_flags).Test (IFF_LOOPBACK)) {
-                        AdapterAddressesMap::iterator it = newAddressesMap.find (curr->ifa_name);
+                        AdapterAddresses::MapType::iterator it = newAddressesMap.find (curr->ifa_name);
                         if (it == newAddressesMap.end ()) {
-                            std::pair<AdapterAddressesMap::iterator, bool> result =
+                            std::pair<AdapterAddresses::MapType::iterator, bool> result =
                                 newAddressesMap.insert (
-                                    AdapterAddressesMap::value_type (
+                                    AdapterAddresses::MapType::value_type (
                                         curr->ifa_name,
                                         new AdapterAddresses (
                                             curr->ifa_name,

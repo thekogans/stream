@@ -96,13 +96,13 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ().Parse (argc, argv, "hvlapt");
+    client::Options::Instance ()->Parse (argc, argv, "hvlapt");
     THEKOGANS_UTIL_LOG_INIT (
-        client::Options::Instance ().logLevel,
+        client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::SharedPtr (new util::ConsoleLogger));
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
-    if (client::Options::Instance ().help) {
+    if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] -a:'host address' [-p:'host port'] [-t:seconds]\n\n"
             "h - Display this help message.\n"
@@ -114,7 +114,7 @@ int main (
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
-    else if (client::Options::Instance ().version) {
+    else if (client::Options::Instance ()->version) {
         THEKOGANS_UTIL_LOG_INFO (
             "libthekogans_util - %s\n"
             "libthekogans_stream - %s\n"
@@ -123,21 +123,21 @@ int main (
             stream::GetVersion ().ToString ().c_str (),
             argv[0], client::GetVersion ().ToString ().c_str ());
     }
-    else if (client::Options::Instance ().addr.empty ()) {
+    else if (client::Options::Instance ()->addr.empty ()) {
         THEKOGANS_UTIL_LOG_ERROR ("%s\n", "Empty address.");
     }
     else {
         THEKOGANS_UTIL_TRY {
             THEKOGANS_UTIL_LOG_INFO (
                 "Conducting a bandwidth test with: %s:%u\n",
-                client::Options::Instance ().addr.c_str (),
-                client::Options::Instance ().port);
+                client::Options::Instance ()->addr.c_str (),
+                client::Options::Instance ()->port);
             util::f32 bandwidth = GetBandwidth (
                 stream::Address (
-                    client::Options::Instance ().port,
-                    client::Options::Instance ().addr),
+                    client::Options::Instance ()->port,
+                    client::Options::Instance ()->addr),
                 DEFAULT_MAX_PACKET_SIZE, 10, 64, 2.0f, 0.0f,
-                util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
+                util::TimeSpec::FromSeconds (client::Options::Instance ()->timeout));
             THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
         }
         THEKOGANS_UTIL_CATCH_AND_LOG

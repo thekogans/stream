@@ -98,12 +98,12 @@ namespace {
                     int protocol) :
                     stream::TCPSocket (family, type, protocol) {}
                 virtual ~MyTCPSocket () {
-                    util::MainRunLoop::Instance ().Stop ();
+                    util::MainRunLoop::Instance ()->Stop ();
                 }
             };
             stream::TCPSocket::SharedPtr tcpSocket (
                 new MyTCPSocket (address.GetFamily (), SOCK_STREAM, 0));
-            stream::GlobalAsyncIoEventQueue::Instance ().AddStream (*tcpSocket, *this, 0);
+            stream::GlobalAsyncIoEventQueue::Instance ()->AddStream (*tcpSocket, *this, 0);
             if (timeSpec != util::TimeSpec::Zero) {
                 tcpSocket->SetReadTimeout (timeSpec);
                 tcpSocket->SetWriteTimeout (timeSpec);
@@ -124,7 +124,7 @@ namespace {
                 stream::Stream &stream,
                 const util::Exception &exception) throw () {
             THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
-            stream::GlobalAsyncIoEventQueue::Instance ().DeleteStream (stream);
+            stream::GlobalAsyncIoEventQueue::Instance ()->DeleteStream (stream);
         }
 
         virtual void HandleTCPSocketConnected (stream::TCPSocket &tcpSocket) throw () {
@@ -144,7 +144,7 @@ namespace {
         }
 
         virtual void HandleStreamDisconnect (stream::Stream &stream) throw () {
-            stream::GlobalAsyncIoEventQueue::Instance ().DeleteStream (stream);
+            stream::GlobalAsyncIoEventQueue::Instance ()->DeleteStream (stream);
         }
 
         virtual void HandleStreamRead (
@@ -219,13 +219,13 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ().Parse (argc, argv, "hvlaprsfcty");
+    client::Options::Instance ()->Parse (argc, argv, "hvlaprsfcty");
     THEKOGANS_UTIL_LOG_RESET (
-        client::Options::Instance ().logLevel,
+        client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);
     THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::SharedPtr (new util::ConsoleLogger));
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
-    if (client::Options::Instance ().help) {
+    if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] -a:'host address' [-p:'host port'] "
             "[-r:rounds] [-s:seed] [-f:factor] [-c:constant] [-t:seconds] [-y]\n\n"
@@ -243,7 +243,7 @@ int main (
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
-    else if (client::Options::Instance ().version) {
+    else if (client::Options::Instance ()->version) {
         THEKOGANS_UTIL_LOG_INFO (
             "libthekogans_util - %s\n"
             "libthekogans_stream - %s\n"
@@ -252,7 +252,7 @@ int main (
             stream::GetVersion ().ToString ().c_str (),
             argv[0], client::GetVersion ().ToString ().c_str ());
     }
-    else if (client::Options::Instance ().addr.empty ()) {
+    else if (client::Options::Instance ()->addr.empty ()) {
         THEKOGANS_UTIL_LOG_ERROR ("%s\n", "Empty address.");
     }
     else {
@@ -261,32 +261,32 @@ int main (
             socket.Connect (stream::Address ("/tmp/logitech_kiros_updater"));
             // THEKOGANS_UTIL_LOG_INFO (
             //     "Conducting a bandwidth test with: %s:%u\n",
-            //     client::Options::Instance ().addr.c_str (),
-            //     client::Options::Instance ().port);
-            // if (client::Options::Instance ().async) {
+            //     client::Options::Instance ()->addr.c_str (),
+            //     client::Options::Instance ()->port);
+            // if (client::Options::Instance ()->async) {
             //     BandwidthTester bandwidthTester (
-            //         client::Options::Instance ().rounds,
-            //         client::Options::Instance ().seed,
-            //         client::Options::Instance ().a,
-            //         client::Options::Instance ().b,
-            //         util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
+            //         client::Options::Instance ()->rounds,
+            //         client::Options::Instance ()->seed,
+            //         client::Options::Instance ()->a,
+            //         client::Options::Instance ()->b,
+            //         util::TimeSpec::FromSeconds (client::Options::Instance ()->timeout));
             //     bandwidthTester.TestBandwidth (
             //         stream::Address (
-            //             client::Options::Instance ().port,
-            //             client::Options::Instance ().addr));
-            //     util::MainRunLoop::Instance ().Start ();
+            //             client::Options::Instance ()->port,
+            //             client::Options::Instance ()->addr));
+            //     util::MainRunLoop::Instance ()->Start ();
             //     THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidthTester.GetBandwidth ());
             // }
             // else {
             //     util::f32 bandwidth = TestBandwidth (
             //         stream::Address (
-            //             client::Options::Instance ().port,
-            //             client::Options::Instance ().addr),
-            //         client::Options::Instance ().rounds,
-            //         client::Options::Instance ().seed,
-            //         client::Options::Instance ().a,
-            //         client::Options::Instance ().b,
-            //         util::TimeSpec::FromSeconds (client::Options::Instance ().timeout));
+            //             client::Options::Instance ()->port,
+            //             client::Options::Instance ()->addr),
+            //         client::Options::Instance ()->rounds,
+            //         client::Options::Instance ()->seed,
+            //         client::Options::Instance ()->a,
+            //         client::Options::Instance ()->b,
+            //         util::TimeSpec::FromSeconds (client::Options::Instance ()->timeout));
             //     THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
             // }
         }

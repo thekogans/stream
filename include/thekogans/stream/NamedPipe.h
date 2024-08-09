@@ -41,6 +41,7 @@ namespace thekogans {
         /// \struct NamedPipeEvents NamedPipe.h thekogans/stream/NamedPipe.h
         ///
         /// \brief
+        /// Subscribe to NamedPipeEvents to receive \see{NamedPipe} event notifications.
 
         struct _LIB_THEKOGANS_STREAM_DECL NamedPipeEvents {
             /// \brief
@@ -48,7 +49,7 @@ namespace thekogans {
             virtual ~NamedPipeEvents () {}
 
             /// \brief
-            /// Called to report a connection on a \see{NamedPipe}.
+            /// Called to report a connection on a server side \see{NamedPipe}.
             /// \param[in] namedPipe \see{NamedPipe} on which the connection occurred.
             virtual void OnNamedPipeConnected (
                 util::RefCounted::SharedPtr<NamedPipe> namedPipe) throw () {}
@@ -57,6 +58,7 @@ namespace thekogans {
         /// \struct NamedPipe NamedPipe.h thekogans/stream/NamedPipe.h
         ///
         /// \brief
+        /// NamedPipe wraps the Windows named pipe machinery.
 
         struct _LIB_THEKOGANS_STREAM_DECL NamedPipe :
                 public Stream,
@@ -191,6 +193,9 @@ namespace thekogans {
             /// \param[in] buffer Buffer to write.
             virtual void Write (util::Buffer::SharedPtr buffer) override;
 
+            /// \brief
+            /// Set pipe mode (PIPE_TYPE_BYTE | PIPE_READMODE_BYTE).
+            /// \param[in] pipeMode New pipe mode.
             void SetMode (DWORD pipeMode);
 
             /// \brief
@@ -204,6 +209,9 @@ namespace thekogans {
             void Disconnect (bool flushBuffers = true);
 
         protected:
+            /// \brief
+            /// Create default pipe security attributes.
+            /// \return Default security attributes.
             static LPSECURITY_ATTRIBUTES DefaultSecurityAttributes ();
         };
 

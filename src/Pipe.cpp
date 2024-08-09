@@ -111,7 +111,7 @@ namespace thekogans {
         }
 
         void Pipe::Read (std::size_t bufferLength) {
-            if (bufferLength != 0) {
+            if (bufferLength > 0) {
             #if defined (TOOLCHAIN_OS_Windows)
                 ReadOverlapped::SharedPtr overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
@@ -165,15 +165,21 @@ namespace thekogans {
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                #if !defined (TOOLCHAIN_OS_Windows)
                     if (buffer->IsEmpty ()) {
+                #endif // !defined (TOOLCHAIN_OS_Windows)
                         stream->util::Producer<StreamEvents>::Produce (
                             std::bind (
                                 &StreamEvents::OnStreamWrite,
                                 std::placeholders::_1,
                                 stream,
                                 buffer));
+                #if defined (TOOLCHAIN_OS_Windows)
+                        return true;
+                #else // defined (TOOLCHAIN_OS_Windows)
                     }
                     return buffer->IsEmpty ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
             };
 

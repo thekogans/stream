@@ -136,7 +136,7 @@ namespace thekogans {
         Address MsgHdr::GetToAddress (util::ui16 port) const {
         #if defined (TOOLCHAIN_OS_Windows)
             for (WSACMSGHDR *wsaCMsgHdr = WSA_CMSG_FIRSTHDR (this);
-                    wsaCMsgHdr != 0;
+                    wsaCMsgHdr != nullptr;
                     wsaCMsgHdr = WSA_CMSG_NXTHDR (this, wsaCMsgHdr)) {
                 if (wsaCMsgHdr->cmsg_level == IPPROTO_IP && wsaCMsgHdr->cmsg_type == IP_PKTINFO) {
                     IN_PKTINFO *pktInfo = (IN_PKTINFO *)WSA_CMSG_DATA (wsaCMsgHdr);
@@ -149,7 +149,7 @@ namespace thekogans {
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             for (cmsghdr *cmsghdr = CMSG_FIRSTHDR (this);
-                    cmsghdr != 0;
+                    cmsghdr != nullptr;
                     cmsghdr = CMSG_NXTHDR ((msghdr *)this, cmsghdr)) {
                 if (cmsghdr->cmsg_level == IPPROTO_IP && cmsghdr->cmsg_type == IP_PKTINFO) {
                     in_pktinfo *pktInfo = (in_pktinfo *)CMSG_DATA (cmsghdr);

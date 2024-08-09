@@ -170,12 +170,14 @@ namespace thekogans {
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
                     TCPSocket::SharedPtr tcpSocket = stream;
-                    tcpSocket->util::Producer<TCPSocketEvents>::Produce (
-                        std::bind (
-                            &TCPSocketEvents::OnTCPSocketConnect,
-                            std::placeholders::_1,
-                            tcpSocket,
-                            address));
+                    if (tcpSocket != nullptr) {
+                        tcpSocket->util::Producer<TCPSocketEvents>::Produce (
+                            std::bind (
+                                &TCPSocketEvents::OnTCPSocketConnect,
+                                std::placeholders::_1,
+                                tcpSocket,
+                                address));
+                    }
                     return true;
                 }
             };
@@ -341,14 +343,16 @@ namespace thekogans {
 
             virtual bool Epilog (Stream::SharedPtr stream) throw () override {
                 TCPSocket::SharedPtr tcpSocket = stream;
-                tcpSocket->util::Producer<TCPSocketEvents>::Produce (
-                    std::bind (
-                        &TCPSocketEvents::OnTCPSocketAccept,
-                        std::placeholders::_1,
-                        tcpSocket,
-                        connection));
-                if (tcpSocket->IsChainRead ()) {
-                    tcpSocket->Accept ();
+                if (tcpSocket != nullptr) {
+                    tcpSocket->util::Producer<TCPSocketEvents>::Produce (
+                        std::bind (
+                            &TCPSocketEvents::OnTCPSocketAccept,
+                            std::placeholders::_1,
+                            tcpSocket,
+                            connection));
+                    if (tcpSocket->IsChainRead ()) {
+                        tcpSocket->Accept ();
+                    }
                 }
                 return true;
             }

@@ -112,7 +112,7 @@ namespace thekogans {
         }
 
         void NamedPipe::Read (std::size_t bufferLength) {
-            if (bufferLength != 0) {
+            if (bufferLength > 0) {
                 ReadOverlapped::SharedPtr overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
@@ -195,11 +195,13 @@ namespace thekogans {
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
                     NamedPipe::SharedPtr namedPipe = stream;
-                    namedPipe->util::Producer<NamedPipeEvents>::Produce (
-                        std::bind (
-                            &NamedPipeEvents::OnNamedPipeConnected,
-                            std::placeholders::_1,
-                            namedPipe));
+                    if (namedPipe != nullptr) {
+                        namedPipe->util::Producer<NamedPipeEvents>::Produce (
+                            std::bind (
+                                &NamedPipeEvents::OnNamedPipeConnected,
+                                std::placeholders::_1,
+                                namedPipe));
+                    }
                     return true;
                 }
             };

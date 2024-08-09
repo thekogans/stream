@@ -38,9 +38,11 @@
 namespace thekogans {
     namespace stream {
 
+    #if !defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Forward declaration of \see{AsyncIoEventQueue}.
         struct AsyncIoEventQueue;
+    #endif // !defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// Forward declaration of \see{Stream}.
         struct Stream;
@@ -88,12 +90,6 @@ namespace thekogans {
                 util::Buffer::SharedPtr /*buffer*/) throw () {}
         };
 
-        /// \brief
-        /// Convenient typedef for util::RefCounted::Registry<Stream>.
-        /// NOTE: It's one and only instance is accessed like this;
-        /// thekogans::stream::StreamRegistry::Instance ().
-        typedef util::RefCountedRegistry<Stream> StreamRegistry;
-
         /// \struct Stream Stream.h thekogans/stream/Stream.h
         ///
         /// \brief
@@ -132,6 +128,12 @@ namespace thekogans {
             /// Declare \see{util::RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Stream)
 
+            /// \brief
+            /// Convenient typedef for util::RefCountedRegistry<Stream>.
+            /// NOTE: It's one and only instance is accessed like this;
+            /// thekogans::stream::Stream::Registry::Instance ().
+            typedef util::RefCountedRegistry<Stream> Registry;
+
         protected:
             /// \brief
             /// OS stream handle.
@@ -141,8 +143,8 @@ namespace thekogans {
             /// This token is registered with os specific apis (io completion port on
             /// windows, epoll on linux and kqueue on os x). On callback the token
             /// is used to get a Stream::SharedPtr from the Stream::WeakPtr found in
-            /// the \see{StreamRegistry}.
-            const StreamRegistry::Token token;
+            /// the \see{Registry}.
+            const Registry::Token token;
             /// \brief
             /// true == Automatically chain read requests.
             /// false == Manually post a new read request.
@@ -185,9 +187,16 @@ namespace thekogans {
                 return handle;
             }
 
+            /// \brief
+            /// Return true if various ReadOverlapped should chain the
+            /// following read after the current one finishes.
+            /// \return true == chain following read.
             inline bool IsChainRead () const {
                 return chainRead;
             }
+            /// \brief
+            /// Set chainRead.
+            /// \param[in] chainRead_ New chainRead value.
             inline void SetChainRead (bool chainRead_) {
                 chainRead = chainRead_;
             }
@@ -243,6 +252,12 @@ namespace thekogans {
             /// \param[in] queue Queue to remove the head \see{Overlapped} from.
             void DeqOverlapped (Overlapped::Queue &queue) throw ();
 
+            /// \brief
+            /// Called by \see{AsyncIoEventQueue} to retrieve the head \see{Overlapped}
+            /// from the given queue.
+            /// \param[in] queue Queue to retrieve the head \see{Overlapped} from.
+            /// \return Pointer to the head \see{Overlapped}.
+            /// \see{Overlapped}::SharedPtr if queue.empty () == true.
             Overlapped::SharedPtr HeadOverlapped (Overlapped::Queue &queue) throw ();
 
             /// \brief
@@ -255,20 +270,19 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Stream)
         };
 
-        /// \def THEKOGANS_STREAM_DECLARE_STREAM(type)
+        /// \def THEKOGANS_STREAM_DECLARE_STREAM(_T)
         /// This macro is used in a stream declaration file (.h).
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_DECLARE_STREAM(type)\
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (type)\
+        /// \param[in] _T Stream class name.
+        #define THEKOGANS_STREAM_DECLARE_STREAM(_T)\
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (type)\
-        public:
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (_T)
 
-        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(type)
+        /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(_T)
         /// This macro is used in the stream definition file (.cpp).
-        /// \param[in] type Stream class name.
-        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(type)\
-            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (type)
+        /// \param[in] _T Stream class name.
+        #define THEKOGANS_STREAM_IMPLEMENT_STREAM(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (_T)
 
     } // namespace stream
 } // namespace thekogans

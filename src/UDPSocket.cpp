@@ -190,15 +190,17 @@ namespace thekogans {
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
                     UDPSocket::SharedPtr udpSocket = stream;
-                    udpSocket->util::Producer<UDPSocketEvents>::Produce (
-                        std::bind (
-                            &UDPSocketEvents::OnUDPSocketReadFrom,
-                            std::placeholders::_1,
-                            udpSocket,
-                            buffer,
-                            address));
-                    if (udpSocket->IsChainRead ()) {
-                        udpSocket->ReadFrom (bufferLength);
+                    if (udpSocket != nullptr) {
+                        udpSocket->util::Producer<UDPSocketEvents>::Produce (
+                            std::bind (
+                                &UDPSocketEvents::OnUDPSocketReadFrom,
+                                std::placeholders::_1,
+                                udpSocket,
+                                buffer,
+                                address));
+                        if (udpSocket->IsChainRead ()) {
+                            udpSocket->ReadFrom (bufferLength);
+                        }
                     }
                     return true;
                 }
@@ -275,15 +277,25 @@ namespace thekogans {
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
-                    UDPSocket::SharedPtr udpSocket = stream;
-                    udpSocket->util::Producer<UDPSocketEvents>::Produce (
-                        std::bind (
-                            &UDPSocketEvents::OnUDPSocketWriteTo,
-                            std::placeholders::_1,
-                            udpSocket,
-                            buffer,
-                            address));
-                    return true;
+                #if !defined (TOOLCHAIN_OS_Windows)
+                    if (buffer->IsEmpty ()) {
+                #endif // !defined (TOOLCHAIN_OS_Windows)
+                        UDPSocket::SharedPtr udpSocket = stream;
+                        if (udpSocket != nullptr) {
+                            udpSocket->util::Producer<UDPSocketEvents>::Produce (
+                                std::bind (
+                                    &UDPSocketEvents::OnUDPSocketWriteTo,
+                                    std::placeholders::_1,
+                                    udpSocket,
+                                    buffer,
+                                    address));
+                        }
+                #if defined (TOOLCHAIN_OS_Windows)
+                        return true;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    }
+                    return buffer->IsEmpty ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
             };
 
@@ -326,7 +338,7 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t bufferLength,
                 const Address &address) {
-            if (buffer != 0 && bufferLength > 0 && address != Address::Empty) {
+            if (buffer != nullptr && bufferLength > 0 && address != Address::Empty) {
                 WriteTo (
                     new util::Buffer (
                         util::NetworkEndian,
@@ -428,16 +440,18 @@ namespace thekogans {
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
                     UDPSocket::SharedPtr udpSocket = stream;
-                    udpSocket->util::Producer<UDPSocketEvents>::Produce (
-                        std::bind (
-                            &UDPSocketEvents::OnUDPSocketReadMsg,
-                            std::placeholders::_1,
-                            udpSocket,
-                            buffer,
-                            from,
-                            to));
-                    if (udpSocket->IsChainRead ()) {
-                        udpSocket->ReadMsg (bufferLength);
+                    if (udpSocket != nullptr) {
+                        udpSocket->util::Producer<UDPSocketEvents>::Produce (
+                            std::bind (
+                                &UDPSocketEvents::OnUDPSocketReadMsg,
+                                std::placeholders::_1,
+                                udpSocket,
+                                buffer,
+                                from,
+                                to));
+                        if (udpSocket->IsChainRead ()) {
+                            udpSocket->ReadMsg (bufferLength);
+                        }
                     }
                     return true;
                 }
@@ -491,7 +505,8 @@ namespace thekogans {
 
                 virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ? buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    return GetError () == ERROR_SUCCESS ?
+                        buffer->AdvanceReadOffset (GetCount ()) : -1;
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = sendmsg (stream->GetHandle (), &msgHdr, 0);
                     if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
@@ -516,18 +531,26 @@ namespace thekogans {
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                #if !defined (TOOLCHAIN_OS_Windows)
                     if (buffer->IsEmpty ()) {
+                #endif // !defined (TOOLCHAIN_OS_Windows)
                         UDPSocket::SharedPtr udpSocket = stream;
-                        udpSocket->util::Producer<UDPSocketEvents>::Produce (
-                            std::bind (
-                                &UDPSocketEvents::OnUDPSocketWriteMsg,
-                                std::placeholders::_1,
-                                udpSocket,
-                                buffer,
-                                from,
-                                to));
+                        if (udpSocket != nullptr) {
+                            udpSocket->util::Producer<UDPSocketEvents>::Produce (
+                                std::bind (
+                                    &UDPSocketEvents::OnUDPSocketWriteMsg,
+                                    std::placeholders::_1,
+                                    udpSocket,
+                                    buffer,
+                                    from,
+                                    to));
+                        }
+                #if defined (TOOLCHAIN_OS_Windows)
+                        return true;
+                #else // defined (TOOLCHAIN_OS_Windows)
                     }
                     return buffer->IsEmpty ();
+                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
             };
 
@@ -571,7 +594,8 @@ namespace thekogans {
                 std::size_t bufferLength,
                 const Address &from,
                 const Address &to) {
-            if (buffer != 0 && bufferLength > 0 && from != Address::Empty && to != Address::Empty) {
+            if (buffer != nullptr && bufferLength > 0 &&
+                    from != Address::Empty && to != Address::Empty) {
                 WriteMsg (
                     new util::Buffer (
                         util::NetworkEndian,

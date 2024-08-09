@@ -45,7 +45,7 @@ namespace thekogans {
                         port (DEFAULT_PORT),
                         startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
-                            util::Directory::Watcher::Instance ().AddWatch (
+                            util::Directory::Watcher::Instance ()->AddWatch (
                                 startDirectory, *this)) {
                     if (util::Path (OPTIONS_XML).Exists ()) {
                         ReadConfig ();

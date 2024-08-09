@@ -58,25 +58,25 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    server::Options::Instance ().Parse (argc, argv, "hvlcfrkpa");
+    server::Options::Instance ()->Parse (argc, argv, "hvlcfrkpa");
     THEKOGANS_UTIL_LOG_INIT (
-        server::Options::Instance ().loggerMgr.level,
-        server::Options::Instance ().loggerMgr.decorations);
-    if (server::Options::Instance ().help ||
-            server::Options::Instance ().version ||
-            server::Options::Instance ().loggerMgr.consoleLogger) {
+        server::Options::Instance ()->loggerMgr.level,
+        server::Options::Instance ()->loggerMgr.decorations);
+    if (server::Options::Instance ()->help ||
+            server::Options::Instance ()->version ||
+            server::Options::Instance ()->loggerMgr.consoleLogger) {
         THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::SharedPtr (new util::ConsoleLogger));
     }
-    if (!server::Options::Instance ().loggerMgr.fileLogger.path.empty ()) {
+    if (!server::Options::Instance ()->loggerMgr.fileLogger.path.empty ()) {
         THEKOGANS_UTIL_LOG_ADD_LOGGER (
             util::Logger::SharedPtr (
                 new util::FileLogger (
-                    server::Options::Instance ().loggerMgr.fileLogger.path,
-                    server::Options::Instance ().loggerMgr.fileLogger.archive,
-                    server::Options::Instance ().loggerMgr.fileLogger.maxLogFileSize)));
+                    server::Options::Instance ()->loggerMgr.fileLogger.path,
+                    server::Options::Instance ()->loggerMgr.fileLogger.archive,
+                    server::Options::Instance ()->loggerMgr.fileLogger.maxLogFileSize)));
     }
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
-    if (server::Options::Instance ().help) {
+    if (server::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] "
             "[-k:'path'] [-p:'host port'] [-a:'host address'*]\n\n"
@@ -92,7 +92,7 @@ int main (
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
-    else if (server::Options::Instance ().version) {
+    else if (server::Options::Instance ()->version) {
         THEKOGANS_UTIL_LOG_INFO (
             "libthekogans_util - %s\n"
             "libthekogans_stream - %s\n"
@@ -106,18 +106,18 @@ int main (
             struct App {
                 App () {
                     THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
-                        util::SystemInfo::Instance ().GetProcessPath ().c_str ());
-                    util::LockFile lockFile (server::Options::Instance ().lockFilePath);
-                    server::Server::Instance ().Start (
-                        server::Options::Instance ().addresses);
+                        util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
+                    util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
+                    server::Server::Instance ()->Start (
+                        server::Options::Instance ()->addresses);
                 }
                 ~App () {
-                    server::Server::Instance ().Stop ();
+                    server::Server::Instance ()->Stop ();
                     THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",
-                        util::SystemInfo::Instance ().GetProcessPath ().c_str ());
+                        util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
                 }
                 void Run () {
-                    util::MainRunLoop::Instance ().Start ();
+                    util::MainRunLoop::Instance ()->Start ();
                 }
             } app;
             app.Run ();

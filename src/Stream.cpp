@@ -46,7 +46,7 @@ namespace thekogans {
                 event.events |= EPOLLOUT;\
             }\
             event.data.u64 = token.GetValue ();\
-            epoll_ctl (AsyncIoEventQueue::Instance ().GetHandle (), op, handle, &event);
+            epoll_ctl (AsyncIoEventQueue::Instance ()->GetHandle (), op, handle, &event);
     #endif // defined (TOOLCHAIN_OS_Linux)
 
         Stream::Stream (THEKOGANS_UTIL_HANDLE handle_) :

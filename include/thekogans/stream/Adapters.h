@@ -65,6 +65,13 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AdapterAddresses)
 
             /// \brief
+            /// Convenient typedef for std::list<SharedPtr>.
+            typedef std::list<SharedPtr> ListType;
+            /// \brief
+            /// Convenient typedef for std::map<std::string, SharedPtr>.
+            typedef std::map<std::string, SharedPtr> MapType;
+
+            /// \brief
             /// Adapter name.
             std::string name;
             /// \brief
@@ -150,13 +157,6 @@ namespace thekogans {
             void Dump (std::ostream &stream) const;
         };
 
-        /// \brief
-        /// Convenient typedef for std::list<AdapterAddresses::SharedPtr>.
-        typedef std::list<AdapterAddresses::SharedPtr> AdapterAddressesList;
-        /// \brief
-        /// Convenient typedef for std::map<std::string, AdapterAddresses::SharedPtr>.
-        typedef std::map<std::string, AdapterAddresses::SharedPtr> AdapterAddressesMap;
-
         /// \struct AdaptersEvents Adapters.h thekogans/stream/Adapters.h
         ///
         /// \brief
@@ -228,7 +228,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Map of current network adapter addresses.
-            AdapterAddressesMap addressesMap;
+            AdapterAddresses::MapType addressesMap;
             /// \brief
             /// Adapters is a global singleton. Access to it must be serialized.
             util::SpinLock spinLock;
@@ -241,7 +241,7 @@ namespace thekogans {
             /// \brief
             /// Return a list of current adapter addresses.
             /// \return A list of current adapter addresses.
-            AdapterAddressesList GetAddressesList ();
+            AdapterAddresses::ListType GetAddressesList ();
 
         private:
             /// \brief
@@ -263,7 +263,7 @@ namespace thekogans {
             /// \brief
             /// Get all interface addresses.
             /// \return \see{AdapterAddressesMap} of all interface addresses.
-            AdapterAddressesMap GetAddressesMap () const;
+            AdapterAddresses::MapType GetAddressesMap () const;
 
         #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
             // util::Thread
