@@ -17,7 +17,6 @@
 
 #if defined (TOOLCHAIN_OS_Windows)
 
-#include <list>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/NamedPipe.h"
@@ -39,8 +38,8 @@ namespace thekogans {
 
                 void Client::OnStreamError (
                         Stream::SharedPtr /*stream*/,
-                        const util::Exception &exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                        util::Exception::SharedPtr exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
                 }
 
                 void Client::OnStreamDisconnect (Stream::SharedPtr stream) throw () {
@@ -49,13 +48,13 @@ namespace thekogans {
 
                 void Client::OnStreamRead (
                         Stream::SharedPtr stream,
-                        const util::Buffer &buffer) throw () {
-                    if (!buffer.IsEmpty ()) {
+                        util::Buffer::SharedPtr buffer) throw () {
+                    if (!buffer->IsEmpty ()) {
                         util::GlobalJobQueue::Instance ()->EnqJob (
                             [stream, buffer] (
                                     const util::RunLoop::LambdaJob & /*job*/,
                                     const std::atomic<bool> & /*done*/) {
-                                stream->Write (std::move (buffer));
+                                stream->Write (buffer);
                             }
                         );
                     }
@@ -103,7 +102,6 @@ namespace thekogans {
                     if (connect) {
                         clientNamedPipe = NamedPipe::CreateClientNamedPipe (address);
                         util::Subscriber<stream::StreamEvents>::Subscribe (*clientNamedPipe);
-                        // We're open for business. Start listening for client connections.
                         clientNamedPipe->Read ();
 
                     }

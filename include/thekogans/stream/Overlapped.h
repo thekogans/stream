@@ -81,6 +81,12 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Overlapped)
 
+        #if !defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convenient typedef for std::list<SharedPtr>.
+            typedef std::list<SharedPtr> Queue;
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+
             /// \brief
             /// ctor.
             Overlapped () {
@@ -106,21 +112,11 @@ namespace thekogans {
             /// NOTE: On Windows Epilog must return true.
             virtual bool Epilog (util::RefCounted::SharedPtr<Stream> /*stream*/) throw () = 0;
 
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Perform async io.
-            /// \param[in] stream Stream on which to perform async io.
-            void Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) throw ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Convenient typedef for std::list<SharedPtr>.
-            typedef std::list<SharedPtr> Queue;
             /// \brief
             /// Perform async io.
             /// \param[in] stream Stream on which to perform async io.
             /// \return true == Overlapped completted and should be removed.
             bool Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) throw ();
-        #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Return error code.
@@ -177,8 +173,8 @@ namespace thekogans {
         /// };
         /// \endcode
         #define THEKOGANS_STREAM_DECLARE_OVERLAPPED(_T)\
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (_T)
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED(_T)

@@ -56,6 +56,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_OSX)
                 length = sizeof (sockaddr_in6);
             }
+        #if !defined (TOOLCHAIN_OS_Windows)
             else if (family == AF_LOCAL) {
                 memset (this, 0, sizeof (sockaddr_un));
                 un.sun_family = AF_LOCAL;
@@ -83,6 +84,7 @@ namespace thekogans {
                 length = sizeof (sockaddr_dl);
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -240,6 +242,7 @@ namespace thekogans {
             length = sizeof (sockaddr_in6);
         }
 
+    #if !defined (TOOLCHAIN_OS_Windows)
         Address::Address (const std::string &path) {
             if (path.size () < sizeof (un.sun_path)) {
                 memset (this, 0, sizeof (sockaddr_un));
@@ -259,6 +262,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         Address Address::Any (
                 util::ui16 port,
@@ -317,6 +321,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_OSX)
                 length = sizeof (sockaddr_in6);
             }
+        #if !defined (TOOLCHAIN_OS_Windows)
             else if (family == AF_LOCAL) {
                 memset (this, 0, sizeof (sockaddr_un));
                 un.sun_family = AF_LOCAL;
@@ -344,6 +349,7 @@ namespace thekogans {
                 length = sizeof (sockaddr_dl);
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -354,6 +360,7 @@ namespace thekogans {
             return
                 family == AF_INET ? VALUE_FAMILY_INET :
                 family == AF_INET6 ? VALUE_FAMILY_INET6 :
+            #if !defined (TOOLCHAIN_OS_Windows)
                 family == AF_LOCAL ? VALUE_FAMILY_LOCAL :
             #if defined (TOOLCHAIN_OS_Linux)
                 family == AF_NETLINK ? VALUE_FAMILY_NETLINK :
@@ -361,6 +368,7 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 family == AF_LINK ? VALUE_FAMILY_LINK :
             #endif // defined (TOOLCHAIN_OS_Linux)
+            #endif // !defined (TOOLCHAIN_OS_Windows)
                 VALUE_FAMILY_UNSPEC;
         }
 
@@ -368,6 +376,7 @@ namespace thekogans {
             return
                 family == VALUE_FAMILY_INET ? AF_INET :
                 family == VALUE_FAMILY_INET6 ? AF_INET6 :
+            #if !defined (TOOLCHAIN_OS_Windows)
                 family == VALUE_FAMILY_LOCAL ? AF_LOCAL :
             #if defined (TOOLCHAIN_OS_Linux)
                 family == VALUE_FAMILY_NETLINK ? AF_NETLINK :
@@ -375,6 +384,7 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 family == VALUE_FAMILY_LINK ? AF_LINK :
             #endif // defined (TOOLCHAIN_OS_Linux)
+            #endif // !defined (TOOLCHAIN_OS_Windows)
                 AF_UNSPEC;
         }
 
@@ -445,12 +455,15 @@ namespace thekogans {
                     buffer, INET6_ADDRSTRLEN);
                 return buffer;
             }
+        #if !defined (TOOLCHAIN_OS_Windows)
             else if (GetFamily () == AF_LOCAL) {
                 return un.sun_path;
             }
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             return std::string ();
         }
 
+    #if !defined (TOOLCHAIN_OS_Windows)
         std::string Address::GetPath () const {
             return GetFamily () == AF_LOCAL ? un.sun_path : std::string ();
         }
@@ -458,11 +471,7 @@ namespace thekogans {
         void Address::SetPath (const std::string &path) {
             if (path.size () < sizeof (un.sun_path)) {
                 if (GetFamily () == AF_LOCAL) {
-                #if defined (TOOLCHAIN_OS_Windows)
-                    strncpy_s (un.sun_path, sizeof (un.sun_path), path.c_str (), sizeof (un.sun_path));
-                #else // defined (TOOLCHAIN_OS_Windows)
                     strncpy (un.sun_path, path.c_str (), sizeof (un.sun_path));
-                #endif // defined (TOOLCHAIN_OS_Windows)
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -524,7 +533,8 @@ namespace thekogans {
 
         std::vector<util::ui8> Address::GetAddrPacket () const {
             return GetFamily () == AF_PACKET ?
-                std::vector<util::ui8> (ll.sll_addr, ll.sll_addr + ll.sll_halen) : std::vector<util::ui8> ();
+                std::vector<util::ui8> (ll.sll_addr, ll.sll_addr + ll.sll_halen) :
+                std::vector<util::ui8> ();
         }
 
         void Address::SetAddr (const std::vector<util::ui8> &addr) {
@@ -605,12 +615,14 @@ namespace thekogans {
             }
         }
     #endif // defined (TOOLCHAIN_OS_Linux)
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         const char * const Address::TAG_ADDRESS = "Address";
         const char * const Address::ATTR_FAMILY = "Family";
         const char * const Address::VALUE_FAMILY_UNSPEC = "unspec";
         const char * const Address::VALUE_FAMILY_INET = "inet";
         const char * const Address::VALUE_FAMILY_INET6 = "inet6";
+    #if !defined (TOOLCHAIN_OS_Windows)
         const char * const Address::VALUE_FAMILY_LOCAL = "local";
     #if defined (TOOLCHAIN_OS_Linux)
         const char * const Address::VALUE_FAMILY_NETLINK = "netlink";
@@ -618,10 +630,12 @@ namespace thekogans {
     #elif defined (TOOLCHAIN_OS_OSX)
         const char * const Address::VALUE_FAMILY_LINK = "link";
     #endif // defined (TOOLCHAIN_OS_Linux)
+    #endif // !defined (TOOLCHAIN_OS_Windows)
         const char * const Address::ATTR_PORT = "Port";
         const char * const Address::ATTR_ADDR = "Addr";
         const char * const Address::VALUE_ADDR_ANY = "any";
         const char * const Address::VALUE_ADDR_LOOPBACK = "loopback";
+    #if !defined (TOOLCHAIN_OS_Windows)
         const char * const Address::ATTR_PATH = "Path";
     #if defined (TOOLCHAIN_OS_Linux)
         const char * const Address::ATTR_GROUPS = "Groups";
@@ -631,6 +645,7 @@ namespace thekogans {
         const char * const Address::ATTR_ADAPTER_INDEX = "AdapterIndex";
         const char * const Address::ATTR_ADAPTER_NAME = "AdapterName";
     #endif // defined (TOOLCHAIN_OS_Linux)
+    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         void Address::FromString (const std::string &addressString) {
             pugi::xml_document document;
@@ -684,6 +699,7 @@ namespace thekogans {
                     inet_pton (AF_INET6, util::Decodestring (addr).c_str (), &in6.sin6_addr);
                 }
             }
+        #if !defined (TOOLCHAIN_OS_Windows)
             else if (family == VALUE_FAMILY_LOCAL) {
                 SetFamily (AF_LOCAL);
                 SetPath (util::Decodestring (node.attribute (ATTR_PATH).value ()));
@@ -714,6 +730,7 @@ namespace thekogans {
                 SetAddr (util::HexDecodestring (addr.c_str ()));
             }
         #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Invalid family (%s).", family.c_str ());
@@ -727,8 +744,10 @@ namespace thekogans {
                 util::Attributes attributes;
                 util::ui16 family = GetFamily ();
                 if (family == AF_INET) {
-                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET));
-                    attributes.push_back (util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET));
+                    attributes.push_back (
+                        util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
                     attributes.push_back (
                         util::Attribute (ATTR_ADDR,
                             ntohl (in.sin_addr.s_addr) == INADDR_ANY ?
@@ -738,39 +757,60 @@ namespace thekogans {
                                     util::Encodestring (AddrToString ())));
                 }
                 else if (family == AF_INET6) {
-                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET6));
-                    attributes.push_back (util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_FAMILY, VALUE_FAMILY_INET6));
+                    attributes.push_back (
+                        util::Attribute (ATTR_PORT, util::ui32Tostring (GetPort ())));
                     attributes.push_back (
                         util::Attribute (ATTR_ADDR,
                             memcmp (&in6.sin6_addr, &in6addr_any, sizeof (in6addr_any)) == 0 ?
                                 VALUE_ADDR_ANY :
-                                memcmp (&in6.sin6_addr, &in6addr_loopback, sizeof (in6addr_loopback)) == 0 ?
+                                memcmp (
+                                    &in6.sin6_addr,
+                                    &in6addr_loopback,
+                                    sizeof (in6addr_loopback)) == 0 ?
                                     VALUE_ADDR_LOOPBACK :
                                     util::Encodestring (AddrToString ())));
                 }
+            #if !defined (TOOLCHAIN_OS_Windows)
                 else if (family == AF_LOCAL) {
-                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LOCAL));
-                    attributes.push_back (util::Attribute (ATTR_PATH, util::Encodestring (GetPath ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LOCAL));
+                    attributes.push_back (
+                        util::Attribute (ATTR_PATH, util::Encodestring (GetPath ())));
                 }
             #if defined (TOOLCHAIN_OS_Linux)
                 else if (family == AF_NETLINK) {
-                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_NETLINK));
-                    attributes.push_back (util::Attribute (ATTR_GROUPS, util::ui32Tostring (GetGroups ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_FAMILY, VALUE_FAMILY_NETLINK));
+                    attributes.push_back (
+                        util::Attribute (ATTR_GROUPS, util::ui32Tostring (GetGroups ())));
                 }
                 else if (family == AF_PACKET) {
-                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_PACKET));
-                    attributes.push_back (util::Attribute (ATTR_PROTOCOL, util::ui32Tostring (GetProtocol ())));
-                    attributes.push_back (util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
-                    attributes.push_back (util::Attribute (ATTR_ADDR, util::HexEncodeBuffer (ll.sll_addr, ll.sll_halen)));
+                    attributes.push_back (
+                        util::Attribute (ATTR_FAMILY, VALUE_FAMILY_PACKET));
+                    attributes.push_back (
+                        util::Attribute (ATTR_PROTOCOL, util::ui32Tostring (GetProtocol ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_ADDR, util::HexEncodeBuffer (ll.sll_addr, ll.sll_halen)));
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
                 else if (family == AF_LINK) {
-                    attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LINK));
-                    attributes.push_back (util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
-                    attributes.push_back (util::Attribute (ATTR_ADAPTER_NAME, GetAdapterName ()));
-                    attributes.push_back (util::Attribute (ATTR_ADDR, util::HexEncodeBuffer (dl.sdl_data + dl.sdl_nlen, dl.sdl_alen)));
+                    attributes.push_back (
+                        util::Attribute (ATTR_FAMILY, VALUE_FAMILY_LINK));
+                    attributes.push_back (
+                        util::Attribute (ATTR_ADAPTER_INDEX, util::i32Tostring (GetAdapterIndex ())));
+                    attributes.push_back (
+                        util::Attribute (ATTR_ADAPTER_NAME, GetAdapterName ()));
+                    attributes.push_back (
+                        util::Attribute (
+                            ATTR_ADDR,
+                            util::HexEncodeBuffer (dl.sdl_data + dl.sdl_nlen, dl.sdl_alen)));
                 }
             #endif // defined (TOOLCHAIN_OS_Linux)
+            #endif // !defined (TOOLCHAIN_OS_Windows)
                 else {
                     attributes.push_back (util::Attribute (ATTR_FAMILY, VALUE_FAMILY_UNSPEC));
                 }

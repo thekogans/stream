@@ -210,8 +210,9 @@ namespace thekogans {
         }
 
         void UDPSocket::ReadFrom (std::size_t bufferLength) {
+            ReadFromOverlapped::SharedPtr overlapped (
+                new ReadFromOverlapped (bufferLength));
         #if defined (TOOLCHAIN_OS_Windows)
-            ReadFromOverlapped::SharedPtr overlapped (new ReadFromOverlapped (bufferLength));
             if (WSARecvFrom ((THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf,
                     1,
@@ -228,7 +229,7 @@ namespace thekogans {
             }
             overlapped.Release ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            EnqOverlapped (new ReadFromOverlapped (bufferLength), in);
+            EnqOverlapped (overlapped, in);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -256,7 +257,8 @@ namespace thekogans {
 
                 virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ? buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    return GetError () == ERROR_SUCCESS ?
+                        buffer->AdvanceReadOffset (GetCount ()) : -1;
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = sendto (
                         stream->GetHandle (),
@@ -306,9 +308,9 @@ namespace thekogans {
                 util::Buffer::SharedPtr buffer,
                 const Address &address) {
             if (!buffer->IsEmpty () && address != Address::Empty) {
-            #if defined (TOOLCHAIN_OS_Windows)
                 WriteToOverlapped::SharedPtr overlapped (
                     new WriteToOverlapped (buffer, address));
+            #if defined (TOOLCHAIN_OS_Windows)
                 if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->wsaBuf,
                         1,
@@ -325,7 +327,7 @@ namespace thekogans {
                 }
                 overlapped.Release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (new WriteToOverlapped (buffer, address), out);
+                EnqOverlapped (overlapped, out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -434,7 +436,8 @@ namespace thekogans {
                         from.length = sizeof (sockaddr_un);
                     }
                 #endif // !defined (TOOLCHAIN_OS_Windows)
-                    to = msgHdr.GetToAddress (((Socket *)stream.Get ())->GetHostAddress ().GetPort ());
+                    to = msgHdr.GetToAddress (
+                        ((Socket *)stream.Get ())->GetHostAddress ().GetPort ());
                     return buffer->GetDataAvailableForReading ();
                 }
 
@@ -461,8 +464,9 @@ namespace thekogans {
         }
 
         void UDPSocket::ReadMsg (std::size_t bufferLength) {
+            ReadMsgOverlapped::SharedPtr overlapped (
+                new ReadMsgOverlapped (bufferLength));
         #if defined (TOOLCHAIN_OS_Windows)
-            ReadMsgOverlapped::SharedPtr overlapped (new ReadMsgOverlapped (bufferLength));
             if (WindowsFunctions::Instance ()->WSARecvMsg (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->msgHdr,
@@ -476,7 +480,7 @@ namespace thekogans {
             }
             overlapped.Release ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            EnqOverlapped (new ReadMsgOverlapped (bufferLength), in);
+            EnqOverlapped (overlapped, in);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -562,9 +566,9 @@ namespace thekogans {
                 const Address &from,
                 const Address &to) {
             if (!buffer->IsEmpty () && from != Address::Empty && to != Address::Empty) {
-            #if defined (TOOLCHAIN_OS_Windows)
                 WriteMsgOverlapped::SharedPtr overlapped (
                     new WriteMsgOverlapped (buffer, from, to));
+            #if defined (TOOLCHAIN_OS_Windows)
                 if (WindowsFunctions::Instance ()->WSASendMsg (
                         (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->msgHdr,
@@ -580,7 +584,7 @@ namespace thekogans {
                 }
                 overlapped.Release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (new WriteMsgOverlapped (buffer, from, to), out);
+                EnqOverlapped (overlapped, out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {

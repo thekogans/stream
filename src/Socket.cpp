@@ -269,8 +269,9 @@ namespace thekogans {
         }
 
         void Socket::Read (std::size_t bufferLength) {
+            ReadOverlapped::SharedPtr overlapped (
+                new ReadOverlapped (bufferLength));
         #if defined (TOOLCHAIN_OS_Windows)
-            ReadOverlapped::SharedPtr overlapped (new ReadOverlapped (bufferLength));
             if (WSARecv (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf,
@@ -286,7 +287,7 @@ namespace thekogans {
             }
             overlapped.Release ();
         #else // defined (TOOLCHAIN_OS_Windows)
-            EnqOverlapped (new ReadOverlapped (bufferLength), in);
+            EnqOverlapped (overlapped, in);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -309,7 +310,8 @@ namespace thekogans {
 
                 ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ? buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    return GetError () == ERROR_SUCCESS ?
+                        buffer->AdvanceReadOffset (GetCount ()) : -1;
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = send (
                         stream->GetHandle (),
@@ -351,8 +353,9 @@ namespace thekogans {
 
         void Socket::Write (util::Buffer::SharedPtr buffer) {
             if (!buffer->IsEmpty ()) {
+                WriteOverlapped::SharedPtr overlapped (
+                    new WriteOverlapped (buffer));
             #if defined (TOOLCHAIN_OS_Windows)
-                WriteOverlapped::SharedPtr overlapped (new WriteOverlapped (buffer));
                 if (WSASend (
                         (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->wsaBuf,
@@ -368,7 +371,7 @@ namespace thekogans {
                 }
                 overlapped.Release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (new WriteOverlapped (buffer), out);
+                EnqOverlapped (overlapped, out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {

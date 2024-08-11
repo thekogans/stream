@@ -91,7 +91,8 @@ namespace thekogans {
                     buffer (new util::Buffer (util::NetworkEndian, bufferLength)) {}
 
                 virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
-                    return GetError () == ERROR_SUCCESS ? buffer->AdvanceWriteOffset (GetCount ()) : -1;
+                    return GetError () == ERROR_SUCCESS ?
+                        buffer->AdvanceWriteOffset (GetCount ()) : -1;
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
@@ -143,7 +144,8 @@ namespace thekogans {
                     buffer (buffer_) {}
 
                 virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
-                    return GetError () == ERROR_SUCCESS ? buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    return GetError () == ERROR_SUCCESS ?
+                        buffer->AdvanceReadOffset (GetCount ()) : -1;
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {

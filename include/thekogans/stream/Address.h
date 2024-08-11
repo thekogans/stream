@@ -25,12 +25,6 @@
     #include <iphlpapi.h>
     #include <ws2tcpip.h>
     #include <mswsock.h>
-    #if !defined (UNIX_PATH_MAX)
-        #define UNIX_PATH_MAX 108
-    #endif // !defined (UNIX_PATH_MAX)
-    #if !defined (AF_LOCAL)
-        #define AF_LOCAL 1
-    #endif // !defined (AF_LOCAL)
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <sys/types.h>
     #include <sys/socket.h>
@@ -67,21 +61,6 @@ namespace thekogans {
         /// This puts a uniform Address on all streams.
 
         struct _LIB_THEKOGANS_STREAM_DECL Address {
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \struct Address::sockaddr_un Address.h thekogans/stream/Address.h
-            ///
-            /// \brief
-            /// Windows does not support sockaddr_un. So we define
-            /// it here, and use it to represent named pipe addresses.
-            struct sockaddr_un {
-                /// \brief
-                /// AF_LOCAL
-                util::ui16 sun_family;
-                /// \brief
-                /// Properly formated named pipe address.
-                char sun_path[UNIX_PATH_MAX];
-            };
-        #endif // defined (TOOLCHAIN_OS_Windows)
             union {
                 /// \brief
                 /// Catchall.
@@ -92,6 +71,7 @@ namespace thekogans {
                 /// \brief
                 /// AF_INET6 address.
                 sockaddr_in6 in6;
+            #if !defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// AF_LOCAL address.
                 sockaddr_un un;
@@ -107,6 +87,7 @@ namespace thekogans {
                 /// AF_LINK address.
                 sockaddr_dl dl;
             #endif // defined (TOOLCHAIN_OS_Linux)
+            #endif // !defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 /// Used to get info from sockets.
                 sockaddr_storage storage;
@@ -177,12 +158,13 @@ namespace thekogans {
             Address (
                 util::ui16 port,
                 const in6_addr &addr);
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
-            /// Create an sockddr_un address from
-            /// a given UNIX domain path or Windows named pipe ("\\.\pipe\pipename").
-            /// \param[in] path UNIX domain path or Windows named pipe.
+            /// Create an sockddr_un address from a given UNIX domain path.
+            /// \param[in] path UNIX domain path.
             explicit Address (const std::string &path);
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Given a family and port, create an address that
@@ -266,6 +248,7 @@ namespace thekogans {
             /// \return String representation of the address.
             std::string AddrToString () const;
 
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Return the UNIX domain path of the AF_LOCAL address.
             /// \return UNIX domain path.
@@ -339,6 +322,7 @@ namespace thekogans {
             /// \param[in] addr Link adapter address.
             void SetAddr (const std::vector<util::ui8> &addr);
         #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// "Address"
@@ -355,6 +339,7 @@ namespace thekogans {
             /// \brief
             /// "inet6"
             static const char * const VALUE_FAMILY_INET6;
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// "local"
             static const char * const VALUE_FAMILY_LOCAL;
@@ -370,6 +355,7 @@ namespace thekogans {
             /// "link"
             static const char * const VALUE_FAMILY_LINK;
         #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// "Port"
             static const char * const ATTR_PORT;
@@ -382,6 +368,7 @@ namespace thekogans {
             /// \brief
             /// "loopback"
             static const char * const VALUE_ADDR_LOOPBACK;
+        #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// "Path"
             static const char * const ATTR_PATH;
@@ -399,6 +386,7 @@ namespace thekogans {
             /// "AdapterName"
             static const char * const ATTR_ADAPTER_NAME;
         #endif // defined (TOOLCHAIN_OS_Linux)
+        #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Convert a string returned by \see{ToString} (below) back to address.

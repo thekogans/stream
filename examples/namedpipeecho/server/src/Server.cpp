@@ -38,8 +38,8 @@ namespace thekogans {
 
                 void Server::OnStreamError (
                         Stream::SharedPtr stream,
-                        util::Exception exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
+                        util::Exception::SharedPtr exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
                     RemoveConnection (stream);
                 }
 

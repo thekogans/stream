@@ -186,6 +186,8 @@ namespace thekogans {
         }
 
         void TCPSocket::Connect (const Address &address) {
+            ConnectOverlapped::SharedPtr overlapped (
+                new ConnectOverlapped (address));
         #if defined (TOOLCHAIN_OS_Windows)
             // Asshole M$ strikes again. Wasted a significant
             // portion of my life chasing a bug that wound up
@@ -194,7 +196,6 @@ namespace thekogans {
             if (!IsBound ()) {
                 Bind (Address::Any (0, address.GetFamily ()));
             }
-            ConnectOverlapped::SharedPtr overlapped (new ConnectOverlapped (address));
             if (!WindowsFunctions::Instance ()->ConnectEx (
                     (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->address.address,
@@ -216,7 +217,7 @@ namespace thekogans {
             // first. Since the socket has not connected yet it will
             // just sit there waiting for write to be ready which
             // will never come. Always call Connect first.
-            EnqOverlapped (new ConnectOverlapped (address), out);
+            EnqOverlapped (overlapped, out);
             if (connect ((THEKOGANS_STREAM_SOCKET)handle, &address.address, address.length) ==
                     THEKOGANS_STREAM_SOCKET_ERROR) {
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_STREAM_SOCKET_ERROR_CODE;
