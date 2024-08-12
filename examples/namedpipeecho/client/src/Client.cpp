@@ -19,6 +19,8 @@
 
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
+#include "thekogans/util/RandomSource.h"
+#include "thekogans/util/HRTimer.h"
 #include "thekogans/stream/NamedPipe.h"
 #include "thekogans/stream/namedpipeecho/client/Client.h"
 
@@ -36,6 +38,19 @@ namespace thekogans {
                     ResetIo (false);
                 }
 
+                void Client::OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () {
+                    THEKOGANS_UTIL_LOG_INFO (
+                        "Start bandwidth test: %u bytes\n", sentLength);
+                    util::Buffer::SharedPtr buffer (
+                        new util::Buffer (util::NetworkEndian, sentLength));
+                    buffer->AdvanceWriteOffset (
+                        util::RandomSource::Instance ()->GetBytes (
+                            buffer->GetWritePtr (),
+                            buffer->GetDataAvailableForWriting ()));
+                    startTime = util::HRTimer::Click ();
+                    clientNamedPipe->Write (buffer);
+                }
+
                 void Client::OnStreamError (
                         Stream::SharedPtr /*stream*/,
                         util::Exception::SharedPtr exception) throw () {
@@ -49,52 +64,24 @@ namespace thekogans {
                 void Client::OnStreamRead (
                         Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () {
-                    if (!buffer->IsEmpty ()) {
-                        util::GlobalJobQueue::Instance ()->EnqJob (
-                            [stream, buffer] (
-                                    const util::RunLoop::LambdaJob & /*job*/,
-                                    const std::atomic<bool> & /*done*/) {
-                                stream->Write (buffer);
-                            }
-                        );
+                    receivedLength += buffer->GetDataAvailableForReading ();
+                    if (receivedLength == sentLength) {
+                        endTime = util::HRTimer::Click ();
+                        THEKOGANS_UTIL_LOG_INFO (
+                            "End bandwidth test: %u iteration, %u bytes, %f Mb/s.\n",
+                            iteration,
+                            receivedLength,
+                            (util::f32)((util::f64)util::HRTimer::GetFrequency () *
+                                receivedLength * 8 / (endTime - startTime) / (1024 * 1024)));
+                        receivedLength = 0;
+                        sentLength <<= 1;
+                        if (iteration++ == Options::Instance ()->iterations) {
+                            sentLength = Options::Instance ()->seed;
+                            iteration = 1;
+                        }
+                        timer->Start (util::TimeSpec::FromSeconds (1), false);
                     }
                 }
-
-                /*
-    util::f32 GetBandwidth (
-            const stream::Address &address,
-            util::ui32 rounds = 10,
-            util::ui32 seed = 64,
-            util::f32 a = 2.0f,
-            util::f32 b = 0.0f) {
-        util::ui32 bytes = 0;
-        util::ui64 time = 0;
-        for (util::ui32 i = 0; i < rounds; ++i) {
-            THEKOGANS_UTIL_TRY {
-                util::ui64 start = util::HRTimer::Click ();
-                {
-                    stream::ClientNamedPipe namedPipe (address);
-                    std::vector<util::ui8> buffer (seed);
-                    namedPipe.WriteFullBuffer (&buffer[0], seed);
-                    namedPipe.ReadFullBuffer (&buffer[0], seed);
-                }
-                time += util::HRTimer::Click () - start;
-                bytes += seed + seed;
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG
-            seed = (util::ui32)(a * seed + b);
-        }
-        return time > 0 ? (util::f32)
-            ((util::f64)util::HRTimer::GetFrequency () *
-                bytes * 8 / time / (1024 * 1024)) : 0.0f;
-    }
-            THEKOGANS_UTIL_LOG_INFO (
-                "Conducting a bandwidth test with: %s\n",
-                client::Options::Instance ()->address.c_str ());
-            util::f32 bandwidth = GetBandwidth (
-                stream::Address (client::Options::Instance ()->address));
-            THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
-                */
 
                 void Client::ResetIo (bool connect) {
                     util::Subscriber<stream::StreamEvents>::Unsubscribe ();
@@ -103,7 +90,8 @@ namespace thekogans {
                         clientNamedPipe = NamedPipe::CreateClientNamedPipe (address);
                         util::Subscriber<stream::StreamEvents>::Subscribe (*clientNamedPipe);
                         clientNamedPipe->Read ();
-
+                        THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.c_str ());
+                        timer->Start (util::TimeSpec::FromSeconds (1), false);
                     }
                 }
 

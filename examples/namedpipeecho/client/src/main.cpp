@@ -60,7 +60,7 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ()->Parse (argc, argv, "hvla");
+    client::Options::Instance ()->Parse (argc, argv, "hvlasi");
     THEKOGANS_UTIL_LOG_INIT (
         client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);

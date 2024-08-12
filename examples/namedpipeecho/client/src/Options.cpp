@@ -38,6 +38,12 @@ namespace thekogans {
                             logLevel =
                                 util::LoggerMgr::stringTolevel (value.c_str ());
                             break;
+                        case 's':
+                            seed = util::stringToui32 (value.c_str ());
+                            break;
+                        case 'i':
+                            iterations = util::stringToui32 (value.c_str ());
+                            break;
                         case 'a':
                             address = value;
                             break;
