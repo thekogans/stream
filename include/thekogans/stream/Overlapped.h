@@ -180,6 +180,14 @@ namespace thekogans {
         /// \def THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED(_T)
         /// This macro is used in the overlapped definition file (.cpp).
         /// \param[in] _T \see{Overlapped} derived class name.
+        /// Example:
+        /// \code{.cpp}
+        /// struct ReadOverlapped : public Overlapped {
+        ///    ...
+        /// };
+        ///
+        /// THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED (ReadOverlapped)
+        /// \endcode
         #define THEKOGANS_STREAM_IMPLEMENT_OVERLAPPED(_T)\
             THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (_T)
 
