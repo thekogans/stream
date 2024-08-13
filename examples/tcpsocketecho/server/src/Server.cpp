@@ -38,7 +38,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/ChildProcess.h"
-#include "thekogans/stream/ServerTCPSocket.h"
 #include "thekogans/stream/tcpecho/server/Server.h"
 
 namespace thekogans {
@@ -47,71 +46,39 @@ namespace thekogans {
             namespace server {
 
                 void Server::Start (
-                        const std::list<Address> &addresses,
-                        bool reuseAddress,
-                        util::ui32 maxPendingConnections,
-                        util::i32 priority,
-                        util::ui32 affinity) {
-                    if (done) {
-                        if (!addresses.empty ()) {
-                            eventQueue.Reset (new AsyncIoEventQueue);
-                            for (std::list<Address>::const_iterator
-                                    it = addresses.begin (),
-                                    end = addresses.end (); it != end; ++it) {
-                                eventQueue->AddStream (
-                                    *ServerTCPSocket::SharedPtr (
-                                        new ServerTCPSocket (
-                                            *it, reuseAddress, maxPendingConnections)),
-                                    *this);
-                                THEKOGANS_UTIL_LOG_DEBUG ("Listening on: %s:%u\n",
-                                    (*it).AddrToString ().c_str (), (*it).GetPort ());
-                            }
-                            done = false;
-                            Create (priority, affinity);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "%s", "Must supply at least one address to listen on.");
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_LOG_WARNING (
-                            "%s\n", "Server is already running.");
-                    }
+                        const stream::Address &address_,
+                        util::ui32 maxPendingConnections_) {
+                    address = address_;
+                    maxPendingConnections = maxPendingConnections_;
+                    ResetIo (true);
                 }
 
                 void Server::Stop () {
-                    if (!done) {
-                        done = true;
-                        jobQueue.Stop ();
-                        eventQueue->Break ();
-                        Wait ();
-                        eventQueue.Reset ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_LOG_WARNING (
-                            "%s\n", "Server is not running.");
+                    ResetIo (false);
+                }
+
+                void Server::OnStreamError (
+                        stream::Stream::SharedPtr stream,
+                        util::Exception::SharedPtr exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
+                    // If it's a connection, remove it from the list.
+                    if (stream != serverSocket) {
+                        RemoveConnection (stream);
                     }
                 }
 
-                void Server::Run () throw () {
-                    while (!done) {
-                        THEKOGANS_UTIL_TRY {
-                            eventQueue->WaitForEvents ();
-                        }
-                        THEKOGANS_UTIL_CATCH_AND_LOG
-                    }
-                    THEKOGANS_UTIL_LOG_DEBUG ("%s\n", "Server thread is exiting.");
+                void Server::OnStreamDisconnect (stream::Stream::SharedPtr stream) throw () {
+                    THEKOGANS_UTIL_LOG_INFO ("%s\n", "Connection closed.");
+                    RemoveConnection (stream);
                 }
 
-                void Server::HandleStreamError (
-                        Stream &stream,
-                        const util::Exception &exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
-                    THEKOGANS_UTIL_TRY {
-                        eventQueue->DeleteStream (stream);
+                void Server::OnStreamRead (
+                        stream::Stream::SharedPtr stream,
+                        util::Buffer::SharedPtr buffer) throw () {
+                    if (!buffer->IsEmpty ()) {
+                        // We're an echo server.
+                        stream->Write (buffer);
                     }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
                 }
 
                 namespace {
@@ -373,61 +340,63 @@ namespace thekogans {
                     }
                 }
 
-                void Server::HandleServerTCPSocketConnection (
-                        ServerTCPSocket &serverTCPSocket,
-                        TCPSocket::SharedPtr connection) throw () {
-                    THEKOGANS_UTIL_TRY {
-                        Address peerAddress = connection->GetPeerAddress ();
-                        THEKOGANS_UTIL_LOG_INFO (
-                            "Received connection request from: %s:%u (%s)\n",
-                            peerAddress.AddrToString ().c_str (),
-                            peerAddress.GetPort (),
-                            GetPeerProcessPath (*connection).c_str ());
-                        eventQueue->AddStream (*connection, *this, 0);
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
+                void Server::OnTCPSocketAccept (
+                        stream::TCPSocket::SharedPtr /*tcpSocket*/,
+                        stream::TCPSocket::SharedPtr connection) throw () {
+                    Address peerAddress = connection->GetPeerAddress ();
+                    THEKOGANS_UTIL_LOG_INFO (
+                        "Received connection request from: %s:%u (%s)\n",
+                        peerAddress.AddrToString ().c_str (),
+                        peerAddress.GetPort (),
+                        GetPeerProcessPath (*connection).c_str ());
+                    // Setup async notifications.
+                    // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+                    // The reason for this is explained in \see{Stream}.
+                    util::Subscriber<stream::StreamEvents>::Subscribe (*connection);
+                    // Initiate an async read to listen for client requests.
+                    connection->Read (0);
+                    connections.push_back (connection);
                 }
 
-                void Server::HandleStreamDisconnect (Stream &stream) throw () {
-                    THEKOGANS_UTIL_LOG_DEBUG ("%s\n", "Connection closed.");
-                    THEKOGANS_UTIL_TRY {
-                        eventQueue->DeleteStream (stream);
+                void Server::ResetIo (bool accept) {
+                    // Given the nature of async io, there are no
+                    // guarantees that the connections.clear () and
+                    // serverSocket.Reset (...) calls below will
+                    // result in the pointers being deleted. There
+                    // might be residual references on the objects
+                    // just due to other threads in the code still
+                    // doing some work. It is therefore imperative
+                    // that we sever all communications with the old
+                    // producers before connecting new ones. Stream
+                    // contamination is a dangerous thing.
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
+                    connections.clear ();
+                    serverSocket.Reset ();
+                    if (accept) {
+                        // Create a listening socket.
+                        serverSocket.Reset (new stream::TCPSocket);
+                        // Setup async notifications.
+                        // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+                        // The reason for this is explained in \see{Stream}.
+                        util::Subscriber<stream::StreamEvents>::Subscribe (*serverSocket);
+                        util::Subscriber<stream::TCPSocketEvents>::Subscribe (*serverSocket);
+                        // Bind to the given address.
+                        serverSocket->Bind (address);
+                        // Put the socket in listening mode.
+                        serverSocket->Listen (maxPendingConnections);
+                        // We're open for business. Accept client connections.
+                        serverSocket->Accept ();
                     }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
                 }
 
-                void Server::HandleStreamRead (
-                        Stream &stream,
-                        util::Buffer buffer) throw () {
-                    THEKOGANS_UTIL_LOG_DEBUG (
-                        "Received data: %u\n",
-                        buffer.GetDataAvailableForReading ());
-                    THEKOGANS_UTIL_TRY {
-                        if (!buffer.IsEmpty ()) {
-                            struct WriteJob : public util::RunLoop::Job {
-                                Stream::SharedPtr stream;
-                                util::Buffer buffer;
-                                WriteJob (
-                                    Stream &stream_,
-                                    util::Buffer buffer_) :
-                                    stream (&stream_),
-                                    buffer (std::move (buffer_)) {}
-                                // util::RunLoop::Job
-                                virtual void Execute (const std::atomic<bool> &done) throw () {
-                                    if (!ShouldStop (done)) {
-                                        THEKOGANS_UTIL_TRY {
-                                            stream->WriteBuffer (std::move (buffer));
-                                        }
-                                        THEKOGANS_UTIL_CATCH_AND_LOG
-                                    }
-                                }
-                            };
-                            jobQueue.EnqJob (
-                                util::RunLoop::Job::SharedPtr (
-                                    new WriteJob (stream, std::move (buffer))));
-                        }
+                void Server::RemoveConnection (Stream::SharedPtr stream) {
+                    std::vector<Stream::SharedPtr>::iterator it =
+                        std::find (connections.begin (), connections.end (), stream);
+                    if (it != connections.end ()) {
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (**it);
+                        connections.erase (it);
                     }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
                 }
 
             } // namespace server

@@ -53,15 +53,7 @@ namespace thekogans {
                     util::ui64 endTime;
 
                 public:
-                    Client () :
-                            timer (util::Timer::Create ("Client")),
-                            iteration (1),
-                            sentLength (Options::Instance ()->seed),
-                            receivedLength (0),
-                            startTime (0),
-                            endTime (0) {
-                        util::Subscriber<util::TimerEvents>::Subscribe (*timer);
-                    }
+                    Client ();
 
                     void Start (const std::string &address_);
                     void Stop ();

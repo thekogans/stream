@@ -274,8 +274,8 @@ namespace thekogans {
         /// This macro is used in a stream declaration file (.h).
         /// \param[in] _T Stream class name.
         #define THEKOGANS_STREAM_DECLARE_STREAM(_T)\
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS\
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (_T)
 
         /// \def THEKOGANS_STREAM_IMPLEMENT_STREAM(_T)

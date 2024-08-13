@@ -82,7 +82,7 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (server::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] [-k:'path'] [-a:'host address'*]\n\n"
+            "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] [-k:'path'] [-a:'host address']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
@@ -90,7 +90,7 @@ int main (
             "f - Log to file (path - Path of log file).\n"
             "r - Archive file log (max size - Max log file size before archiving).\n"
             "k - Use lock file to prevent multiple instances (path - Path to lock file).\n"
-            "a - Address to listen for clients on (can be repeated).\n",
+            "a - Address to listen for clients on.\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }

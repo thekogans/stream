@@ -36,29 +36,17 @@ namespace thekogans {
                         case 'l':
                             logLevel = util::LoggerMgr::stringTolevel (value.c_str ());
                             break;
-                        case 'a':
-                            addr = value;
-                            break;
                         case 'p':
                             port = util::stringToui32 (value.c_str ());
                             break;
-                        case 'r':
-                            rounds = util::stringToui32 (value.c_str ());
+                        case 'a':
+                            address = value;
                             break;
                         case 's':
                             seed = util::stringToui32 (value.c_str ());
                             break;
-                        case 'f':
-                            a = util::stringTof32 (value.c_str ());
-                            break;
-                        case 'c':
-                            b = util::stringTof32 (value.c_str ());
-                            break;
-                        case 't':
-                            timeout = util::stringToui32 (value.c_str ());
-                            break;
-                        case 'y':
-                            async = true;
+                        case 'i':
+                            iterations = util::stringToui32 (value.c_str ());
                             break;
                     }
                 }

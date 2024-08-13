@@ -74,10 +74,16 @@ namespace thekogans {
         }
 
         void AsyncIoEventQueue::Run () throw () {
+            const std::size_t maxEventsBatch = 100;
+        #if defined (TOOLCHAIN_OS_Windows)
+            std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
+        #elif defined (TOOLCHAIN_OS_Linux)
+            std::vector<epoll_event> epollEvents (maxEventsBatch);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            std::vector<keventStruct> kqueueEvents (maxEventsBatch);
+        #endif // defined (TOOLCHAIN_OS_Windows)
             while (1) {
             #if defined (TOOLCHAIN_OS_Windows)
-                static const ULONG maxEventsBatch = 100;
-                std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);
                 ULONG count = 0;
                 GetQueuedCompletionStatusEx (
                     handle,
@@ -88,6 +94,13 @@ namespace thekogans {
                     FALSE);
                 for (ULONG i = 0; i < count; ++i) {
                     if (iocpEvents[i].lpOverlapped != nullptr) {
+                        // The handoff between c++ and windows is the
+                        // release of overlapped shared pointer. Here
+                        // we receive the raw pointer back from the os
+                        // and wrap it right back in to a shared
+                        // pointer to be properly released at the end
+                        // of the scope completing the life cycle of
+                        // the overlapped.
                         Overlapped::SharedPtr overlapped (
                             (Overlapped *)iocpEvents[i].lpOverlapped, false);
                         Stream::SharedPtr stream = Stream::Registry::Instance ()->Get (
@@ -98,8 +111,6 @@ namespace thekogans {
                     }
                 }
             #elif defined (TOOLCHAIN_OS_Linux)
-                std::size_t maxEventsBatch = 100;
-                std::vector<epoll_event> epollEvents (maxEventsBatch);
                 for (int i = 0,
                         count = epoll_wait (handle, epollEvents.data (), maxEventsBatch, -1);
                         i < count; ++i) {
@@ -116,8 +127,7 @@ namespace thekogans {
                             // it's not completely hopeless. It would just be
                             // really nice if we could show something meaningful
                             // in the log.
-                            Socket::SharedPtr socket =
-                                util::dynamic_refcounted_sharedptr_cast<Socket> (stream);
+                            Socket::SharedPtr socket = stream;
                             if (socket != nullptr) {
                                 THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
                                 if (errorCode == EPIPE) {
@@ -174,8 +184,6 @@ namespace thekogans {
                     }
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
-                static const std::size_t maxEventsBatch = 100;
-                std::vector<keventStruct> kqueueEvents (maxEventsBatch);
                 for (int i = 0,
                         count = keventFunc (handle, 0, 0, kqueueEvents.data (), maxEventsBatch, 0);
                         i < count; ++i) {
@@ -195,8 +203,7 @@ namespace thekogans {
                             // If no one is listening on the other side, kqueue returns
                             // EV_EOF instead of an appropriate error code. Simulate an
                             // error that would be returned if we did a blocking connect.
-                            Socket::SharedPtr socket =
-                                util::dynamic_refcounted_sharedptr_cast<Socket> (stream);
+                            Socket::SharedPtr socket = stream;
                             if (socket != nullptr) {
                                 THEKOGANS_UTIL_ERROR_CODE errorCode = socket->GetErrorCode ();
                                 if (errorCode == ETIMEDOUT ||

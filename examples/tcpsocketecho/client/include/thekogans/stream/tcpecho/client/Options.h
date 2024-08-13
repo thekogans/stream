@@ -35,29 +35,23 @@ namespace thekogans {
                     bool help;
                     bool version;
                     util::ui32 logLevel;
-                    std::string addr;
                     util::ui16 port;
-                    util::ui32 rounds;
+                    std::string address;
                     util::ui32 seed;
-                    util::f32 a;
-                    util::f32 b;
-                    util::ui32 timeout;
-                    bool async;
+                    util::ui32 iterations;
 
                     Options () :
                         help (false),
                         version (false),
                         logLevel (util::LoggerMgr::Info),
-                        addr ("127.0.0.1"),
                         port (8854),
-                        rounds (10),
-                        seed (64),
-                        a (2.0f),
-                        b (0.0f),
-                        timeout (3),
-                        async (false) {}
+                        address ("127.0.0.1"),
+                        seed (128),
+                        iterations (16) {}
 
-                    virtual void DoOption (char option, const std::string &value);
+                    virtual void DoOption (
+                        char option,
+                        const std::string &value);
                     virtual void DoPath (const std::string & /*path*/) {}
                 };
 

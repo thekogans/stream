@@ -109,7 +109,7 @@ int main (
                         util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
                     util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
                     server::Server::Instance ()->Start (
-                        server::Options::Instance ()->addresses);
+                        server::Options::Instance ()->address);
                 }
                 ~App () {
                     server::Server::Instance ()->Stop ();

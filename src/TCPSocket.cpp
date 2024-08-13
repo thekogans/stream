@@ -34,7 +34,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
-            struct WindowsFunctions : public util::Singleton<WindowsFunctions, util::SpinLock> {
+            struct WindowsFunctions : public util::Singleton<WindowsFunctions> {
                 LPFN_CONNECTEX ConnectEx;
                 LPFN_DISCONNECTEX DisconnectEx;
                 LPFN_ACCEPTEX AcceptEx;
@@ -97,32 +97,6 @@ namespace thekogans {
             };
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
-
-        TCPSocket::TCPSocket (
-                const Address &address,
-                bool reuseAddress,
-                util::i32 maxPendingConnections) :
-                TCPSocket (address.GetFamily (), SOCK_STREAM, 0) {
-            if (reuseAddress) {
-            #if !defined (TOOLCHAIN_OS_Windows)
-                if (address.GetFamily () == AF_LOCAL) {
-                    util::Path path (address.GetPath ());
-                    if (path.Exists ()) {
-                        // Can't use Path::Delete here as the file is a device and
-                        // Path only supports directories and files.
-                        unlink (address.GetPath ().c_str ());
-                    }
-                }
-                else {
-            #endif // !define (TOOLCHAIN_OS_Windows)
-                    SetReuseAddress (true);
-            #if !defined (TOOLCHAIN_OS_Windows)
-                }
-            #endif // !defined (TOOLCHAIN_OS_Windows)
-            }
-            Bind (address);
-            Listen (maxPendingConnections);
-        }
 
         bool TCPSocket::IsConnected () const {
         #if defined (TOOLCHAIN_OS_Windows)

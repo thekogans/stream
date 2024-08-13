@@ -127,27 +127,10 @@ namespace thekogans {
             /// \param[in] type Socket type specification.
             /// \param[in] protocol Socket protocol specification.
             UDPSocket (
-                int family,
-                int type,
-                int protocol) :
+                int family = AF_INET,
+                int type = SOCK_DGRAM,
+                int protocol = 0) :
                 Socket (family, type, protocol) {}
-            /// \brief
-            /// ctor.
-            /// \param[in] address Address to listen for datagrams on.
-            /// NOTE: This is not the address used for WriteTo/ReadFrom.
-            /// This address is used to setup a server listening socket.
-            /// For real server sockets, use an address with a well
-            /// defined port, as clients will need to know that port
-            /// number to send datagrams to the server. For client
-            /// side sockets, use an address with port = 0. Bind will
-            /// pick an unused port, and bind the socket to it. That
-            /// will be the address the server will use to communicate
-            /// back to you.
-            /// Alternatively, you can specify a normal address (addr and port).
-            /// Bind will receive datagrams from this address only. Combined
-            /// with \see{Connect}, you can then use Read/Write instead of
-            /// ReadFrom/WriteTo.
-            UDPSocket (const Address &address);
 
             /// \brief
             /// Read a datagram and the address it was sent from.

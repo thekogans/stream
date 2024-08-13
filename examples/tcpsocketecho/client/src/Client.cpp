@@ -21,12 +21,13 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/util/HRTimer.h"
-#include "thekogans/stream/NamedPipe.h"
-#include "thekogans/stream/namedpipeecho/client/Client.h"
+#include "thekogans/stream/TCPSocket.h"
+#include "thekogans/stream/tcpecho/client/Options.h"
+#include "thekogans/stream/tcpecho/client/Client.h"
 
 namespace thekogans {
     namespace stream {
-        namespace namedpipeecho {
+        namespace tcpecho {
             namespace client {
 
                 Client::Client () :
@@ -39,7 +40,7 @@ namespace thekogans {
                     util::Subscriber<util::TimerEvents>::Subscribe (*timer);
                 }
 
-                void Client::Start (const std::string &address_) {
+                void Client::Start (const Address &address_) {
                     address = address_;
                     ResetIo (true);
                 }
@@ -58,7 +59,7 @@ namespace thekogans {
                             buffer->GetWritePtr (),
                             buffer->GetDataAvailableForWriting ()));
                     startTime = util::HRTimer::Click ();
-                    clientNamedPipe->Write (buffer);
+                    clientTCPSocket->Write (buffer);
                 }
 
                 void Client::OnStreamError (
@@ -93,20 +94,28 @@ namespace thekogans {
                     }
                 }
 
+                void Client::OnTCPSocketConnect (
+                        TCPSocket::SharedPtr tcpSocket,
+                        Address address) throw () {
+                    clientTCPSocket->Read (0);
+                    THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.ToString ().c_str ());
+                    timer->Start (util::TimeSpec::FromSeconds (1), false);
+                }
+
                 void Client::ResetIo (bool connect) {
                     util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    clientNamedPipe.Reset ();
+                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
+                    clientTCPSocket.Reset ();
                     if (connect) {
-                        clientNamedPipe = NamedPipe::CreateClientNamedPipe (address);
-                        util::Subscriber<stream::StreamEvents>::Subscribe (*clientNamedPipe);
-                        clientNamedPipe->Read ();
-                        THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.c_str ());
-                        timer->Start (util::TimeSpec::FromSeconds (1), false);
+                        clientTCPSocket.Reset (new TCPSocket);
+                        util::Subscriber<stream::StreamEvents>::Subscribe (*clientTCPSocket);
+                        util::Subscriber<stream::TCPSocketEvents>::Subscribe (*clientTCPSocket);
+                        clientTCPSocket->Connect (address);
                     }
                 }
 
             } // namespace client
-        } // namespace namedpipeecho
+        } // namespace tcpecho
     } // namespace stream
 } // namespace thekogans
 

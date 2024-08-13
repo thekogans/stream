@@ -19,7 +19,6 @@
 #define __thekogans_stream_tcpecho_server_Options_h
 
 #include <string>
-#include <list>
 #include <pugixml/pugixml.hpp>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
@@ -74,7 +73,7 @@ namespace thekogans {
                     } loggerMgr;
                     std::string lockFilePath;
                     util::ui16 port;
-                    std::list<Address> addresses;
+                    Address address;
                     std::string startDirectory;
                     util::Directory::Watcher::WatchId watchId;
 
@@ -84,7 +83,6 @@ namespace thekogans {
                     virtual void DoOption (
                         char option,
                         const std::string &value);
-                    virtual void Epilog ();
 
                     // util::Directory::Watcher::EventSink
                     virtual void HandleModified (

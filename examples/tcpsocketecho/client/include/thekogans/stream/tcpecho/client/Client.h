@@ -15,61 +15,73 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_stream_tcpecho_server_Server_h)
-#define __thekogans_stream_tcpecho_server_Server_h
+#if !defined (__thekogans_stream_tcpsocketecho_client_Client_h)
+#define __thekogans_stream_tcpsocketecho_client_Client_h
 
-#include <vector>
+#include <string>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/Subscriber.h"
+#include "thekogans/util/Timer.h"
 #include "thekogans/stream/Address.h"
+#include "thekogans/stream/Stream.h"
 #include "thekogans/stream/TCPSocket.h"
+#include "thekogans/stream/tcpecho/client/Options.h"
 
 namespace thekogans {
     namespace stream {
         namespace tcpecho {
-            namespace server {
+            namespace client {
 
-                struct Server :
+                struct Client :
                         public util::Singleton<
-                            Server,
+                            Client,
                             util::SpinLock,
-                            util::RefCountedInstanceCreator<Server>,
-                            util::RefCountedInstanceDestroyer<Server>>,
+                            util::RefCountedInstanceCreator<Client>,
+                            util::RefCountedInstanceDestroyer<Client>>,
+                        public util::Subscriber<util::TimerEvents>,
                         public util::Subscriber<StreamEvents>,
                         public util::Subscriber<TCPSocketEvents> {
                 private:
                     Address address;
-                    util::ui32 maxPendingConnections;
-                    TCPSocket::SharedPtr serverSocket;
-                    std::vector<Stream::SharedPtr> connections;
+                    TCPSocket::SharedPtr clientTCPSocket;
+                    util::Timer::SharedPtr timer;
+                    std::size_t iteration;
+                    std::size_t sentLength;
+                    std::size_t receivedLength;
+                    util::ui64 startTime;
+                    util::ui64 endTime;
 
                 public:
-                    void Start (
-                        const Address &address_,
-                        util::ui32 maxPendingConnections_ = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS);
+                    Client ();
+
+                    void Start (const Address &address_);
                     void Stop ();
 
                 private:
+                    // TimerEvents
+                    virtual void OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () override;
+
                     // StreamEvents
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
                         util::Exception::SharedPtr exception) throw () override;
-                    virtual void OnStreamDisconnect (Stream::SharedPtr stream) throw () override;
+                    virtual void OnStreamDisconnect (
+                        Stream::SharedPtr stream) throw () override;
                     virtual void OnStreamRead (
                         Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () override;
                     // TCPSocketEvents
-                    virtual void OnTCPSocketAccept (
-                        TCPSocket::SharedPtr /*tcpSocket*/,
-                        TCPSocket::SharedPtr connection) throw () override;
+                    virtual void OnTCPSocketConnect (
+                        TCPSocket::SharedPtr tcpSocket,
+                        Address address) throw () override;
 
-                    void ResetIo (bool accept);
-                    void RemoveConnection (Stream::SharedPtr stream);
+                    void ResetIo (bool connect);
                 };
 
-            } // namespace server
+            } // namespace client
         } // namespace tcpecho
     } // namespace stream
 } // namespace thekogans
 
-#endif // !defined (__thekogans_stream_tcpecho_server_Server_h)
+#endif // !defined (__thekogans_stream_tcpsocketecho_client_Client_h)

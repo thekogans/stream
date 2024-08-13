@@ -64,7 +64,7 @@ int main (
     THEKOGANS_UTIL_LOG_INIT (
         client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);
-    THEKOGANS_UTIL_LOG_ADD_LOGGER (util::Logger::SharedPtr (new util::ConsoleLogger));
+    THEKOGANS_UTIL_LOG_ADD_LOGGER (new util::ConsoleLogger);
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
@@ -72,7 +72,9 @@ int main (
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
-            "a - Address server is listening on.\n",
+            "a - Address server is listening on.\n"
+            "s - Seed (default is 128).\n"
+            "i - Iterations (default is 16).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }

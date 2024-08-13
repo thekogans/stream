@@ -52,6 +52,7 @@ namespace thekogans {
                         Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () {
                     if (!buffer->IsEmpty ()) {
+                        // We're an echo server.
                         stream->Write (buffer);
                     }
                 }
@@ -60,7 +61,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_LOG_INFO ("%s\n", "Received connection request.");
                     // Initiate an async read to listen for client requests.
                     namedPipe->Read ();
-                    connections.push_back (namedPipe.Get ());
+                    connections.push_back (namedPipe);
                     CreateServerNamedPipe ();
                 }
 
@@ -78,7 +79,9 @@ namespace thekogans {
                     std::vector<Stream::SharedPtr>::iterator it =
                         std::find (connections.begin (), connections.end (), stream);
                     if (it != connections.end ()) {
-                        util::Subscriber<stream::StreamEvents>::Unsubscribe (**it);
+                        NamedPipe::SharedPtr namedPipe = stream;
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (*namedPipe);
+                        util::Subscriber<stream::NamedPipeEvents>::Unsubscribe (*namedPipe);
                         connections.erase (it);
                     }
                 }

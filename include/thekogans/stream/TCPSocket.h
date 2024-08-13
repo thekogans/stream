@@ -114,7 +114,9 @@ namespace thekogans {
         ///     }
         ///
         ///     // TCPSocketEvents
-        ///     virtual void OnTCPSocketConnect (TCPSocket::SharedPtr tcpSocket) throw () override {
+        ///     virtual void OnTCPSocketConnect (
+        ///             TCPSocket::SharedPtr tcpSocket,
+        ///             Address /*address*/) throw () override {
         ///         // Send handshake packet(s).
         ///         ...
         ///         // Post an async read to get the servers response.
@@ -122,17 +124,18 @@ namespace thekogans {
         ///     }
         ///
         ///     void ResetIo (bool connect) {
-        ///         // Given the nature of async io, there are no guarantees that the clientSocket.Reset (...)
-        ///         // call below will result in the pointer being deleted. There might be residual references
-        ///         // due to other threads in the code still working with the object. It is therefore
-        ///         // imperative that we sever all communications with the old producer before creating a new one.
-        ///         // Stream contamination is a dangerous thing.
+        ///         // Given the nature of async io, there are no guarantees that the
+        ///         // clientSocket.Reset (...) call below will result in the pointer
+        ///         // being deleted. There might be residual references due to other
+        ///         // threads in the code still working with the object. It is therefore
+        ///         // imperative that we sever all communications with the old producer
+        ///         // before creating a new one. Stream contamination is a dangerous thing.
         ///         util::Subscriber<stream::StreamEvents>::Unsubscribe ();
         ///         util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
         ///         clientSocket.Reset ();
         ///         if (connect) {
         ///             // Create a new client socket.
-        ///             clientSocket.Reset (new stream::TCPSocket (AF_INET, SOCK_STREAM, 0));
+        ///             clientSocket.Reset (new stream::TCPSocket);
         ///             // Setup async notifications.
         ///             // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
         ///             // The reason for this is explained in \see{Stream}.
@@ -156,22 +159,19 @@ namespace thekogans {
         ///             util::SpinLock,
         ///             util::RefCountedInstanceCreator<Server>,
         ///             util::RefCountedInstanceDestroyer<Server>>,
-        ///         public util::Subscriber<StreamEvents>, {
+        ///         public util::Subscriber<StreamEvents>,
         ///         public util::Subscriber<TCPSocketEvents> {
         /// private:
         ///     stream::Address address;
-        ///     bool reuseAddress;
         ///     util::ui32 maxPendingConnections;
         ///     stream::TCPSocket::SharedPtr serverSocket;
-        ///     std::vector<TCPSocket::SharedPtr> connections;
+        ///     std::vector<Stream::SharedPtr> connections;
         ///
         /// public:
         ///     void Start (
         ///             const stream::Address &address_,
-        ///             bool reuseAddress_ = false,
         ///             util::ui32 maxPendingConnections_ = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS) {
         ///         address = address_;
-        ///         reuseAddress = reuseAddress_;
         ///         maxPendingConnections = maxPendingConnections_;
         ///         ResetIo (true);
         ///     }
@@ -184,7 +184,7 @@ namespace thekogans {
         ///     // StreamEvents
         ///     virtual void OnStreamError (
         ///             stream::Stream::SharedPtr stream,
-        ///             const util::Exception &exception) throw () override {
+        ///             util::Exception::SharedPtr exception) throw () override {
         ///         // Log exception.
         ///         ...
         ///         // Both serverSocket and connections will wind up here in case of error.
@@ -230,23 +230,24 @@ namespace thekogans {
         ///         serverSocket.Reset ();
         ///         if (accept) {
         ///             // Create a listening socket.
-        ///             serverSocket.Reset (new stream::TCPSocket (address, reuseAddress, maxPendingConnections));
+        ///             serverSocket.Reset (new stream::TCPSocket);
         ///             // Setup async notifications.
         ///             // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
         ///             // The reason for this is explained in \see{Stream}.
         ///             util::Subscriber<stream::StreamEvents>::Subscribe (*serverSocket);
         ///             util::Subscriber<stream::TCPSocketEvents>::Subscribe (*serverSocket);
-        ///             // We're open for business. Start listening for client connections.
+        ///             // Bind to the given address.
+        ///             serverSocket->Bind (address);
+        ///             // Put the socket in listening mode.
+        ///             serverSocket->Listen (maxPendingConnections);
+        ///             // We're open for business. Accept client connections.
         ///             serverSocket->Accept ();
         ///         }
         ///     }
         ///
         ///     void RemoveConnection (Stream::SharedPtr stream) {
         ///         std::vector<TCPSocket::SharedPtr>::iterator it =
-        ///             std::find (
-        ///                 connections.begin (),
-        ///                 connections.end (),
-        ///                 util::dynamic_refcounted_sharedptr_cast<TCPSocket> (stream));
+        ///             std::find (connections.begin (), connections.end (), stream);
         ///         if (it != connections.end ()) {
         ///             util::Subscriber<stream::StreamEvents>::Unsubscribe (**it);
         ///             connections.erase (it);
@@ -274,24 +275,10 @@ namespace thekogans {
             /// \param[in] type Socket type specification.
             /// \param[in] protocol Socket protocol specification.
             TCPSocket (
-                int family,
-                int type,
-                int protocol) :
+                int family = AF_INET,
+                int type = SOCK_STREAM,
+                int protocol = 0) :
                 Socket (family, type, protocol) {}
-            enum {
-                /// \brief
-                /// Default max pending connection requests.
-                DEFAULT_MAX_PENDING_CONNECTIONS = 5
-            };
-            /// \brief
-            /// ctor.
-            /// \param[in] address Address to listen on.
-            /// \param[in] reuseAddress Call \see{Socket::SetReuseAddress} with this parameter.
-            /// \param[in] maxPendingConnections Maximum number of waiting connections.
-            TCPSocket (
-                const Address &address,
-                bool reuseAddress = false,
-                util::i32 maxPendingConnections = DEFAULT_MAX_PENDING_CONNECTIONS);
 
             /// \brief
             /// Return true if Connect was successfully called on this socket.
@@ -312,6 +299,11 @@ namespace thekogans {
             /// Return true if socket is in listening mode.
             /// \return true if socket is in listening mode.
             bool IsListening () const;
+            enum {
+                /// \brief
+                /// Default max pending connection requests.
+                DEFAULT_MAX_PENDING_CONNECTIONS = 5
+            };
             /// \brief
             /// Listen for incoming connections.
             /// \param[in] maxPendingConnections Maximum number of waiting connections.

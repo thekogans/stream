@@ -44,7 +44,7 @@ namespace thekogans {
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
-            struct WindowsFunctions : public util::Singleton<WindowsFunctions, util::SpinLock> {
+            struct WindowsFunctions : public util::Singleton<WindowsFunctions> {
                 LPFN_WSARECVMSG WSARecvMsg;
                 LPFN_WSASENDMSG WSASendMsg;
 
@@ -95,11 +95,6 @@ namespace thekogans {
     #else // defined (TOOLCHAIN_OS_Windows)
         #define ioctlsocket ioctl
     #endif // defined (TOOLCHAIN_OS_Windows)
-
-        UDPSocket::UDPSocket (const Address &address) :
-                Socket (address.GetFamily (), SOCK_DGRAM, 0) {
-            Bind (address);
-        }
 
         namespace {
             struct ReadFromOverlapped : public Overlapped {

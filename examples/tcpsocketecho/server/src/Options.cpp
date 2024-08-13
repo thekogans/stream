@@ -43,6 +43,7 @@ namespace thekogans {
                         help (false),
                         version (false),
                         port (DEFAULT_PORT),
+                        address (Address::Any (port)),
                         startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
                             util::Directory::Watcher::Instance ()->AddWatch (
@@ -90,21 +91,8 @@ namespace thekogans {
                             port = util::stringToui16 (value.c_str ());
                             break;
                         case 'a':
-                            addresses.push_back (Address (port, value));
+                            address = Address (port, value);
                             break;
-                    }
-                }
-
-                void Options::Epilog () {
-                    if (addresses.empty ()) {
-                        addresses.push_back (Address::Any (port));
-                    }
-                    else if (port != DEFAULT_PORT) {
-                        for (std::list<Address>::iterator
-                                it = addresses.begin (),
-                                end = addresses.end (); it != end; ++it) {
-                            (*it).SetPort (port);
-                        }
                     }
                 }
 
@@ -204,17 +192,14 @@ namespace thekogans {
                 }
 
                 void Options::ParseListener (const pugi::xml_node &node) {
-                    port = util::stringToui16 (node.attribute ("Port").value ());
+                    util::ui16 port_ = util::stringToui16 (node.attribute ("Port").value ());
                     for (pugi::xml_node child = node.first_child ();
                             !child.empty (); child = child.next_sibling ()) {
                         if (child.type () == pugi::node_element &&
                             std::string (child.name ()) == "Address") {
-                            std::string address = util::Decodestring (child.text ().get ());
-                            if (!address.empty ()) {
-                                THEKOGANS_UTIL_TRY {
-                                    addresses.push_back (Address (port, address));
-                                }
-                                THEKOGANS_UTIL_CATCH_AND_LOG
+                            std::string address_ = util::Decodestring (child.text ().get ());
+                            if (!address_.empty ()) {
+                                address = Address (port_, address_);
                             }
                         }
                     }
