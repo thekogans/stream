@@ -37,11 +37,14 @@ namespace thekogans {
                             logLevel =
                                 util::LoggerMgr::stringTolevel (value.c_str ());
                             break;
+                        case 'p':
+                            port = util::stringToui16 (value.c_str ());
+                            break;
                         case 'a':
                             address = value;
                             break;
-                        case 'p':
-                            port = util::stringToui16 (value.c_str ());
+                        case 'm':
+                            message = true;
                             break;
                         case 's':
                             seed = util::stringToui32 (value.c_str ());

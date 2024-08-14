@@ -58,7 +58,7 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ()->Parse (argc, argv, "hvlapt");
+    client::Options::Instance ()->Parse (argc, argv, "hvlpamsi");
     THEKOGANS_UTIL_LOG_INIT (
         client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);
@@ -66,13 +66,16 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] -a:'host address' [-p:'host port'] [-t:seconds]\n\n"
+            "%s [-h] [-v] [-l:'%s'] [-p:'host port'] -a:'host address' "
+            "[-m] [-s:'seed'] [-i:'iterations']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
-            "a - Address the server is listening on.\n"
             "p - Port the server is listening on (default is 8854).\n"
-            "t - Socket send/receive timeout (default is 3 seconds).\n",
+            "a - Address the server is listening on.\n"
+            "m - Use [WSA[Send | Recv]Msg | [send | recv]msg] (default is false).\n"
+            "s - Initial packet size (default is 128 bytes)\n"
+            "i - Iterations (default is 16).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }

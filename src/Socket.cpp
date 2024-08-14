@@ -310,8 +310,9 @@ namespace thekogans {
 
                 ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ?
-                        buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    if (GetError () != ERROR_SUCCESS) {
+                        return  -1;
+                    }
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = send (
                         stream->GetHandle (),
@@ -325,8 +326,8 @@ namespace thekogans {
                     }
                     SetError (0);
                     SetCount (countWritten);
-                    return buffer->AdvanceReadOffset ((std::size_t)countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    return buffer->AdvanceReadOffset (GetCount ());
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {

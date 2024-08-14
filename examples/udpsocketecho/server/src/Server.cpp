@@ -42,10 +42,10 @@ namespace thekogans {
                         util::Exception::SharedPtr exception) throw () {
                     THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
                     if (message) {
-                        serverSocket->ReadMsg (0);
+                        serverSocket->ReadMsg ();
                     }
                     else {
-                        serverSocket->ReadFrom (0);
+                        serverSocket->ReadFrom ();
                     }
                 }
 
@@ -55,9 +55,10 @@ namespace thekogans {
                         Address address) throw () {
                     if (!buffer->IsEmpty ()) {
                         THEKOGANS_UTIL_LOG_DEBUG (
-                            "Received buffer from: %s:%u\n",
+                            "OnUDPSocketReadFrom: %s:%u (%u bytes)\n",
                             address.AddrToString ().c_str (),
-                            address.GetPort ());
+                            address.GetPort (),
+                            buffer->GetDataAvailableForReading ());
                         udpSocket->WriteTo (buffer, address);
                     }
                 }
@@ -69,11 +70,12 @@ namespace thekogans {
                         Address to) throw () {
                     if (!buffer->IsEmpty ()) {
                         THEKOGANS_UTIL_LOG_DEBUG (
-                            "Received buffer from: %s:%u to: %s:%u\n",
+                            "OnUDPSocketReadMsg: %s:%u to: %s:%u (%u bytes)\n",
                             from.AddrToString ().c_str (),
                             from.GetPort (),
                             to.AddrToString ().c_str (),
-                            to.GetPort ());
+                            to.GetPort (),
+                            buffer->GetDataAvailableForReading ());
                         udpSocket->WriteMsg (buffer, from, to);
                     }
                 }
@@ -105,10 +107,10 @@ namespace thekogans {
                         serverSocket->Bind (address);
                         if (message) {
                             serverSocket->SetRecvPktInfo (true);
-                            serverSocket->ReadMsg (0);
+                            serverSocket->ReadMsg ();
                         }
                         else {
-                            serverSocket->ReadFrom (0);
+                            serverSocket->ReadFrom ();
                         }
                     }
                 }

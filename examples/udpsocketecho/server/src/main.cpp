@@ -62,7 +62,7 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    server::Options::Instance ()->Parse (argc, argv, "hvmlcfrkpa");
+    server::Options::Instance ()->Parse (argc, argv, "hvlcfrkpam");
     THEKOGANS_UTIL_LOG_INIT (
         server::Options::Instance ()->loggerMgr.level,
         server::Options::Instance ()->loggerMgr.decorations);
@@ -82,18 +82,18 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (server::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-m] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] "
-            "[-k:'path'] [-p:'host port'] [-a:'host address']\n\n"
+            "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] "
+            "[-k:'path'] [-p:'host port'] [-a:'host address'] [-m]\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
-            "m - Use [WSA[Send | Recv]Msg | [send | recv]msg].\n"
             "l - Set logging level.\n"
             "c - Log to console.\n"
             "f - Log to file (path - Path of log file).\n"
             "r - Archive file log (max size - Max log file size before archiving).\n"
             "k - Use lock file to prevent multiple instances (path - Path to lock file).\n"
             "p - Port to listen for clients on (default is 8854).\n"
-            "a - Address to listen for clients on.\n",
+            "a - Address to listen for clients on (default is any).\n"
+            "m - Use [WSA[Send | Recv]Msg | [send | recv]msg] (default is false).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
@@ -108,25 +108,16 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            struct App {
-                App () {
-                    THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
-                        util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
-                    util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
-                    server::Server::Instance ()->Start (
-                        server::Options::Instance ()->address,
-                        server::Options::Instance ()->message);
-                }
-                ~App () {
-                    server::Server::Instance ()->Stop ();
-                    THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",
-                        util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
-                }
-                void Run () {
-                    util::MainRunLoop::Instance ()->Start ();
-                }
-            } app;
-            app.Run ();
+            THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
+                util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
+            util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
+            server::Server::Instance ()->Start (
+                server::Options::Instance ()->address,
+                server::Options::Instance ()->message);
+            util::MainRunLoop::Instance ()->Start ();
+            server::Server::Instance ()->Stop ();
+            THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",
+                util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

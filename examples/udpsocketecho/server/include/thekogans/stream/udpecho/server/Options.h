@@ -39,7 +39,6 @@ namespace thekogans {
                         public util::Directory::Watcher::EventSink {
                     bool help;
                     bool version;
-                    bool message;
                     struct LoggerMgr {
                         util::ui32 level;
                         util::ui32 decorations;
@@ -69,15 +68,18 @@ namespace thekogans {
                         }
                     } loggerMgr;
                     std::string lockFilePath;
-                    util::ui16 port;
-                    stream::Address address;
                     std::string startDirectory;
                     util::Directory::Watcher::WatchId watchId;
+                    util::ui16 port;
+                    stream::Address address;
+                    bool message;
 
                     Options ();
 
                     // util::CommandLineOptions
-                    virtual void DoOption (char option, const std::string &value);
+                    virtual void DoOption (
+                        char option,
+                        const std::string &value);
 
                     // util::Directory::Watcher::EventSink
                     virtual void HandleModified (

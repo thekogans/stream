@@ -140,8 +140,7 @@ namespace thekogans {
                     SetError (0);
                     SetCount (countRead);
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                    buffer->AdvanceWriteOffset (GetCount ());
-                    return buffer->GetDataAvailableForReading ();
+                    return buffer->AdvanceWriteOffset (GetCount ());
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
@@ -196,10 +195,10 @@ namespace thekogans {
 
             public:
                 util::Buffer::SharedPtr buffer;
+                Address address;
             #if defined (TOOLCHAIN_OS_Windows)
                 WSABUF wsaBuf;
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Address address;
 
                 WriteToOverlapped (
                         util::Buffer::SharedPtr buffer_,
@@ -261,7 +260,8 @@ namespace thekogans {
                 WriteToOverlapped::SharedPtr overlapped (
                     new WriteToOverlapped (buffer, address));
             #if defined (TOOLCHAIN_OS_Windows)
-                if (WSASendTo ((THEKOGANS_STREAM_SOCKET)handle,
+                if (WSASendTo (
+                        (THEKOGANS_STREAM_SOCKET)handle,
                         &overlapped->wsaBuf,
                         1,
                         0,
@@ -338,7 +338,6 @@ namespace thekogans {
                     SetError (0);
                     SetCount (countRead);
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                    buffer->AdvanceWriteOffset (GetCount ());
                     if (from.GetFamily () == AF_INET) {
                         from.length = sizeof (sockaddr_in);
                     }
@@ -352,7 +351,7 @@ namespace thekogans {
                 #endif // !defined (TOOLCHAIN_OS_Windows)
                     to = msgHdr.GetToAddress (
                         ((Socket *)stream.Get ())->GetHostAddress ().GetPort ());
-                    return buffer->GetDataAvailableForReading ();
+                    return buffer->AdvanceWriteOffset (GetCount ());
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {

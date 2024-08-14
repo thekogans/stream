@@ -42,9 +42,9 @@ namespace thekogans {
                 Options::Options () :
                         help (false),
                         version (false),
-                        message (false),
                         port (DEFAULT_PORT),
                         address (Address::Any (port)),
+                        message (false),
                         startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
                             util::Directory::Watcher::Instance ()->AddWatch (
@@ -58,16 +58,15 @@ namespace thekogans {
                 #pragma warning (pop)
             #endif // defined (_MSC_VER)
 
-                void Options::DoOption (char option, const std::string &value) {
+                void Options::DoOption (
+                        char option,
+                        const std::string &value) {
                     switch (option) {
                         case 'h':
                             help = true;
                             break;
                         case 'v':
                             version = true;
-                            break;
-                        case 'm':
-                            message = true;
                             break;
                         case 'l':
                             loggerMgr.level =
@@ -94,6 +93,9 @@ namespace thekogans {
                             break;
                         case 'a':
                             address = stream::Address (port, value);
+                            break;
+                        case 'm':
+                            message = true;
                             break;
                     }
                 }
