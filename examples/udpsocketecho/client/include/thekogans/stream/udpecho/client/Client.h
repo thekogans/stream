@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_stream_tcpsocketecho_client_Client_h)
-#define __thekogans_stream_tcpsocketecho_client_Client_h
+#if !defined (__thekogans_stream_udpsocketecho_client_Client_h)
+#define __thekogans_stream_udpsocketecho_client_Client_h
 
 #include <string>
 #include "thekogans/util/Types.h"
@@ -25,11 +25,11 @@
 #include "thekogans/util/Timer.h"
 #include "thekogans/stream/Address.h"
 #include "thekogans/stream/Stream.h"
-#include "thekogans/stream/TCPSocket.h"
+#include "thekogans/stream/UDPSocket.h"
 
 namespace thekogans {
     namespace stream {
-        namespace tcpecho {
+        namespace udpecho {
             namespace client {
 
                 struct Client :
@@ -40,10 +40,10 @@ namespace thekogans {
                             util::RefCountedInstanceDestroyer<Client>>,
                         public util::Subscriber<util::TimerEvents>,
                         public util::Subscriber<StreamEvents>,
-                        public util::Subscriber<TCPSocketEvents> {
+                        public util::Subscriber<UDPSocketEvents> {
                 private:
                     Address address;
-                    TCPSocket::SharedPtr clientTCPSocket;
+                    UDPSocket::SharedPtr clientUDPSocket;
                     util::Timer::SharedPtr timer;
                     std::size_t iteration;
                     std::size_t sentLength;
@@ -66,22 +66,23 @@ namespace thekogans {
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
                         util::Exception::SharedPtr exception) throw () override;
-                    virtual void OnStreamDisconnect (
-                        Stream::SharedPtr stream) throw () override;
-                    virtual void OnStreamRead (
-                        Stream::SharedPtr stream,
-                        util::Buffer::SharedPtr buffer) throw () override;
-                    // TCPSocketEvents
-                    virtual void OnTCPSocketConnect (
-                        TCPSocket::SharedPtr tcpSocket,
+                    // UDPSocketEvents
+                    virtual void OnUDPSocketReadFrom (
+                        UDPSocket::SharedPtr udpSocket,
+                        util::Buffer::SharedPtr buffer,
                         Address address) throw () override;
+                    virtual void OnUDPSocketReadMsg (
+                        UDPSocket::SharedPtr udpSocket,
+                        util::Buffer::SharedPtr buffer,
+                        Address from,
+                        Address to) throw () override;
 
                     void ResetIo (bool connect);
                 };
 
             } // namespace client
-        } // namespace tcpecho
+        } // namespace udpecho
     } // namespace stream
 } // namespace thekogans
 
-#endif // !defined (__thekogans_stream_tcpsocketecho_client_Client_h)
+#endif // !defined (__thekogans_stream_udpsocketecho_client_Client_h)

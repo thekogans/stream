@@ -21,11 +21,8 @@
 #include <list>
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/Thread.h"
-#include "thekogans/util/JobQueue.h"
 #include "thekogans/stream/Address.h"
-#include "thekogans/stream/AsyncIoEventSink.h"
-#include "thekogans/stream/AsyncIoEventQueue.h"
+#include "thekogans/stream/UDPSocket.h"
 
 namespace thekogans {
     namespace stream {
@@ -33,60 +30,41 @@ namespace thekogans {
             namespace server {
 
                 struct Server :
-                        public util::Singleton<Server>,
-                        public util::Thread,
-                        public AsyncIoEventSink {
+                        public util::Singleton<
+                            Server,
+                            util::SpinLock,
+                            util::RefCountedInstanceCreator<Server>,
+                            util::RefCountedInstanceDestroyer<Server>>,
+                        public util::Subscriber<StreamEvents>,
+                        public util::Subscriber<UDPSocketEvents> {
                 private:
-                    util::JobQueue jobQueue;
-                    AsyncIoEventQueue::SharedPtr eventQueue;
-                    volatile bool done;
+                    Address address;
+                    bool message;
+                    UDPSocket::SharedPtr serverSocket;
 
                 public:
-                    Server () :
-                        done (true) {}
-
-                    enum {
-                        DEFAULT_MAX_PACKET_SIZE = 64 * 1024
-                    };
-
                     void Start (
-                        const std::list<Address> &addresses,
-                        bool message = false,
-                        util::ui32 maxPacketSize = DEFAULT_MAX_PACKET_SIZE,
-                        util::i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
+                        const Address &address_,
+                        bool message_ = false);
                     void Stop ();
 
                 private:
-                    // util::Thread
-                    virtual void Run () throw ();
+                    // StreamEvents
+                    virtual void OnStreamError (
+                        Stream::SharedPtr stream,
+                        util::Exception::SharedPtr exception) throw () override;
+                    // UDPSocketEvents
+                    virtual void OnUDPSocketReadFrom (
+                        util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                        util::Buffer::SharedPtr buffer,
+                        Address address) throw () override;
+                    virtual void OnUDPSocketReadMsg (
+                        util::RefCounted::SharedPtr<UDPSocket> udpSocket,
+                        util::Buffer::SharedPtr buffer,
+                        Address from,
+                        Address to) throw () override;
 
-                    // util::ThreadSafeRefCounted.
-                    /// \brief
-                    /// We're a singleton. Our lifetime is forever.
-                    virtual void Harakiri () {}
-
-                    // AsyncIoEventSink
-                    virtual void HandleStreamError (
-                        Stream &stream,
-                        const util::Exception &exception) throw ();
-                    virtual void HandleUDPSocketReadFrom (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &address) throw ();
-                    virtual void HandleUDPSocketWriteTo (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &address) throw ();
-                    virtual void HandleUDPSocketReadMsg (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &from,
-                        const Address &to) throw ();
-                    virtual void HandleUDPSocketWriteMsg (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &from,
-                        const Address &to) throw ();
+                    void ResetIo (bool accept);
                 };
 
             } // namespace server

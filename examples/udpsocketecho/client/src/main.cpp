@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_stream. If not, see <http://www.gnu.org/licenses/>.
 
-#include <vector>
 #include <list>
 #include <string>
 #include "thekogans/util/Types.h"
@@ -23,12 +22,14 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/ConsoleLogger.h"
+#include "thekogans/util/MainRunLoop.h"
 #include "thekogans/util/Version.h"
 #include "thekogans/stream/Address.h"
 #include "thekogans/stream/UDPSocket.h"
 #include "thekogans/stream/Version.h"
 #include "thekogans/stream/udpecho/client/Options.h"
 #include "thekogans/stream/udpecho/client/Version.h"
+#include "thekogans/stream/udpecho/client/Client.h"
 
 using namespace thekogans;
 using namespace thekogans::stream::udpecho;
@@ -51,45 +52,6 @@ namespace {
             }
         }
         return logLevelList;
-    }
-
-    const util::ui32 DEFAULT_MAX_PACKET_SIZE = 64 * 1024;
-
-    util::f32 GetBandwidth (
-            const stream::Address &address,
-            util::ui32 maxPacketSize = DEFAULT_MAX_PACKET_SIZE,
-            util::ui32 rounds = 10,
-            util::ui32 seed = 64,
-            util::f32 a = 2.0f,
-            util::f32 b = 0.0f,
-            const util::TimeSpec &timeSpec =
-                util::TimeSpec::FromSeconds (3)) {
-        util::ui32 bytes = 0;
-        util::ui64 time = 0;
-        stream::UDPSocket socket (
-            stream::Address::Any (0, address.GetFamily ()));
-        socket.SetSendBufferSize (maxPacketSize);
-        socket.SetReceiveBufferSize (maxPacketSize);
-        if (timeSpec != util::TimeSpec::Zero) {
-            socket.SetReadTimeout (timeSpec);
-            socket.SetWriteTimeout (timeSpec);
-        }
-        stream::Address peerAddress;
-        for (util::ui32 i = 0; i < rounds; ++i) {
-            THEKOGANS_UTIL_TRY {
-                std::vector<util::ui8> buffer (seed);
-                util::ui64 start = util::HRTimer::Click ();
-                bytes +=
-                    socket.WriteTo (&buffer[0], seed, address) +
-                    socket.ReadFrom (&buffer[0], seed, peerAddress);
-                time += util::HRTimer::Click () - start;
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG
-            seed = (util::ui32)(a * seed + b);
-        }
-        return time > 0 ? (util::f32)
-            ((util::f64)util::HRTimer::GetFrequency () *
-                bytes * 8 / time / (1024 * 1024)) : 0.0f;
     }
 }
 
@@ -123,22 +85,16 @@ int main (
             stream::GetVersion ().ToString ().c_str (),
             argv[0], client::GetVersion ().ToString ().c_str ());
     }
-    else if (client::Options::Instance ()->addr.empty ()) {
-        THEKOGANS_UTIL_LOG_ERROR ("%s\n", "Empty address.");
-    }
     else {
         THEKOGANS_UTIL_TRY {
-            THEKOGANS_UTIL_LOG_INFO (
-                "Conducting a bandwidth test with: %s:%u\n",
-                client::Options::Instance ()->addr.c_str (),
-                client::Options::Instance ()->port);
-            util::f32 bandwidth = GetBandwidth (
+            THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
+            client::Client::Instance ()->Start (
                 stream::Address (
                     client::Options::Instance ()->port,
-                    client::Options::Instance ()->addr),
-                DEFAULT_MAX_PACKET_SIZE, 10, 64, 2.0f, 0.0f,
-                util::TimeSpec::FromSeconds (client::Options::Instance ()->timeout));
-            THEKOGANS_UTIL_LOG_INFO ("Bandwidth: %f Mb/s.\n", bandwidth);
+                    client::Options::Instance ()->address));
+            util::MainRunLoop::Instance ()->Start ();
+            client::Client::Instance ()->Stop ();
+            THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

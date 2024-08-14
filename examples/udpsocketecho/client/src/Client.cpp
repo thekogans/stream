@@ -19,13 +19,13 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/util/HRTimer.h"
-#include "thekogans/stream/TCPSocket.h"
-#include "thekogans/stream/tcpecho/client/Options.h"
-#include "thekogans/stream/tcpecho/client/Client.h"
+#include "thekogans/stream/UDPSocket.h"
+#include "thekogans/stream/udpecho/client/Options.h"
+#include "thekogans/stream/udpecho/client/Client.h"
 
 namespace thekogans {
     namespace stream {
-        namespace tcpecho {
+        namespace udpecho {
             namespace client {
 
                 Client::Client () :
@@ -57,7 +57,7 @@ namespace thekogans {
                             buffer->GetWritePtr (),
                             buffer->GetDataAvailableForWriting ()));
                     startTime = util::HRTimer::Click ();
-                    clientTCPSocket->Write (buffer);
+                    clientUDPSocket->WriteTo (buffer, address);
                 }
 
                 void Client::OnStreamError (
@@ -66,13 +66,10 @@ namespace thekogans {
                     THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
                 }
 
-                void Client::OnStreamDisconnect (Stream::SharedPtr stream) throw () {
-                    THEKOGANS_UTIL_LOG_INFO ("%s\n", "Connection closed.");
-                }
-
-                void Client::OnStreamRead (
-                        Stream::SharedPtr stream,
-                        util::Buffer::SharedPtr buffer) throw () {
+                void Client::OnUDPSocketReadFrom (
+                        UDPSocket::SharedPtr udpSocket,
+                        util::Buffer::SharedPtr buffer,
+                        Address address) throw () {
                     receivedLength += buffer->GetDataAvailableForReading ();
                     if (receivedLength == sentLength) {
                         endTime = util::HRTimer::Click ();
@@ -92,27 +89,37 @@ namespace thekogans {
                     }
                 }
 
-                void Client::OnTCPSocketConnect (
-                        TCPSocket::SharedPtr tcpSocket,
-                        Address address) throw () {
-                    clientTCPSocket->Read (0);
-                    THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.ToString ().c_str ());
-                    timer->Start (util::TimeSpec::FromSeconds (1), false);
+                void Client::OnUDPSocketReadMsg (
+                        UDPSocket::SharedPtr udpSocket,
+                        util::Buffer::SharedPtr buffer,
+                        Address from,
+                        Address to) throw () {
                 }
 
                 void Client::ResetIo (bool connect) {
                     util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
-                    clientTCPSocket.Reset ();
+                    util::Subscriber<stream::UDPSocketEvents>::Unsubscribe ();
+                    clientUDPSocket.Reset ();
                     if (connect) {
-                        clientTCPSocket.Reset (new TCPSocket);
-                        util::Subscriber<stream::StreamEvents>::Subscribe (*clientTCPSocket);
-                        util::Subscriber<stream::TCPSocketEvents>::Subscribe (*clientTCPSocket);
-                        clientTCPSocket->Connect (address);
+                        clientUDPSocket.Reset (new UDPSocket);
+                        util::Subscriber<stream::StreamEvents>::Subscribe (*clientUDPSocket);
+                        util::Subscriber<stream::UDPSocketEvents>::Subscribe (*clientUDPSocket);
+                        //clientUDPSocket->SetSendBufferSize (maxPacketSize);
+                        //clientUDPSocket->SetReceiveBufferSize (maxPacketSize);
+                        // Bind to the given address.
+                        clientUDPSocket->Bind (Address::Any (8855));
+                        if (Options::Instance ()->message) {
+                            clientUDPSocket->SetRecvPktInfo (true);
+                            clientUDPSocket->ReadMsg ();
+                        }
+                        else {
+                            clientUDPSocket->ReadFrom ();
+                        }
+                        timer->Start (util::TimeSpec::FromSeconds (1), false);
                     }
                 }
 
             } // namespace client
-        } // namespace tcpecho
+        } // namespace udpecho
     } // namespace stream
 } // namespace thekogans

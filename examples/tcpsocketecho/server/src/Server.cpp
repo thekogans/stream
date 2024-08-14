@@ -106,13 +106,15 @@ namespace thekogans {
                                                     free (tcpTable);
                                                     tcpTable = (MIB_TCPTABLE2 *)malloc (size);
                                                     if (tcpTable != 0) {
-                                                        DWORD errorCode = GetTcpTable2 (tcpTable, &size, TRUE);
+                                                        DWORD errorCode =
+                                                            GetTcpTable2 (tcpTable, &size, TRUE);
                                                         if (errorCode == NO_ERROR) {
                                                             count = tcpTable->dwNumEntries;
                                                         }
                                                         else {
                                                             free (tcpTable);
-                                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                                errorCode);
                                                         }
                                                     }
                                                     else {
@@ -121,7 +123,8 @@ namespace thekogans {
                                                     }
                                                 }
                                                 else {
-                                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                        errorCode);
                                                 }
                                             }
                                         }
@@ -137,11 +140,14 @@ namespace thekogans {
                                 for (std::size_t i = 0, count = tcpTable.count; i < count; ++i) {
                                     if (tcpTable.tcpTable->table[i].dwState == MIB_TCP_STATE_ESTAB) {
                                         util::ui16 localPort =
-                                            (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwLocalPort);
+                                            (util::ui16)ntohs (
+                                                (u_short)tcpTable.tcpTable->table[i].dwLocalPort);
                                         util::ui16 remotePort =
-                                            (util::ui16)ntohs ((u_short)tcpTable.tcpTable->table[i].dwRemotePort);
+                                            (util::ui16)ntohs (
+                                                (u_short)tcpTable.tcpTable->table[i].dwRemotePort);
                                         if (localPort == peerPort && remotePort == hostPort) {
-                                            return util::GetProcessPath (tcpTable.tcpTable->table[i].dwOwningPid);
+                                            return util::GetProcessPath (
+                                                tcpTable.tcpTable->table[i].dwOwningPid);
                                         }
                                     }
                                 }
@@ -152,7 +158,8 @@ namespace thekogans {
                                     std::size_t count;
 
                                     TCP6Table () :
-                                            tcp6Table ((MIB_TCP6TABLE2 *)malloc (sizeof (MIB_TCP6TABLE2))),
+                                            tcp6Table (
+                                                (MIB_TCP6TABLE2 *)malloc (sizeof (MIB_TCP6TABLE2))),
                                             count (0) {
                                         if (tcp6Table != 0) {
                                             ULONG size = sizeof (MIB_TCP6TABLE2);
@@ -162,13 +169,15 @@ namespace thekogans {
                                                     free (tcp6Table);
                                                     tcp6Table = (MIB_TCP6TABLE2 *)malloc (size);
                                                     if (tcp6Table != 0) {
-                                                        DWORD errorCode = GetTcp6Table2 (tcp6Table, &size, TRUE);
+                                                        DWORD errorCode = GetTcp6Table2 (
+                                                            tcp6Table, &size, TRUE);
                                                         if (errorCode == NO_ERROR) {
                                                             count = tcp6Table->dwNumEntries;
                                                         }
                                                         else {
                                                             free (tcp6Table);
-                                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                                errorCode);
                                                         }
                                                     }
                                                     else {
@@ -177,7 +186,8 @@ namespace thekogans {
                                                     }
                                                 }
                                                 else {
-                                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                                                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                                                        errorCode);
                                                 }
                                             }
                                         }
@@ -193,11 +203,14 @@ namespace thekogans {
                                 for (std::size_t i = 0, count = tcp6Table.count; i < count; ++i) {
                                     if (tcp6Table.tcp6Table->table[i].State == MIB_TCP_STATE_ESTAB) {
                                         util::ui16 localPort =
-                                            (util::ui16)ntohs ((u_short)tcp6Table.tcp6Table->table[i].dwLocalPort);
+                                            (util::ui16)ntohs (
+                                                (u_short)tcp6Table.tcp6Table->table[i].dwLocalPort);
                                         util::ui16 remotePort =
-                                            (util::ui16)ntohs ((u_short)tcp6Table.tcp6Table->table[i].dwRemotePort);
+                                            (util::ui16)ntohs (
+                                                (u_short)tcp6Table.tcp6Table->table[i].dwRemotePort);
                                         if (localPort == peerPort && remotePort == hostPort) {
-                                            return util::GetProcessPath (tcp6Table.tcp6Table->table[i].dwOwningPid);
+                                            return util::GetProcessPath (
+                                                tcp6Table.tcp6Table->table[i].dwOwningPid);
                                         }
                                     }
                                 }
@@ -215,11 +228,23 @@ namespace thekogans {
                                     static int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
                                     while (1) {
                                         std::size_t length = 0;
-                                        int result = sysctl (mib, (sizeof (mib) / sizeof (*mib)) - 1, 0, &length, 0, 0);
+                                        int result = sysctl (
+                                            mib,
+                                            (sizeof (mib) / sizeof (*mib)) - 1,
+                                            0,
+                                            &length,
+                                            0,
+                                            0);
                                         if (result == 0) {
                                             processes = (kinfo_proc *)malloc (length);
                                             if (processes != 0) {
-                                                result = sysctl (mib, (sizeof (mib) / sizeof (*mib)) - 1, processes, &length, 0, 0);
+                                                result = sysctl (
+                                                    mib,
+                                                    (sizeof (mib) / sizeof (*mib)) - 1,
+                                                    processes,
+                                                    &length,
+                                                    0,
+                                                    0);
                                                 if (result == 0) {
                                                     count = length / sizeof (kinfo_proc);
                                                     break;
@@ -274,7 +299,8 @@ namespace thekogans {
                                         if (length != -1) {
                                             fileDescriptors = (proc_fdinfo *)malloc (length);
                                             if (fileDescriptors != 0) {
-                                                length = proc_pidinfo (pid, PROC_PIDLISTFDS, 0, fileDescriptors, length);
+                                                length = proc_pidinfo (
+                                                    pid, PROC_PIDLISTFDS, 0, fileDescriptors, length);
                                                 if (length != -1) {
                                                     count = length / PROC_PIDLISTFD_SIZE;
                                                 }
@@ -312,7 +338,8 @@ namespace thekogans {
                                         }
                                     }
                                 } fileDescriptors (processes[i].kp_proc.p_pid);
-                                for (std::size_t j = 0, count = fileDescriptors.size (); j < count; ++j) {
+                                for (std::size_t j = 0,
+                                        count = fileDescriptors.size (); j < count; ++j) {
                                     if (fileDescriptors[j].proc_fdtype == PROX_FDTYPE_SOCKET) {
                                         socket_fdinfo socketInfo;
                                         if (proc_pidfdinfo (
@@ -324,9 +351,11 @@ namespace thekogans {
                                             socketInfo.psi.soi_kind == SOCKINFO_TCP &&
                                             socketInfo.psi.soi_family == family) {
                                             util::ui16 localPort =
-                                                (util::ui16)ntohs (socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_lport);
+                                                (util::ui16)ntohs (
+                                                    socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_lport);
                                             util::ui16 remotePort =
-                                                (util::ui16)ntohs (socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_fport);
+                                                (util::ui16)ntohs (
+                                                    socketInfo.psi.soi_proto.pri_tcp.tcpsi_ini.insi_fport);
                                             if (localPort == peerPort && remotePort == hostPort) {
                                                 return util::GetProcessPath (processes[i].kp_proc.p_pid);
                                             }

@@ -26,182 +26,91 @@ namespace thekogans {
             namespace server {
 
                 void Server::Start (
-                        const std::list<Address> &addresses,
-                        bool message,
-                        util::ui32 maxPacketSize,
-                        util::i32 priority) {
-                    if (!addresses.empty ()) {
-                        if (maxPacketSize > 0 && maxPacketSize <= DEFAULT_MAX_PACKET_SIZE) {
-                            if (done) {
-                                eventQueue.Reset (new AsyncIoEventQueue);
-                                for (std::list<Address>::const_iterator
-                                        it = addresses.begin (),
-                                        end = addresses.end (); it != end; ++it) {
-                                    UDPSocket::SharedPtr udpSocket (new UDPSocket (*it));
-                                    udpSocket->SetSendBufferSize (maxPacketSize);
-                                    udpSocket->SetReceiveBufferSize (maxPacketSize);
-                                    if (message) {
-                                        udpSocket->SetRecvPktInfo (true);
-                                    }
-                                    eventQueue->AddStream (*udpSocket, *this, maxPacketSize);
-                                    THEKOGANS_UTIL_LOG_INFO ("Listening on: %s:%u\n",
-                                        (*it).AddrToString ().c_str (), (*it).GetPort ());
-                                }
-                                done = false;
-                                Create (priority);
-                            }
-                            else {
-                                THEKOGANS_UTIL_LOG_WARNING (
-                                    "%s\n", "Server is already running.");
-                            }
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "maxPacketSize out of bounds %u (%u, %u]",
-                                maxPacketSize, 0, DEFAULT_MAX_PACKET_SIZE);
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "%s", "Must supply at least one address to listen on.");
-                    }
+                        const Address &address_,
+                        bool message_) {
+                    address = address_;
+                    message = message_;
+                    ResetIo (true);
                 }
 
                 void Server::Stop () {
-                    if (!done) {
-                        done = true;
-                        jobQueue.Stop ();
-                        eventQueue->Break ();
-                        Wait ();
-                        eventQueue.Reset ();
+                    ResetIo (false);
+                }
+
+                void Server::OnStreamError (
+                        Stream::SharedPtr stream,
+                        util::Exception::SharedPtr exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
+                    if (message) {
+                        serverSocket->ReadMsg (0);
                     }
                     else {
-                        THEKOGANS_UTIL_LOG_WARNING (
-                            "%s\n", "Server is not running.");
+                        serverSocket->ReadFrom (0);
                     }
                 }
 
-                void Server::Run () throw () {
-                    while (!done) {
-                        THEKOGANS_UTIL_TRY {
-                            eventQueue->WaitForEvents ();
+                void Server::OnUDPSocketReadFrom (
+                        UDPSocket::SharedPtr udpSocket,
+                        util::Buffer::SharedPtr buffer,
+                        Address address) throw () {
+                    if (!buffer->IsEmpty ()) {
+                        THEKOGANS_UTIL_LOG_DEBUG (
+                            "Received buffer from: %s:%u\n",
+                            address.AddrToString ().c_str (),
+                            address.GetPort ());
+                        udpSocket->WriteTo (buffer, address);
+                    }
+                }
+
+                void Server::OnUDPSocketReadMsg (
+                        UDPSocket::SharedPtr udpSocket,
+                        util::Buffer::SharedPtr buffer,
+                        Address from,
+                        Address to) throw () {
+                    if (!buffer->IsEmpty ()) {
+                        THEKOGANS_UTIL_LOG_DEBUG (
+                            "Received buffer from: %s:%u to: %s:%u\n",
+                            from.AddrToString ().c_str (),
+                            from.GetPort (),
+                            to.AddrToString ().c_str (),
+                            to.GetPort ());
+                        udpSocket->WriteMsg (buffer, from, to);
+                    }
+                }
+
+                void Server::ResetIo (bool accept) {
+                    // Given the nature of async io, there are no
+                    // guarantees that the  serverSocket.Reset (...)
+                    // call below will result in the pointers being
+                    // deleted. There might be residual references
+                    // on the objects just due to other threads in
+                    // the code still doing some work. It is therefore
+                    // imperative that we sever all communications
+                    // with the old producers before connecting new
+                    // ones. Stream contamination is a dangerous thing.
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    util::Subscriber<stream::UDPSocketEvents>::Unsubscribe ();
+                    serverSocket.Reset ();
+                    if (accept) {
+                        // Create a listening socket.
+                        serverSocket.Reset (new stream::UDPSocket);
+                        // Setup async notifications.
+                        // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+                        // The reason for this is explained in \see{Stream}.
+                        util::Subscriber<stream::StreamEvents>::Subscribe (*serverSocket);
+                        util::Subscriber<stream::UDPSocketEvents>::Subscribe (*serverSocket);
+                        //serverSocket->SetSendBufferSize (maxPacketSize);
+                        //serverSocket->SetReceiveBufferSize (maxPacketSize);
+                        // Bind to the given address.
+                        serverSocket->Bind (address);
+                        if (message) {
+                            serverSocket->SetRecvPktInfo (true);
+                            serverSocket->ReadMsg (0);
                         }
-                        THEKOGANS_UTIL_CATCH_AND_LOG
-                    }
-                    THEKOGANS_UTIL_LOG_INFO ("%s\n", "Server thread is exiting.");
-                }
-
-                void Server::HandleStreamError (
-                        Stream &stream,
-                        const util::Exception &exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
-                }
-
-                void Server::HandleUDPSocketReadFrom (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &address) throw () {
-                    THEKOGANS_UTIL_LOG_DEBUG (
-                        "Received buffer from: %s:%u\n",
-                        address.AddrToString ().c_str (),
-                        address.GetPort ());
-                    THEKOGANS_UTIL_TRY {
-                        if (!buffer.IsEmpty ()) {
-                            struct WriteJob : public util::RunLoop::Job {
-                                UDPSocket::SharedPtr udpSocket;
-                                util::Buffer buffer;
-                                Address address;
-                                WriteJob (
-                                    UDPSocket &udpSocket_,
-                                    util::Buffer buffer_,
-                                    const Address &address_) :
-                                    udpSocket (&udpSocket_),
-                                    buffer (std::move (buffer_)),
-                                    address (address_) {}
-                                // util::RunLoop::Job
-                                virtual void Execute (const std::atomic<bool> &done) throw () {
-                                    if (!ShouldStop (done)) {
-                                        THEKOGANS_UTIL_TRY {
-                                            udpSocket->WriteBufferTo (std::move (buffer), address);
-                                        }
-                                        THEKOGANS_UTIL_CATCH_AND_LOG
-                                    }
-                                }
-                            };
-                            jobQueue.EnqJob (
-                                util::RunLoop::Job::SharedPtr (
-                                    new WriteJob (udpSocket, std::move (buffer), address)));
-                        }
-                    }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
-                }
-
-                void Server::HandleUDPSocketWriteTo (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &address) throw () {
-                    THEKOGANS_UTIL_LOG_DEBUG (
-                        "Sent buffer to: %s:%u\n",
-                        address.AddrToString ().c_str (),
-                        address.GetPort ());
-                }
-
-                void Server::HandleUDPSocketReadMsg (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &from,
-                        const Address &to) throw () {
-                    THEKOGANS_UTIL_LOG_DEBUG (
-                        "Received buffer from: %s:%u to: %s:%u\n",
-                        from.AddrToString ().c_str (),
-                        from.GetPort (),
-                        to.AddrToString ().c_str (),
-                        to.GetPort ());
-                    THEKOGANS_UTIL_TRY {
-                        if (!buffer.IsEmpty ()) {
-                            struct WriteJob : public util::RunLoop::Job {
-                                UDPSocket::SharedPtr udpSocket;
-                                util::Buffer buffer;
-                                Address from;
-                                Address to;
-                                WriteJob (
-                                    UDPSocket &udpSocket_,
-                                    util::Buffer buffer_,
-                                    const Address &from_,
-                                    const Address &to_) :
-                                    udpSocket (&udpSocket_),
-                                    buffer (std::move (buffer_)),
-                                    from (from_),
-                                    to (to_) {}
-                                // util::RunLoop::Job
-                                virtual void Execute (const std::atomic<bool> &done) throw () {
-                                    if (!ShouldStop (done)) {
-                                        THEKOGANS_UTIL_TRY {
-                                            udpSocket->WriteBufferMsg (std::move (buffer), from, to);
-                                        }
-                                        THEKOGANS_UTIL_CATCH_AND_LOG
-                                    }
-                                }
-                            };
-                            jobQueue.EnqJob (
-                                util::RunLoop::Job::SharedPtr (
-                                    new WriteJob (udpSocket, std::move (buffer), to, from)));
+                        else {
+                            serverSocket->ReadFrom (0);
                         }
                     }
-                    THEKOGANS_UTIL_CATCH_AND_LOG
-                }
-
-                void Server::HandleUDPSocketWriteMsg (
-                        UDPSocket &udpSocket,
-                        util::Buffer buffer,
-                        const Address &from,
-                        const Address &to) throw () {
-                    THEKOGANS_UTIL_LOG_DEBUG (
-                        "Sent buffer from: %s:%u to: %s:%u\n",
-                        from.AddrToString ().c_str (),
-                        from.GetPort (),
-                        to.AddrToString ().c_str (),
-                        to.GetPort ());
                 }
 
             } // namespace server

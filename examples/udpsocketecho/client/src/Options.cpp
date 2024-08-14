@@ -23,7 +23,9 @@ namespace thekogans {
         namespace udpecho {
             namespace client {
 
-                void Options::DoOption (char option, const std::string &value) {
+                void Options::DoOption (
+                        char option,
+                        const std::string &value) {
                     switch (option) {
                         case 'h':
                             help = true;
@@ -36,13 +38,16 @@ namespace thekogans {
                                 util::LoggerMgr::stringTolevel (value.c_str ());
                             break;
                         case 'a':
-                            addr = value;
+                            address = value;
                             break;
                         case 'p':
                             port = util::stringToui16 (value.c_str ());
                             break;
-                        case 't':
-                            timeout = util::stringToui32 (value.c_str ());
+                        case 's':
+                            seed = util::stringToui32 (value.c_str ());
+                            break;
+                        case 'i':
+                            iterations = util::stringToui32 (value.c_str ());
                             break;
                     }
                 }

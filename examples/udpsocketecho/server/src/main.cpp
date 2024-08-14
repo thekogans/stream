@@ -18,6 +18,8 @@
 #include <list>
 #include <string>
 #include "thekogans/util/CommandLineOptions.h"
+#include "thekogans/util/SystemInfo.h"
+#include "thekogans/util/ChildProcess.h"
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
@@ -81,7 +83,7 @@ int main (
     if (server::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-m] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] "
-            "[-k:'path'] [-p:'host port'] [-a:'host address'*]\n\n"
+            "[-k:'path'] [-p:'host port'] [-a:'host address']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "m - Use [WSA[Send | Recv]Msg | [send | recv]msg].\n"
@@ -91,7 +93,7 @@ int main (
             "r - Archive file log (max size - Max log file size before archiving).\n"
             "k - Use lock file to prevent multiple instances (path - Path to lock file).\n"
             "p - Port to listen for clients on (default is 8854).\n"
-            "a - Address to listen for clients on (can be repeated).\n",
+            "a - Address to listen for clients on.\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
@@ -106,33 +108,25 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            struct LockFile {
-                util::Path path;
-                explicit LockFile (const std::string &path_) :
-                        path (path_) {
-                    if (!path.IsEmpty ()) {
-                        if (!path.Exists ()) {
-                            util::File::Touch (path_);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Lock file (%s) found.\n", path_.c_str ());
-                        }
-                    }
+            struct App {
+                App () {
+                    THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
+                        util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
+                    util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
+                    server::Server::Instance ()->Start (
+                        server::Options::Instance ()->address,
+                        server::Options::Instance ()->message);
                 }
-                ~LockFile () {
-                    if (path.Exists ()) {
-                        path.Delete ();
-                    }
+                ~App () {
+                    server::Server::Instance ()->Stop ();
+                    THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",
+                        util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
                 }
-            } lockFile (server::Options::Instance ()->lockFilePath);
-            THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
-            server::Server::Instance ()->Start (
-                server::Options::Instance ()->addresses,
-                server::Options::Instance ()->message);
-            util::MainRunLoop::Instance ()->Start ();
-            server::Server::Instance ()->Stop ();
-            THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);
+                void Run () {
+                    util::MainRunLoop::Instance ()->Start ();
+                }
+            } app;
+            app.Run ();
         }
         THEKOGANS_UTIL_CATCH_AND_LOG
     }

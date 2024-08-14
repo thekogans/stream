@@ -124,62 +124,23 @@ namespace thekogans {
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
                     }
-                    buffer->AdvanceWriteOffset (GetCount ());
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    if (buffer->IsEmpty ()) {
-                        // If passed in bufferLength was 0, than try to grab all available data.
-                        if (bufferLength == 0) {
-                            u_long countAvailable = 0;
-                            if (ioctlsocket (
-                                    (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
-                                    FIONREAD,
-                                    &countAvailable) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                                SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                                return -1;
-                            }
-                        #if !defined (TOOLCHAIN_OS_Windows)
-                            if (countAvailable == 0) {
-                                SetError (EWOULDBLOCK);
-                                return -1;
-                            }
-                        #endif // !defined (TOOLCHAIN_OS_Windows)
-                            buffer->Resize ((std::size_t)countAvailable);
-                        #if defined (TOOLCHAIN_OS_Windows)
-                            wsaBuf.len = (ULONG)buffer->GetDataAvailableForWriting ();
-                            wsaBuf.buf = (char *)buffer->GetWritePtr ();
-                            flags = 0;
-                        #endif // defined (TOOLCHAIN_OS_Windows)
-                        }
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        DWORD countRead = 0;
-                        if (WSARecvFrom (
-                                (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
-                                &wsaBuf,
-                                1,
-                                &countRead,
-                                &flags,
-                                &address.address,
-                                &address.length,
-                                0,
-                                0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        ssize_t countRead = recvfrom (
-                            stream->GetHandle (),
-                            (char *)buffer->GetWritePtr (),
-                            buffer->GetDataAvailableForWriting (),
-                            0,
-                            &address.address,
-                            &address.length);
-                        if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
-                    #endif // defined (TOOLCHAIN_OS_Windows)
-                            SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                            SetCount (0);
-                            return -1;
-                        }
-                        SetError (0);
-                        SetCount (countRead);
-                        buffer->AdvanceWriteOffset ((std::size_t)countRead);
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    ssize_t countRead = recvfrom (
+                        stream->GetHandle (),
+                        (char *)buffer->GetWritePtr (),
+                        buffer->GetDataAvailableForWriting (),
+                        0,
+                        &address.address,
+                        &address.length);
+                    if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
+                        SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                        SetCount (0);
+                        return -1;
                     }
+                    SetError (0);
+                    SetCount (countRead);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    buffer->AdvanceWriteOffset (GetCount ());
                     return buffer->GetDataAvailableForReading ();
                 }
 
@@ -208,7 +169,8 @@ namespace thekogans {
             ReadFromOverlapped::SharedPtr overlapped (
                 new ReadFromOverlapped (bufferLength));
         #if defined (TOOLCHAIN_OS_Windows)
-            if (WSARecvFrom ((THEKOGANS_STREAM_SOCKET)handle,
+            if (WSARecvFrom (
+                    (THEKOGANS_STREAM_SOCKET)handle,
                     &overlapped->wsaBuf,
                     1,
                     0,
@@ -252,8 +214,9 @@ namespace thekogans {
 
                 virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ?
-                        buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    if (GetError () != ERROR_SUCCESS) {
+                        return -1;
+                    }
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = sendto (
                         stream->GetHandle (),
@@ -269,30 +232,22 @@ namespace thekogans {
                     }
                     SetError (0);
                     SetCount (countWritten);
-                    return buffer->AdvanceReadOffset ((std::size_t)countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    return buffer->AdvanceReadOffset (GetCount ());
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
-                #if !defined (TOOLCHAIN_OS_Windows)
-                    if (buffer->IsEmpty ()) {
-                #endif // !defined (TOOLCHAIN_OS_Windows)
-                        UDPSocket::SharedPtr udpSocket = stream;
-                        if (udpSocket != nullptr) {
-                            udpSocket->util::Producer<UDPSocketEvents>::Produce (
-                                std::bind (
-                                    &UDPSocketEvents::OnUDPSocketWriteTo,
-                                    std::placeholders::_1,
-                                    udpSocket,
-                                    buffer,
-                                    address));
-                        }
-                #if defined (TOOLCHAIN_OS_Windows)
-                        return true;
-                #else // defined (TOOLCHAIN_OS_Windows)
+                    UDPSocket::SharedPtr udpSocket = stream;
+                    if (udpSocket != nullptr) {
+                        udpSocket->util::Producer<UDPSocketEvents>::Produce (
+                            std::bind (
+                                &UDPSocketEvents::OnUDPSocketWriteTo,
+                                std::placeholders::_1,
+                                udpSocket,
+                                buffer,
+                                address));
                     }
-                    return buffer->IsEmpty ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
+                    return true;
                 }
             };
 
@@ -373,53 +328,17 @@ namespace thekogans {
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
                     }
-                    buffer->AdvanceWriteOffset (GetCount ());
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    if (buffer->IsEmpty ()) {
-                        // If passed in bufferLength was 0, than try to grab all available data.
-                        if (bufferLength == 0) {
-                            u_long value = 0;
-                            if (ioctlsocket (
-                                    (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
-                                    FIONREAD,
-                                    &value) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                                SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                                return -1;
-                            }
-                        #if !defined (TOOLCHAIN_OS_Windows)
-                            if (value == 0) {
-                                SetError (EWOULDBLOCK);
-                                return -1;
-                            }
-                        #endif // !defined (TOOLCHAIN_OS_Windows)
-                            buffer->Resize ((std::size_t)value);
-                            msgHdr.SetBuffer (
-                                buffer->GetWritePtr (),
-                                buffer->GetDataAvailableForWriting ());
-                        }
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        DWORD countRead = 0;
-                        if (WindowsFunctions::Instance ()->WSARecvMsg (
-                                (THEKOGANS_STREAM_SOCKET)stream->GetHandle (),
-                                &msgHdr,
-                                &countRead,
-                                0,
-                                0) == THEKOGANS_STREAM_SOCKET_ERROR) {
-                            SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                            return -1;
-                        }
-                    #else // defined (TOOLCHAIN_OS_Windows)
-                        ssize_t countRead = recvmsg (stream->GetHandle (), &msgHdr, 0);
-                        if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
-                            SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
-                            SetCount (0);
-                            return -1;
-                        }
-                    #endif // defined (TOOLCHAIN_OS_Windows)
-                        SetError (0);
-                        SetCount (countRead);
-                        buffer->AdvanceWriteOffset ((std::size_t)countRead);
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    ssize_t countRead = recvmsg (stream->GetHandle (), &msgHdr, 0);
+                    if (countRead == THEKOGANS_STREAM_SOCKET_ERROR) {
+                        SetError (THEKOGANS_STREAM_SOCKET_ERROR_CODE);
+                        SetCount (0);
+                        return -1;
                     }
+                    SetError (0);
+                    SetCount (countRead);
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    buffer->AdvanceWriteOffset (GetCount ());
                     if (from.GetFamily () == AF_INET) {
                         from.length = sizeof (sockaddr_in);
                     }
@@ -504,8 +423,9 @@ namespace thekogans {
 
                 virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ?
-                        buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    if (GetError () != ERROR_SUCCESS) {
+                        return -1;
+                    }
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = sendmsg (stream->GetHandle (), &msgHdr, 0);
                     if (countWritten == THEKOGANS_STREAM_SOCKET_ERROR) {
@@ -513,43 +433,25 @@ namespace thekogans {
                         SetCount (0);
                         return -1;
                     }
-                    else {
-                        SetError (0);
-                        SetCount (countWritten);
-                        if (countWritten > 0) {
-                            buffer->AdvanceReadOffset ((std::size_t)countWritten);
-                            if (!buffer->IsEmpty ()) {
-                                msgHdr.SetBuffer (
-                                    buffer->GetReadPtr (),
-                                    buffer->GetDataAvailableForReading ());
-                            }
-                        }
-                    }
-                    return countWritten;
+                    SetError (0);
+                    SetCount (countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    return buffer->AdvanceReadOffset (GetCount ());
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
-                #if !defined (TOOLCHAIN_OS_Windows)
-                    if (buffer->IsEmpty ()) {
-                #endif // !defined (TOOLCHAIN_OS_Windows)
-                        UDPSocket::SharedPtr udpSocket = stream;
-                        if (udpSocket != nullptr) {
-                            udpSocket->util::Producer<UDPSocketEvents>::Produce (
-                                std::bind (
-                                    &UDPSocketEvents::OnUDPSocketWriteMsg,
-                                    std::placeholders::_1,
-                                    udpSocket,
-                                    buffer,
-                                    from,
-                                    to));
-                        }
-                #if defined (TOOLCHAIN_OS_Windows)
-                        return true;
-                #else // defined (TOOLCHAIN_OS_Windows)
+                    UDPSocket::SharedPtr udpSocket = stream;
+                    if (udpSocket != nullptr) {
+                        udpSocket->util::Producer<UDPSocketEvents>::Produce (
+                            std::bind (
+                                &UDPSocketEvents::OnUDPSocketWriteMsg,
+                                std::placeholders::_1,
+                                udpSocket,
+                                buffer,
+                                from,
+                                to));
                     }
-                    return buffer->IsEmpty ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
+                    return true;
                 }
             };
 
