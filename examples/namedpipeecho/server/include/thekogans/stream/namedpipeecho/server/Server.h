@@ -63,7 +63,6 @@ namespace thekogans {
                     virtual void OnNamedPipeConnected (
                         NamedPipe::SharedPtr namedPipe) throw () override;
 
-                    void ResetIo (bool accept);
                     void RemoveConnection (Stream::SharedPtr stream);
                     void CreateServerNamedPipe ();
                 };

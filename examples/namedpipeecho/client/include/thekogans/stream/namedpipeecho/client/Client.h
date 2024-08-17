@@ -43,7 +43,6 @@ namespace thekogans {
                         public util::Subscriber<util::TimerEvents>,
                         public util::Subscriber<StreamEvents> {
                 private:
-                    std::string address;
                     NamedPipe::SharedPtr clientNamedPipe;
                     util::Timer::SharedPtr timer;
                     std::size_t iteration;
@@ -55,12 +54,13 @@ namespace thekogans {
                 public:
                     Client ();
 
-                    void Start (const std::string &address_);
+                    void Start (const std::string &address);
                     void Stop ();
 
                 private:
                     // TimerEvents
-                    virtual void OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () override;
+                    virtual void OnTimerAlarm (
+                        util::Timer::SharedPtr /*timer*/) throw () override;
 
                     // StreamEvents
                     virtual void OnStreamError (
@@ -71,8 +71,6 @@ namespace thekogans {
                     virtual void OnStreamRead (
                         Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () override;
-
-                    void ResetIo (bool connect);
                 };
 
             } // namespace client

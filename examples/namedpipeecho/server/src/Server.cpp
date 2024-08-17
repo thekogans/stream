@@ -29,11 +29,14 @@ namespace thekogans {
 
                 void Server::Start (const std::string &address_) {
                     address = address_;
-                    ResetIo (true);
+                    CreateServerNamedPipe ();
                 }
 
                 void Server::Stop () {
-                    ResetIo (false);
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    util::Subscriber<stream::NamedPipeEvents>::Unsubscribe ();
+                    connections.clear ();
+                    serverNamedPipe.Reset ();
                 }
 
                 void Server::OnStreamError (
@@ -51,10 +54,8 @@ namespace thekogans {
                 void Server::OnStreamRead (
                         Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () {
-                    if (!buffer->IsEmpty ()) {
-                        // We're an echo server.
-                        stream->Write (buffer);
-                    }
+                    // We're an echo server.
+                    stream->Write (buffer);
                 }
 
                 void Server::OnNamedPipeConnected (NamedPipe::SharedPtr namedPipe) throw () {
@@ -63,16 +64,6 @@ namespace thekogans {
                     namedPipe->Read ();
                     connections.push_back (namedPipe);
                     CreateServerNamedPipe ();
-                }
-
-                void Server::ResetIo (bool accept) {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::NamedPipeEvents>::Unsubscribe ();
-                    connections.clear ();
-                    serverNamedPipe.Reset ();
-                    if (accept) {
-                        CreateServerNamedPipe ();
-                    }
                 }
 
                 void Server::RemoveConnection (Stream::SharedPtr stream) {

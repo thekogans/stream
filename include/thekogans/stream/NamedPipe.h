@@ -87,6 +87,7 @@ namespace thekogans {
             /// \brief
             /// Create a client side named pipe.
             /// \param[in] name Name of pipe to connect to.
+            /// NOTE: It should have the following format; \\.\pipe\'pipe name'
             /// \param[in] desiredAccess The requested access to the file or device,
             /// which can be summarized as read, write, both or neither zero).
             /// +------------------+----------------------------+

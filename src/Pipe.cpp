@@ -76,8 +76,9 @@ namespace thekogans {
 
                 virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ?
-                        buffer->AdvanceWriteOffset (GetCount ()) : -1;
+                    if (GetError () != ERROR_SUCCESS) {
+                        return -1;
+                    }
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countRead = read (
                         stream->GetHandle (),
@@ -90,8 +91,8 @@ namespace thekogans {
                     }
                     SetError (0);
                     SetCount (countRead);
-                    return buffer->AdvanceWriteOffset ((std::size_t)countRead);
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    return buffer->AdvanceWriteOffset (GetCount ());
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
@@ -113,8 +114,9 @@ namespace thekogans {
 
         void Pipe::Read (std::size_t bufferLength) {
             if (bufferLength > 0) {
+                ReadOverlapped::SharedPtr overlapped (
+                    new ReadOverlapped (bufferLength));
             #if defined (TOOLCHAIN_OS_Windows)
-                ReadOverlapped::SharedPtr overlapped (new ReadOverlapped (bufferLength));
                 if (!ReadFile (
                         handle,
                         overlapped->buffer->GetWritePtr (),
@@ -128,7 +130,7 @@ namespace thekogans {
                 }
                 overlapped.Release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (new ReadOverlapped (bufferLength), in);
+                EnqOverlapped (overlapped, in);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {
@@ -148,8 +150,9 @@ namespace thekogans {
 
                 virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
                 #if defined (TOOLCHAIN_OS_Windows)
-                    return GetError () == ERROR_SUCCESS ?
-                        buffer->AdvanceReadOffset (GetCount ()) : -1;
+                    if (GetError () != ERROR_SUCCESS) {
+                        return -1;
+                    }
                 #else // defined (TOOLCHAIN_OS_Windows)
                     ssize_t countWritten = write (
                         stream->GetHandle (),
@@ -162,26 +165,18 @@ namespace thekogans {
                     }
                     SetError (0);
                     SetCount (countWritten);
-                    return buffer->AdvanceReadOffset ((std::size_t)countWritten);
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    return buffer->AdvanceReadOffset (GetCount ());
                 }
 
                 virtual bool Epilog (Stream::SharedPtr stream) throw () override {
-                #if !defined (TOOLCHAIN_OS_Windows)
-                    if (buffer->IsEmpty ()) {
-                #endif // !defined (TOOLCHAIN_OS_Windows)
-                        stream->util::Producer<StreamEvents>::Produce (
-                            std::bind (
-                                &StreamEvents::OnStreamWrite,
-                                std::placeholders::_1,
-                                stream,
-                                buffer));
-                #if defined (TOOLCHAIN_OS_Windows)
-                        return true;
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    }
-                    return buffer->IsEmpty ();
-                #endif // defined (TOOLCHAIN_OS_Windows)
+                    stream->util::Producer<StreamEvents>::Produce (
+                        std::bind (
+                            &StreamEvents::OnStreamWrite,
+                            std::placeholders::_1,
+                            stream,
+                            buffer));
+                    return true;
                 }
             };
 
@@ -190,8 +185,9 @@ namespace thekogans {
 
         void Pipe::Write (util::Buffer::SharedPtr buffer) {
             if (!buffer->IsEmpty ()) {
+                WriteOverlapped::SharedPtr overlapped (
+                    new WriteOverlapped (buffer));
             #if defined (TOOLCHAIN_OS_Windows)
-                WriteOverlapped::SharedPtr overlapped (new WriteOverlapped (buffer));
                 if (!WriteFile (
                         handle,
                         overlapped->buffer->GetReadPtr (),
@@ -205,7 +201,7 @@ namespace thekogans {
                 }
                 overlapped.Release ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                EnqOverlapped (new WriteOverlapped (buffer), out);
+                EnqOverlapped (overlapped, out);
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
             else {

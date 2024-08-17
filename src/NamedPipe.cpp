@@ -30,7 +30,8 @@ namespace thekogans {
         bool NamedPipe::Wait (
                 const std::string &name,
                 DWORD timeout) {
-            return WaitNamedPipeW (util::os::windows::UTF8ToUTF16 (name).c_str (), timeout) == TRUE;
+            return WaitNamedPipeW (
+                util::os::windows::UTF8ToUTF16 (name).c_str (), timeout) == TRUE;
         }
 
         NamedPipe::SharedPtr NamedPipe::CreateClientNamedPipe (

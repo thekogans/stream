@@ -39,13 +39,17 @@ namespace thekogans {
                     util::Subscriber<util::TimerEvents>::Subscribe (*timer);
                 }
 
-                void Client::Start (const std::string &address_) {
-                    address = address_;
-                    ResetIo (true);
+                void Client::Start (const std::string &address) {
+                    clientNamedPipe = NamedPipe::CreateClientNamedPipe (address);
+                    util::Subscriber<stream::StreamEvents>::Subscribe (*clientNamedPipe);
+                    clientNamedPipe->Read ();
+                    THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.c_str ());
+                    timer->Start (util::TimeSpec::FromSeconds (1), false);
                 }
 
                 void Client::Stop () {
-                    ResetIo (false);
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    clientNamedPipe.Reset ();
                 }
 
                 void Client::OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () {
@@ -89,18 +93,6 @@ namespace thekogans {
                             sentLength = Options::Instance ()->seed;
                             iteration = 1;
                         }
-                        timer->Start (util::TimeSpec::FromSeconds (1), false);
-                    }
-                }
-
-                void Client::ResetIo (bool connect) {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    clientNamedPipe.Reset ();
-                    if (connect) {
-                        clientNamedPipe = NamedPipe::CreateClientNamedPipe (address);
-                        util::Subscriber<stream::StreamEvents>::Subscribe (*clientNamedPipe);
-                        clientNamedPipe->Read ();
-                        THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.c_str ());
                         timer->Start (util::TimeSpec::FromSeconds (1), false);
                     }
                 }
