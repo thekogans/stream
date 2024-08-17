@@ -24,10 +24,8 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/Subscriber.h"
-#include "thekogans/util/Timer.h"
 #include "thekogans/stream/Stream.h"
 #include "thekogans/stream/NamedPipe.h"
-#include "thekogans/stream/namedpipeecho/client/Options.h"
 
 namespace thekogans {
     namespace stream {
@@ -40,11 +38,9 @@ namespace thekogans {
                             util::SpinLock,
                             util::RefCountedInstanceCreator<Client>,
                             util::RefCountedInstanceDestroyer<Client>>,
-                        public util::Subscriber<util::TimerEvents>,
                         public util::Subscriber<StreamEvents> {
                 private:
                     NamedPipe::SharedPtr clientNamedPipe;
-                    util::Timer::SharedPtr timer;
                     std::size_t iteration;
                     std::size_t sentLength;
                     std::size_t receivedLength;
@@ -56,12 +52,9 @@ namespace thekogans {
 
                     void Start (const std::string &address);
                     void Stop ();
+                    void PerformTest ();
 
                 private:
-                    // TimerEvents
-                    virtual void OnTimerAlarm (
-                        util::Timer::SharedPtr /*timer*/) throw () override;
-
                     // StreamEvents
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
