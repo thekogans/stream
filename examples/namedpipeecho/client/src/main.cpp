@@ -60,7 +60,7 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ()->Parse (argc, argv, "hvlasi");
+    client::Options::Instance ()->Parse (argc, argv, "hvlabi");
     THEKOGANS_UTIL_LOG_INIT (
         client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);
@@ -73,7 +73,7 @@ int main (
             "v - Display version information.\n"
             "l - Set logging level.\n"
             "a - Address server is listening on.\n"
-            "s - Seed (default is 128).\n"
+            "b - Block size in 1K chuncks (default is 64).\n"
             "i - Iterations (default is 16).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
@@ -93,7 +93,7 @@ int main (
     else {
         THEKOGANS_UTIL_TRY {
             THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
-            client::Client::Instance ()->Start (client::Options::Instance ()->address);
+            client::Client::Instance ()->Start ();
             util::MainRunLoop::Instance ()->Start ();
             client::Client::Instance ()->Stop ();
             THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);

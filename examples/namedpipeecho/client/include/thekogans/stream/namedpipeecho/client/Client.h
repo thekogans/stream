@@ -42,15 +42,18 @@ namespace thekogans {
                 private:
                     NamedPipe::SharedPtr clientNamedPipe;
                     std::size_t iteration;
-                    std::size_t sentLength;
-                    std::size_t receivedLength;
                     util::ui64 startTime;
-                    util::ui64 endTime;
+                    util::ui64 totalTime;
+                    std::size_t receivedLength;
 
                 public:
-                    Client ();
+                    Client () :
+                        iteration (1),
+                        startTime (0),
+                        totalTime (0),
+                        receivedLength (0) {}
 
-                    void Start (const std::string &address);
+                    void Start ();
                     void Stop ();
                     void PerformTest ();
 

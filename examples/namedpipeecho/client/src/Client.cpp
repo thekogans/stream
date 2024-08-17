@@ -22,6 +22,7 @@
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/RunLoopScheduler.h"
+#include "thekogans/util/MainRunLoop.h"
 #include "thekogans/stream/NamedPipe.h"
 #include "thekogans/stream/namedpipeecho/client/Options.h"
 #include "thekogans/stream/namedpipeecho/client/Client.h"
@@ -31,23 +32,23 @@ namespace thekogans {
         namespace namedpipeecho {
             namespace client {
 
-                Client::Client () :
-                    iteration (1),
-                    sentLength (Options::Instance ()->seed),
-                    receivedLength (0),
-                    startTime (0),
-                    endTime (0) {}
-
-                void Client::Start (const std::string &address) {
-                    if (NamedPipe::Wait (address, 0)) {
-                        clientNamedPipe = NamedPipe::CreateClientNamedPipe (address);
+                void Client::Start () {
+                    if (NamedPipe::Wait (Options::Instance ()->address, 0)) {
+                        clientNamedPipe = NamedPipe::CreateClientNamedPipe (
+                            Options::Instance ()->address);
                         util::Subscriber<stream::StreamEvents>::Subscribe (*clientNamedPipe);
                         clientNamedPipe->Read ();
-                        THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.c_str ());
+                        THEKOGANS_UTIL_LOG_INFO (
+                            "Connected to %s.\n",
+                            Options::Instance ()->address.c_str ());
                         util::GlobalRunLoopScheduler::Instance ()->ScheduleRunLoopJob (
                             [] (const util::RunLoop::LambdaJob & /*job*/,
                                     const std::atomic<bool> &done) {
                                 if (!done) {
+                                    THEKOGANS_UTIL_LOG_INFO (
+                                        "Start bandwidth test: %u bytes, %u iterations\n",
+                                        Options::Instance ()->blockSize,
+                                        Options::Instance ()->iterations);
                                     Client::Instance ()->PerformTest ();
                                 }
                             },
@@ -56,13 +57,12 @@ namespace thekogans {
                     else {
                         THEKOGANS_UTIL_LOG_WARNING (
                             "%s is unavailable. Waiting to connect.\n",
-                            address.c_str ());
+                            Options::Instance ()->address.c_str ());
                         util::GlobalRunLoopScheduler::Instance ()->ScheduleRunLoopJob (
                             [] (const util::RunLoop::LambdaJob & /*job*/,
                                     const std::atomic<bool> &done) {
                                 if (!done) {
-                                    Client::Instance ()->Start (
-                                        Options::Instance ()->address);
+                                    Client::Instance ()->Start ();
                                 }
                             },
                             util::TimeSpec::FromSeconds (1));
@@ -75,14 +75,15 @@ namespace thekogans {
                 }
 
                 void Client::PerformTest () {
-                    THEKOGANS_UTIL_LOG_INFO (
-                        "Start bandwidth test: %u bytes\n", sentLength);
                     util::Buffer::SharedPtr buffer (
-                        new util::Buffer (util::NetworkEndian, sentLength));
+                        new util::Buffer (
+                            util::NetworkEndian,
+                            Options::Instance ()->blockSize));
                     buffer->AdvanceWriteOffset (
                         util::RandomSource::Instance ()->GetBytes (
                             buffer->GetWritePtr (),
                             buffer->GetDataAvailableForWriting ()));
+                    receivedLength = 0;
                     startTime = util::HRTimer::Click ();
                     clientNamedPipe->Write (buffer);
                 }
@@ -101,28 +102,23 @@ namespace thekogans {
                         Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () {
                     receivedLength += buffer->GetDataAvailableForReading ();
-                    if (receivedLength == sentLength) {
-                        endTime = util::HRTimer::Click ();
-                        THEKOGANS_UTIL_LOG_INFO (
-                            "End bandwidth test: %u iteration, %u bytes, %f Mb/s.\n",
-                            iteration,
-                            receivedLength,
-                            (util::f32)((util::f64)util::HRTimer::GetFrequency () *
-                                receivedLength * 8 / (endTime - startTime) / (1024 * 1024)));
+                    if (receivedLength == Options::Instance ()->blockSize) {
+                        totalTime += util::HRTimer::Click () - startTime;
                         receivedLength = 0;
-                        sentLength <<= 1;
-                        if (iteration++ == Options::Instance ()->iterations) {
-                            sentLength = Options::Instance ()->seed;
-                            iteration = 1;
+                        if (++iteration == Options::Instance ()->iterations) {
+                            THEKOGANS_UTIL_LOG_INFO (
+                                "End bandwidth test: %u bytes, %u iterations, %f Mb/s.\n",
+                                Options::Instance ()->blockSize,
+                                Options::Instance ()->iterations,
+                                (util::f32)((util::f64)util::HRTimer::GetFrequency () *
+                                    (Options::Instance ()->blockSize *
+                                        Options::Instance ()->iterations) * 8 /
+                                    totalTime / (1024 * 1024)));
+                            util::MainRunLoop::Instance ()->Stop ();
                         }
-                        util::GlobalRunLoopScheduler::Instance ()->ScheduleRunLoopJob (
-                            [] (const util::RunLoop::LambdaJob & /*job*/,
-                                    const std::atomic<bool> &done) {
-                                if (!done) {
-                                    Client::Instance ()->PerformTest ();
-                                }
-                            },
-                            util::TimeSpec::FromSeconds (1));
+                        else {
+                            PerformTest ();
+                        }
                     }
                 }
 
