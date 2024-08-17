@@ -48,7 +48,7 @@ namespace thekogans {
 
                 public:
                     Client () :
-                        iteration (1),
+                        iteration (0),
                         startTime (0),
                         totalTime (0),
                         receivedLength (0) {}

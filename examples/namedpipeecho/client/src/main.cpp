@@ -68,7 +68,7 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] -a:'host address'\n\n"
+            "%s [-h] [-v] [-l:'%s'] -a:'host address' [-b:'block size'] [-i:'iterations']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
