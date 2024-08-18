@@ -80,31 +80,21 @@ namespace thekogans {
                 }
 
                 void Client::OnUDPSocketReadFrom (
-                        UDPSocket::SharedPtr udpSocket,
-                        util::Buffer::SharedPtr buffer,
-                        Address address) throw () {
-                    totalTime += util::HRTimer::Click () - startTime;
-                    if (++iteration < Options::Instance ()->iterations) {
-                        PerformTest ();
-                    }
-                    else {
-                        THEKOGANS_UTIL_LOG_INFO (
-                            "End bandwidth test: %u bytes, %u iterations, %f Mb/s.\n",
-                            Options::Instance ()->blockSize,
-                            Options::Instance ()->iterations,
-                            (util::f32)((util::f64)util::HRTimer::GetFrequency () *
-                                (Options::Instance ()->blockSize *
-                                    Options::Instance ()->iterations) * 8 /
-                                totalTime / (1024 * 1024)));
-                        util::MainRunLoop::Instance ()->Stop ();
-                    }
+                        UDPSocket::SharedPtr /*udpSocket*/,
+                        util::Buffer::SharedPtr /*buffer*/,
+                        Address /*address*/) throw () {
+                    NoteResult ();
                 }
 
                 void Client::OnUDPSocketReadMsg (
-                        UDPSocket::SharedPtr udpSocket,
-                        util::Buffer::SharedPtr buffer,
-                        Address from,
-                        Address to) throw () {
+                        UDPSocket::SharedPtr /*udpSocket*/,
+                        util::Buffer::SharedPtr /*buffer*/,
+                        Address /*from*/,
+                        Address /*to*/) throw () {
+                    NoteResult ();
+                }
+
+                void Client::NoteResult () {
                     totalTime += util::HRTimer::Click () - startTime;
                     if (++iteration < Options::Instance ()->iterations) {
                         PerformTest ();

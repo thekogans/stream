@@ -64,14 +64,16 @@ namespace thekogans {
                         util::Exception::SharedPtr exception) throw () override;
                     // UDPSocketEvents
                     virtual void OnUDPSocketReadFrom (
-                        UDPSocket::SharedPtr udpSocket,
-                        util::Buffer::SharedPtr buffer,
-                        Address address) throw () override;
+                        UDPSocket::SharedPtr /*udpSocket*/,
+                        util::Buffer::SharedPtr /*buffer*/,
+                        Address /*address*/) throw () override;
                     virtual void OnUDPSocketReadMsg (
-                        UDPSocket::SharedPtr udpSocket,
-                        util::Buffer::SharedPtr buffer,
-                        Address from,
-                        Address to) throw () override;
+                        UDPSocket::SharedPtr /*udpSocket*/,
+                        util::Buffer::SharedPtr /*buffer*/,
+                        Address /*from*/,
+                        Address /*to*/) throw () override;
+
+                    void NoteResult ();
                 };
 
             } // namespace client
