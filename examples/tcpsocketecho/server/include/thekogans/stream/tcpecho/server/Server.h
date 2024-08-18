@@ -38,15 +38,11 @@ namespace thekogans {
                         public util::Subscriber<StreamEvents>,
                         public util::Subscriber<TCPSocketEvents> {
                 private:
-                    Address address;
-                    util::ui32 maxPendingConnections;
                     TCPSocket::SharedPtr serverSocket;
                     std::vector<Stream::SharedPtr> connections;
 
                 public:
-                    void Start (
-                        const Address &address_,
-                        util::ui32 maxPendingConnections_ = TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS);
+                    void Start ();
                     void Stop ();
 
                 private:
@@ -63,7 +59,6 @@ namespace thekogans {
                         TCPSocket::SharedPtr /*tcpSocket*/,
                         TCPSocket::SharedPtr connection) throw () override;
 
-                    void ResetIo (bool accept);
                     void RemoveConnection (Stream::SharedPtr stream);
                 };
 

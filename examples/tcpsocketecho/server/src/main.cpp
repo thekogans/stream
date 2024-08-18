@@ -108,8 +108,7 @@ int main (
                     THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
                         util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
                     util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
-                    server::Server::Instance ()->Start (
-                        server::Options::Instance ()->address);
+                    server::Server::Instance ()->Start ();
                 }
                 ~App () {
                     server::Server::Instance ()->Stop ();

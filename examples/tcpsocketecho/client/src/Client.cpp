@@ -19,6 +19,7 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/util/HRTimer.h"
+#include "thekogans/util/MainRunLoop.h"
 #include "thekogans/stream/TCPSocket.h"
 #include "thekogans/stream/tcpecho/client/Options.h"
 #include "thekogans/stream/tcpecho/client/Client.h"
@@ -28,36 +29,20 @@ namespace thekogans {
         namespace tcpecho {
             namespace client {
 
-                Client::Client () :
-                        timer (util::Timer::Create ("Client")),
-                        iteration (1),
-                        sentLength (Options::Instance ()->seed),
-                        receivedLength (0),
-                        startTime (0),
-                        endTime (0) {
-                    util::Subscriber<util::TimerEvents>::Subscribe (*timer);
-                }
-
-                void Client::Start (const Address &address_) {
-                    address = address_;
-                    ResetIo (true);
+                void Client::Start () {
+                    clientTCPSocket.Reset (new TCPSocket);
+                    util::Subscriber<stream::StreamEvents>::Subscribe (*clientTCPSocket);
+                    util::Subscriber<stream::TCPSocketEvents>::Subscribe (*clientTCPSocket);
+                    clientTCPSocket->Connect (
+                        stream::Address (
+                            client::Options::Instance ()->port,
+                            client::Options::Instance ()->address));
                 }
 
                 void Client::Stop () {
-                    ResetIo (false);
-                }
-
-                void Client::OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () {
-                    THEKOGANS_UTIL_LOG_INFO (
-                        "Start bandwidth test: %u bytes\n", sentLength);
-                    util::Buffer::SharedPtr buffer (
-                        new util::Buffer (util::NetworkEndian, sentLength));
-                    buffer->AdvanceWriteOffset (
-                        util::RandomSource::Instance ()->GetBytes (
-                            buffer->GetWritePtr (),
-                            buffer->GetDataAvailableForWriting ()));
-                    startTime = util::HRTimer::Click ();
-                    clientTCPSocket->Write (buffer);
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
+                    clientTCPSocket.Reset ();
                 }
 
                 void Client::OnStreamError (
@@ -74,42 +59,49 @@ namespace thekogans {
                         Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () {
                     receivedLength += buffer->GetDataAvailableForReading ();
-                    if (receivedLength == sentLength) {
-                        endTime = util::HRTimer::Click ();
-                        THEKOGANS_UTIL_LOG_INFO (
-                            "End bandwidth test: %u iteration, %u bytes, %f Mb/s.\n",
-                            iteration,
-                            receivedLength,
-                            (util::f32)((util::f64)util::HRTimer::GetFrequency () *
-                                receivedLength * 8 / (endTime - startTime) / (1024 * 1024)));
-                        receivedLength = 0;
-                        sentLength <<= 1;
-                        if (iteration++ == Options::Instance ()->iterations) {
-                            sentLength = Options::Instance ()->seed;
-                            iteration = 1;
+                    if (receivedLength == Options::Instance ()->blockSize) {
+                        totalTime += util::HRTimer::Click () - startTime;
+                        if (++iteration < Options::Instance ()->iterations) {
+                            THEKOGANS_UTIL_LOG_INFO (
+                                "End bandwidth test: %u bytes, %u iteration, %f Mb/s.\n",
+                                Options::Instance ()->blockSize,
+                                Options::Instance ()->iterations,
+                                (util::f32)((util::f64)util::HRTimer::GetFrequency () *
+                                    (Options::Instance ()->blockSize *
+                                        Options::Instance ()->iterations) * 8 /
+                                    totalTime / (1024 * 1024)));
+                            util::MainRunLoop::Instance ()->Stop ();
                         }
-                        timer->Start (util::TimeSpec::FromSeconds (1), false);
+                        else {
+                            PerformTest ();
+                        }
                     }
                 }
 
                 void Client::OnTCPSocketConnect (
                         TCPSocket::SharedPtr tcpSocket,
                         Address address) throw () {
-                    clientTCPSocket->Read (0);
                     THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.ToString ().c_str ());
-                    timer->Start (util::TimeSpec::FromSeconds (1), false);
+                    clientTCPSocket->Read (0);
+                    THEKOGANS_UTIL_LOG_INFO (
+                        "Start bandwidth test: %u bytes, %u iterations.\n",
+                        Options::Instance ()->blockSize,
+                        Options::Instance ()->iterations);
+                    PerformTest ();
                 }
 
-                void Client::ResetIo (bool connect) {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
-                    clientTCPSocket.Reset ();
-                    if (connect) {
-                        clientTCPSocket.Reset (new TCPSocket);
-                        util::Subscriber<stream::StreamEvents>::Subscribe (*clientTCPSocket);
-                        util::Subscriber<stream::TCPSocketEvents>::Subscribe (*clientTCPSocket);
-                        clientTCPSocket->Connect (address);
-                    }
+                void Client::PerformTest () {
+                    util::Buffer::SharedPtr buffer (
+                        new util::Buffer (
+                            util::NetworkEndian,
+                            Options::Instance ()->blockSize));
+                    buffer->AdvanceWriteOffset (
+                        util::RandomSource::Instance ()->GetBytes (
+                            buffer->GetWritePtr (),
+                            buffer->GetDataAvailableForWriting ()));
+                    startTime = util::HRTimer::Click ();
+                    receivedLength = 0;
+                    clientTCPSocket->Write (buffer);
                 }
 
             } // namespace client

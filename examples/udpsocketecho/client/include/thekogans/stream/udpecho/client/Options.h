@@ -49,7 +49,7 @@ namespace thekogans {
                         address ("127.0.0.1"),
                         message (false),
                         iterations (16),
-                        blockSize (64 * 1024) {}
+                        blockSize (63 * 1024) {}
 
                     virtual void DoOption (
                         char option,

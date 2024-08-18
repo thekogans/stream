@@ -93,10 +93,7 @@ int main (
     else {
         THEKOGANS_UTIL_TRY {
             THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
-            client::Client::Instance ()->Start (
-                stream::Address (
-                    client::Options::Instance ()->port,
-                    client::Options::Instance ()->address));
+            client::Client::Instance ()->Start ();
             util::MainRunLoop::Instance ()->Start ();
             client::Client::Instance ()->Stop ();
             THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);

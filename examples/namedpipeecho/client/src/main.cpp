@@ -74,7 +74,7 @@ int main (
             "v - Display version information.\n"
             "l - Set logging level.\n"
             "a - Address server is listening on.\n"
-            "b - Block size in 1K chuncks (default is 64).\n"
+            "b - Block size in 1K chuncks (default is 63).\n"
             "i - Iterations (default is 16).\n"
             "t - Timeout in seconds (default is 1).\n",
             argv[0],

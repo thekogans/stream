@@ -42,11 +42,11 @@ namespace thekogans {
                         case 'a':
                             address = value;
                             break;
-                        case 's':
-                            seed = util::stringToui32 (value.c_str ());
-                            break;
                         case 'i':
                             iterations = util::stringToui32 (value.c_str ());
+                            break;
+                        case 'b':
+                            blockSize = util::stringToui32 (value.c_str ()) * 1024;
                             break;
                     }
                 }

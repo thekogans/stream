@@ -38,6 +38,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/ChildProcess.h"
+#include "thekogans/stream/tcpecho/server/Options.h"
 #include "thekogans/stream/tcpecho/server/Server.h"
 
 namespace thekogans {
@@ -45,16 +46,37 @@ namespace thekogans {
         namespace tcpecho {
             namespace server {
 
-                void Server::Start (
-                        const stream::Address &address_,
-                        util::ui32 maxPendingConnections_) {
-                    address = address_;
-                    maxPendingConnections = maxPendingConnections_;
-                    ResetIo (true);
+                void Server::Start () {
+                    // Create a listening socket.
+                    serverSocket.Reset (new stream::TCPSocket);
+                    // Setup async notifications.
+                    // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
+                    // The reason for this is explained in \see{Stream}.
+                    util::Subscriber<stream::StreamEvents>::Subscribe (*serverSocket);
+                    util::Subscriber<stream::TCPSocketEvents>::Subscribe (*serverSocket);
+                    // Bind to the given address.
+                    serverSocket->Bind (Options::Instance ()->address);
+                    // Put the socket in listening mode.
+                    serverSocket->Listen (/*maxPendingConnections*/);
+                    // We're open for business. Accept client connections.
+                    serverSocket->Accept ();
                 }
 
                 void Server::Stop () {
-                    ResetIo (false);
+                    // Given the nature of async io, there are no
+                    // guarantees that the connections.clear () and
+                    // serverSocket.Reset (...) calls below will
+                    // result in the pointers being deleted. There
+                    // might be residual references on the objects
+                    // just due to other threads in the code still
+                    // doing some work. It is therefore imperative
+                    // that we sever all communications with the old
+                    // producers before connecting new ones. Stream
+                    // contamination is a dangerous thing.
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
+                    connections.clear ();
+                    serverSocket.Reset ();
                 }
 
                 void Server::OnStreamError (
@@ -75,10 +97,8 @@ namespace thekogans {
                 void Server::OnStreamRead (
                         stream::Stream::SharedPtr stream,
                         util::Buffer::SharedPtr buffer) throw () {
-                    if (!buffer->IsEmpty ()) {
-                        // We're an echo server.
-                        stream->Write (buffer);
-                    }
+                    // We're an echo server.
+                    stream->Write (buffer);
                 }
 
                 namespace {
@@ -387,37 +407,6 @@ namespace thekogans {
                     connections.push_back (connection);
                 }
 
-                void Server::ResetIo (bool accept) {
-                    // Given the nature of async io, there are no
-                    // guarantees that the connections.clear () and
-                    // serverSocket.Reset (...) calls below will
-                    // result in the pointers being deleted. There
-                    // might be residual references on the objects
-                    // just due to other threads in the code still
-                    // doing some work. It is therefore imperative
-                    // that we sever all communications with the old
-                    // producers before connecting new ones. Stream
-                    // contamination is a dangerous thing.
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
-                    connections.clear ();
-                    serverSocket.Reset ();
-                    if (accept) {
-                        // Create a listening socket.
-                        serverSocket.Reset (new stream::TCPSocket);
-                        // Setup async notifications.
-                        // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
-                        // The reason for this is explained in \see{Stream}.
-                        util::Subscriber<stream::StreamEvents>::Subscribe (*serverSocket);
-                        util::Subscriber<stream::TCPSocketEvents>::Subscribe (*serverSocket);
-                        // Bind to the given address.
-                        serverSocket->Bind (address);
-                        // Put the socket in listening mode.
-                        serverSocket->Listen (maxPendingConnections);
-                        // We're open for business. Accept client connections.
-                        serverSocket->Accept ();
-                    }
-                }
 
                 void Server::RemoveConnection (Stream::SharedPtr stream) {
                     std::vector<Stream::SharedPtr>::iterator it =

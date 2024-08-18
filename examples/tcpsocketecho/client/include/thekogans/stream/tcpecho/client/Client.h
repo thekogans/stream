@@ -22,8 +22,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/Subscriber.h"
-#include "thekogans/util/Timer.h"
-#include "thekogans/stream/Address.h"
 #include "thekogans/stream/Stream.h"
 #include "thekogans/stream/TCPSocket.h"
 
@@ -38,30 +36,26 @@ namespace thekogans {
                             util::SpinLock,
                             util::RefCountedInstanceCreator<Client>,
                             util::RefCountedInstanceDestroyer<Client>>,
-                        public util::Subscriber<util::TimerEvents>,
                         public util::Subscriber<StreamEvents>,
                         public util::Subscriber<TCPSocketEvents> {
                 private:
-                    Address address;
                     TCPSocket::SharedPtr clientTCPSocket;
-                    util::Timer::SharedPtr timer;
                     std::size_t iteration;
-                    std::size_t sentLength;
-                    std::size_t receivedLength;
                     util::ui64 startTime;
-                    util::ui64 endTime;
+                    util::ui64 totalTime;
+                    std::size_t receivedLength;
 
                 public:
-                    Client ();
+                    Client () :
+                        iteration (1),
+                        startTime (0),
+                        totalTime (0),
+                        receivedLength (0) {}
 
-                    void Start (const Address &address_);
+                    void Start ();
                     void Stop ();
 
                 private:
-                    // TimerEvents
-                    virtual void OnTimerAlarm (
-                        util::Timer::SharedPtr /*timer*/) throw () override;
-
                     // StreamEvents
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
@@ -76,7 +70,7 @@ namespace thekogans {
                         TCPSocket::SharedPtr tcpSocket,
                         Address address) throw () override;
 
-                    void ResetIo (bool connect);
+                    void PerformTest ();
                 };
 
             } // namespace client
