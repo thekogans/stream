@@ -83,7 +83,7 @@ int main (
     if (server::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] "
-            "[-k:'path'] [-p:'host port'] [-a:'host address'] [-m]\n\n"
+            "[-k:'path'] [-p:'host port'] [-a:'host address'] [-m] [-b:'block size']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
@@ -93,7 +93,8 @@ int main (
             "k - Use lock file to prevent multiple instances (path - Path to lock file).\n"
             "p - Port to listen for clients on (default is 8854).\n"
             "a - Address to listen for clients on (default is any).\n"
-            "m - Use [WSA[Send | Recv]Msg | [send | recv]msg] (default is false).\n",
+            "m - Use [WSA[Send | Recv]Msg | [send | recv]msg] (default is false).\n"
+            "b - Block size in 1K chuncks (default is 64).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
@@ -111,9 +112,7 @@ int main (
             THEKOGANS_UTIL_LOG_INFO ("%s starting.\n",
                 util::SystemInfo::Instance ()->GetProcessPath ().c_str ());
             util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
-            server::Server::Instance ()->Start (
-                server::Options::Instance ()->address,
-                server::Options::Instance ()->message);
+            server::Server::Instance ()->Start ();
             util::MainRunLoop::Instance ()->Start ();
             server::Server::Instance ()->Stop ();
             THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n",

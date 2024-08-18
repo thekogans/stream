@@ -82,7 +82,8 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (server::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] [-k:'path'] [-a:'host address']\n\n"
+            "%s [-h] [-v] [-l:'%s'] [-c] [-f:'path'] [-r[:max size]] "
+            "[-k:'path'] [-a:'host address']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
@@ -110,7 +111,7 @@ int main (
         THEKOGANS_UTIL_TRY {
             util::LockFile lockFile (server::Options::Instance ()->lockFilePath);
             THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
-            server::Server::Instance ()->Start (server::Options::Instance ()->address);
+            server::Server::Instance ()->Start ();
             util::MainRunLoop::Instance ()->Start ();
             server::Server::Instance ()->Stop ();
             THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);

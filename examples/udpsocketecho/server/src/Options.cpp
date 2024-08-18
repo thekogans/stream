@@ -42,13 +42,14 @@ namespace thekogans {
                 Options::Options () :
                         help (false),
                         version (false),
-                        port (DEFAULT_PORT),
-                        address (Address::Any (port)),
-                        message (false),
                         startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
                             util::Directory::Watcher::Instance ()->AddWatch (
-                                startDirectory, *this)) {
+                                startDirectory, *this)),
+                        port (DEFAULT_PORT),
+                        address (Address::Any (port)),
+                        message (false),
+                        blockSize (64 * 1024) {
                     if (util::Path (OPTIONS_XML).Exists ()) {
                         ReadConfig ();
                     }
@@ -90,12 +91,16 @@ namespace thekogans {
                             break;
                         case 'p':
                             port = util::stringToui16 (value.c_str ());
+                            address.SetPort (port);
                             break;
                         case 'a':
-                            address = stream::Address (port, value);
+                            address = Address (port, value);
                             break;
                         case 'm':
                             message = true;
+                            break;
+                        case 'b':
+                            blockSize = util::stringToui32 (value.c_str ());
                             break;
                     }
                 }

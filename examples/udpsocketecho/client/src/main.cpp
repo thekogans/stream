@@ -58,7 +58,7 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    client::Options::Instance ()->Parse (argc, argv, "hvlpamsi");
+    client::Options::Instance ()->Parse (argc, argv, "hvlpamib");
     THEKOGANS_UTIL_LOG_INIT (
         client::Options::Instance ()->logLevel,
         util::LoggerMgr::All);
@@ -67,15 +67,15 @@ int main (
     if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
             "%s [-h] [-v] [-l:'%s'] [-p:'host port'] -a:'host address' "
-            "[-m] [-s:'seed'] [-i:'iterations']\n\n"
+            "[-m] [-i:'iterations'] [-b:'block size']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
             "p - Port the server is listening on (default is 8854).\n"
             "a - Address the server is listening on.\n"
             "m - Use [WSA[Send | Recv]Msg | [send | recv]msg] (default is false).\n"
-            "s - Initial packet size (default is 128 bytes)\n"
-            "i - Iterations (default is 16).\n",
+            "i - Iterations (default is 16).\n"
+            "b - Block size in 1K chunks (default is 64)\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }
@@ -91,10 +91,7 @@ int main (
     else {
         THEKOGANS_UTIL_TRY {
             THEKOGANS_UTIL_LOG_INFO ("%s starting.\n", argv[0]);
-            client::Client::Instance ()->Start (
-                stream::Address (
-                    client::Options::Instance ()->port,
-                    client::Options::Instance ()->address));
+            client::Client::Instance ()->Start ();
             util::MainRunLoop::Instance ()->Start ();
             client::Client::Instance ()->Stop ();
             THEKOGANS_UTIL_LOG_INFO ("%s exiting.\n", argv[0]);

@@ -38,14 +38,10 @@ namespace thekogans {
                         public util::Subscriber<StreamEvents>,
                         public util::Subscriber<UDPSocketEvents> {
                 private:
-                    Address address;
-                    bool message;
                     UDPSocket::SharedPtr serverSocket;
 
                 public:
-                    void Start (
-                        const Address &address_,
-                        bool message_ = false);
+                    void Start ();
                     void Stop ();
 
                 private:
@@ -63,8 +59,6 @@ namespace thekogans {
                         util::Buffer::SharedPtr buffer,
                         Address from,
                         Address to) throw () override;
-
-                    void ResetIo (bool accept);
                 };
 
             } // namespace server

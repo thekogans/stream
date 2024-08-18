@@ -20,6 +20,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/stream/NamedPipe.h"
+#include "thekogans/stream/namedpipeecho/server/Options.h"
 #include "thekogans/stream/namedpipeecho/server/Server.h"
 
 namespace thekogans {
@@ -27,16 +28,15 @@ namespace thekogans {
         namespace namedpipeecho {
             namespace server {
 
-                void Server::Start (const std::string &address_) {
-                    address = address_;
+                void Server::Start () {
                     CreateServerNamedPipe ();
                 }
 
                 void Server::Stop () {
                     util::Subscriber<stream::StreamEvents>::Unsubscribe ();
                     util::Subscriber<stream::NamedPipeEvents>::Unsubscribe ();
-                    connections.clear ();
                     serverNamedPipe.Reset ();
+                    connections.clear ();
                 }
 
                 void Server::OnStreamError (
@@ -78,7 +78,8 @@ namespace thekogans {
                 }
 
                 void Server::CreateServerNamedPipe () {
-                    serverNamedPipe = NamedPipe::CreateServerNamedPipe (address);
+                    serverNamedPipe = NamedPipe::CreateServerNamedPipe (
+                        Options::Instance ()->address);
                     // Setup async notifications.
                     // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
                     // The reason for this is explained in \see{Stream}.

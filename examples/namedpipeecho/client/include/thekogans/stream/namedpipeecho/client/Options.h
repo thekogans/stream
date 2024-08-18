@@ -40,13 +40,15 @@ namespace thekogans {
                     std::string address;
                     util::ui32 blockSize;
                     util::ui32 iterations;
+                    util::ui32 timeout;
 
                     Options () :
                         help (false),
                         version (false),
                         logLevel (util::LoggerMgr::Info),
                         blockSize (64 * 1024),
-                        iterations (16) {}
+                        iterations (16),
+                        timeout (1) {}
 
                     virtual void DoOption (
                         char option,

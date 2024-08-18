@@ -19,6 +19,7 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/RandomSource.h"
 #include "thekogans/util/HRTimer.h"
+#include "thekogans/util/MainRunLoop.h"
 #include "thekogans/stream/UDPSocket.h"
 #include "thekogans/stream/udpecho/client/Options.h"
 #include "thekogans/stream/udpecho/client/Client.h"
@@ -28,36 +29,48 @@ namespace thekogans {
         namespace udpecho {
             namespace client {
 
-                Client::Client () :
-                        timer (util::Timer::Create ("Client")),
-                        iteration (1),
-                        sentLength (Options::Instance ()->seed),
-                        receivedLength (0),
-                        startTime (0),
-                        endTime (0) {
-                    util::Subscriber<util::TimerEvents>::Subscribe (*timer);
-                }
-
-                void Client::Start (const Address &address_) {
-                    address = address_;
-                    ResetIo (true);
+                void Client::Start () {
+                    clientUDPSocket.Reset (new UDPSocket);
+                    util::Subscriber<stream::StreamEvents>::Subscribe (*clientUDPSocket);
+                    util::Subscriber<stream::UDPSocketEvents>::Subscribe (*clientUDPSocket);
+                    clientUDPSocket->SetSendBufferSize (Options::Instance ()->blockSize);
+                    clientUDPSocket->SetReceiveBufferSize (Options::Instance ()->blockSize);
+                    clientUDPSocket->Bind (Address::Any (0));
+                    if (Options::Instance ()->message) {
+                        clientUDPSocket->SetRecvPktInfo (true);
+                        clientUDPSocket->ReadMsg (Options::Instance ()->blockSize);
+                    }
+                    else {
+                        clientUDPSocket->ReadFrom (Options::Instance ()->blockSize);
+                    }
+                    THEKOGANS_UTIL_LOG_INFO (
+                        "Start bandwidth test: %u bytes, %u iterations\n",
+                        Options::Instance ()->blockSize,
+                        Options::Instance ()->iterations);
+                    PerformTest ();
                 }
 
                 void Client::Stop () {
-                    ResetIo (false);
+                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
+                    util::Subscriber<stream::UDPSocketEvents>::Unsubscribe ();
+                    clientUDPSocket.Reset ();
                 }
 
-                void Client::OnTimerAlarm (util::Timer::SharedPtr /*timer*/) throw () {
-                    THEKOGANS_UTIL_LOG_INFO (
-                        "Start bandwidth test: %u bytes\n", sentLength);
+                void Client::PerformTest () {
                     util::Buffer::SharedPtr buffer (
-                        new util::Buffer (util::NetworkEndian, sentLength));
+                        new util::Buffer (
+                            util::NetworkEndian,
+                            Options::Instance ()->blockSize));
                     buffer->AdvanceWriteOffset (
                         util::RandomSource::Instance ()->GetBytes (
                             buffer->GetWritePtr (),
                             buffer->GetDataAvailableForWriting ()));
                     startTime = util::HRTimer::Click ();
-                    clientUDPSocket->WriteTo (buffer, address);
+                    clientUDPSocket->WriteTo (
+                        buffer,
+                        Address (
+                            Options::Instance ()->port,
+                            Options::Instance ()->address));
                 }
 
                 void Client::OnStreamError (
@@ -70,22 +83,20 @@ namespace thekogans {
                         UDPSocket::SharedPtr udpSocket,
                         util::Buffer::SharedPtr buffer,
                         Address address) throw () {
-                    receivedLength += buffer->GetDataAvailableForReading ();
-                    if (receivedLength == sentLength) {
-                        endTime = util::HRTimer::Click ();
+                    totalTime += util::HRTimer::Click () - startTime;
+                    if (++iteration < Options::Instance ()->iterations) {
+                        PerformTest ();
+                    }
+                    else {
                         THEKOGANS_UTIL_LOG_INFO (
-                            "End bandwidth test: %u iteration, %u bytes, %f Mb/s.\n",
-                            iteration,
-                            receivedLength,
+                            "End bandwidth test: %u bytes, %u iterations, %f Mb/s.\n",
+                            Options::Instance ()->blockSize,
+                            Options::Instance ()->iterations,
                             (util::f32)((util::f64)util::HRTimer::GetFrequency () *
-                                receivedLength * 8 / (endTime - startTime) / (1024 * 1024)));
-                        receivedLength = 0;
-                        sentLength <<= 1;
-                        if (iteration++ == Options::Instance ()->iterations) {
-                            sentLength = Options::Instance ()->seed;
-                            iteration = 1;
-                        }
-                        timer->Start (util::TimeSpec::FromSeconds (1), false);
+                                (Options::Instance ()->blockSize *
+                                    Options::Instance ()->iterations) * 8 /
+                                totalTime / (1024 * 1024)));
+                        util::MainRunLoop::Instance ()->Stop ();
                     }
                 }
 
@@ -94,28 +105,20 @@ namespace thekogans {
                         util::Buffer::SharedPtr buffer,
                         Address from,
                         Address to) throw () {
-                }
-
-                void Client::ResetIo (bool connect) {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::UDPSocketEvents>::Unsubscribe ();
-                    clientUDPSocket.Reset ();
-                    if (connect) {
-                        clientUDPSocket.Reset (new UDPSocket);
-                        util::Subscriber<stream::StreamEvents>::Subscribe (*clientUDPSocket);
-                        util::Subscriber<stream::UDPSocketEvents>::Subscribe (*clientUDPSocket);
-                        //clientUDPSocket->SetSendBufferSize (maxPacketSize);
-                        //clientUDPSocket->SetReceiveBufferSize (maxPacketSize);
-                        // Bind to the given address.
-                        clientUDPSocket->Bind (Address::Any (8855));
-                        if (Options::Instance ()->message) {
-                            clientUDPSocket->SetRecvPktInfo (true);
-                            clientUDPSocket->ReadMsg ();
-                        }
-                        else {
-                            clientUDPSocket->ReadFrom ();
-                        }
-                        timer->Start (util::TimeSpec::FromSeconds (1), false);
+                    totalTime += util::HRTimer::Click () - startTime;
+                    if (++iteration < Options::Instance ()->iterations) {
+                        PerformTest ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_LOG_INFO (
+                            "End bandwidth test: %u bytes, %u iterations, %f Mb/s.\n",
+                            Options::Instance ()->blockSize,
+                            Options::Instance ()->iterations,
+                            (util::f32)((util::f64)util::HRTimer::GetFrequency () *
+                                (Options::Instance ()->blockSize *
+                                    Options::Instance ()->iterations) * 8 /
+                                totalTime / (1024 * 1024)));
+                        util::MainRunLoop::Instance ()->Stop ();
                     }
                 }
 

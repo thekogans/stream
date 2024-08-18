@@ -103,11 +103,11 @@ namespace thekogans {
             public:
                 std::size_t bufferLength;
                 util::Buffer::SharedPtr buffer;
+                Address address;
             #if defined (TOOLCHAIN_OS_Windows)
                 WSABUF wsaBuf;
                 DWORD flags;
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Address address;
 
                 ReadFromOverlapped (std::size_t bufferLength_) :
                         bufferLength (bufferLength_),
@@ -311,9 +311,9 @@ namespace thekogans {
             public:
                 std::size_t bufferLength;
                 util::Buffer::SharedPtr buffer;
-                MsgHdr msgHdr;
                 Address from;
                 Address to;
+                MsgHdr msgHdr;
 
                 ReadMsgOverlapped (std::size_t bufferLength_) :
                     bufferLength (bufferLength_),

@@ -35,8 +35,7 @@ namespace thekogans {
                             version = true;
                             break;
                         case 'l':
-                            logLevel =
-                                util::LoggerMgr::stringTolevel (value.c_str ());
+                            logLevel = util::LoggerMgr::stringTolevel (value.c_str ());
                             break;
                         case 'a':
                             address = value;
@@ -46,6 +45,9 @@ namespace thekogans {
                             break;
                         case 'i':
                             iterations = util::stringToui32 (value.c_str ());
+                            break;
+                        case 't':
+                            timeout = util::stringToui32 (value.c_str ());
                             break;
                     }
                 }

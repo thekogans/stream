@@ -34,30 +34,24 @@ namespace thekogans {
 
                 void Client::Start () {
                     if (NamedPipe::Wait (Options::Instance ()->address, 0)) {
+                        THEKOGANS_UTIL_LOG_INFO (
+                            "Connecting to %s.\n",
+                            Options::Instance ()->address.c_str ());
                         clientNamedPipe = NamedPipe::CreateClientNamedPipe (
                             Options::Instance ()->address);
                         util::Subscriber<stream::StreamEvents>::Subscribe (*clientNamedPipe);
                         clientNamedPipe->Read ();
                         THEKOGANS_UTIL_LOG_INFO (
-                            "Connected to %s.\n",
-                            Options::Instance ()->address.c_str ());
-                        util::GlobalRunLoopScheduler::Instance ()->ScheduleRunLoopJob (
-                            [] (const util::RunLoop::LambdaJob & /*job*/,
-                                    const std::atomic<bool> &done) {
-                                if (!done) {
-                                    THEKOGANS_UTIL_LOG_INFO (
-                                        "Start bandwidth test: %u bytes, %u iterations\n",
-                                        Options::Instance ()->blockSize,
-                                        Options::Instance ()->iterations);
-                                    Client::Instance ()->PerformTest ();
-                                }
-                            },
-                            util::TimeSpec::FromSeconds (1));
+                            "Start bandwidth test: %u bytes, %u iterations\n",
+                            Options::Instance ()->blockSize,
+                            Options::Instance ()->iterations);
+                        PerformTest ();
                     }
                     else {
                         THEKOGANS_UTIL_LOG_WARNING (
-                            "%s is unavailable. Waiting to connect.\n",
-                            Options::Instance ()->address.c_str ());
+                            "%s is unavailable. Sleeping %u seconds to retry.\n",
+                            Options::Instance ()->address.c_str (),
+                            Options::Instance ()->timeout);
                         util::GlobalRunLoopScheduler::Instance ()->ScheduleRunLoopJob (
                             [] (const util::RunLoop::LambdaJob & /*job*/,
                                     const std::atomic<bool> &done) {
@@ -65,7 +59,7 @@ namespace thekogans {
                                     Client::Instance ()->Start ();
                                 }
                             },
-                            util::TimeSpec::FromSeconds (1));
+                            util::TimeSpec::FromSeconds (Options::Instance ()->timeout));
                     }
                 }
 
@@ -104,8 +98,10 @@ namespace thekogans {
                     receivedLength += buffer->GetDataAvailableForReading ();
                     if (receivedLength == Options::Instance ()->blockSize) {
                         totalTime += util::HRTimer::Click () - startTime;
-                        receivedLength = 0;
-                        if (++iteration == Options::Instance ()->iterations) {
+                        if (++iteration < Options::Instance ()->iterations) {
+                            PerformTest ();
+                        }
+                        else {
                             THEKOGANS_UTIL_LOG_INFO (
                                 "End bandwidth test: %u bytes, %u iterations, %f Mb/s.\n",
                                 Options::Instance ()->blockSize,
@@ -115,9 +111,6 @@ namespace thekogans {
                                         Options::Instance ()->iterations) * 8 /
                                     totalTime / (1024 * 1024)));
                             util::MainRunLoop::Instance ()->Stop ();
-                        }
-                        else {
-                            PerformTest ();
                         }
                     }
                 }

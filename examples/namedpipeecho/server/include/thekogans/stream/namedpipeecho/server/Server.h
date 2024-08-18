@@ -41,12 +41,11 @@ namespace thekogans {
                         public util::Subscriber<StreamEvents>,
                         public util::Subscriber<NamedPipeEvents> {
                 private:
-                    std::string address;
                     NamedPipe::SharedPtr serverNamedPipe;
                     std::vector<Stream::SharedPtr> connections;
 
                 public:
-                    void Start (const std::string &address_);
+                    void Start ();
                     void Stop ();
 
                 private:

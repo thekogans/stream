@@ -68,13 +68,15 @@ int main (
     THEKOGANS_UTIL_IMPLEMENT_LOG_FLUSHER;
     if (client::Options::Instance ()->help) {
         THEKOGANS_UTIL_LOG_INFO (
-            "%s [-h] [-v] [-l:'%s'] -a:'host address' [-b:'block size'] [-i:'iterations']\n\n"
+            "%s [-h] [-v] [-l:'%s'] -a:'host address' "
+            "[-b:'block size'] [-i:'iterations'] [-t:'timeout']\n\n"
             "h - Display this help message.\n"
             "v - Display version information.\n"
             "l - Set logging level.\n"
             "a - Address server is listening on.\n"
             "b - Block size in 1K chuncks (default is 64).\n"
-            "i - Iterations (default is 16).\n",
+            "i - Iterations (default is 16).\n"
+            "t - Timeout in seconds (default is 1).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }

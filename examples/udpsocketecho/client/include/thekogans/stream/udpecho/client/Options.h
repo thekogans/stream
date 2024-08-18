@@ -38,22 +38,22 @@ namespace thekogans {
                     util::ui16 port;
                     std::string address;
                     bool message;
-                    util::ui32 seed;
                     util::ui32 iterations;
+                    util::ui32 blockSize;
 
                     Options () :
                         help (false),
                         version (false),
                         logLevel (util::LoggerMgr::Info),
                         port (8854),
+                        address ("127.0.0.1"),
                         message (false),
-                        seed (128),
-                        iterations (16) {}
+                        iterations (16),
+                        blockSize (64 * 1024) {}
 
                     virtual void DoOption (
                         char option,
-                        const std::string &value);
-                    virtual void DoPath (const std::string & /*path*/) {}
+                        const std::string &value) override;
                 };
 
             } // namespace client

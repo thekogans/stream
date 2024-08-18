@@ -71,8 +71,9 @@ namespace thekogans {
                     std::string startDirectory;
                     util::Directory::Watcher::WatchId watchId;
                     util::ui16 port;
-                    stream::Address address;
+                    Address address;
                     bool message;
+                    std::size_t blockSize;
 
                     Options ();
 
