@@ -55,14 +55,14 @@ namespace thekogans {
 
                 void Server::OnStreamError (
                         Stream::SharedPtr stream,
-                        util::Exception::SharedPtr exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
+                        const util::Exception &exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
                 }
 
                 void Server::OnUDPSocketReadFrom (
                         UDPSocket::SharedPtr udpSocket,
                         util::Buffer::SharedPtr buffer,
-                        Address address) throw () {
+                        const Address &address) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (
                         "OnUDPSocketReadFrom: %s:%u (%u bytes)\n",
                         address.AddrToString ().c_str (),
@@ -74,8 +74,8 @@ namespace thekogans {
                 void Server::OnUDPSocketReadMsg (
                         UDPSocket::SharedPtr udpSocket,
                         util::Buffer::SharedPtr buffer,
-                        Address from,
-                        Address to) throw () {
+                        const Address &from,
+                        const Address &to) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (
                         "OnUDPSocketReadMsg: %s:%u to: %s:%u (%u bytes)\n",
                         from.AddrToString ().c_str (),

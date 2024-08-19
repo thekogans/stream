@@ -48,7 +48,7 @@ namespace thekogans {
             virtual void OnUDPSocketReadFrom (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                Address /*address*/) throw () {}
+                const Address & /*address*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a UDPSocket.
             /// \param[in] udpSocket UDPSocket where the datagram was written.
@@ -57,7 +57,7 @@ namespace thekogans {
             virtual void OnUDPSocketWriteTo (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                Address /*address*/) throw () {}
+                const Address & /*address*/) throw () {}
 
             /// \brief
             /// Called when a new datagram has arrived on a UDPSocket.
@@ -68,8 +68,8 @@ namespace thekogans {
             virtual void OnUDPSocketReadMsg (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                Address /*from*/,
-                Address /*to*/) throw () {}
+                const Address & /*from*/,
+                const Address & /*to*/) throw () {}
             /// \brief
             /// Called when a datagram was written to a UDPSocket.
             /// \param[in] udpSocket UDPSocket where the datagram was written.
@@ -79,8 +79,8 @@ namespace thekogans {
             virtual void OnUDPSocketWriteMsg (
                 util::RefCounted::SharedPtr<UDPSocket> /*udpSocket*/,
                 util::Buffer::SharedPtr /*buffer*/,
-                Address /*from*/,
-                Address /*to*/) throw () {}
+                const Address & /*from*/,
+                const Address & /*to*/) throw () {}
         };
 
         /// \struct UDPSocket UDPSocket.h thekogans/stream/UDPSocket.h

@@ -81,8 +81,8 @@ namespace thekogans {
 
                 void Server::OnStreamError (
                         stream::Stream::SharedPtr stream,
-                        util::Exception::SharedPtr exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
+                        const util::Exception &exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
                     // If it's a connection, remove it from the list.
                     if (stream != serverSocket) {
                         RemoveConnection (stream);

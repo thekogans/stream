@@ -69,7 +69,7 @@ namespace thekogans {
                                 &StreamEvents::OnStreamError,
                                 std::placeholders::_1,
                                 stream,
-                                new THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
+                                THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
                 #if defined (TOOLCHAIN_OS_Windows)
                     }
                 #endif // defined (TOOLCHAIN_OS_Windows)

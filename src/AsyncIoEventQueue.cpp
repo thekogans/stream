@@ -143,7 +143,7 @@ namespace thekogans {
                                             &StreamEvents::OnStreamError,
                                             std::placeholders::_1,
                                             stream,
-                                            new THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
+                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
                                 }
                             }
                             else {
@@ -152,7 +152,7 @@ namespace thekogans {
                                         &StreamEvents::OnStreamError,
                                         std::placeholders::_1,
                                         stream,
-                                        new THEKOGANS_UTIL_STRING_EXCEPTION (
+                                        THEKOGANS_UTIL_STRING_EXCEPTION (
                                             "Unknown stream (%s) error.",
                                             stream->type ().name ())));
                             }
@@ -196,7 +196,7 @@ namespace thekogans {
                                     &StreamEvents::OnStreamError,
                                     std::placeholders::_1,
                                     stream,
-                                    new THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
+                                    THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (
                                         (THEKOGANS_UTIL_ERROR_CODE)kqueueEvents[i].data)));
                         }
                         else if (kqueueEvents[i].flags & EV_EOF) {
@@ -214,7 +214,7 @@ namespace thekogans {
                                             &StreamEvents::OnStreamError,
                                             std::placeholders::_1,
                                             stream,
-                                            new THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
+                                            THEKOGANS_UTIL_ERROR_CODE_EXCEPTION (errorCode)));
                                     continue;
                                 }
                             }

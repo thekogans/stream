@@ -50,7 +50,7 @@ namespace thekogans {
             /// \param[in] adress \see{Address} the client connected on.
             virtual void OnTCPSocketConnect (
                 util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
-                Address /*address*/) throw () {}
+                const Address & /*address*/) throw () {}
             /// \brief
             /// Called to report a new connection on a \see{TCPSocket}.
             /// \param[in] tcpSocket \see{TCPSocket} on which the new connection occurred.

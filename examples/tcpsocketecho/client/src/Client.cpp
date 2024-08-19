@@ -47,8 +47,8 @@ namespace thekogans {
 
                 void Client::OnStreamError (
                         Stream::SharedPtr /*stream*/,
-                        util::Exception::SharedPtr exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
+                        const util::Exception &exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
                 }
 
                 void Client::OnStreamDisconnect (Stream::SharedPtr stream) throw () {
@@ -62,6 +62,9 @@ namespace thekogans {
                     if (receivedLength == Options::Instance ()->blockSize) {
                         totalTime += util::HRTimer::Click () - startTime;
                         if (++iteration < Options::Instance ()->iterations) {
+                            PerformTest ();
+                        }
+                        else {
                             THEKOGANS_UTIL_LOG_INFO (
                                 "End bandwidth test: %u bytes, %u iteration, %f Mb/s.\n",
                                 Options::Instance ()->blockSize,
@@ -72,16 +75,13 @@ namespace thekogans {
                                     totalTime / (1024 * 1024)));
                             util::MainRunLoop::Instance ()->Stop ();
                         }
-                        else {
-                            PerformTest ();
-                        }
                     }
                 }
 
                 void Client::OnTCPSocketConnect (
                         TCPSocket::SharedPtr tcpSocket,
-                        Address address) throw () {
-                    THEKOGANS_UTIL_LOG_INFO ("Connected to %s.\n", address.ToString ().c_str ());
+                        const Address &address) throw () {
+                    THEKOGANS_UTIL_LOG_INFO ("Connected to:\n%s\n", address.ToString ().c_str ());
                     clientTCPSocket->Read (0);
                     THEKOGANS_UTIL_LOG_INFO (
                         "Start bandwidth test: %u bytes, %u iterations.\n",

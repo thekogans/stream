@@ -59,7 +59,7 @@ namespace thekogans {
                     // StreamEvents
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
-                        util::Exception::SharedPtr exception) throw () override;
+                        const util::Exception &exception) throw () override;
                     virtual void OnStreamDisconnect (
                         Stream::SharedPtr stream) throw () override;
                     virtual void OnStreamRead (
@@ -68,7 +68,7 @@ namespace thekogans {
                     // TCPSocketEvents
                     virtual void OnTCPSocketConnect (
                         TCPSocket::SharedPtr tcpSocket,
-                        Address address) throw () override;
+                        const Address &address) throw () override;
 
                     void PerformTest ();
                 };

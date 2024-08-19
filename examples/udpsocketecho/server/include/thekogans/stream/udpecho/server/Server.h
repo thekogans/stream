@@ -48,17 +48,17 @@ namespace thekogans {
                     // StreamEvents
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
-                        util::Exception::SharedPtr exception) throw () override;
+                        const util::Exception &exception) throw () override;
                     // UDPSocketEvents
                     virtual void OnUDPSocketReadFrom (
                         util::RefCounted::SharedPtr<UDPSocket> udpSocket,
                         util::Buffer::SharedPtr buffer,
-                        Address address) throw () override;
+                        const Address &address) throw () override;
                     virtual void OnUDPSocketReadMsg (
                         util::RefCounted::SharedPtr<UDPSocket> udpSocket,
                         util::Buffer::SharedPtr buffer,
-                        Address from,
-                        Address to) throw () override;
+                        const Address &from,
+                        const Address &to) throw () override;
                 };
 
             } // namespace server

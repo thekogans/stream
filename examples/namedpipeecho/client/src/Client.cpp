@@ -84,8 +84,8 @@ namespace thekogans {
 
                 void Client::OnStreamError (
                         Stream::SharedPtr /*stream*/,
-                        util::Exception::SharedPtr exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
+                        const util::Exception &exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
                 }
 
                 void Client::OnStreamDisconnect (Stream::SharedPtr stream) throw () {

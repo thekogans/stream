@@ -66,7 +66,7 @@ namespace thekogans {
             /// \param[in] exception \see{util::Exception} representing the error.
             virtual void OnStreamError (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                util::Exception::SharedPtr /*exception*/) throw () {}
+                const util::Exception & /*exception*/) throw () {}
 
             /// \brief
             /// Called to initiate stream normal disconnect processing.

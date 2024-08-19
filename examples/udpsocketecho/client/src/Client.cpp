@@ -75,22 +75,22 @@ namespace thekogans {
 
                 void Client::OnStreamError (
                         Stream::SharedPtr /*stream*/,
-                        util::Exception::SharedPtr exception) throw () {
-                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception->Report ().c_str ());
+                        const util::Exception &exception) throw () {
+                    THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
                 }
 
                 void Client::OnUDPSocketReadFrom (
                         UDPSocket::SharedPtr /*udpSocket*/,
                         util::Buffer::SharedPtr /*buffer*/,
-                        Address /*address*/) throw () {
+                        const Address & /*address*/) throw () {
                     NoteResult ();
                 }
 
                 void Client::OnUDPSocketReadMsg (
                         UDPSocket::SharedPtr /*udpSocket*/,
                         util::Buffer::SharedPtr /*buffer*/,
-                        Address /*from*/,
-                        Address /*to*/) throw () {
+                        const Address & /*from*/,
+                        const Address & /*to*/) throw () {
                     NoteResult ();
                 }
 

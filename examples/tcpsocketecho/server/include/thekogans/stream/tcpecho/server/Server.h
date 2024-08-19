@@ -49,7 +49,7 @@ namespace thekogans {
                     // StreamEvents
                     virtual void OnStreamError (
                         Stream::SharedPtr stream,
-                        util::Exception::SharedPtr exception) throw () override;
+                        const util::Exception &exception) throw () override;
                     virtual void OnStreamDisconnect (Stream::SharedPtr stream) throw () override;
                     virtual void OnStreamRead (
                         Stream::SharedPtr stream,
