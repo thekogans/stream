@@ -58,7 +58,7 @@ namespace {
 int main (
         int argc,
         const char *argv[]) {
-    server::Options::Instance ()->Parse (argc, argv, "hvlcfrkpa");
+    server::Options::Instance ()->Parse (argc, argv, "hvlcfrkpam");
     THEKOGANS_UTIL_LOG_INIT (
         server::Options::Instance ()->loggerMgr.level,
         server::Options::Instance ()->loggerMgr.decorations);
@@ -87,8 +87,9 @@ int main (
             "f - Log to file (path - Path of log file).\n"
             "r - Archive file log (max size - Max log file size before archiving).\n"
             "k - Use lock file to prevent multiple instances (path - Path to lock file).\n"
-            "p - Port to listen for clients on.\n"
-            "a - Address to listen for clients on (can be repeated).\n",
+            "p - Port to listen for clients on. (default is 8854)\n"
+            "a - Address to listen for clients on (default is any).\n"
+            "m - Max pending connections (default is 5).\n",
             argv[0],
             GetLevelsList (" | ").c_str ());
     }

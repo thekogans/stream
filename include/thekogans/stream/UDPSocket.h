@@ -34,6 +34,8 @@ namespace thekogans {
         ///
         /// \brief
         /// Subscribe to UDPSocketEvents to receive \see{UDPSocket} event notifications.
+        /// NOTE: See \see{StreamEvents} for an explination on why \see{util::Buffer}::SharedPtr
+        /// is used in read and write events.
 
         struct _LIB_THEKOGANS_STREAM_DECL UDPSocketEvents {
             /// \brief

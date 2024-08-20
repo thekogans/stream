@@ -44,6 +44,7 @@ namespace thekogans {
                         version (false),
                         port (DEFAULT_PORT),
                         address (Address::Any (port)),
+                        maxPendingConnections (TCPSocket::DEFAULT_MAX_PENDING_CONNECTIONS),
                         startDirectory (util::Path::GetCurrDirectory ()),
                         watchId (
                             util::Directory::Watcher::Instance ()->AddWatch (
@@ -92,6 +93,9 @@ namespace thekogans {
                             break;
                         case 'a':
                             address = Address (port, value);
+                            break;
+                        case 'm':
+                            maxPendingConnections = util::stringToui32 (value.c_str ());
                             break;
                     }
                 }

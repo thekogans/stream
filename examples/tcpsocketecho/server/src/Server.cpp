@@ -57,7 +57,7 @@ namespace thekogans {
                     // Bind to the given address.
                     serverSocket->Bind (Options::Instance ()->address);
                     // Put the socket in listening mode.
-                    serverSocket->Listen (/*maxPendingConnections*/);
+                    serverSocket->Listen (Options::Instance ()->maxPendingConnections);
                     // We're open for business. Accept client connections.
                     serverSocket->Accept ();
                 }

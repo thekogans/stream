@@ -51,9 +51,19 @@ namespace thekogans {
         ///
         /// \brief
         /// Every \see{Stream} is able to fire the followig events. To receive a
-        /// particular Stream's events you need to subscribe to it's events.
+        /// particular Stream's events you need to subscribe to its events.
         /// See \see{Pipe}, \see{NamedPipe}, \see{TCPSocket} and \see{UDPSocket}
         /// for examples on how to use that particular stream.
+        /// NOTE: I chose to use \see{util::Buffer}::SharedPtr to notify the
+        /// listeners when data was read (OnStreamRead) or written (OnStreamWrite).
+        /// The reason for that is performance as copying buffers of data is
+        /// expensive. The consequence of this decision is that all listeners get
+        /// to see the same set of buffer read and write offsets. That can be
+        /// problematic when trying to read the data from the buffer only to have
+        /// a previous \see{util::Subscriber} modify these offsets. It is highly
+        /// recommended that your own subscriber wrap the passed in buffer in a
+        /// \see{util::TenantReadBuffer} to get its own set of offsets without
+        /// disturbing the buffer.
 
         struct _LIB_THEKOGANS_STREAM_DECL StreamEvents {
             /// \brief

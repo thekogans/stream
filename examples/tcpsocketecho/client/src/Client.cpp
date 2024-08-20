@@ -81,7 +81,8 @@ namespace thekogans {
                 void Client::OnTCPSocketConnect (
                         TCPSocket::SharedPtr tcpSocket,
                         const Address &address) throw () {
-                    THEKOGANS_UTIL_LOG_INFO ("Connected to:\n%s\n", address.ToString ().c_str ());
+                    THEKOGANS_UTIL_LOG_INFO (
+                        "Connected to:\n%s\n", address.ToString ().c_str ());
                     clientTCPSocket->Read (0);
                     THEKOGANS_UTIL_LOG_INFO (
                         "Start bandwidth test: %u bytes, %u iterations.\n",

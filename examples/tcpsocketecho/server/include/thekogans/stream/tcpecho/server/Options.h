@@ -74,6 +74,7 @@ namespace thekogans {
                     std::string lockFilePath;
                     util::ui16 port;
                     Address address;
+                    util::i32 maxPendingConnections;
                     std::string startDirectory;
                     util::Directory::Watcher::WatchId watchId;
 
