@@ -22,6 +22,7 @@
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/File.h"
+#include "thekogans/stream/TCPSocket.h"
 #include "thekogans/stream/tcpecho/server/Options.h"
 
 namespace thekogans {
