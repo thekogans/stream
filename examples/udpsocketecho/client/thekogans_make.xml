@@ -11,6 +11,11 @@
                 name = "util"/>
     <dependency organization = "thekogans"
                 name = "stream"/>
+    <choose>
+      <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
+        <framework>CoreFoundation</framework>
+      </when>
+    </choose>
   </dependencies>
   <cpp_headers prefix = "include">
     <cpp_header>$(organization)/$(project_directory)/Client.h</cpp_header>

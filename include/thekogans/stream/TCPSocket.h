@@ -271,13 +271,18 @@ namespace thekogans {
                 Socket (handle) {}
             /// \brief
             /// ctor.
+            /// Create a SOCK_STREAM socket.
+            TCPSocket () :
+                Socket (AF_INET, SOCK_STREAM, 0) {}
+            /// \brief
+            /// ctor.
             /// \param[in] family Address family specification.
             /// \param[in] type Socket type specification.
             /// \param[in] protocol Socket protocol specification.
             TCPSocket (
-                int family = AF_INET,
-                int type = SOCK_STREAM,
-                int protocol = 0) :
+                int family,
+                int type,
+                int protocol) :
                 Socket (family, type, protocol) {}
 
             /// \brief

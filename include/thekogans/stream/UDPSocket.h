@@ -125,13 +125,18 @@ namespace thekogans {
                 Socket (handle) {}
             /// \brief
             /// ctor.
+            /// Create a SOCK_DGRAM socket.
+            UDPSocket () :
+                Socket (AF_INET, SOCK_DGRAM, 0) {}
+            /// \brief
+            /// ctor.
             /// \param[in] family Address family specification.
             /// \param[in] type Socket type specification.
             /// \param[in] protocol Socket protocol specification.
             UDPSocket (
-                int family = AF_INET,
-                int type = SOCK_DGRAM,
-                int protocol = 0) :
+                int family,
+                int type,
+                int protocol) :
                 Socket (family, type, protocol) {}
 
             /// \brief

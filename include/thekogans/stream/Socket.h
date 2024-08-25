@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <list>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/stream/Config.h"
 #include "thekogans/stream/Stream.h"

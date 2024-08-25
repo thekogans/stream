@@ -17,7 +17,7 @@
         <library>Iphlpapi.lib</library>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <framework>Foundation</framework>
+        <framework>CoreFoundation</framework>
       </when>
     </choose>
   </dependencies>
