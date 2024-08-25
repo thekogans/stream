@@ -18,6 +18,8 @@
 #if !defined (__thekogans_stream_namedpipeecho_server_Version_h)
 #define __thekogans_stream_namedpipeecho_server_Version_h
 
+#include "thekogans/util/Environment.h"
+
 #if defined (TOOLCHAIN_OS_Windows)
 
 #include "thekogans/util/Version.h"
