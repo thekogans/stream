@@ -35,11 +35,7 @@ namespace thekogans {
             namespace client {
 
                 struct Client :
-                        public util::Singleton<
-                            Client,
-                            util::SpinLock,
-                            util::RefCountedInstanceCreator<Client>,
-                            util::RefCountedInstanceDestroyer<Client>>,
+                        public util::RefCountedSingleton<Client>,
                         public util::Subscriber<StreamEvents> {
                 private:
                     NamedPipe::SharedPtr clientNamedPipe;

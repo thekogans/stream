@@ -202,11 +202,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
                 public util::Thread,
             #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-                public util::Singleton<
-                    Adapters,
-                    util::SpinLock,
-                    util::RefCountedInstanceCreator<Adapters>,
-                    util::RefCountedInstanceDestroyer<Adapters>>,
+                public util::RefCountedSingleton<Adapters>,
                 public util::Producer<AdaptersEvents> {
             /// \brief
             /// Declare \see{util::RefCounted} pointers.

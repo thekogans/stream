@@ -73,11 +73,7 @@ namespace thekogans {
         /// using namespace thekogans;
         ///
         /// struct Client :
-        ///         public util::Singleton<
-        ///             Client,
-        ///             util::SpinLock,
-        ///             util::RefCountedInstanceCreator<Client>,
-        ///             util::RefCountedInstanceDestroyer<Client>>,
+        ///         public util::RefCountedSingleton<Client>,
         ///         public util::Subscriber<StreamEvents>,
         ///         public util::Subscriber<TCPSocketEvents> {
         /// private:
@@ -146,11 +142,7 @@ namespace thekogans {
         /// using namespace thekogans;
         ///
         /// struct Server :
-        ///         public util::Singleton<
-        ///             Server,
-        ///             util::SpinLock,
-        ///             util::RefCountedInstanceCreator<Server>,
-        ///             util::RefCountedInstanceDestroyer<Server>>,
+        ///         public util::RefCountedSingleton<Server>,
         ///         public util::Subscriber<StreamEvents>,
         ///         public util::Subscriber<TCPSocketEvents> {
         /// private:

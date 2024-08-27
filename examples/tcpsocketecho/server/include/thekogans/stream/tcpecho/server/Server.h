@@ -30,11 +30,7 @@ namespace thekogans {
             namespace server {
 
                 struct Server :
-                        public util::Singleton<
-                            Server,
-                            util::SpinLock,
-                            util::RefCountedInstanceCreator<Server>,
-                            util::RefCountedInstanceDestroyer<Server>>,
+                        public util::RefCountedSingleton<Server>,
                         public util::Subscriber<StreamEvents>,
                         public util::Subscriber<TCPSocketEvents> {
                 private:
