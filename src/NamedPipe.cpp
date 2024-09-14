@@ -186,6 +186,13 @@ namespace thekogans {
             }
         }
 
+        void NamedPipe::SetMode (DWORD pipeMode) {
+            if (!SetNamedPipeHandleState (handle, &pipeMode, 0, 0)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+        }
+
         namespace {
             struct ConnectOverlapped : public Overlapped {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ConnectOverlapped)
@@ -226,15 +233,15 @@ namespace thekogans {
             overlapped.Release ();
         }
 
-        void NamedPipe::Disconnect (bool flushBuffers) {
-            if ((flushBuffers && !FlushFileBuffers (handle)) || !DisconnectNamedPipe (handle)) {
+        void NamedPipe::Disconnect () {
+            if (!DisconnectNamedPipe (handle)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }
         }
 
-        void NamedPipe::SetMode (DWORD pipeMode) {
-            if (!SetNamedPipeHandleState (handle, &pipeMode, 0, 0)) {
+        void NamedPipe::FlushBuffers () {
+            if (!FlushFileBuffers (handle)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE);
             }

@@ -24,7 +24,6 @@
     #include <winsock2.h>
 #else // defined (TOOLCHAIN_OS_Windows)
     #include <list>
-    #include "thekogans/util/SpinLock.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RefCounted.h"

@@ -89,6 +89,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             #if !defined (TOOLCHAIN_OS_Windows)
+                util::LockGuard<util::SpinLock> guard (spinLock);
                 in.clear ();
                 out.clear ();
             #endif // !defined (TOOLCHAIN_OS_Windows)

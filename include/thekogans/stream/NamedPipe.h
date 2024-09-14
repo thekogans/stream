@@ -206,8 +206,11 @@ namespace thekogans {
 
             /// \brief
             /// Disconnect the server end of the \see{NamedPipe}.
-            /// \param[in] flushBuffers Call FlushFileBuffers before disconnecting.
-            void Disconnect (bool flushBuffers = true);
+            void Disconnect ();
+
+            /// \brief
+            /// Call FlushFileBuffers.
+            void FlushBuffers ();
 
         protected:
             /// \brief
