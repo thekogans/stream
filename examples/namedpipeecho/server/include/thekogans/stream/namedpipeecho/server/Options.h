@@ -79,7 +79,6 @@ namespace thekogans {
 
                     // util::CommandLineOptions
                     virtual void DoOption (char option, const std::string &value);
-                    virtual void Epilog ();
 
                     // util::Directory::Watcher::EventSink
                     virtual void HandleModified (

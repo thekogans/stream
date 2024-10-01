@@ -224,12 +224,14 @@ namespace thekogans {
             };
             /// \brief
             /// Async read bytes from the stream.
-            /// \param[in] bufferLength Number of bytes to read (for \see{Socket} this number
-            /// can and should be 0. This way you will get everything that has arrived).
+            /// \param[in] bufferLength Number of bytes to read (For \see{TCPSocket} this
+            /// number can and should be 0. This way you will get everything that has arrived).
             /// IMPORTANT: bufferLength specifies the max number of bytes that
             /// will be returned by this read. If there are fewer bytes available
-            /// then requested, then fewer will be returned. It's up to the caller
-            /// to continue calling Read (in OnStreamRead) to get more bytes.
+            /// then requested, then fewer will be returned. If chainRead == true, the
+            /// \ss{Overlapped} responsible for this read will queue up a new async read
+            /// request before returning the bytes. If chainRead == false, it's up to the
+            /// caller to continue calling Read (in OnStreamRead?) to get more bytes.
             virtual void Read (std::size_t /*bufferLength*/ = DEFAULT_BUFFER_LENGTH) = 0;
             /// \brief
             /// Async write \see{util::Buffer} to the stream. This method is more
@@ -238,7 +240,7 @@ namespace thekogans {
             virtual void Write (util::Buffer::SharedPtr /*buffer*/) = 0;
             /// \brief
             /// Async write bytes to the stream. Upon return this method will have made
-            /// a copy of the buffer contents and can be deleted by the caller without
+            /// a copy of the buffer contents and it can be deleted by the caller without
             /// waiting for the async write to complete.
             /// \param[in] buffer Bytes to write.
             /// \param[in] bufferLength Buffer length.
@@ -250,6 +252,9 @@ namespace thekogans {
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Enqueue the given \see{Overlapped} on the given \see{Overlapped::Queue}.
+            /// This is a 'user' facing API. If you derive from stream and your custom
+            /// stream needs it's own \see{Overlapped} type. This is the method you call
+            /// to queue it up.
             /// \param[in] overlapped \see{Overlapped} to enqueue.
             /// \param[in] queue \see{Overlapped::Queue} to enqueue the given \see{Overlapped} on.
             void EnqOverlapped (
@@ -259,6 +264,9 @@ namespace thekogans {
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped}
             /// from the given queue.
+            /// The following two methods are part of the back end async machinery
+            /// burried inside \see{AsyncIoEventQueue}. Together with Enqoverlapped
+            /// above they form the overalapped interface we emulate from Windows.
             /// \param[in] queue Queue to remove the head \see{Overlapped} from.
             void DeqOverlapped (Overlapped::Queue &queue) throw ();
 

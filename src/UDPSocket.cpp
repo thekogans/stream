@@ -111,7 +111,7 @@ namespace thekogans {
 
                 ReadFromOverlapped (std::size_t bufferLength_) :
                         bufferLength (bufferLength_),
-                        buffer (new util::Buffer (util::NetworkEndian, bufferLength)) {
+                        buffer (new util::NetworkBuffer (bufferLength)) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     wsaBuf.len = (ULONG)buffer->GetDataAvailableForWriting ();
                     wsaBuf.buf = (char *)buffer->GetWritePtr ();
@@ -292,8 +292,7 @@ namespace thekogans {
                 const Address &address) {
             if (buffer != nullptr && bufferLength > 0 && address != Address::Empty) {
                 WriteTo (
-                    new util::Buffer (
-                        util::NetworkEndian,
+                    new util::NetworkBuffer (
                         (const util::ui8 *)buffer,
                         (const util::ui8 *)buffer + bufferLength),
                     address);
@@ -317,7 +316,7 @@ namespace thekogans {
 
                 ReadMsgOverlapped (std::size_t bufferLength_) :
                     bufferLength (bufferLength_),
-                    buffer (new util::Buffer (util::NetworkEndian, bufferLength)),
+                    buffer (new util::NetworkBuffer (bufferLength)),
                     msgHdr (
                         buffer->GetWritePtr (),
                         buffer->GetDataAvailableForWriting (),
@@ -497,8 +496,7 @@ namespace thekogans {
             if (buffer != nullptr && bufferLength > 0 &&
                     from != Address::Empty && to != Address::Empty) {
                 WriteMsg (
-                    new util::Buffer (
-                        util::NetworkEndian,
+                    new util::NetworkBuffer (
                         (const util::ui8 *)buffer,
                         (const util::ui8 *)buffer + bufferLength),
                     from,

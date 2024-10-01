@@ -101,8 +101,7 @@ namespace thekogans {
                 std::size_t bufferLength) {
             if (buffer != nullptr && bufferLength > 0) {
                 Write (
-                    new util::Buffer (
-                        util::NetworkEndian,
+                    new util::NetworkBuffer (
                         (const util::ui8 *)buffer,
                         (const util::ui8 *)buffer + bufferLength));
             }

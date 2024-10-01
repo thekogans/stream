@@ -184,7 +184,7 @@ namespace thekogans {
 
                 ReadOverlapped (std::size_t bufferLength_) :
                         bufferLength (bufferLength_),
-                        buffer (new util::Buffer (util::NetworkEndian, bufferLength)) {
+                        buffer (new util::NetworkBuffer (bufferLength)) {
                 #if defined (TOOLCHAIN_OS_Windows)
                     wsaBuf.len = (ULONG)buffer->GetDataAvailableForWriting ();
                     wsaBuf.buf = (char *)buffer->GetWritePtr ();

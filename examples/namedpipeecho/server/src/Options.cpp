@@ -33,7 +33,20 @@ namespace thekogans {
             namespace server {
 
                 namespace {
-                    const char *OPTIONS_XML = "Options.xml";
+                    const char * const OPTIONS_XML = "Options.xml";
+
+                    const char * const TAG_OPTIONS = "Options";
+                    const char * const TAG_LOGGER_MGR = "LoggerMgr";
+                    const char * const ATTR_LEVEL = "Level";
+                    const char * const ATTR_DECORATIONS = "Decorations";
+                    const char * const TAG_CONSOLE_LOGGER = "ConsoleLogger";
+                    const char * const TAG_FILE_LOGGER = "FileLogger";
+                    const char * const ATTR_PATH = "Path";
+                    const char * const ATTR_ARCHIVE = "Archive";
+                    const char * const ATTR_MAX_LOG_FILE_SIZE = "MaxLogFileSize";
+                    const char * const TAG_LOCK_FILE = "LockFile";
+                    const char * const TAG_LISTENER = "Listener";
+                    const char * const ATTR_ADDRESS = "Address";
                 }
 
             #if defined (_MSC_VER)
@@ -57,7 +70,9 @@ namespace thekogans {
                 #pragma warning (pop)
             #endif // defined (_MSC_VER)
 
-                void Options::DoOption (char option, const std::string &value) {
+                void Options::DoOption (
+                        char option,
+                        const std::string &value) {
                     switch (option) {
                         case 'h':
                             help = true;
@@ -92,9 +107,6 @@ namespace thekogans {
                     }
                 }
 
-                void Options::Epilog () {
-                }
-
                 void Options::HandleModified (
                         util::Directory::Watcher::WatchId watchId_,
                         const std::string &directory,
@@ -123,20 +135,20 @@ namespace thekogans {
                             assert (0);
                         }
                         pugi::xml_node node = doc.document_element ();
-                        if (!node.empty () && std::string (node.name ()) == "Options") {
+                        if (!node.empty () && std::string (node.name ()) == TAG_OPTIONS) {
                             for (pugi::xml_node child = node.first_child ();
                                     !child.empty (); child = child.next_sibling ()) {
                                 if (child.type () == pugi::node_element) {
                                     std::string childName = child.name ();
-                                    if (childName == "LoggerMgr") {
+                                    if (childName == TAG_LOGGER_MGR) {
                                         ParseLoggerMgr (child);
                                     }
-                                    else if (childName == "LockFile") {
+                                    else if (childName == TAG_LOCK_FILE) {
                                         lockFilePath =
                                             util::Decodestring (
-                                                child.attribute ("Path").value ());
+                                                child.attribute (ATTR_PATH).value ());
                                     }
-                                    else if (childName == "Listener") {
+                                    else if (childName == TAG_LISTENER) {
                                         ParseListener (child);
                                     }
                                 }
@@ -149,27 +161,28 @@ namespace thekogans {
                 void Options::ParseLoggerMgr (const pugi::xml_node &node) {
                     loggerMgr.Reset ();
                     loggerMgr.level =
-                        util::LoggerMgr::stringTolevel (node.attribute ("Level").value ());
+                        util::LoggerMgr::stringTolevel (node.attribute (ATTR_LEVEL).value ());
                     loggerMgr.decorations =
                         util::LoggerMgr::stringTodecorations (
-                            node.attribute ("Decorations").value ());
+                            node.attribute (ATTR_DECORATIONS).value ());
                     THEKOGANS_UTIL_LOG_RESET (loggerMgr.level, loggerMgr.decorations);
                     for (pugi::xml_node child = node.first_child ();
                             !child.empty (); child = child.next_sibling ()) {
                         if (child.type () == pugi::node_element) {
                             std::string childName = child.name ();
-                            if (childName == "ConsoleLogger") {
+                            if (childName == TAG_CONSOLE_LOGGER) {
                                 loggerMgr.consoleLogger = true;
                             }
-                            else if (childName == "FileLogger") {
+                            else if (childName == TAG_FILE_LOGGER) {
                                 loggerMgr.fileLogger.path =
-                                    util::Decodestring (child.attribute ("Path").value ());
-                                std::string archive = std::string (child.attribute ("Archive").value ());
+                                    util::Decodestring (child.attribute (ATTR_PATH).value ());
+                                std::string archive = std::string (
+                                    child.attribute (ATTR_ARCHIVE).value ());
                                 if (!archive.empty ()) {
                                     loggerMgr.fileLogger.archive = archive == util::XML_TRUE;
                                 }
                                 std::string maxLogFileSize =
-                                    std::string (child.attribute ("MaxLogFileSize").value ());
+                                    std::string (child.attribute (ATTR_MAX_LOG_FILE_SIZE).value ());
                                 if (!maxLogFileSize.empty ()) {
                                     loggerMgr.fileLogger.maxLogFileSize =
                                         util::stringToui32 (maxLogFileSize.c_str ());
@@ -194,7 +207,7 @@ namespace thekogans {
                     for (pugi::xml_node child = node.first_child ();
                             !child.empty (); child = child.next_sibling ()) {
                         if (child.type () == pugi::node_element &&
-                            std::string (child.name ()) == "Address") {
+                                std::string (child.name ()) == ATTR_ADDRESS) {
                             address = util::Decodestring (child.text ().get ());
                         }
                     }
