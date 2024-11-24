@@ -31,7 +31,6 @@
     <cpp_header>$(organization)/$(project_directory)/Address.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/AsyncIoEventQueue.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Config.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/MsgHdr.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Overlapped.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Pipe.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Socket.h</cpp_header>
@@ -47,7 +46,6 @@
     <cpp_source>Adapters.cpp</cpp_source>
     <cpp_source>Address.cpp</cpp_source>
     <cpp_source>AsyncIoEventQueue.cpp</cpp_source>
-    <cpp_source>MsgHdr.cpp</cpp_source>
     <cpp_source>Overlapped.cpp</cpp_source>
     <cpp_source>Pipe.cpp</cpp_source>
     <cpp_source>Socket.cpp</cpp_source>

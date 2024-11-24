@@ -89,7 +89,7 @@ namespace thekogans {
                 util::Buffer::SharedPtr buffer;
 
                 ReadOverlapped (std::size_t bufferLength) :
-                    buffer (new util::NetworBuffer (bufferLength)) {}
+                    buffer (new util::NetworkBuffer (bufferLength)) {}
 
                 virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
                     return GetError () == ERROR_SUCCESS ?

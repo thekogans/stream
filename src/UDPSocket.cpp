@@ -33,7 +33,6 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
 #include "thekogans/util/Exception.h"
-#include "thekogans/stream/MsgHdr.h"
 #include "thekogans/stream/Overlapped.h"
 #include "thekogans/stream/UDPSocket.h"
 
@@ -304,6 +303,182 @@ namespace thekogans {
         }
 
         namespace {
+            /// \brief
+            /// MsgHdr is a private class used by \see{UDPSocket} to implement
+            /// ReadMsg/WriteMsg. It encapsulates all the details of setting up
+            /// and parsing the control buffer required by recvmsg/sendmsg and
+            /// WSARecvMsg/WSASendMsg.
+        #if defined (TOOLCHAIN_OS_Windows)
+            struct MsgHdr : public WSAMSG {
+                /// \brief
+                /// Buffer struct used by WSAMSG.
+                WSABUF wsaBuf;
+        #else // defined (TOOLCHAIN_OS_Windows)
+            struct MsgHdr : public msghdr {
+                /// \brief
+                /// Buffer struct used by msghdr.
+                iovec ioVec;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// Control buffer used by WSAMSG/msghdr.
+                char controlBuffer[256];
+
+                /// \brief
+                /// ctor. Used by ReadMsg.
+                /// \param[out] buffer Buffer that will receive the message.
+                /// \param[in] bufferLength Buffer length.
+                /// \param[out] address Local address on which the message arrived.
+                MsgHdr (
+                        void *buffer,
+                        std::size_t bufferLength,
+                        Address &address) {
+                    SetBuffer (buffer, bufferLength);
+                #if defined (TOOLCHAIN_OS_Windows)
+                    name = &address.address;
+                    namelen = address.length;
+                    lpBuffers = &wsaBuf;
+                    dwBufferCount = 1;
+                    Control.len = 256;
+                    Control.buf = controlBuffer;
+                    dwFlags = 0;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    msg_name = &address.address;
+                    msg_namelen = address.length;
+                    msg_iov = &ioVec;
+                    msg_iovlen = 1;
+                    msg_controllen = 256;
+                    msg_control = controlBuffer;
+                    msg_flags = 0;
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+                /// \brief
+                /// ctor. Used by WriteMsg.
+                /// \param[in] buffer Buffer to write.
+                /// \param[in] bufferLength Length of buffer.
+                /// \param[in] from Local address from which the message is sent to the peer.
+                /// \param[in] to Peer address that will receive the message.
+                MsgHdr (
+                        const void *buffer,
+                        std::size_t bufferLength,
+                        const Address &from,
+                        const Address &to) {
+                    SetBuffer (buffer, bufferLength);
+                #if defined (TOOLCHAIN_OS_Windows)
+                    name = (LPSOCKADDR)&to.address;
+                    namelen = to.length;
+                    lpBuffers = &wsaBuf;
+                    dwBufferCount = 1;
+                    Control.buf = controlBuffer;
+                    if (from.GetFamily () == AF_INET) {
+                        Control.len = WSA_CMSG_SPACE (sizeof (IN_PKTINFO));
+                        WSACMSGHDR *wsaCMsgHdr = WSA_CMSG_FIRSTHDR (this);
+                        wsaCMsgHdr->cmsg_level = IPPROTO_IP;
+                        wsaCMsgHdr->cmsg_type = IP_PKTINFO;
+                        wsaCMsgHdr->cmsg_len = WSA_CMSG_LEN (sizeof (IN_PKTINFO));
+                        IN_PKTINFO *pktInfo = (IN_PKTINFO *)WSA_CMSG_DATA (wsaCMsgHdr);
+                        memset (pktInfo, 0, sizeof (IN_PKTINFO));
+                        pktInfo->ipi_addr = from.GetAddr ();
+                    }
+                    else if (from.GetFamily () == AF_INET6) {
+                        Control.len = WSA_CMSG_SPACE (sizeof (IN6_PKTINFO));
+                        WSACMSGHDR *wsaCMsgHdr = WSA_CMSG_FIRSTHDR (this);
+                        wsaCMsgHdr->cmsg_level = IPPROTO_IPV6;
+                        wsaCMsgHdr->cmsg_type = IPV6_PKTINFO;
+                        wsaCMsgHdr->cmsg_len = WSA_CMSG_LEN (sizeof (IN6_PKTINFO));
+                        IN6_PKTINFO *pktInfo = (IN6_PKTINFO *)WSA_CMSG_DATA (wsaCMsgHdr);
+                        memset (pktInfo, 0, sizeof (IN6_PKTINFO));
+                        pktInfo->ipi6_addr = from.GetAddr6 ();
+                    }
+                    dwFlags = 0;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    msg_iov = &ioVec;
+                    msg_iovlen = 1;
+                    msg_name = (void *)&to.address;
+                    msg_namelen = to.length;
+                    msg_control = controlBuffer;
+                    if (from.GetFamily () == AF_INET) {
+                        msg_controllen = CMSG_SPACE (sizeof (in_pktinfo));
+                        cmsghdr *cmsgHdr = CMSG_FIRSTHDR (this);
+                        cmsgHdr->cmsg_level = IPPROTO_IP;
+                        cmsgHdr->cmsg_type = IP_PKTINFO;
+                        cmsgHdr->cmsg_len = CMSG_LEN (sizeof (in_pktinfo));
+                        in_pktinfo *pktInfo = (in_pktinfo *)CMSG_DATA (cmsgHdr);
+                        memset (pktInfo, 0, sizeof (in_pktinfo));
+                        pktInfo->ipi_spec_dst = from.GetAddr ();
+                    }
+                    else if (from.GetFamily () == AF_INET6) {
+                        msg_controllen = CMSG_SPACE (sizeof (in6_pktinfo));
+                        cmsghdr *cmsgHdr = CMSG_FIRSTHDR (this);
+                        cmsgHdr->cmsg_level = IPPROTO_IPV6;
+                        cmsgHdr->cmsg_type = IPV6_PKTINFO;
+                        cmsgHdr->cmsg_len = CMSG_LEN (sizeof (in6_pktinfo));
+                        in6_pktinfo *pktInfo = (in6_pktinfo *)CMSG_DATA (cmsgHdr);
+                        memset (pktInfo, 0, sizeof (in6_pktinfo));
+                        pktInfo->ipi6_addr = from.GetAddr6 ();
+                    }
+                    msg_flags = 0;
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+
+                void SetBuffer (
+                        const void *buffer,
+                        std::size_t bufferLength) {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    wsaBuf.buf = (char *)buffer;
+                    wsaBuf.len = (ULONG)bufferLength;
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    ioVec.iov_base = (void *)buffer;
+                    ioVec.iov_len = bufferLength;
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                }
+
+                /// \brief
+                /// Parse the control buffer, and retrieve the message to address.
+                /// \param[in] port The control buffer only holds the address.
+                /// Use this port to pair that address with.
+                /// \return Message to address.
+                Address GetToAddress (util::ui16 port) const {
+                #if defined (TOOLCHAIN_OS_Windows)
+                    for (WSACMSGHDR *wsaCMsgHdr = WSA_CMSG_FIRSTHDR (this);
+                            wsaCMsgHdr != nullptr;
+                            wsaCMsgHdr = WSA_CMSG_NXTHDR (this, wsaCMsgHdr)) {
+                        if (wsaCMsgHdr->cmsg_level == IPPROTO_IP &&
+                                wsaCMsgHdr->cmsg_type == IP_PKTINFO) {
+                            IN_PKTINFO *pktInfo = (IN_PKTINFO *)WSA_CMSG_DATA (wsaCMsgHdr);
+                            return Address (port, pktInfo->ipi_addr);
+                        }
+                        if (wsaCMsgHdr->cmsg_level == IPPROTO_IPV6 &&
+                                wsaCMsgHdr->cmsg_type == IPV6_PKTINFO) {
+                            IN6_PKTINFO *pktInfo = (IN6_PKTINFO *)WSA_CMSG_DATA (wsaCMsgHdr);
+                            return Address (port, pktInfo->ipi6_addr);
+                        }
+                    }
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    for (cmsghdr *cmsghdr = CMSG_FIRSTHDR (this);
+                            cmsghdr != nullptr;
+                            cmsghdr = CMSG_NXTHDR ((msghdr *)this, cmsghdr)) {
+                        if (cmsghdr->cmsg_level == IPPROTO_IP &&
+                                cmsghdr->cmsg_type == IP_PKTINFO) {
+                            in_pktinfo *pktInfo = (in_pktinfo *)CMSG_DATA (cmsghdr);
+                            return Address (port, pktInfo->ipi_addr);
+                        }
+                        if (cmsghdr->cmsg_level == IPPROTO_IPV6 &&
+                                cmsghdr->cmsg_type == IPV6_PKTINFO) {
+                            in6_pktinfo *pktInfo = (in6_pktinfo *)CMSG_DATA (cmsghdr);
+                            return Address (port, pktInfo->ipi6_addr);
+                        }
+                    }
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    return Address::Empty;
+                }
+
+                // FIXME: Add other data extraction methods.
+
+                /// \brief
+                /// MsgHdr is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (MsgHdr)
+            };
+
             struct ReadMsgOverlapped : public Overlapped {
                 THEKOGANS_STREAM_DECLARE_OVERLAPPED (ReadMsgOverlapped)
 
