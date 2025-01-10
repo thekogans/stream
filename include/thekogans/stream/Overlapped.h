@@ -82,8 +82,8 @@ namespace thekogans {
 
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Convenient typedef for std::list<SharedPtr>.
-            typedef std::list<SharedPtr> Queue;
+            /// Alias for std::list<SharedPtr>.
+            using Queue = std::list<SharedPtr>;
         #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief

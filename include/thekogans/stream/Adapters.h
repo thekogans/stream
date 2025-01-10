@@ -65,11 +65,11 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (AdapterAddresses)
 
             /// \brief
-            /// Convenient typedef for std::list<SharedPtr>.
-            typedef std::list<SharedPtr> ListType;
+            /// Alias for std::list<SharedPtr>.
+            using ListType = std::list<SharedPtr>;
             /// \brief
-            /// Convenient typedef for std::map<std::string, SharedPtr>.
-            typedef std::map<std::string, SharedPtr> MapType;
+            /// Alias for std::map<std::string, SharedPtr>.
+            using MapType = std::map<std::string, SharedPtr>;
 
             /// \brief
             /// Adapter name.
@@ -106,15 +106,15 @@ namespace thekogans {
                     broadcast (broadcast_) {}
             };
             /// \brief
-            /// Convenient typedef for std::list<IPV4>.
-            typedef std::list<IPV4> IPV4Addresses;
+            /// Alias for std::list<IPV4>.
+            using IPV4Addresses = std::list<IPV4>;
             /// \brief
             /// List of IPV4 addresses. If the adapter was not
             /// configured for IPV4 it will be empty.
             IPV4Addresses ipv4;
             /// \brief
-            /// Convenient typedef for std::list<Address>.
-            typedef std::list<Address> IPV6Addresses;
+            /// Alias for std::list<Address>.
+            using IPV6Addresses = std::list<Address>;
             /// \brief
             /// List of IPV6 addresses. If the adapter was not
             /// configured for IPV6 it will be empty.

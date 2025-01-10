@@ -142,7 +142,7 @@ namespace thekogans {
             /// Convenient typedef for util::RefCountedRegistry<Stream>.
             /// NOTE: It's one and only instance is accessed like this;
             /// thekogans::stream::Stream::Registry::Instance ().
-            typedef util::RefCountedRegistry<Stream> Registry;
+            using Registry = util::RefCountedRegistry<Stream>;
 
         protected:
             /// \brief
