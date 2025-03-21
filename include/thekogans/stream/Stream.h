@@ -63,7 +63,7 @@ namespace thekogans {
         /// a previous \see{util::Subscriber} modify these offsets. It is highly
         /// recommended that your own subscriber wrap the passed in buffer in a
         /// \see{util::TenantReadBuffer} to get its own set of offsets without
-        /// disturbing the buffer.
+        /// disturbing the passed in buffer.
 
         struct _LIB_THEKOGANS_STREAM_DECL StreamEvents {
             /// \brief
