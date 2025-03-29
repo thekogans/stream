@@ -48,27 +48,23 @@ namespace thekogans {
             /// \brief
             /// ctor.
         #if defined (TOOLCHAIN_OS_Windows)
-            enum {
-                /// \brief
-                /// Number of concurrent threads servicing
-                /// the queue. Since AsyncIoEventQueue is
-                /// the one and only, there should be very
-                /// little reason to chenge this parameter.
-                /// It's here for completeness, and for the
-                /// one in ? times when you actually need to
-                /// do something different.
-                DEFAULT_CONCURRENT_THREADS = 1
-            };
+            /// \brief
+            /// Number of concurrent threads servicing
+            /// the queue. Since AsyncIoEventQueue is
+            /// the one and only, there should be very
+            /// little reason to chenge this parameter.
+            /// It's here for completeness, and for the
+            /// one in ? times when you actually need to
+            /// do something different.
+            static const util::ui32 DEFAULT_CONCURRENT_THREADS = 1;
             /// \param[in] concurrentThreads The maximum number
             /// of threads that the operating system can allow
             /// to concurrently process I/O completion packets
             /// for the I/O completion port.
         #elif defined (TOOLCHAIN_OS_Linux)
-            enum {
-                /// \brief
-                /// Default max queue size.
-                DEFAULT_MAX_SIZE = 256
-            };
+            /// \brief
+            /// Default max queue size.
+            static const util::ui32 DEFAULT_MAX_SIZE = 256;
             /// \param[in] maxSize Provided for completeness only.
             /// This parameter is ignored by epoll_create.
         #endif // defined (TOOLCHAIN_OS_Windows)

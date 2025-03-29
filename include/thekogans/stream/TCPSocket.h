@@ -280,11 +280,9 @@ namespace thekogans {
             /// Return true if socket is in listening mode.
             /// \return true if socket is in listening mode.
             bool IsListening () const;
-            enum {
-                /// \brief
-                /// Default max pending connection requests.
-                DEFAULT_MAX_PENDING_CONNECTIONS = 5
-            };
+            /// \brief
+            /// Default max pending connection requests.
+            static const util::i32 DEFAULT_MAX_PENDING_CONNECTIONS = 5;
             /// \brief
             /// Listen for incoming connections.
             /// \param[in] maxPendingConnections Maximum number of waiting connections.

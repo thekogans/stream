@@ -217,11 +217,9 @@ namespace thekogans {
             /// handle regardless if we closed the actual handle.
             virtual void Close () throw ();
 
-            enum {
-                /// \brief
-                /// Default buffer length for async Read[From | Msg].
-                DEFAULT_BUFFER_LENGTH = 16384
-            };
+            /// \brief
+            /// Default buffer length for async Read[From | Msg].
+            static const std::size_t DEFAULT_BUFFER_LENGTH = 16384;
             /// \brief
             /// Async read bytes from the stream.
             /// \param[in] bufferLength Number of bytes to read (For \see{TCPSocket} this
