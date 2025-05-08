@@ -170,15 +170,15 @@ namespace thekogans {
                 freeaddrinfo (result);
                 if (GetFamily () == AF_UNSPEC) {
                     if (family == AF_UNSPEC) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Unable to locate a suitable address for family AF_INET or AF_INET6");
                     }
                     else if (family == AF_INET) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Unable to locate a suitable address for family AF_INET");
                     }
                     else if (family == AF_INET6) {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s",
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Unable to locate a suitable address for family AF_INET6");
                     }
                     else {

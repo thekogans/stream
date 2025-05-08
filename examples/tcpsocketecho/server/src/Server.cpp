@@ -91,7 +91,7 @@ namespace thekogans {
                 }
 
                 void Server::OnStreamDisconnect (stream::Stream::SharedPtr stream) throw () {
-                    THEKOGANS_UTIL_LOG_INFO ("%s\n", "Connection closed.");
+                    THEKOGANS_UTIL_LOG_INFO ("Connection closed.\n");
                     RemoveConnection (stream);
                 }
 
@@ -117,7 +117,8 @@ namespace thekogans {
                                     std::size_t count;
 
                                     TCPTable () :
-                                            tcpTable ((MIB_TCPTABLE2 *)malloc (sizeof (MIB_TCPTABLE2))),
+                                            tcpTable (
+                                                (MIB_TCPTABLE2 *)malloc (sizeof (MIB_TCPTABLE2))),
                                             count (0) {
                                         if (tcpTable != 0) {
                                             ULONG size = sizeof (MIB_TCPTABLE2);
