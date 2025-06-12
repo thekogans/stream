@@ -20,11 +20,6 @@ libthekogans_stream has the following required dependencies:
 
 libthekogans_util
 
-Windows: Ws2_32.lib, Iphlpapi.lib.
+Windows: Ws2_32.lib, Iphlpapi.lib, Advapi32.lib.
 
 OS X: framworks: CoreFoundation, SystemConfiguration.
-
-libthekogans_stream has the following optional dependencies:
-
-if -DTHEKOGANS_STREAM_HAVE_OPENSSL is specified, libthekogans_crypto,
-openssl_ssl, openssl_crypto.
