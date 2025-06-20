@@ -592,7 +592,7 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_OSX)
 
     #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-        void Adapters::Run () throw () {
+        void Adapters::Run () noexcept {
             THEKOGANS_UTIL_TRY {
             #if defined (TOOLCHAIN_OS_Linux)
                 socket.Reset (new UDPSocket (AF_NETLINK, SOCK_RAW, NETLINK_ROUTE));

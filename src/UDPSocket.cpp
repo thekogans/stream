@@ -118,7 +118,7 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -142,7 +142,7 @@ namespace thekogans {
                     return buffer->AdvanceWriteOffset (GetCount ());
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     UDPSocket::SharedPtr udpSocket = stream;
                     if (udpSocket != nullptr) {
                         udpSocket->util::Producer<UDPSocketEvents>::Produce (
@@ -210,7 +210,7 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -234,7 +234,7 @@ namespace thekogans {
                     return buffer->AdvanceReadOffset (GetCount ());
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     UDPSocket::SharedPtr udpSocket = stream;
                     if (udpSocket != nullptr) {
                         udpSocket->util::Producer<UDPSocketEvents>::Produce (
@@ -497,7 +497,7 @@ namespace thekogans {
                         buffer->GetDataAvailableForWriting (),
                         from) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -528,7 +528,7 @@ namespace thekogans {
                     return buffer->AdvanceWriteOffset (GetCount ());
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     UDPSocket::SharedPtr udpSocket = stream;
                     if (udpSocket != nullptr) {
                         udpSocket->util::Producer<UDPSocketEvents>::Produce (
@@ -594,7 +594,7 @@ namespace thekogans {
                         from,
                         to) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -612,7 +612,7 @@ namespace thekogans {
                     return buffer->AdvanceReadOffset (GetCount ());
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     UDPSocket::SharedPtr udpSocket = stream;
                     if (udpSocket != nullptr) {
                         udpSocket->util::Producer<UDPSocketEvents>::Produce (

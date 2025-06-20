@@ -157,7 +157,7 @@ namespace thekogans {
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        void Socket::Close () throw () {
+        void Socket::Close () noexcept {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
                 closesocket ((THEKOGANS_STREAM_SOCKET)handle);
                 handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
@@ -192,7 +192,7 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -251,7 +251,7 @@ namespace thekogans {
                     return buffer->GetDataAvailableForReading ();
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     stream->util::Producer<StreamEvents>::Produce (
                         std::bind (
                             &StreamEvents::OnStreamRead,
@@ -308,7 +308,7 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
 
-                ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return  -1;
@@ -330,7 +330,7 @@ namespace thekogans {
                     return buffer->AdvanceReadOffset (GetCount ());
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                 #if !defined (TOOLCHAIN_OS_Windows)
                     if (buffer->IsEmpty ()) {
                 #endif // !defined (TOOLCHAIN_OS_Windows)

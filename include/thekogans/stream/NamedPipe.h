@@ -52,7 +52,7 @@ namespace thekogans {
             /// Called to report a connection on a server side \see{NamedPipe}.
             /// \param[in] namedPipe \see{NamedPipe} on which the connection occurred.
             virtual void OnNamedPipeConnected (
-                util::RefCounted::SharedPtr<NamedPipe> namedPipe) throw () {}
+                util::RefCounted::SharedPtr<NamedPipe> namedPipe) noexcept {}
         };
 
         /// \struct NamedPipe NamedPipe.h thekogans/stream/NamedPipe.h

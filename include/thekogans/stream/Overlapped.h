@@ -102,20 +102,20 @@ namespace thekogans {
             /// Called by Exec (below) to begin async io.
             /// \param[in] stream Stream on which to begin async io.
             /// \return Number of bytes transfered.
-            virtual ssize_t Prolog (util::RefCounted::SharedPtr<Stream> /*stream*/) throw () = 0;
+            virtual ssize_t Prolog (util::RefCounted::SharedPtr<Stream> /*stream*/) noexcept = 0;
             /// \brief
             /// Called by Exec (below) to finish async io.
             /// \param[in] stream Stream on which to finish async io.
             /// \return true == overlapped is finished and should be retired.
             /// (on POSIX only) false == try again later.
             /// NOTE: On Windows Epilog must return true.
-            virtual bool Epilog (util::RefCounted::SharedPtr<Stream> /*stream*/) throw () = 0;
+            virtual bool Epilog (util::RefCounted::SharedPtr<Stream> /*stream*/) noexcept = 0;
 
             /// \brief
             /// Perform async io.
             /// \param[in] stream Stream on which to perform async io.
             /// \return true == Overlapped completted and should be removed.
-            bool Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) throw ();
+            bool Exec (util::RefCounted::SharedPtr<Stream> /*stream*/) noexcept;
 
             /// \brief
             /// Return error code.

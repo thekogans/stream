@@ -91,12 +91,12 @@ namespace thekogans {
                 ReadOverlapped (std::size_t bufferLength) :
                     buffer (new util::NetworkBuffer (bufferLength)) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) noexcept override {
                     return GetError () == ERROR_SUCCESS ?
                         buffer->AdvanceWriteOffset (GetCount ()) : -1;
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     stream->util::Producer<StreamEvents>::Produce (
                         std::bind (
                             &StreamEvents::OnStreamRead,
@@ -144,12 +144,12 @@ namespace thekogans {
                 WriteOverlapped (util::Buffer::SharedPtr buffer_) :
                     buffer (buffer_) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) noexcept override {
                     return GetError () == ERROR_SUCCESS ?
                         buffer->AdvanceReadOffset (GetCount ()) : -1;
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     stream->util::Producer<StreamEvents>::Produce (
                         std::bind (
                             &StreamEvents::OnStreamWrite,
@@ -199,11 +199,11 @@ namespace thekogans {
 
                 ConnectOverlapped () {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) noexcept override {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     NamedPipe::SharedPtr namedPipe = stream;
                     if (namedPipe != nullptr) {
                         namedPipe->util::Producer<NamedPipeEvents>::Produce (

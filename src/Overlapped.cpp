@@ -22,7 +22,7 @@
 namespace thekogans {
     namespace stream {
 
-        bool Overlapped::Exec (Stream::SharedPtr stream) throw () {
+        bool Overlapped::Exec (Stream::SharedPtr stream) noexcept {
             ssize_t result = Prolog (stream);
             if (result > 0) {
                 return Epilog (stream);

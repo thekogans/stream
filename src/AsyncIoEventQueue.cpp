@@ -73,7 +73,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        void AsyncIoEventQueue::Run () throw () {
+        void AsyncIoEventQueue::Run () noexcept {
             const std::size_t maxEventsBatch = 100;
         #if defined (TOOLCHAIN_OS_Windows)
             std::vector<OVERLAPPED_ENTRY> iocpEvents (maxEventsBatch);

@@ -76,13 +76,13 @@ namespace thekogans {
             /// \param[in] exception \see{util::Exception} representing the error.
             virtual void OnStreamError (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                const util::Exception & /*exception*/) throw () {}
+                const util::Exception & /*exception*/) noexcept {}
 
             /// \brief
             /// Called to initiate stream normal disconnect processing.
             /// \param[in] stream \see{Stream} that disconnected.
             virtual void OnStreamDisconnect (
-                util::RefCounted::SharedPtr<Stream> /*stream*/) throw () {}
+                util::RefCounted::SharedPtr<Stream> /*stream*/) noexcept {}
 
             /// \brief
             /// Called when new data has arrived for the given stream.
@@ -90,14 +90,14 @@ namespace thekogans {
             /// \param[in] buffer The new data.
             virtual void OnStreamRead (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                util::Buffer::SharedPtr /*buffer*/) throw () {}
+                util::Buffer::SharedPtr /*buffer*/) noexcept {}
             /// \brief
             /// Called when data was written to a stream.
             /// \param[in] stream Stream where data was written.
             /// \param[in] buffer The written data.
             virtual void OnStreamWrite (
                 util::RefCounted::SharedPtr<Stream> /*stream*/,
-                util::Buffer::SharedPtr /*buffer*/) throw () {}
+                util::Buffer::SharedPtr /*buffer*/) noexcept {}
         };
 
         /// \struct Stream Stream.h thekogans/stream/Stream.h
@@ -215,7 +215,7 @@ namespace thekogans {
             /// Close the OS handle associated with the stream.
             /// NOTE: Close does not throw. It's end state is an invalid
             /// handle regardless if we closed the actual handle.
-            virtual void Close () throw ();
+            virtual void Close () noexcept;
 
             /// \brief
             /// Default buffer length for async Read[From | Msg].
@@ -257,7 +257,7 @@ namespace thekogans {
             /// \param[in] queue \see{Overlapped::Queue} to enqueue the given \see{Overlapped} on.
             void EnqOverlapped (
                 Overlapped::SharedPtr overlapped,
-                Overlapped::Queue &queue) throw ();
+                Overlapped::Queue &queue) noexcept;
 
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to remove the head \see{Overlapped}
@@ -266,7 +266,7 @@ namespace thekogans {
             /// burried inside \see{AsyncIoEventQueue}. Together with Enqoverlapped
             /// above they form the overalapped interface we emulate from Windows.
             /// \param[in] queue Queue to remove the head \see{Overlapped} from.
-            void DeqOverlapped (Overlapped::Queue &queue) throw ();
+            void DeqOverlapped (Overlapped::Queue &queue) noexcept;
 
             /// \brief
             /// Called by \see{AsyncIoEventQueue} to retrieve the head \see{Overlapped}
@@ -274,7 +274,7 @@ namespace thekogans {
             /// \param[in] queue Queue to retrieve the head \see{Overlapped} from.
             /// \return Pointer to the head \see{Overlapped}.
             /// \see{Overlapped}::SharedPtr if queue.empty () == true.
-            Overlapped::SharedPtr HeadOverlapped (Overlapped::Queue &queue) throw ();
+            Overlapped::SharedPtr HeadOverlapped (Overlapped::Queue &queue) noexcept;
 
             /// \brief
             /// \see{AsyncIoEventQueue} needs access to private members.

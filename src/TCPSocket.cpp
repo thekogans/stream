@@ -124,7 +124,7 @@ namespace thekogans {
                 ConnectOverlapped (const Address &address_) :
                     address (address_) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -142,7 +142,7 @@ namespace thekogans {
                     return 1;
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     TCPSocket::SharedPtr tcpSocket = stream;
                     if (tcpSocket != nullptr) {
                         tcpSocket->util::Producer<TCPSocketEvents>::Produce (
@@ -209,11 +209,11 @@ namespace thekogans {
 
                 DisconnectOverlapped () {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr /*stream*/) noexcept override {
                     return GetError () == ERROR_SUCCESS ? 1 : -1;
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept {
                     stream->Produce (
                         std::bind (
                             &StreamEvents::OnStreamDisconnect,
@@ -289,7 +289,7 @@ namespace thekogans {
             AcceptOverlapped () {}
         #endif // defined (TOOLCHAIN_OS_Windows)
 
-            virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+            virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (GetError () != ERROR_SUCCESS) {
                     return -1;
@@ -316,7 +316,7 @@ namespace thekogans {
                 return 1;
             }
 
-            virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+            virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                 TCPSocket::SharedPtr tcpSocket = stream;
                 if (tcpSocket != nullptr) {
                     tcpSocket->util::Producer<TCPSocketEvents>::Produce (

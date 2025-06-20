@@ -74,7 +74,7 @@ namespace thekogans {
                 ReadOverlapped (std::size_t bufferLength) :
                     buffer (new util::NetworkBuffer (bufferLength)) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -95,7 +95,7 @@ namespace thekogans {
                     return buffer->AdvanceWriteOffset (GetCount ());
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     stream->util::Producer<StreamEvents>::Produce (
                         std::bind (
                             &StreamEvents::OnStreamRead,
@@ -148,7 +148,7 @@ namespace thekogans {
                 WriteOverlapped (util::Buffer::SharedPtr buffer_) :
                     buffer (buffer_) {}
 
-                virtual ssize_t Prolog (Stream::SharedPtr stream) throw () override {
+                virtual ssize_t Prolog (Stream::SharedPtr stream) noexcept override {
                 #if defined (TOOLCHAIN_OS_Windows)
                     if (GetError () != ERROR_SUCCESS) {
                         return -1;
@@ -169,7 +169,7 @@ namespace thekogans {
                     return buffer->AdvanceReadOffset (GetCount ());
                 }
 
-                virtual bool Epilog (Stream::SharedPtr stream) throw () override {
+                virtual bool Epilog (Stream::SharedPtr stream) noexcept override {
                     stream->util::Producer<StreamEvents>::Produce (
                         std::bind (
                             &StreamEvents::OnStreamWrite,

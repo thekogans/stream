@@ -93,7 +93,7 @@ namespace thekogans {
             // util::Thread
             /// \brief
             /// AsyncIoEventQueue thread.
-            virtual void Run () throw () override;
+            virtual void Run () noexcept override;
 
             /// \brief
             /// AsyncIoEventQueue is neither copy constructable, nor assignable.

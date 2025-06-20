@@ -80,7 +80,7 @@ namespace thekogans {
             // Stream
             /// \brief
             /// Close the OS handle associated with the stream.
-            virtual void Close () throw () override;
+            virtual void Close () noexcept override;
 
             /// \brief
             /// Read bytes from the stream.

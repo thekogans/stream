@@ -80,7 +80,7 @@ namespace thekogans {
             Close ();
         }
 
-        void Stream::Close () throw () {
+        void Stream::Close () noexcept {
             if (handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
             #if defined (TOOLCHAIN_OS_Windows)
                 ::CloseHandle (handle);
@@ -128,7 +128,7 @@ namespace thekogans {
 
         void Stream::EnqOverlapped (
                 Overlapped::SharedPtr overlapped,
-                Overlapped::Queue &queue) throw () {
+                Overlapped::Queue &queue) noexcept {
             util::LockGuard<util::SpinLock> guard (spinLock);
             bool first = queue.empty ();
             queue.push_back (overlapped);
@@ -141,7 +141,7 @@ namespace thekogans {
             }
         }
 
-        void Stream::DeqOverlapped (Overlapped::Queue &queue) throw () {
+        void Stream::DeqOverlapped (Overlapped::Queue &queue) noexcept {
             util::LockGuard<util::SpinLock> guard (spinLock);
             if (!queue.empty ()) {
                 queue.pop_front ();
@@ -155,7 +155,7 @@ namespace thekogans {
             }
         }
 
-        Overlapped::SharedPtr Stream::HeadOverlapped (Overlapped::Queue &queue) throw () {
+        Overlapped::SharedPtr Stream::HeadOverlapped (Overlapped::Queue &queue) noexcept {
             util::LockGuard<util::SpinLock> guard (spinLock);
             return !queue.empty () ? queue.front () : Overlapped::SharedPtr ();
         }

@@ -50,7 +50,7 @@ namespace thekogans {
             /// (parameter to \see{Connect}).
             virtual void OnTCPSocketConnect (
                 util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
-                const Address & /*address*/) throw () {}
+                const Address & /*address*/) noexcept {}
             /// \brief
             /// Called to report a new connection on a \see{TCPSocket}.
             /// \param[in] tcpSocket Listening \see{TCPSocket} on which
@@ -58,7 +58,7 @@ namespace thekogans {
             /// \param[in] connection The new connection socket.
             virtual void OnTCPSocketAccept (
                 util::RefCounted::SharedPtr<TCPSocket> /*tcpSocket*/,
-                util::RefCounted::SharedPtr<TCPSocket> /*connection*/) throw () {}
+                util::RefCounted::SharedPtr<TCPSocket> /*connection*/) noexcept {}
         };
 
         /// \struct TCPSocket TCPSocket.h thekogans/stream/TCPSocket.h
@@ -109,18 +109,18 @@ namespace thekogans {
         ///     // StreamEvents
         ///     virtual void OnStreamError (
         ///             Stream::SharedPtr /*stream*/,
-        ///             const util::Exception &exception) throw () override {
+        ///             const util::Exception &exception) noexcept override {
         ///         // Log exception.
         ///         THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
         ///     }
         ///
-        ///     virtual void OnStreamDisconnect (Stream::SharedPtr /*stream*/) throw () override {
+        ///     virtual void OnStreamDisconnect (Stream::SharedPtr /*stream*/) noexcept override {
         ///         // stream disconnected.
         ///     }
         ///
         ///     virtual void OnStreamRead (
         ///             Stream::SharedPtr stream,
-        ///             util::Buffer::SharedPtr buffer) throw () override {
+        ///             util::Buffer::SharedPtr buffer) noexcept override {
         ///         // Process incomming reply from the server.
         ///         ...
         ///     }
@@ -128,7 +128,7 @@ namespace thekogans {
         ///     // TCPSocketEvents
         ///     virtual void OnTCPSocketConnect (
         ///             TCPSocket::SharedPtr tcpSocket,
-        ///             Address /*address*/) throw () override {
+        ///             Address /*address*/) noexcept override {
         ///         // Send handshake packet(s).
         ///         ...
         ///         // Post an async read to get the servers response.
@@ -186,7 +186,7 @@ namespace thekogans {
         ///     // StreamEvents
         ///     virtual void OnStreamError (
         ///             stream::Stream::SharedPtr stream,
-        ///             util::Exception::SharedPtr exception) throw () override {
+        ///             util::Exception::SharedPtr exception) noexcept override {
         ///         // Log exception.
         ///         THEKOGANS_UTIL_LOG_ERROR ("%s\n", exception.Report ().c_str ());
         ///         // Both serverSocket and connections will wind up here in case of error.
@@ -197,13 +197,13 @@ namespace thekogans {
         ///     }
         ///
         ///     virtual void OnStreamDisconnect (
-        ///             stream::Stream::SharedPtr stream) throw () override {
+        ///             stream::Stream::SharedPtr stream) noexcept override {
         ///         RemoveConnection (stream);
         ///     }
         ///
         ///     virtual void OnStreamRead (
         ///             stream::Stream::SharedPtr stream,
-        ///             util::Buffer::SharedPtr buffer) throw () override {
+        ///             util::Buffer::SharedPtr buffer) noexcept override {
         ///         // Process incomming request from a client.
         ///         ...
         ///     }
@@ -211,7 +211,7 @@ namespace thekogans {
         ///     // TCPSocketEvents
         ///     virtual void OnTCPSocketAccept (
         ///             stream::TCPSocket::SharedPtr /*tcpSocket*/,
-        ///             stream::TCPSocket::SharedPtr connection) throw () override {
+        ///             stream::TCPSocket::SharedPtr connection) noexcept override {
         ///         // Setup async notifications.
         ///         // NOTE: We use the default EventDeliveryPolicy (ImmediateEventDeliveryPolicy).
         ///         // The reason for this is explained in \see{Stream}.

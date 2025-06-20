@@ -172,19 +172,19 @@ namespace thekogans {
             /// Called when a new adapter was added to the network.
             /// \param[in] addresses New adapter addresses.
             virtual void OnAdaptersAdapterAdded (
-                AdapterAddresses::SharedPtr /*addresses*/) throw () {}
+                AdapterAddresses::SharedPtr /*addresses*/) noexcept {}
             /// \brief
             /// Called when an existing adapter was removed from the network.
             /// \param[in] addresses Deleted adapter addresses.
             virtual void OnAdaptersAdapterDeleted (
-                AdapterAddresses::SharedPtr /*addresses*/) throw () {}
+                AdapterAddresses::SharedPtr /*addresses*/) noexcept {}
             /// \brief
             /// Called when an existing adapter was modified.
             /// \param[in] oldAddresses Old adapter addresses.
             /// \param[in] newAddresses New adapter addresses.
             virtual void OnAdaptersAdapterChanged (
                 AdapterAddresses::SharedPtr /*oldAddresses*/,
-                AdapterAddresses::SharedPtr /*newAddresses*/) throw () {}
+                AdapterAddresses::SharedPtr /*newAddresses*/) noexcept {}
         };
 
         /// \struct Adapters Adapters.h thekogans/stream/Adapters.h
@@ -265,7 +265,7 @@ namespace thekogans {
             // util::Thread
             /// \brief
             /// Used on Linux and OS X to listen for network changes.
-            virtual void Run () throw () override;
+            virtual void Run () noexcept override;
         #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 
             /// \brief
