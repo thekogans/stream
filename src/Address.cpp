@@ -572,7 +572,7 @@ namespace thekogans {
 
         std::string Address::GetAdapterName () const {
             return GetFamily () == AF_LINK ?
-                std::string (dl.sdl_data, dl.sdl_data + dl.sdl_nlen) : 0;
+                std::string (dl.sdl_data, dl.sdl_data + dl.sdl_nlen) : std::string ();
         }
 
         void Address::SetAdapterName (const std::string &name) {

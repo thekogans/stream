@@ -227,7 +227,7 @@ namespace thekogans {
             /// IMPORTANT: bufferLength specifies the max number of bytes that
             /// will be returned by this read. If there are fewer bytes available
             /// then requested, then fewer will be returned. If chainRead == true, the
-            /// \ss{Overlapped} responsible for this read will queue up a new async read
+            /// \see{Overlapped} responsible for this read will queue up a new async read
             /// request before returning the bytes. If chainRead == false, it's up to the
             /// caller to continue calling Read (in OnStreamRead?) to get more bytes.
             virtual void Read (std::size_t /*bufferLength*/ = DEFAULT_BUFFER_LENGTH) = 0;

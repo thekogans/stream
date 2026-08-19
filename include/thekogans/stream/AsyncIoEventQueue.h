@@ -37,7 +37,7 @@ namespace thekogans {
         /// ports. On Linux it's implemented using epoll and on OS X using a kqueue.
 
         struct _LIB_THEKOGANS_STREAM_DECL AsyncIoEventQueue :
-                public util::Singleton<AsyncIoEventQueue, util::SpinLock>,
+                public util::Singleton<AsyncIoEventQueue>,
                 public util::Thread {
         private:
             /// \brief

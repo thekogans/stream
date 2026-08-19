@@ -100,15 +100,15 @@ namespace thekogans {
         /// 3. Message (call \see{UDPSocket::SetRecvPktInfo}):
         ///    Use \see{UDPSocket::ReadMsg}/\see{UDPSocket::WriteMsg}.
         ///
-        /// For async UDPSockets, the type of \see{AsyncIoEventSink} callback
+        /// For async UDPSockets, the type of \see{UDPSocketEvents} callback
         /// called will depend on the io mode chosen:
         ///
         /// 1. Basic:
-        ///    \see{AsyncIoEventSink::HandleUDPSocketReadFrom}, \see{AsyncIoEventSink::HandleUDPSocketWriteTo}.
+        ///    \see{UDPSocketEvents::OnUDPSocketReadFrom}, \see{UDPSocketEvents::OnUDPSocketWriteTo}.
         /// 2. Connected:
-        ///    \see{AsyncIoEventSink::HandleStreamRead}, \see{AsyncIoEventSink::HandleStreamWrite}.
+        ///    \see{UDPSocketEvents::OnStreamRead}, \see{UDPSocketEvents::OnStreamWrite}.
         /// 3. Message:
-        ///    \see{AsyncIoEventSink::HandleUDPSocketReadMsg}, \see{AsyncIoEventSink::HandleUDPSocketWriteMsg}.
+        ///    \see{UDPSocketEvents::OnUDPSocketReadMsg}, \see{UDPSocketEvents::OnUDPSocketWriteMsg}.
 
         struct _LIB_THEKOGANS_STREAM_DECL UDPSocket :
                 public Socket,
@@ -210,7 +210,7 @@ namespace thekogans {
             /// VERY IMPORTANT: You must call this api before calling
             /// ReadMsg/WriteMsg or if you want to use the socket in
             /// async mode and get notifications through
-            /// AsyncIoEventSink::HandleUDPSocketReadMsg/HandleUDPSocketWriteMsg.
+            /// UDPSocketEvents::OnUDPSocketReadMsg/OnUDPSocketWriteMsg.
             /// \param[in] recvPktInfo true = Set the IP_PKTINFO/IPV6_PKTINFO option,
             /// false = clear the IP_PKTINFO/IPV6_PKTINFO option.
             void SetRecvPktInfo (bool recvPktInfo);
