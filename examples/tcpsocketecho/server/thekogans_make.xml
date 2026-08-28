@@ -13,11 +13,11 @@
                 name = "stream"/>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
-        <library>Ws2_32.lib</library>
-        <library>Iphlpapi.lib</library>
+        <library name = "Ws2_32.lib"/>
+        <library name = "Iphlpapi.lib"/>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <framework>CoreFoundation</framework>
+        <framework name = "CoreFoundation"/>
       </when>
     </choose>
   </dependencies>

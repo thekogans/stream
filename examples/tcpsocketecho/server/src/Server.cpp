@@ -64,20 +64,22 @@ namespace thekogans {
                 }
 
                 void Server::Stop () {
-                    // Given the nature of async io, there are no
-                    // guarantees that the connections.clear () and
-                    // serverSocket.Reset (...) calls below will
-                    // result in the pointers being deleted. There
-                    // might be residual references on the objects
-                    // just due to other threads in the code still
-                    // doing some work. It is therefore imperative
-                    // that we sever all communications with the old
-                    // producers before connecting new ones. Stream
-                    // contamination is a dangerous thing.
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
+                    if (serverSocket != nullptr) {
+                        // Given the nature of async io, there are no
+                        // guarantees that the connections.clear () and
+                        // serverSocket.Reset (...) calls below will
+                        // result in the pointers being deleted. There
+                        // might be residual references on the objects
+                        // just due to other threads in the code still
+                        // doing some work. It is therefore imperative
+                        // that we sever all communications with the old
+                        // producers before connecting new ones. Stream
+                        // contamination is a dangerous thing.
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (*serverSocket);
+                        util::Subscriber<stream::TCPSocketEvents>::Unsubscribe (*serverSocket);
+                        serverSocket.Reset ();
+                    }
                     connections.clear ();
-                    serverSocket.Reset ();
                 }
 
                 void Server::OnStreamError (

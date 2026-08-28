@@ -35,9 +35,11 @@ namespace thekogans {
                 }
 
                 void Server::Stop () {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::NamedPipeEvents>::Unsubscribe ();
-                    serverNamedPipe.Reset ();
+                    if (serverNamedPipe != nullptr) {
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (*serverNamedPipe);
+                        util::Subscriber<stream::NamedPipeEvents>::Unsubscribe (*serverNamedPipe);
+                        serverNamedPipe.Reset ();
+                    }
                     connections.clear ();
                 }
 

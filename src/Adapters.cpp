@@ -120,10 +120,8 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 addressesMap (GetAddressesMap ()) {
         #if defined (TOOLCHAIN_OS_Windows)
-            typedef VOID (NETIOAPI_API_ *INTERFACE_CHANGE_CALLBACK) (
-                PVOID,
-                PMIB_IPINTERFACE_ROW,
-                MIB_NOTIFICATION_TYPE);
+            using INTERFACE_CHANGE_CALLBACK = VOID (
+                NETIOAPI_API_ *) (PVOID, PMIB_IPINTERFACE_ROW, MIB_NOTIFICATION_TYPE);
             DWORD rc = NotifyIpInterfaceChange (AF_UNSPEC,
                 (INTERFACE_CHANGE_CALLBACK)InterfaceChangeCallback, 0, FALSE, &handle);
             if (rc != NO_ERROR) {
@@ -207,10 +205,10 @@ namespace thekogans {
             struct DiffProcessor {
                 AdapterAddresses::ListType added;
                 AdapterAddresses::ListType deleted;
-                typedef std::pair<
+                using AdapterAddressesPair = std::pair<
                     AdapterAddresses::SharedPtr,
-                    AdapterAddresses::SharedPtr> AdapterAddressesPair;
-                typedef std::list<AdapterAddressesPair> AdapterAddressesPairList;
+                    AdapterAddresses::SharedPtr>;
+                using AdapterAddressesPairList = std::list<AdapterAddressesPair>;
                 AdapterAddressesPairList changed;
 
                 inline bool IsEmpty () const {
@@ -553,7 +551,8 @@ namespace thekogans {
                     }
                 }
             };
-            typedef std::unique_ptr<const __SCDynamicStore, SCDynamicStoreRefDeleter> SCDynamicStoreRefPtr;
+            using SCDynamicStoreRefPtr =
+                std::unique_ptr<const __SCDynamicStore, SCDynamicStoreRefDeleter>;
 
             struct CFStringRefDeleter {
                 void operator () (CFStringRef stringRef) {
@@ -562,7 +561,7 @@ namespace thekogans {
                     }
                 }
             };
-            typedef std::unique_ptr<const __CFString, CFStringRefDeleter> CFStringRefPtr;
+            using CFStringRefPtr = std::unique_ptr<const __CFString, CFStringRefDeleter>;
 
             struct CFArrayRefDeleter {
                 void operator () (CFArrayRef arrayRef) {
@@ -571,7 +570,7 @@ namespace thekogans {
                     }
                 }
             };
-            typedef std::unique_ptr<const __CFArray, CFArrayRefDeleter> CFArrayRefPtr;
+            using CFArrayRefPtr = std::unique_ptr<const __CFArray, CFArrayRefDeleter>;
 
             struct CFRunLoopSourceRefDeleter {
                 void operator () (CFRunLoopSourceRef runLoopSourceRef) {
@@ -580,7 +579,8 @@ namespace thekogans {
                     }
                 }
             };
-            typedef std::unique_ptr<__CFRunLoopSource, CFRunLoopSourceRefDeleter> CFRunLoopSourceRefPtr;
+            using CFRunLoopSourceRefPtr =
+                std::unique_ptr<__CFRunLoopSource, CFRunLoopSourceRefDeleter>;
         }
 
         void Adapters::SCDynamicStoreCallBack (

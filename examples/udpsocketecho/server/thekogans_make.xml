@@ -13,7 +13,7 @@
                 name = "stream"/>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <framework>CoreFoundation</framework>
+        <framework name ="CoreFoundation"/>
       </when>
     </choose>
   </dependencies>

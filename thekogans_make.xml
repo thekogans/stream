@@ -11,21 +11,21 @@
                 name = "util"/>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
-        <library>Ws2_32.lib</library>
-        <library>Iphlpapi.lib</library>
-        <library>Advapi32.lib</library>
+        <library name = "Ws2_32.lib"/>
+        <library name = "Iphlpapi.lib"/>
+        <library name = "Advapi32.lib"/>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <framework>CoreFoundation</framework>
-        <framework>SystemConfiguration</framework>
+        <framework name = "CoreFoundation"/>
+        <framework name = "SystemConfiguration"/>
       </when>
     </choose>
   </dependencies>
-  <cpp_preprocessor_definitions>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_preprocessor_definition>_CRT_SECURE_NO_WARNINGS</cpp_preprocessor_definition>
-    </if>
-  </cpp_preprocessor_definitions>
+  <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+    <c_preprocessor_definitions>
+      <c_preprocessor_definition>_CRT_SECURE_NO_WARNINGS</c_preprocessor_definition>
+    </c_preprocessor_definitions>
+  </if>
   <cpp_headers prefix = "include"
                install = "yes">
     <cpp_header>$(organization)/$(project_directory)/Adapters.h</cpp_header>

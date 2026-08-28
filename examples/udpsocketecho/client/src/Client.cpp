@@ -51,9 +51,11 @@ namespace thekogans {
                 }
 
                 void Client::Stop () {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::UDPSocketEvents>::Unsubscribe ();
-                    clientUDPSocket.Reset ();
+                    if (clientUDPSocket != nullptr) {
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (*clientUDPSocket);
+                        util::Subscriber<stream::UDPSocketEvents>::Unsubscribe (*clientUDPSocket);
+                        clientUDPSocket.Reset ();
+                    }
                 }
 
                 void Client::PerformTest () {

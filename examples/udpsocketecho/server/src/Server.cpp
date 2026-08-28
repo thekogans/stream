@@ -48,9 +48,11 @@ namespace thekogans {
                 }
 
                 void Server::Stop () {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::UDPSocketEvents>::Unsubscribe ();
-                    serverSocket.Reset ();
+                    if (serverSocket != nullptr) {
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (*serverSocket);
+                        util::Subscriber<stream::UDPSocketEvents>::Unsubscribe (*serverSocket);
+                        serverSocket.Reset ();
+                    }
                 }
 
                 void Server::OnStreamError (
@@ -64,7 +66,7 @@ namespace thekogans {
                         util::Buffer::SharedPtr buffer,
                         const Address &address) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (
-                        "OnUDPSocketReadFrom: %s:%u (%u bytes)\n",
+                        "OnUDPSocketReadFrom: %s:%u (" THEKOGANS_UTIL_SIZE_T_FORMAT " bytes)\n",
                         address.AddrToString ().c_str (),
                         address.GetPort (),
                         buffer->GetDataAvailableForReading ());
@@ -77,7 +79,7 @@ namespace thekogans {
                         const Address &from,
                         const Address &to) throw () {
                     THEKOGANS_UTIL_LOG_DEBUG (
-                        "OnUDPSocketReadMsg: %s:%u to: %s:%u (%u bytes)\n",
+                        "OnUDPSocketReadMsg: %s:%u to: %s:%u (" THEKOGANS_UTIL_SIZE_T_FORMAT " bytes)\n",
                         from.AddrToString ().c_str (),
                         from.GetPort (),
                         to.AddrToString ().c_str (),

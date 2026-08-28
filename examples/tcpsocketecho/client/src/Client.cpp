@@ -40,9 +40,11 @@ namespace thekogans {
                 }
 
                 void Client::Stop () {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    util::Subscriber<stream::TCPSocketEvents>::Unsubscribe ();
-                    clientTCPSocket.Reset ();
+                    if (clientTCPSocket != nullptr) {
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (*clientTCPSocket);
+                        util::Subscriber<stream::TCPSocketEvents>::Unsubscribe (*clientTCPSocket);
+                        clientTCPSocket.Reset ();
+                    }
                 }
 
                 void Client::OnStreamError (

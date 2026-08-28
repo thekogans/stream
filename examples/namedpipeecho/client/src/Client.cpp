@@ -66,8 +66,10 @@ namespace thekogans {
                 }
 
                 void Client::Stop () {
-                    util::Subscriber<stream::StreamEvents>::Unsubscribe ();
-                    clientNamedPipe.Reset ();
+                    if (clientNamedPipe != nullptr) {
+                        util::Subscriber<stream::StreamEvents>::Unsubscribe (*clientNamedPipe);
+                        clientNamedPipe.Reset ();
+                    }
                 }
 
                 void Client::PerformTest () {
