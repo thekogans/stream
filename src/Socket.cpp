@@ -24,9 +24,6 @@
     #include <arpa/inet.h>
     #include <net/if.h>
     #include <netinet/in.h>
-    #if defined (TOOLCHAIN_OS_Linux)
-        #include <stropts.h>
-    #endif // defined (TOOLCHAIN_OS_Linux)
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cstdio>
 #include "thekogans/util/Flags.h"
