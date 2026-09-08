@@ -20,6 +20,7 @@
     #include "thekogans/util/os/windows/WindowsHeader.h"
 #elif defined (TOOLCHAIN_OS_Linux)
     #include <sys/epoll.h>
+    #include <typeinfo>
 #elif defined (TOOLCHAIN_OS_OSX)
     #include <sys/types.h>
     #include <sys/event.h>
@@ -154,7 +155,7 @@ namespace thekogans {
                                         stream,
                                         THEKOGANS_UTIL_STRING_EXCEPTION (
                                             "Unknown stream (%s) error.",
-                                            stream->type ().name ())));
+                                            stream->typeinfo ().name ())));
                             }
                         }
                         else if ((epollEvents[i].events & EPOLLRDHUP) ||
