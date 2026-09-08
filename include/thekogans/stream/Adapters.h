@@ -58,7 +58,6 @@ namespace thekogans {
         ///
         /// \brief
         /// Contains adapter addresses returned by \see{Adapters::GetAddressesMap}.
-
         struct _LIB_THEKOGANS_STREAM_DECL AdapterAddresses : public util::RefCounted {
             /// \brief
             /// Declare \see{util::RefCounted} pointers.
@@ -162,7 +161,6 @@ namespace thekogans {
         /// \brief
         /// Network change notification events. See \see{util::Subscriber} for an
         /// example on how to use this class.
-
         struct _LIB_THEKOGANS_STREAM_DECL AdaptersEvents {
             /// \brief
             /// dtor.
@@ -197,11 +195,12 @@ namespace thekogans {
         /// wireless adapters that are connected and ready to go. It will
         /// not provide any information about other adapter types or adapters
         /// that are not configured.
-
         struct _LIB_THEKOGANS_STREAM_DECL Adapters :
-            #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            #if defined (TOOLCHAIN_OS_Linux)
+                public util::Subscriber<StreamEvents>,
+            #elif defined (TOOLCHAIN_OS_OSX)
                 public util::Thread,
-            #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            #endif // defined (TOOLCHAIN_OS_Linux)
                 public util::RefCountedSingleton<Adapters>,
                 public util::Producer<AdaptersEvents> {
             /// \brief
@@ -261,12 +260,19 @@ namespace thekogans {
             /// \return \see{AdapterAddressesMap} of all interface addresses.
             AdapterAddresses::MapType GetAddressesMap () const;
 
-        #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+        #if defined (TOOLCHAIN_OS_Linux)
+            // StreamEvents
+            /// \brief
+            /// Used on Linux to listen for network changes.
+            virtual void OnStreamRead (
+                util::RefCounted::SharedPtr<Stream> /*stream*/,
+                util::Buffer::SharedPtr /*buffer*/) noexcept override;
+        #elif defined (TOOLCHAIN_OS_OSX)
             // util::Thread
             /// \brief
-            /// Used on Linux and OS X to listen for network changes.
+            /// Used on OS X to listen for network changes.
             virtual void Run () noexcept override;
-        #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+        #endif // defined (TOOLCHAIN_OS_Linux)
 
             /// \brief
             /// Adapters is neither copy constructable, nor assignable.

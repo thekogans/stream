@@ -127,7 +127,14 @@ namespace thekogans {
             if (rc != NO_ERROR) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (rc);
             }
-        #elif defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+        #elif defined (TOOLCHAIN_OS_Linux)
+            socket.Reset (new UDPSocket (AF_NETLINK, SOCK_RAW, NETLINK_ROUTE));
+            socket->Subscribe (*this);
+            Address address (AF_NETLINK);
+            address.SetGroups (RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR);
+            socket->Bind (address);
+            socket->Read (4096);
+        #elif defined (TOOLCHAIN_OS_OSX)
             Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -542,7 +549,13 @@ namespace thekogans {
             return newAddressesMap;
         }
 
-    #if defined (TOOLCHAIN_OS_OSX)
+    #if defined (TOOLCHAIN_OS_Linux)
+        void Adapters::OnStreamRead (
+                util::RefCounted::SharedPtr<Stream> /*stream*/,
+                util::Buffer::SharedPtr /*buffer*/) noexcept {
+            NotifySubscribers ();
+        }
+    #elif defined (TOOLCHAIN_OS_OSX)
         namespace {
             struct SCDynamicStoreRefDeleter {
                 void operator () (SCDynamicStoreRef dynamicStoreRef) {
@@ -589,22 +602,9 @@ namespace thekogans {
                 void * /*info*/) {
             Adapters::Instance ()->NotifySubscribers ();
         }
-    #endif // defined (TOOLCHAIN_OS_OSX)
 
-    #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
         void Adapters::Run () noexcept {
             THEKOGANS_UTIL_TRY {
-            #if defined (TOOLCHAIN_OS_Linux)
-                socket.Reset (new UDPSocket (AF_NETLINK, SOCK_RAW, NETLINK_ROUTE));
-                Address address (AF_NETLINK);
-                address.SetGroups (RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR);
-                socket->Bind (address);
-                char buffer[4096];
-                while (socket->Read (buffer, 4096) > 0) {
-                    NotifySubscribers ();
-                }
-                socket.Reset ();
-            #else // defined (TOOLCHAIN_OS_Linux)
                 SCDynamicStoreContext dynamicStoreContext = {0, this, 0, 0, 0};
                 SCDynamicStoreRefPtr dynamicStore (
                     SCDynamicStoreCreate (0,
@@ -661,11 +661,10 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_SC_ERROR_CODE_EXCEPTION (SCError ());
                 }
-            #endif // defined (TOOLCHAIN_OS_Linux)
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
         }
-    #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+    #endif // defined (TOOLCHAIN_OS_Linux)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
