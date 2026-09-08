@@ -46,24 +46,20 @@
 namespace thekogans {
     namespace stream {
 
-        bool AdapterAddresses::Contains (const Address &address) const {
-            util::ui16 family = address.GetFamily ();
+        bool AdapterAddresses::Contains (const Address &address_) const {
+            util::ui16 family = address_.GetFamily ();
             if (family == AF_INET) {
-                const std::string addressString = address.AddrToString ();
-                for (IPV4Addresses::const_iterator
-                        it = ipv4.begin (),
-                        end = ipv4.end (); it != end; ++it) {
-                    if ((*it).unicast.AddrToString () == addressString) {
+                const std::string addressString = address_.AddrToString ();
+                for (const auto &address : ipv4) {
+                    if (address.unicast.AddrToString () == addressString) {
                         return true;
                     }
                 }
             }
             else if (family == AF_INET6) {
-                const std::string addressString = address.AddrToString ();
-                for (IPV6Addresses::const_iterator
-                        it = ipv6.begin (),
-                        end = ipv6.end (); it != end; ++it) {
-                    if ((*it).AddrToString () == addressString) {
+                const std::string addressString = address_.AddrToString ();
+                for (const auto &address : ipv6) {
+                    if (address.AddrToString () == addressString) {
                         return true;
                     }
                 }
@@ -71,13 +67,13 @@ namespace thekogans {
             // FIXME: Need to account for Windows (use WinPCap).
         #if defined (TOOLCHAIN_OS_Linux)
             else if (family == AF_PACKET) {
-                std::vector<util::ui8> addr = address.GetAddrPacket ();
+                std::vector<util::ui8> addr = address_.GetAddrPacket ();
                 return addr.size () == util::MAC_LENGTH &&
                     memcmp (mac, addr.data (), addr.size ()) == 0;
             }
         #elif defined (TOOLCHAIN_OS_OSX)
             else if (family == AF_LINK) {
-                std::vector<util::ui8> addr = address.GetAddrLink ();
+                std::vector<util::ui8> addr = address_.GetAddrLink ();
                 return addr.size () == util::MAC_LENGTH &&
                     memcmp (mac, addr.data (), addr.size ()) == 0;
             }
@@ -91,18 +87,14 @@ namespace thekogans {
                 "Index: " << index << std::endl <<
                 "Multicast: " << util::boolTostring (multicast) << std::endl <<
                 "IPV4:\n";
-            for (IPV4Addresses::const_iterator
-                    it = ipv4.begin (),
-                    end = ipv4.end (); it != end; ++it) {
+            for (const auto &address : ipv4) {
                 stream <<
-                    "  Unicast:\n" << (*it).unicast.ToString (2) <<
-                    "  Broadcast:\n" << (*it).broadcast.ToString (2);
+                    "  Unicast:\n" << address.unicast.ToString (2) <<
+                    "  Broadcast:\n" << address.broadcast.ToString (2);
             }
             stream << "IPV6:\n";
-            for (IPV6Addresses::const_iterator
-                    it = ipv6.begin (),
-                    end = ipv6.end (); it != end; ++it) {
-                stream << (*it).ToString (1);
+            for (const auto &address : ipv6) {
+                stream << address.ToString (1);
             }
             stream << "MAC: " << util::HexEncodeBuffer (mac, util::MAC_LENGTH) << std::endl;
         }
@@ -162,16 +154,12 @@ namespace thekogans {
                     const AdapterAddresses::IPV4Addresses &item2) {
                 if (item1.size () == item2.size ()) {
                     std::set<std::string> ipv41;
-                    for (AdapterAddresses::IPV4Addresses::const_iterator
-                            it = item1.begin (),
-                            end = item1.end (); it != end; ++it) {
-                        ipv41.insert ((*it).unicast.AddrToString ());
+                    for (const auto &address : item1) {
+                        ipv41.insert (address.unicast.AddrToString ());
                     }
                     std::set<std::string> ipv42;
-                    for (AdapterAddresses::IPV4Addresses::const_iterator
-                            it = item2.begin (),
-                            end = item2.end (); it != end; ++it) {
-                        ipv42.insert ((*it).unicast.AddrToString ());
+                    for (const auto &address : item2) {
+                        ipv42.insert (address.unicast.AddrToString ());
                     }
                     return ipv41 != ipv42;
                 }
@@ -183,16 +171,12 @@ namespace thekogans {
                     const AdapterAddresses::IPV6Addresses &item2) {
                 if (item1.size () == item2.size ()) {
                     std::set<std::string> ipv61;
-                    for (AdapterAddresses::IPV6Addresses::const_iterator
-                            it = item1.begin (),
-                            end = item1.end (); it != end; ++it) {
-                        ipv61.insert ((*it).AddrToString ());
+                    for (const auto &address : item1) {
+                        ipv61.insert (address.AddrToString ());
                     }
                     std::set<std::string> ipv62;
-                    for (AdapterAddresses::IPV6Addresses::const_iterator
-                            it = item2.begin (),
-                            end = item2.end (); it != end; ++it) {
-                        ipv62.insert ((*it).AddrToString ());
+                    for (const auto &address : item2) {
+                        ipv62.insert (address.AddrToString ());
                     }
                     return ipv61 != ipv62;
                 }
@@ -274,33 +258,27 @@ namespace thekogans {
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_STREAM)
             if (!diffProcessor.IsEmpty ()) {
-                for (AdapterAddresses::ListType::const_iterator
-                        it = diffProcessor.added.begin (),
-                        end = diffProcessor.added.end (); it != end; ++it) {
+                for (auto added : diffProcessor.added) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
                             &AdaptersEvents::OnAdaptersAdapterAdded,
                             std::placeholders::_1,
-                            *it));
+                            added));
                 }
-                for (AdapterAddresses::ListType::const_iterator
-                        it = diffProcessor.deleted.begin (),
-                        end = diffProcessor.deleted.end (); it != end; ++it) {
+                for (auto deleted : diffProcessor.deleted) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
                             &AdaptersEvents::OnAdaptersAdapterDeleted,
                             std::placeholders::_1,
-                            *it));
+                            deleted));
                 }
-                for (DiffProcessor::AdapterAddressesPairList::const_iterator
-                        it = diffProcessor.changed.begin (),
-                        end = diffProcessor.changed.end (); it != end; ++it) {
+                for (auto changed : diffProcessor.changed) {
                     util::Producer<AdaptersEvents>::Produce (
                         std::bind (
                             &AdaptersEvents::OnAdaptersAdapterChanged,
                             std::placeholders::_1,
-                            (*it).first,
-                            (*it).second));
+                            changed.first,
+                            changed.second));
                 }
             }
         }
