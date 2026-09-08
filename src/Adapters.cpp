@@ -100,9 +100,9 @@ namespace thekogans {
         }
 
         Adapters::Adapters () :
-            #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            #if defined (TOOLCHAIN_OS_OSX)
                 Thread ("Adapters"),
-            #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            #endif // defined (TOOLCHAIN_OS_OSX)
             #if defined (TOOLCHAIN_OS_Windows)
                 handle (0),
             #elif defined (TOOLCHAIN_OS_Linux)
@@ -121,7 +121,7 @@ namespace thekogans {
             }
         #elif defined (TOOLCHAIN_OS_Linux)
             socket.Reset (new UDPSocket (AF_NETLINK, SOCK_RAW, NETLINK_ROUTE));
-            socket->Subscribe (*this);
+            util::Subscriber<StreamEvents>::Subscribe (*socket);
             Address address (AF_NETLINK);
             address.SetGroups (RTMGRP_IPV4_IFADDR | RTMGRP_IPV6_IFADDR);
             socket->Bind (address);

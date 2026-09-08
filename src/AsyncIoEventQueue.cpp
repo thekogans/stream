@@ -155,7 +155,7 @@ namespace thekogans {
                                         stream,
                                         THEKOGANS_UTIL_STRING_EXCEPTION (
                                             "Unknown stream (%s) error.",
-                                            stream->typeinfo ().name ())));
+                                            typeid (*stream).name ())));
                             }
                         }
                         else if ((epollEvents[i].events & EPOLLRDHUP) ||

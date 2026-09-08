@@ -33,7 +33,7 @@ namespace thekogans {
 
         Address::Address (util::ui16 family) {
             if (family == AF_UNSPEC) {
-                memset (this, 0, sizeof (sockaddr_storage));
+                memset (&storage, 0, sizeof (sockaddr_storage));
                 storage.ss_family = AF_UNSPEC;
             #if defined (TOOLCHAIN_OS_OSX)
                 storage.ss_len =
@@ -41,7 +41,7 @@ namespace thekogans {
                 length = sizeof (sockaddr_storage);
             }
             else if (family == AF_INET) {
-                memset (this, 0, sizeof (sockaddr_in));
+                memset (&in, 0, sizeof (sockaddr_in));
                 in.sin_family = AF_INET;
             #if defined (TOOLCHAIN_OS_OSX)
                 in.sin_len =
@@ -49,7 +49,7 @@ namespace thekogans {
                 length = sizeof (sockaddr_in);
             }
             else if (family == AF_INET6) {
-                memset (this, 0, sizeof (sockaddr_in6));
+                memset (&in6, 0, sizeof (sockaddr_in6));
                 in6.sin6_family = AF_INET6;
             #if defined (TOOLCHAIN_OS_OSX)
                 in6.sin6_len =
@@ -58,7 +58,7 @@ namespace thekogans {
             }
         #if !defined (TOOLCHAIN_OS_Windows)
             else if (family == AF_LOCAL) {
-                memset (this, 0, sizeof (sockaddr_un));
+                memset (&un, 0, sizeof (sockaddr_un));
                 un.sun_family = AF_LOCAL;
             #if defined (TOOLCHAIN_OS_OSX)
                 un.sun_len =
@@ -67,18 +67,18 @@ namespace thekogans {
             }
         #if defined (TOOLCHAIN_OS_Linux)
             else if (family == AF_NETLINK) {
-                memset (this, 0, sizeof (sockaddr_nl));
+                memset (&nl, 0, sizeof (sockaddr_nl));
                 nl.nl_family = AF_NETLINK;
                 length = sizeof (sockaddr_nl);
             }
             else if (family == AF_PACKET) {
-                memset (this, 0, sizeof (sockaddr_ll));
+                memset (&ll, 0, sizeof (sockaddr_ll));
                 ll.sll_family = AF_PACKET;
                 length = sizeof (sockaddr_ll);
             }
         #elif defined (TOOLCHAIN_OS_OSX)
             else if (family == AF_LINK) {
-                memset (this, 0, sizeof (sockaddr_dl));
+                memset (&dl, 0, sizeof (sockaddr_dl));
                 dl.sdl_family = AF_LINK;
                 dl.sdl_len =
                 length = sizeof (sockaddr_dl);
@@ -95,7 +95,7 @@ namespace thekogans {
                 util::ui16 port,
                 const std::string &host,
                 util::ui16 family) {
-            memset (this, 0, sizeof (sockaddr_storage));
+            memset (&storage, 0, sizeof (sockaddr_storage));
             storage.ss_family = AF_UNSPEC;
         #if defined (TOOLCHAIN_OS_OSX)
             storage.ss_len =
@@ -116,7 +116,7 @@ namespace thekogans {
                         if (result->ai_addr != nullptr) {
                             if (result->ai_addr->sa_family == AF_INET) {
                                 assert (result->ai_addrlen == sizeof (sockaddr_in));
-                                memcpy (this, result->ai_addr, sizeof (sockaddr_in));
+                                memcpy (&in, result->ai_addr, sizeof (sockaddr_in));
                                 in.sin_port = htons (port);
                             #if defined (TOOLCHAIN_OS_OSX)
                                 in.sin_len =
@@ -126,7 +126,7 @@ namespace thekogans {
                             }
                             else if (result->ai_addr->sa_family == AF_INET6) {
                                 assert (result->ai_addrlen == sizeof (sockaddr_in6));
-                                memcpy (this, result->ai_addr, sizeof (sockaddr_in6));
+                                memcpy (&in6, result->ai_addr, sizeof (sockaddr_in6));
                                 in6.sin6_port = htons (port);
                             #if defined (TOOLCHAIN_OS_OSX)
                                 in6.sin6_len =
@@ -142,7 +142,7 @@ namespace thekogans {
                     for (const addrinfo *next = result; next != nullptr; next = next->ai_next) {
                         if (next->ai_addr != nullptr && next->ai_addr->sa_family == AF_INET) {
                             assert (result->ai_addrlen == sizeof (sockaddr_in));
-                            memcpy (this, next->ai_addr, sizeof (sockaddr_in));
+                            memcpy (&in, next->ai_addr, sizeof (sockaddr_in));
                             in.sin_port = htons (port);
                         #if defined (TOOLCHAIN_OS_OSX)
                             in.sin_len =
@@ -157,7 +157,7 @@ namespace thekogans {
                     for (const addrinfo *next = result; next != nullptr; next = next->ai_next) {
                         if (next->ai_addr != nullptr && next->ai_addr->sa_family == AF_INET6) {
                             assert (result->ai_addrlen == sizeof (sockaddr_in6));
-                            memcpy (this, next->ai_addr, sizeof (sockaddr_in6));
+                            memcpy (&in6, next->ai_addr, sizeof (sockaddr_in6));
                             in6.sin6_port = htons (port);
                         #if defined (TOOLCHAIN_OS_OSX)
                             in6.sin6_len =
@@ -197,7 +197,7 @@ namespace thekogans {
         Address::Address (
                 util::ui16 port,
                 const in_addr &addr) {
-            memset (this, 0, sizeof (sockaddr_in));
+            memset (&in, 0, sizeof (sockaddr_in));
             in.sin_family = AF_INET;
             in.sin_port = htons (port);
             in.sin_addr = addr;
@@ -212,7 +212,7 @@ namespace thekogans {
                 util::ui16 port,
                 const std::string &network,
                 const in_addr &addr) {
-            memset (this, 0, sizeof (sockaddr_in));
+            memset (&in, 0, sizeof (sockaddr_in));
             // FIXME: not sure if this is thread safe.
             const netent *ne = getnetbyname (network.c_str ());
             if (ne == 0) {
@@ -232,7 +232,7 @@ namespace thekogans {
         Address::Address (
                 util::ui16 port,
                 const in6_addr &addr) {
-            memset (this, 0, sizeof (sockaddr_in6));
+            memset (&in6, 0, sizeof (sockaddr_in6));
             in6.sin6_family = AF_INET6;
             in6.sin6_port = htons (port);
             in6.sin6_addr = addr;
@@ -245,7 +245,7 @@ namespace thekogans {
     #if !defined (TOOLCHAIN_OS_Windows)
         Address::Address (const std::string &path) {
             if (path.size () < sizeof (un.sun_path)) {
-                memset (this, 0, sizeof (sockaddr_un));
+                memset (&un, 0, sizeof (sockaddr_un));
                 un.sun_family = AF_LOCAL;
             #if defined (TOOLCHAIN_OS_Windows)
                 strncpy_s (un.sun_path, sizeof (un.sun_path), path.c_str (), sizeof (un.sun_path));
@@ -298,7 +298,7 @@ namespace thekogans {
 
         void Address::SetFamily (util::ui16 family) {
             if (family == AF_UNSPEC) {
-                memset (this, 0, sizeof (sockaddr_storage));
+                memset (&storage, 0, sizeof (sockaddr_storage));
                 storage.ss_family = AF_UNSPEC;
             #if defined (TOOLCHAIN_OS_OSX)
                 storage.ss_len =
@@ -306,7 +306,7 @@ namespace thekogans {
                 length = sizeof (sockaddr_storage);
             }
             else if (family == AF_INET) {
-                memset (this, 0, sizeof (sockaddr_in));
+                memset (&in, 0, sizeof (sockaddr_in));
                 in.sin_family = AF_INET;
             #if defined (TOOLCHAIN_OS_OSX)
                 in.sin_len =
@@ -314,7 +314,7 @@ namespace thekogans {
                 length = sizeof (sockaddr_in);
             }
             else if (family == AF_INET6) {
-                memset (this, 0, sizeof (sockaddr_in6));
+                memset (&in6, 0, sizeof (sockaddr_in6));
                 in6.sin6_family = AF_INET6;
             #if defined (TOOLCHAIN_OS_OSX)
                 in6.sin6_len =
@@ -323,7 +323,7 @@ namespace thekogans {
             }
         #if !defined (TOOLCHAIN_OS_Windows)
             else if (family == AF_LOCAL) {
-                memset (this, 0, sizeof (sockaddr_un));
+                memset (&un, 0, sizeof (sockaddr_un));
                 un.sun_family = AF_LOCAL;
             #if defined (TOOLCHAIN_OS_OSX)
                 un.sun_len =
@@ -332,18 +332,18 @@ namespace thekogans {
             }
         #if defined (TOOLCHAIN_OS_Linux)
             else if (family == AF_LOCAL) {
-                memset (this, 0, sizeof (sockaddr_nl));
+                memset (&nl, 0, sizeof (sockaddr_nl));
                 nl.nl_family = AF_NETLINK;
                 length = sizeof (sockaddr_nl);
             }
             else if (family == AF_PACKET) {
-                memset (this, 0, sizeof (sockaddr_ll));
+                memset (&ll, 0, sizeof (sockaddr_ll));
                 ll.sll_family = AF_PACKET;
                 length = sizeof (sockaddr_ll);
             }
         #elif defined (TOOLCHAIN_OS_OSX)
             else if (family == AF_LINK) {
-                memset (this, 0, sizeof (sockaddr_dl));
+                memset (&dl, 0, sizeof (sockaddr_dl));
                 dl.sdl_family = AF_LINK;
                 dl.sdl_len =
                 length = sizeof (sockaddr_dl);
