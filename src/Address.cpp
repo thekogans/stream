@@ -471,7 +471,7 @@ namespace thekogans {
         void Address::SetPath (const std::string &path) {
             if (path.size () < sizeof (un.sun_path)) {
                 if (GetFamily () == AF_LOCAL) {
-                    strncpy (un.sun_path, path.c_str (), sizeof (un.sun_path));
+                    strncpy (un.sun_path, path.c_str (), sizeof (un.sun_path) - 1);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
