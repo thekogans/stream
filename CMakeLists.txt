@@ -104,11 +104,11 @@ target_link_libraries(thekogans_stream
 # ==============================================================================
 # 5. Compiler Suppressions (Synchronized with util options)
 # ==============================================================================
-set(GCC_CLANG_NO_WARN "-Wno-unused-parameter" "-Wno-interference-size" "-Wno-multichar" "-Wno-unknown-pragmas")
-set(MSVC_NO_WARN      "/wd4100" "/wd4018")
+set(GCC_NO_WARN "-Wno-unused-parameter" "-Wno-interference-size" "-Wno-multichar" "-Wno-unknown-pragmas")
+set(MSVC_NO_WARN "/wd4100" "/wd4018")
 
 target_compile_options(thekogans_stream PRIVATE
-    "$<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:${GCC_CLANG_NO_WARN}>"
+    "$<$<CXX_COMPILER_ID:GNU>:${GCC_NO_WARN}>"
     "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>"
 )
 
