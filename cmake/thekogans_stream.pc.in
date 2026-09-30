@@ -1,0 +1,12 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=\${prefix}
+libdir=\${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=\${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: thekogans_stream
+Description: Cross-platform asynchronous socket streams and asynchronous IO wrappers
+Version: @PROJECT_VERSION@
+Requires.private: thekogans_util
+Libs: -L\${libdir} -lthekogans_stream
+Libs.private: @PC_LIBS_PRIVATE@
+Cflags: -I\${includedir}

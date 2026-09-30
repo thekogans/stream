@@ -19,8 +19,7 @@ set(THEKOGANS_STREAM_VERSION_HEX "0x${HEX_STRING}")
 
 project(thekogans_stream
     VERSION ${THEKOGANS_STREAM_MAJOR_VERSION}.${THEKOGANS_STREAM_MINOR_VERSION}.${THEKOGANS_STREAM_PATCH_VERSION}
-    LANGUAGES C CXX
-)
+    LANGUAGES C CXX)
 
 # ==============================================================================
 # 2. Dependency Tracking
@@ -48,21 +47,20 @@ target_compile_definitions(thekogans_stream PUBLIC
     THEKOGANS_STREAM_MAJOR_VERSION=${THEKOGANS_STREAM_MAJOR_VERSION}
     THEKOGANS_STREAM_MINOR_VERSION=${THEKOGANS_STREAM_MINOR_VERSION}
     THEKOGANS_STREAM_PATCH_VERSION=${THEKOGANS_STREAM_PATCH_VERSION}
-    THEKOGANS_STREAM_VERSION=${THEKOGANS_STREAM_VERSION_HEX}
-)
+    THEKOGANS_STREAM_VERSION=${THEKOGANS_STREAM_VERSION_HEX})
 
 # Automated Configuration Context Definitions via Generator Expressions
 target_compile_definitions(thekogans_stream PUBLIC
-    THEKOGANS_STREAM_CONFIG_$<CONFIG>
-)
+    THEKOGANS_STREAM_CONFIG_$<CONFIG>)
 
 target_compile_definitions(thekogans_stream PUBLIC
     $<$<BOOL:${BUILD_SHARED_LIBS}>:THEKOGANS_STREAM_TYPE_Shared>
-    $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:THEKOGANS_STREAM_TYPE_Static>
-)
+    $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:THEKOGANS_STREAM_TYPE_Static>)
 
 if(WIN32)
-    target_compile_definitions(thekogans_stream PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(thekogans_stream PRIVATE
+        _CRT_SECURE_NO_WARNINGS
+        _LIB_THEKOGANS_STREAM_BUILD)
 endif()
 
 # Bind headers path
@@ -70,8 +68,7 @@ target_include_directories(thekogans_stream
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
+        ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Core Source Units
 target_sources(thekogans_stream PRIVATE
@@ -84,8 +81,7 @@ target_sources(thekogans_stream PRIVATE
     src/Stream.cpp
     src/TCPSocket.cpp
     src/UDPSocket.cpp
-    src/Version.cpp
-)
+    src/Version.cpp)
 
 # Conditional platform sources (e.g., Windows NamedPipes)
 if(WIN32)
@@ -98,19 +94,17 @@ endif()
 target_link_libraries(thekogans_stream
     PUBLIC
         thekogans::thekogans_util
-        ${PLATFORM_LIBS}
-)
+        ${PLATFORM_LIBS})
 
 # ==============================================================================
 # 5. Compiler Suppressions (Synchronized with util options)
 # ==============================================================================
-set(GCC_NO_WARN "-Wno-unused-parameter" "-Wno-interference-size" "-Wno-multichar" "-Wno-unknown-pragmas")
+set(GCC_NO_WARN "-Wno-unused-parameter" "-Wno-interference-size")
 set(MSVC_NO_WARN "/wd4100" "/wd4018")
 
 target_compile_options(thekogans_stream PRIVATE
     "$<$<CXX_COMPILER_ID:GNU>:${GCC_NO_WARN}>"
-    "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>"
-)
+    "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>")
 
 # ==============================================================================
 # 6. Installation and Export Architecture
@@ -124,38 +118,32 @@ install(TARGETS thekogans_stream
     EXPORT thekogans_stream_targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(EXPORT thekogans_stream_targets
     FILE thekogans_streamTargets.cmake
     NAMESPACE thekogans::
-    DESTINATION ${STREAM_CMAKE_INSTALL_DIR}
-)
+    DESTINATION ${STREAM_CMAKE_INSTALL_DIR})
 
 # Install public headers safely retaining organization boundaries
 install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-)
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_streamConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
+    COMPATIBILITY SameMajorVersion)
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/thekogans_streamConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_streamConfig.cmake"
-    INSTALL_DESTINATION ${STREAM_CMAKE_INSTALL_DIR}
-)
+    INSTALL_DESTINATION ${STREAM_CMAKE_INSTALL_DIR})
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_streamConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_streamConfigVersion.cmake"
-    DESTINATION ${STREAM_CMAKE_INSTALL_DIR}
-)
+    DESTINATION ${STREAM_CMAKE_INSTALL_DIR})
 
 # ==============================================================================
 # 7. Automated Pkg-Config Generation (.pc File)
@@ -165,27 +153,10 @@ foreach(LIB_ITEM IN LISTS PLATFORM_LIBS)
     set(PC_LIBS_PRIVATE "${PC_LIBS_PRIVATE} -l${LIB_ITEM}")
 endforeach()
 
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/thekogans_stream.pc.in"
-"prefix=@CMAKE_INSTALL_PREFIX@
-exec_prefix=\${prefix}
-libdir=\${prefix}/@CMAKE_INSTALL_LIBDIR@
-includedir=\${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
-
-Name: thekogans_stream
-Description: Cross-platform asynchronous socket streams and asynchronous IO wrappers
-Version: @PROJECT_VERSION@
-Requires.private: thekogans_util
-Libs: -L\${libdir} -lthekogans_stream
-Libs.private: @PC_LIBS_PRIVATE@
-Cflags: -I\${includedir}
-")
-
 configure_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/thekogans_stream.pc.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/thekogans_stream.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_stream.pc"
-    @ONLY
-)
+    @ONLY)
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/thekogans_stream.pc"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
