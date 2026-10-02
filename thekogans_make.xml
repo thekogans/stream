@@ -26,8 +26,7 @@
       <c_preprocessor_definition>_CRT_SECURE_NO_WARNINGS</c_preprocessor_definition>
     </c_preprocessor_definitions>
   </if>
-  <cpp_headers prefix = "include"
-               install = "yes">
+  <cpp_headers prefix = "include">
     <cpp_header>$(organization)/$(project_directory)/Adapters.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Address.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/AsyncIoEventQueue.h</cpp_header>
